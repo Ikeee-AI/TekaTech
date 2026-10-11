@@ -15,15 +15,15 @@ Sprint 1 product owner: pending team confirmation. Every member reviews another 
 
 ## Sprint 1 status
 
-The private [GitHub repository](https://github.com/Ikeee-AI/TekaTech), [draft PR #1](https://github.com/Ikeee-AI/TekaTech/pull/1), and [13 backlog issues](https://github.com/Ikeee-AI/TekaTech/issues) are live. Sprint 1 is **not done under the course Definition of Done** until another teammate reviews the PR, it is merged, deployed and checked on the live site.
+The private [GitHub repository](https://github.com/Ikeee-AI/TekaTech), [ready-for-review PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15), and [13 backlog issues](https://github.com/Ikeee-AI/TekaTech/issues) are live. The source branch is `tekatech/sprint-1`; GitHub closed the original PR #1 when its branch was renamed. Commit history is preserved. Sprint 1 is **not done under the course Definition of Done** until another teammate reviews the PR, it is merged, deployed and checked on the live site.
 
 - Frontend production build and lint pass locally.
-- Backend: 71 mocked tests pass, including save/index failure and authorization behavior.
+- Backend: 77 mocked tests pass, including save/index failure, authorization and local-provider output validation.
 - Tracked SQL passes fresh/replay and legacy-overload acceptance checks, with vector in either public or extensions. The existing Supabase project is ACTIVE_HEALTHY; all five table reads and the vector RPC now pass using the backend configuration.
 - The [first PR CI run](https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464) passed backend tests, frontend lint/build and real Postgres/pgvector migration acceptance. Render hosting still needs configuration.
-- Main branch protection is unavailable for this private repository on its current plan (GitHub returned 403 requiring Pro or public visibility). The project board requires a GitHub browser sign-in or connection with Projects access. Both remain pending; PR #1 stays unmerged.
+- Main branch protection is unavailable for this private repository on its current plan (GitHub returned 403 requiring Pro or public visibility). The project board requires a GitHub browser sign-in or connection with Projects access. Both remain pending; PR #15 stays unmerged.
 - Supabase migrations are applied and verified. The backend catalog returns the existing gadget; existing query history remains intact. An obsolete vector RPC overload was reconciled. See [database evidence](docs/evidence/supabase-sprint-1.json). Public hosting is still pending.
-- The requested real AI test reached api.openai.com but returned HTTP 429, `credit_balance_exhausted`; a successful response still requires provider credit.
+- Temporary Sprint 1 AI connectivity: a real backend call to local Ollama `qwen3:8b` succeeded and its JSON output was validated. [Evidence](docs/evidence/local-llm-sprint-1.json). This verifies the local provider, not the full RAG feature. The application's OpenAI embedding/chat path still has the `credit_balance_exhausted` blocker.
 
 See [Sprint 1 evidence and remaining work](docs/sprint-1.md), [backlog](docs/backlog.md), [pipeline](PIPELINE.md), and [deploy/rollback runbook](docs/deploy-runbook.md).
 
@@ -77,6 +77,8 @@ cd backend
 uv run --frozen pytest
 # Optional live check: reads database; --ai makes ONE small billed request.
 uv run python scripts/sprint1_check.py --ai --api-base http://127.0.0.1:8000 --output ../.local/sprint1-live-check.json
+# Temporary local provider probe; Ollama and the named model must already be running/installed.
+uv run python scripts/sprint1_check.py --ai --ai-provider ollama --ai-model qwen3:8b --output ../.local/sprint1-local-llm-check.json
 ```
 
 ```powershell
@@ -90,7 +92,7 @@ Normal CI uses fake Supabase and mocked OpenAI. Its separate database job applie
 ## Branch and review strategy
 
 - `main` represents reviewed, deployed work. Bootstrap it with an empty initial commit only; application changes stay on feature branches.
-- Use one branch per issue, such as `codex/TTK-09-pr-pipeline` (teammates may use `feature/TTK-...`). Open a PR referencing the issue.
+- Use one branch per issue, such as `tekatech/TTK-09-pr-pipeline`. Open a PR referencing the issue. Branch names describe the project; commit authorship and actual teammate reviews remain recorded in GitHub.
 - Require at least one **other teammate's** approval and `Backend tests`, `Frontend lint and build`, and `Database migrations` checks before merge. Dismiss stale reviews, block force pushes, and avoid direct application commits to main.
 - Squash merge after review, then the main pipeline deploys the exact tested commit. Do not enable manual deployment approval if the class expects automatic deployment on every merge.
 - An item is Done only after reviewed merge, passing CI, deployment and a live check. Local passes are evidence of readiness, not Done.

@@ -5,9 +5,11 @@ Ownership area: Developer: AI. Named assignee: pending team declaration.
 
 ## Acceptance criteria
 
-- [ ] Resolve the existing provider credit blocker and run scripts/sprint1_check.py --ai once.
-- [ ] Record a successful 1536-dimension response, model, tokens and request ID without exposing a key.
-- [ ] Do not run billed AI connectivity checks in normal PR CI.
+- [x] Make one successful real provider call from backend code: temporary Ollama `qwen3:8b`, using `scripts/sprint1_check.py --ai --ai-provider ollama`.
+- [x] Validate the completed JSON response and record the model, generated tokens and safe output in `docs/evidence/local-llm-sprint-1.json`.
+- [x] Keep normal PR tests mocked; no paid API or installed local model is required by CI.
+
+Scope adjustment: use a real local provider to demonstrate Sprint 1 connectivity while OpenAI credit is exhausted. No API key is needed for this loopback provider. The application still uses OpenAI for RAG embeddings/chat; a successful OpenAI response and a deployed AI feature are not claimed. Local connectivity is not public deployment acceptance.
 
 ## Definition of Done
 

@@ -1,9 +1,9 @@
 {
   "repository": "https://github.com/Ikeee-AI/TekaTech",
   "visibility": "private",
-  "branch": "codex/sprint-1",
-  "pull_request": "https://github.com/Ikeee-AI/TekaTech/pull/1",
-  "pull_request_status": "draft; unmerged; teammate review pending",
+  "branch": "tekatech/sprint-1",
+  "pull_request": "https://github.com/Ikeee-AI/TekaTech/pull/15",
+  "pull_request_status": "ready for review; unmerged; teammate review pending",
   "initial_ci": {
     "run_id": 38167468464,
     "url": "https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464",
@@ -151,5 +151,10 @@
   },
   "deployment": {
     "status": "not configured; no production deployment from this PR"
+  },
+  "superseded_pull_request": {
+    "url": "https://github.com/Ikeee-AI/TekaTech/pull/1",
+    "state": "closed by GitHub branch rename; not merged",
+    "original_branch": "codex/sprint-1"
   }
 }

@@ -1,19 +1,53 @@
-"""Live Sprint 1 checks. No database writes; --ai makes one billed call."""
+"""Live Sprint 1 checks. No database writes; --ai calls the selected provider once."""
 import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
 import sys
+from typing import Literal
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import httpx
 from openai import OpenAI
+from pydantic import BaseModel
 from config import settings
 from supabase_client import supabase
 
 
-def run_checks(*, ai=False, api_base=None, frontend_url=None):
+class LocalSmokeReply(BaseModel):
+    project: Literal["TekaTech"]
+    status: Literal["ready"]
+
+
+def check_local_provider(model="qwen3:8b"):
+    """A local generation probe, not a replacement for the application's RAG."""
+    response = httpx.post(
+        "http://127.0.0.1:11434/api/generate",
+        json={
+            "model": model,
+            "prompt": 'Return JSON with project "TekaTech" and status "ready".',
+            "format": LocalSmokeReply.model_json_schema(),
+            "stream": False,
+            "think": False,
+            "options": {"temperature": 0, "num_predict": 64},
+        },
+        timeout=180,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict) or payload.get("done") is not True:
+        raise ValueError("Expected a completed Ollama generation")
+    reply = LocalSmokeReply.model_validate_json(payload["response"])
+    return {
+        "provider": "ollama", "model": payload["model"],
+        "validated_reply": reply.model_dump(),
+        "generated_tokens": payload.get("eval_count"),
+        "scope": "local backend connectivity only; application RAG still uses OpenAI",
+    }
+
+
+def run_checks(*, ai=False, ai_provider="openai", ai_model="qwen3:8b", api_base=None, frontend_url=None):
     results = []
 
     def check(name, operation):
@@ -86,18 +120,26 @@ def run_checks(*, ai=False, api_base=None, frontend_url=None):
             return {"model": response.model, "dimensions": len(response.data[0].embedding),
                     "total_tokens": response.usage.total_tokens,
                     "request_id": getattr(response, "_request_id", None)}
-        check("ai_provider", provider_check)
+        if ai_provider == "ollama":
+            check("ai_provider", lambda: check_local_provider(ai_model))
+        elif ai_provider == "openai":
+            check("ai_provider", provider_check)
+        else:
+            raise ValueError("Unknown AI provider")
     return {"checked_at": datetime.now(timezone.utc).isoformat(), "checks": results}
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--ai", action="store_true", help="One small OpenAI embeddings request")
+    parser.add_argument("--ai", action="store_true", help="One provider request: OpenAI is billed, Ollama is local")
+    parser.add_argument("--ai-provider", choices=("openai", "ollama"), default="openai")
+    parser.add_argument("--ai-model", default="qwen3:8b", help="Installed Ollama model for the local probe")
     parser.add_argument("--api-base", help="Local or deployed backend origin")
     parser.add_argument("--frontend-url", help="Deployed frontend URL")
     parser.add_argument("--output", type=Path, help="Optional JSON evidence file (no keys)")
     args = parser.parse_args()
-    report = run_checks(ai=args.ai, api_base=args.api_base, frontend_url=args.frontend_url)
+    report = run_checks(ai=args.ai, ai_provider=args.ai_provider, ai_model=args.ai_model,
+                        api_base=args.api_base, frontend_url=args.frontend_url)
     rendered = json.dumps(report, indent=2)
     print(rendered)
     if args.output:

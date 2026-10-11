@@ -25,4 +25,4 @@ The existing project is ACTIVE_HEALTHY. Migrations `20261011193804 sprint_1_foun
 
 The legacy five-column RPC was inspected, saved locally and checked for zero dependents before removing that exact obsolete overload. Scratch SQL checks cover both vector schemas, replay and legacy overload recovery. Live checks made no fixture writes or AI calls.
 
-Evidence: [supabase-sprint-1.json](https://github.com/Ikeee-AI/TekaTech/blob/codex/sprint-1/docs/evidence/supabase-sprint-1.json). This issue stays open for reviewed merge, deployment and feature acceptance.
+Evidence: [supabase-sprint-1.json](https://github.com/Ikeee-AI/TekaTech/blob/tekatech/sprint-1/docs/evidence/supabase-sprint-1.json). This issue stays open for reviewed merge, deployment and feature acceptance.
