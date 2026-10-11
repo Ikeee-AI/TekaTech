@@ -17,4 +17,6 @@ Ownership area: DevOps Engineer. Named assignee: pending team declaration.
 - [ ] Deployed and checked in the deployed environment.
 - [ ] Link the issue, PR, CI run, commit and live verification evidence.
 
-Current status: drafted locally; not yet created as a GitHub issue.
+Hosted issue: https://github.com/Ikeee-AI/TekaTech/issues/7
+
+Current status: open backlog item; deployment and the course Definition of Done still require evidence.

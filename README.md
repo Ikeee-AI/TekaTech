@@ -15,12 +15,13 @@ Sprint 1 product owner: pending team confirmation. Every member reviews another 
 
 ## Sprint 1 status
 
-Local foundation is prepared; Sprint 1 is **not done under the course Definition of Done** until reviewed PRs pass hosted CI, are merged, deployed and checked on the live site.
+The private [GitHub repository](https://github.com/Ikeee-AI/TekaTech), [draft PR #1](https://github.com/Ikeee-AI/TekaTech/pull/1), and [13 backlog issues](https://github.com/Ikeee-AI/TekaTech/issues) are live. Sprint 1 is **not done under the course Definition of Done** until another teammate reviews the PR, it is merged, deployed and checked on the live site.
 
 - Frontend production build and lint pass locally.
 - Backend: 71 mocked tests pass, including save/index failure and authorization behavior.
 - Tracked SQL applies twice and passes behavior/access checks in a temporary PGlite/pgvector database. Production migration remains unverified.
-- PR CI, pipeline-triggered Render deployment configuration and 13 issue drafts are in the repository; GitHub runs/issues and hosting still require account connection.
+- The [first PR CI run](https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464) passed backend tests, frontend lint/build and real Postgres/pgvector migration acceptance. Render hosting still needs configuration.
+- Main branch protection is unavailable for this private repository on its current plan (GitHub returned 403 requiring Pro or public visibility). The project board requires a GitHub browser sign-in or connection with Projects access. Both remain pending; PR #1 stays unmerged.
 - Current Supabase hostname fails DNS resolution. Resume/confirm the project in its dashboard before migration.
 - The requested real AI test reached api.openai.com but returned HTTP 429, `credit_balance_exhausted`; a successful response still requires provider credit.
 
