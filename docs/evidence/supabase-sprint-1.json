@@ -1,0 +1,168 @@
+{
+  "project": {
+    "name": "TekaTech",
+    "reference": "lqswcmkzygqmnblaukco",
+    "status": "ACTIVE_HEALTHY"
+  },
+  "checked_at": "2026-10-11T19:43:22.480942+00:00",
+  "migrations": [
+    {
+      "version": "20261011193804",
+      "name": "sprint_1_foundation"
+    },
+    {
+      "version": "20261011194244",
+      "name": "reconcile_legacy_match_spec_documents"
+    }
+  ],
+  "verification": {
+    "specs": 0,
+    "tables": [
+      {
+        "name": "comparison_links",
+        "anon_read": false,
+        "rls_enabled": true,
+        "backend_crud": true,
+        "authenticated_read": false
+      },
+      {
+        "name": "gadgets",
+        "anon_read": false,
+        "rls_enabled": true,
+        "backend_crud": true,
+        "authenticated_read": false
+      },
+      {
+        "name": "query_history",
+        "anon_read": false,
+        "rls_enabled": true,
+        "backend_crud": true,
+        "authenticated_read": false
+      },
+      {
+        "name": "spec_corrections",
+        "anon_read": false,
+        "rls_enabled": true,
+        "backend_crud": true,
+        "authenticated_read": false
+      },
+      {
+        "name": "spec_documents",
+        "anon_read": false,
+        "rls_enabled": true,
+        "backend_crud": true,
+        "authenticated_read": false
+      }
+    ],
+    "gadgets": 1,
+    "history": 6,
+    "foreign_keys": [
+      {
+        "source": "spec_documents",
+        "target": "gadgets",
+        "definition": "FOREIGN KEY (gadget_id) REFERENCES gadgets(id) ON DELETE CASCADE"
+      },
+      {
+        "source": "spec_corrections",
+        "target": "auth.users",
+        "definition": "FOREIGN KEY (reviewed_by) REFERENCES auth.users(id)"
+      },
+      {
+        "source": "spec_corrections",
+        "target": "spec_documents",
+        "definition": "FOREIGN KEY (spec_document_id) REFERENCES spec_documents(id) ON DELETE CASCADE"
+      },
+      {
+        "source": "spec_corrections",
+        "target": "auth.users",
+        "definition": "FOREIGN KEY (submitted_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+      }
+    ],
+    "rpc_anon_execute": false,
+    "rpc_backend_execute": true,
+    "rpc_empty_scope_results": 0,
+    "retrieval_function_count": 1,
+    "rpc_authenticated_execute": false
+  },
+  "provider_calls": 0,
+  "verification_database_writes": 0,
+  "api_read_check": {
+    "health_status": 200,
+    "catalog_status": 200,
+    "gadget_count": 1,
+    "invalid_id_status": 422,
+    "method": "FastAPI TestClient using the real Supabase configuration; no deployment/browser claim"
+  },
+  "security_advisors": [
+    {
+      "name": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 3,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    },
+    {
+      "name": "function_search_path_mutable",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable"
+    },
+    {
+      "name": "extension_in_public",
+      "level": "WARN",
+      "count": 2,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public"
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable"
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable"
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+    }
+  ],
+  "performance_advisors": [
+    {
+      "name": "unindexed_foreign_keys",
+      "level": "INFO",
+      "count": 7,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys"
+    },
+    {
+      "name": "auth_rls_initplan",
+      "level": "WARN",
+      "count": 2,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan"
+    },
+    {
+      "name": "unused_index",
+      "level": "INFO",
+      "count": 11,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index"
+    },
+    {
+      "name": "duplicate_index",
+      "level": "WARN",
+      "count": 3,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0009_duplicate_index"
+    }
+  ],
+  "restoration_note": "Project reported COMING_UP during initial inspection and returned an empty public catalog. Restored data became visible after the foundation applied. An inspected obsolete RPC with no dependent objects was removed to resolve PostgREST PGRST203. Existing one gadget and six history records remained intact. A definition/metadata backup is kept in the ignored .local directory.",
+  "remaining": [
+    "Render deployment and public frontend/API verification",
+    "Successful AI-provider connectivity call",
+    "Teammate review and merge",
+    "Project board and eligible main-branch protection",
+    "Resolve remaining advisory findings before release"
+  ]
+}

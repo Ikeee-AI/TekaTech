@@ -1,0 +1,160 @@
+{
+  "repository": "https://github.com/Ikeee-AI/TekaTech",
+  "visibility": "private",
+  "branch": "tekatech/sprint-1",
+  "pull_request": "https://github.com/Ikeee-AI/TekaTech/pull/15",
+  "pull_request_status": "ready for review; unmerged; teammate review pending",
+  "initial_ci": {
+    "run_id": 38167468464,
+    "url": "https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464",
+    "sha": "b82e068499a5920821842b52c67e5fd70d20673b",
+    "started_at": "2026-10-11T19:18:39Z",
+    "completed_at": "2026-10-11T19:19:19Z",
+    "duration_seconds": 40,
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "Backend tests",
+        "conclusion": "success",
+        "started_at": "2026-10-11T19:18:42Z",
+        "completed_at": "2026-10-11T19:19:00Z"
+      },
+      {
+        "name": "Database migrations",
+        "conclusion": "success",
+        "started_at": "2026-10-11T19:18:42Z",
+        "completed_at": "2026-10-11T19:19:18Z"
+      },
+      {
+        "name": "Frontend lint and build",
+        "conclusion": "success",
+        "started_at": "2026-10-11T19:18:42Z",
+        "completed_at": "2026-10-11T19:19:04Z"
+      },
+      {
+        "name": "Deploy main after checks",
+        "conclusion": "skipped",
+        "started_at": "2026-10-11T19:19:19Z",
+        "completed_at": "2026-10-11T19:19:19Z"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "number": 2,
+      "title": "[TTK-01] CRUD on a real database",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/2",
+      "state": "open",
+      "assignees": []
+    },
+    {
+      "number": 3,
+      "title": "[TTK-02] Non-trivial AI with backend output processing",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/3",
+      "state": "open",
+      "assignees": []
+    },
+    {
+      "number": 4,
+      "title": "[TTK-03] Backend owns database and AI logic",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/4",
+      "state": "open",
+      "assignees": []
+    },
+    {
+      "number": 5,
+      "title": "[TTK-04] Functional frontend wired to backend",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/5",
+      "state": "open",
+      "assignees": []
+    },
+    {
+      "number": 6,
+      "title": "[TTK-05] Relational database design and migration",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/6",
+      "state": "open",
+      "assignees": []
+    },
+    {
+      "number": 7,
+      "title": "[TTK-06] Environment and secrets management",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/7",
+      "state": "open",
+      "assignees": [
+        "Ikeee-AI"
+      ]
+    },
+    {
+      "number": 8,
+      "title": "[TTK-07] Graceful AI and request errors",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/8",
+      "state": "open",
+      "assignees": []
+    },
+    {
+      "number": 9,
+      "title": "[TTK-08] Declare roles and prioritize Sprint 1",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/9",
+      "state": "open",
+      "assignees": []
+    },
+    {
+      "number": 10,
+      "title": "[TTK-09] PR quality gates and reviewed main branch",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/10",
+      "state": "open",
+      "assignees": [
+        "Ikeee-AI"
+      ]
+    },
+    {
+      "number": 11,
+      "title": "[TTK-10] Pipeline-triggered walking skeleton on a live URL",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/11",
+      "state": "open",
+      "assignees": [
+        "Ikeee-AI"
+      ]
+    },
+    {
+      "number": 12,
+      "title": "[TTK-11] One real backend AI-provider connectivity test",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/12",
+      "state": "open",
+      "assignees": []
+    },
+    {
+      "number": 13,
+      "title": "[TTK-12] Pipeline metrics, optimization and recovery evidence",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/13",
+      "state": "open",
+      "assignees": [
+        "Ikeee-AI"
+      ]
+    },
+    {
+      "number": 14,
+      "title": "[TTK-13] Release documentation and Demo Day",
+      "url": "https://github.com/Ikeee-AI/TekaTech/issues/14",
+      "state": "open",
+      "assignees": []
+    }
+  ],
+  "branch_protection": {
+    "status": "not enabled",
+    "http_status": 403,
+    "reason": "GitHub requires Pro or public visibility to enable this feature for this repository. Visibility was not changed and no upgrade was purchased."
+  },
+  "project_board": {
+    "status": "not created",
+    "reason": "Current Git sign-in lacks Projects scope and the in-app browser is signed out."
+  },
+  "deployment": {
+    "status": "not configured; no production deployment from this PR"
+  },
+  "superseded_pull_request": {
+    "url": "https://github.com/Ikeee-AI/TekaTech/pull/1",
+    "state": "closed by GitHub branch rename; not merged",
+    "original_branch": "codex/sprint-1"
+  }
+}

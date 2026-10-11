@@ -1,0 +1,62 @@
+{
+  "checked_at": "2026-10-11T20:21:56.704135+00:00",
+  "checks": [
+    {
+      "check": "database_gadgets",
+      "status": "passed",
+      "detail": {
+        "row_count": 1
+      }
+    },
+    {
+      "check": "database_spec_documents",
+      "status": "passed",
+      "detail": {
+        "row_count": 0
+      }
+    },
+    {
+      "check": "database_spec_corrections",
+      "status": "passed",
+      "detail": {
+        "row_count": 0
+      }
+    },
+    {
+      "check": "database_comparison_links",
+      "status": "passed",
+      "detail": {
+        "row_count": 0
+      }
+    },
+    {
+      "check": "database_query_history",
+      "status": "passed",
+      "detail": {
+        "row_count": 6
+      }
+    },
+    {
+      "check": "database_match_rpc",
+      "status": "passed",
+      "detail": {
+        "reachable": true
+      }
+    },
+    {
+      "check": "ai_provider",
+      "status": "passed",
+      "detail": {
+        "provider": "ollama",
+        "model": "qwen3:8b",
+        "validated_reply": {
+          "project": "TekaTech",
+          "status": "ready"
+        },
+        "generated_tokens": 19,
+        "scope": "local backend connectivity only; application RAG still uses OpenAI"
+      }
+    }
+  ],
+  "acceptance_scope": "Temporary Sprint 1 backend provider connectivity; not application RAG or public deployment."
+}
