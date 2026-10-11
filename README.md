@@ -19,10 +19,10 @@ The private [GitHub repository](https://github.com/Ikeee-AI/TekaTech), [draft PR
 
 - Frontend production build and lint pass locally.
 - Backend: 71 mocked tests pass, including save/index failure and authorization behavior.
-- Tracked SQL applies twice and passes behavior/access checks in a temporary PGlite/pgvector database. Production migration remains unverified.
+- Tracked SQL passes fresh/replay and legacy-overload acceptance checks, with vector in either public or extensions. The existing Supabase project is ACTIVE_HEALTHY; all five table reads and the vector RPC now pass using the backend configuration.
 - The [first PR CI run](https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464) passed backend tests, frontend lint/build and real Postgres/pgvector migration acceptance. Render hosting still needs configuration.
 - Main branch protection is unavailable for this private repository on its current plan (GitHub returned 403 requiring Pro or public visibility). The project board requires a GitHub browser sign-in or connection with Projects access. Both remain pending; PR #1 stays unmerged.
-- Current Supabase hostname fails DNS resolution. Resume/confirm the project in its dashboard before migration.
+- Supabase migrations are applied and verified. The backend catalog returns the existing gadget; existing query history remains intact. An obsolete vector RPC overload was reconciled. See [database evidence](docs/evidence/supabase-sprint-1.json). Public hosting is still pending.
 - The requested real AI test reached api.openai.com but returned HTTP 429, `credit_balance_exhausted`; a successful response still requires provider credit.
 
 See [Sprint 1 evidence and remaining work](docs/sprint-1.md), [backlog](docs/backlog.md), [pipeline](PIPELINE.md), and [deploy/rollback runbook](docs/deploy-runbook.md).

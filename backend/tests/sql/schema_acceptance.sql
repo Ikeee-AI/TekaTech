@@ -7,6 +7,8 @@ declare
   v vector(1536) := ('[' || '1,' || repeat('0,', 1534) || '0]')::vector;
   n integer;
 begin
+  select count(*) into n from pg_proc where pronamespace = 'public'::regnamespace and proname = 'match_spec_documents';
+  if n != 1 then raise exception 'Exactly one retrieval RPC must exist; overloaded named arguments break PostgREST'; end if;
   insert into gadgets(name, brand, category) values ('CI A', 'CI', 'phone') returning id into gadget_a;
   insert into gadgets(name, brand, category) values ('CI B', 'CI', 'phone') returning id into gadget_b;
   insert into spec_documents(gadget_id, content, embedding, indexing_status)
@@ -64,7 +66,7 @@ $$;
 set local role service_role;
 select id from public.gadgets limit 1;
 select * from public.match_spec_documents(
-  ('[' || '1,' || repeat('0,', 1534) || '0]')::extensions.vector, 0, 0.5
+  ('[' || '1,' || repeat('0,', 1534) || '0]')::vector, 0, 0.5
 );
 reset role;
 rollback;

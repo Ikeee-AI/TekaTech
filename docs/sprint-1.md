@@ -8,8 +8,8 @@ Plan recorded: 12 October 2026. Source: course Sprint 1 checklist and project re
 | --- | --- | --- |
 | Repository/README/branch strategy/ignore/env examples | Private GitHub repository, pushed feature branch and draft PR #1 | Another teammate review and merge |
 | Roles and backlog | Project owner declared as the single DevOps Engineer, with full-stack contribution; 13 hosted issues covering all seven requirements; four DevOps items assigned to Ikeee-AI | Other developers named/assigned; project board created |
-| Schema migrated | Tracked baseline/RPC/grants; applied twice and acceptance passed in temporary PGlite and hosted Postgres/pgvector CI | Actual Supabase migration and verification |
-| Frontend -> API -> database | Existing catalog calls backend `/gadgets`, whose route reads Supabase | Real database reachable and successful live browser request |
+| Schema migrated | Two registered migrations on the existing ACTIVE_HEALTHY Supabase project; all five table checks and the retrieval RPC pass | Teammate review, merge and public deployment acceptance |
+| Frontend -> API -> database | Real FastAPI `/gadgets` returns 200 with the existing gadget from Supabase | Public hosting and successful live frontend browser request |
 | CI on every PR | First GitHub PR run passed all three jobs (40 seconds) | Required statuses/review protection unavailable on current private-repo plan |
 | Pipeline-triggered live deployment | Render blueprint, exact-commit deploy hooks and setup runbook | Accounts connected, hooks configured, passing merged pipeline and live URLs |
 | One backend AI test | One real request attempted; HTTP 429 `credit_balance_exhausted` | Add credit and capture successful 1536-dimension embedding response |
@@ -32,7 +32,7 @@ Nothing is counted Done yet under the course Definition of Done. Hosted PR CI pa
 - Frontend: ESLint passed; production build passed. Vite reports a non-blocking bundle-size warning (~523 kB main JavaScript before gzip).
 - Backend source import/compilation check and package build passed locally; production starts FastAPI from the full repository, not the placeholder package entry point.
 - SQL: all six ordered files apply twice; acceptance covers indexed-only/scoped retrieval, pending chunks, changed-content vector invalidation, atomic views, telemetry columns, service-role permissions, browser-role restrictions, RLS and deletion cascades.
-- Live database: hostname DNS resolution failed (`11001`); no schema application or data modification attempted.
+- Earlier live database check failed DNS (`11001`). After restoration, Supabase is ACTIVE_HEALTHY. Two migrations are now registered and verified; read-only checks preserve the existing gadget and six history rows.
 - Live AI provider: api.openai.com returned HTTP 429 `credit_balance_exhausted`; no successful embedding/index/query claim.
 - Local secret scan: non-ignored working files passed the known-pattern/config-file guard; staged files and the bootstrap history also passed before commit. Ignored `.env` and account files stay excluded.
 
@@ -40,7 +40,7 @@ Machine-readable local provider/database evidence: ignored `.local/sprint1-live-
 
 ## Planned review/demo
 
-Next: create the board and finish team assignments, resolve branch-rule eligibility, apply/verify the real schema, configure Render, get the teammate review, merge after passing PR checks, and show the live catalog's database-backed request. Bring the live URL, board, reviewed PR, CI run, commit and updated metrics to the 15-minute consultation.
+Next: create the board and finish team assignments, resolve branch-rule eligibility, configure Render, get the teammate review, merge after passing PR checks, and show the live catalog's database-backed request. Bring the live URL, board, reviewed PR, CI run, commit and updated metrics to the 15-minute consultation.
 
 ## Team standups (2-3 per week)
 
@@ -55,3 +55,15 @@ Add actual teammate updates; do not invent participation:
 Consultation date: pending instructor schedule. Feedback: not yet received.
 
 After the consultation, record: what went well, what did not, and one change for Sprint 2. Do not complete the retro before the review occurs.
+
+## Supabase verification on 12 October 2026
+
+The existing TekaTech project (`lqswcmkzygqmnblaukco`) is ACTIVE_HEALTHY. Registered migrations: `20261011193804 sprint_1_foundation` and `20261011194244 reconcile_legacy_match_spec_documents`.
+
+- Backend-configured reads of all five core tables pass; the match RPC returns the expected empty result for an empty scope.
+- FastAPI TestClient with real Supabase: `/health` 200; `/gadgets` 200 with one existing gadget; malformed gadget ID 422. This verifies the backend route, not a public deployment or browser session.
+- All five core tables enable RLS. Backend CRUD and retrieval access are present; anon/authenticated cannot read them or execute the retrieval RPC directly. Existing gadget -> spec -> correction foreign keys cascade correctly by definition.
+- Existing data counts remain one gadget, zero spec documents and six query-history rows. No fixture records or AI calls were used for live verification.
+- SQL regression checks pass for fresh schemas, replay, old named-argument overloads and vector installed in either `public` or `extensions`.
+- A restore timing issue was encountered: COMING_UP initially returned an empty catalog; the restored schema then appeared, including a legacy RPC overload. Its definition was saved locally and its lack of dependents verified before removing that exact obsolete signature. The five-column legacy RPC no longer conflicts with the six-column backend RPC.
+- [Machine-readable evidence and advisor findings](evidence/supabase-sprint-1.json). Remaining security/performance findings are tracked for release hardening; no clean security-audit claim is made.

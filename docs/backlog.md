@@ -10,7 +10,7 @@ All 13 [GitHub issues](https://github.com/Ikeee-AI/TekaTech/issues) are created 
 | TTK-02 | Non-trivial RAG with backend output processing and evaluation | Sprint 3 | RAG/storage present; citation checks/evaluation pending |
 | TTK-03 | Backend owns data and AI; auth at API | Sprint 1-2 | Code and mocked tests present; deployment pending |
 | TTK-04 | Functional frontend with loading/empty/error states | Sprint 1-2 | Local lint/build pass; browser/live data verification pending |
-| TTK-05 | Related tables, reproducible schema and migration | Sprint 1-2 | SQL and temporary-database checks pass; Supabase application pending |
+| TTK-05 | Related tables, reproducible schema and migration | Sprint 1-2 | Supabase migrations/table/RPC checks pass; reviewed deploy and feature acceptance pending |
 | TTK-06 | Environment and secret management | Sprint 1-4 | Examples/ignore rules/config prepared; host setup pending |
 | TTK-07 | Graceful AI/provider/request failure handling | Sprint 3-4 | Save/index behavior tested; query failure hardening pending |
 | TTK-08 | Roles, product owner, board and backlog | Sprint 1 | Issues created; team names and board pending |

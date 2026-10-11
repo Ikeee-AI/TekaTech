@@ -101,8 +101,21 @@ jobs:
           python backend/scripts/assemble_sql.py > /tmp/tekatech-setup.sql
           psql -v ON_ERROR_STOP=1 -f /tmp/tekatech-setup.sql
           psql -v ON_ERROR_STOP=1 -f /tmp/tekatech-setup.sql
+      - name: Reconcile the legacy named-argument RPC overload
+        run: |
+          psql -v ON_ERROR_STOP=1 -f backend/tests/sql/legacy_match_rpc.sql
+          psql -v ON_ERROR_STOP=1 -f /tmp/tekatech-setup.sql
       - name: Check database behavior and access grants
         run: psql -v ON_ERROR_STOP=1 -f backend/tests/sql/schema_acceptance.sql
+      - name: Verify a legacy project with vector in public
+        run: |
+          createdb tekatech_legacy_ci
+          export PGDATABASE=tekatech_legacy_ci
+          psql -v ON_ERROR_STOP=1 -c 'create extension vector with schema public'
+          psql -v ON_ERROR_STOP=1 -f /tmp/tekatech-setup.sql
+          psql -v ON_ERROR_STOP=1 -f backend/tests/sql/legacy_match_rpc.sql
+          psql -v ON_ERROR_STOP=1 -f /tmp/tekatech-setup.sql
+          psql -v ON_ERROR_STOP=1 -f backend/tests/sql/schema_acceptance.sql
 
   deploy:
     name: Deploy main after checks

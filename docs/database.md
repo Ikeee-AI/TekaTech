@@ -37,6 +37,12 @@ erDiagram
   }
 ```
 
+## Live project status
+
+The existing TekaTech project is ACTIVE_HEALTHY; [verification evidence](evidence/supabase-sprint-1.json) records both registered migrations, permissions, relationships and backend reads. Its vector extension is in `public`, and the SQL supports that location as well as `extensions`. The existing project also has `profiles`, `image_lookups` and `ingestion_queue` plus Auth-user foreign keys/nullable fields beyond the minimal fresh-project baseline. Those restored tables and relationships were retained. This baseline is not a full export of the existing project.
+
+Wait for ACTIVE_HEALTHY before schema inspection/migration. A COMING_UP response returned an empty public catalog during restoration; the real schema appeared later.
+
 ## Application order
 
 Run these in Supabase SQL Editor as the project postgres owner:
@@ -55,12 +61,12 @@ New-Item -ItemType Directory -Force .local | Out-Null
 backend/.venv/Scripts/python.exe backend/scripts/assemble_sql.py | Set-Content -Encoding utf8 .local/supabase-setup.sql
 ```
 
-The assembler prints SQL only. It never connects to or migrates a database. For an existing project, export/inspect its schema, compare column and RPC signatures, and take a backup before applying changes. `CREATE TABLE IF NOT EXISTS` does not repair differing table definitions. `CREATE OR REPLACE FUNCTION` cannot change an incompatible existing return signature; inspect and reconcile it rather than dropping functions blindly.
+The assembler prints SQL only. It never connects to or migrates a database. For an existing project, export/inspect its schema, compare column and RPC signatures, and take a backup before applying changes. `CREATE TABLE IF NOT EXISTS` does not repair differing table definitions. `CREATE OR REPLACE FUNCTION` cannot change an incompatible existing return signature. The tracked retrieval SQL recognizes only the inspected five-column legacy `(vector,uuid[],integer,double precision)` signature, verifies zero dependents, and removes it without CASCADE before preserving the canonical RPC. Unknown result shapes or dependent objects abort for inspection. This resolves PostgREST PGRST203 when same-named arguments exist in differently ordered overloads.
 
 Pending chunks have no embedding and cannot participate in vector retrieval. Indexing writes compare the original content. A content edit clears its old vector and resets pending status through a database trigger.
 
 ## Verification
 
-The CI database job applies the ordered setup twice to a fresh pgvector/Postgres database. `schema_acceptance.sql` checks retrieval scope, pending exclusion, correction invalidation, view counters, telemetry, RLS/grants and cascades with rolled-back fixtures. These local checks also passed in temporary PGlite/pgvector on 12 October 2026; this does not confirm the actual Supabase migration.
+The CI database job applies the ordered setup twice to a fresh pgvector/Postgres database. `schema_acceptance.sql` checks retrieval scope, pending exclusion, correction invalidation, view counters, telemetry, RLS/grants and cascades with rolled-back fixtures. Additional scratch checks reproduce and reconcile the legacy RPC and cover vector in either schema. Live read-only verification now passes against the actual Supabase project; scratch fixture SQL remains CI-only.
 
 Run `backend/scripts/sprint1_check.py` after connecting/resuming Supabase to verify actual table columns and the match RPC. `/gadgets` must return real database data through the backend before the live walking skeleton is accepted.

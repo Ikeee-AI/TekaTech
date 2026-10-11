@@ -10,7 +10,7 @@ Every pull request runs all three independent quality jobs. Pushes to main run t
 | --- | --- | --- |
 | Backend tests | uv dependency install from lock; source compile; pytest; app import check | Verify API logic, authorization, input limits and AI behavior using fakes/mocks |
 | Frontend lint and build | cached Node/npm install; ESLint; Vite production build; short-lived build artifact | Reject invalid code and prove the UI compiles |
-| Database migrations | scratch pgvector/Postgres; roles; apply SQL twice; transactional acceptance checks | Prove reproducible setup, replay safety, retrieval, relationships and access grants without touching production |
+| Database migrations | scratch pgvector/Postgres; roles; apply SQL twice; reconcile legacy RPC; verify vector in public; transactional acceptance checks | Prove reproducible setup, replay safety, retrieval, relationships and access grants without touching production |
 | Deploy main after checks | gated on all three jobs; POST both secret Render hooks for the tested SHA; poll public deployment smoke checks | Deploy only checked main commits; production secrets are injected by the host |
 
 ```mermaid
