@@ -9,12 +9,12 @@ Plan recorded: 12 October 2026. Source: course Sprint 1 checklist and project re
 | Repository/README/branch strategy/ignore/env examples | Private GitHub repository, pushed feature branch and ready-for-review PR #15 | Another teammate review and merge |
 | Roles and backlog | Project owner declared as the single DevOps Engineer, with full-stack contribution; 13 hosted issues covering all seven requirements; four DevOps items assigned to Ikeee-AI | Other developers named/assigned; project board created |
 | Schema migrated | Two registered migrations on the existing ACTIVE_HEALTHY Supabase project; all five table checks and the retrieval RPC pass | Teammate review, merge and public deployment acceptance |
-| Frontend -> API -> database | Local browser catalog displays the existing Rog Ally through real FastAPI/Supabase | Public hosting and successful public frontend browser request |
+| Frontend -> API -> database | Public browser catalog displays the existing Rog Ally through real FastAPI/Supabase; deployed version and CORS checks pass | Pipeline-triggered deployment acceptance after merge |
 | CI on every PR | First GitHub PR run passed all three jobs (40 seconds) | Required statuses/review protection unavailable on current private-repo plan |
-| Pipeline-triggered live deployment | Render blueprint, exact-commit deploy hooks and setup runbook | Accounts connected, hooks configured, passing merged pipeline and live URLs |
+| Pipeline-triggered live deployment | Free Render API and frontend provisioned; live catalog and read-only deployment smoke pass | Deploy hooks configured in GitHub; passing main pipeline deploying its exact commit |
 | One backend AI test | Temporary local Ollama `qwen3:8b` call passed; backend validated JSON | Application RAG remains OpenAI-backed and credit-blocked; public AI acceptance is separate |
 
-Nothing is counted Done yet under the course Definition of Done. Hosted PR CI passed; teammate review, merge and production deployment remain pending.
+Nothing is counted Done yet under the course Definition of Done. Hosted PR CI and public provisioning checks pass. Another teammate's review and declared developer roster are still missing. The owner requested a merge after checks and deployment configuration; owner authorization does not count as teammate review.
 
 ## GitHub evidence on 12 October 2026
 
@@ -40,11 +40,20 @@ Machine-readable local provider/database evidence: ignored `.local/sprint1-live-
 
 ## Planned review/demo
 
-Next: create the board and finish team assignments, resolve branch-rule eligibility, configure Render, get the teammate review, merge after passing PR checks, and show the live catalog's database-backed request. Bring the live URL, board, reviewed PR, CI run, commit and updated metrics to the 15-minute consultation.
+Next: complete deploy-hook configuration and verify the main pipeline's exact deployed commit; create the board, finish team assignments and obtain teammate review. Bring the live URL, board, reviewed PR, CI run, commit and updated metrics to the 15-minute consultation.
 
 ## Temporary provider and branch adjustment
 
-On 12 October 2026 the project owner requested the project-named `tekatech/sprint-1` branch and authorized free public Render hosting. The branch was renamed without rewriting commits. GitHub automatically closed #1; replacement #15 is ready for review rather than draft. Remaining teammates have no declared roles yet; none were fabricated. Render access/configuration and teammate review remain pending before the requested merge can safely trigger deployment.
+On 12 October 2026 the project owner requested the project-named `tekatech/sprint-1` branch and authorized free public Render hosting. The branch was renamed without rewriting commits. GitHub automatically closed #1; replacement #15 was made ready for review. Remaining teammates have no declared roles yet; none were fabricated. Both Render services are now live. Deploy hooks and teammate review remain separate outstanding items.
+
+## Render provisioning snapshot: 12 October 2026
+
+- Workspace: TekaTech, `tea-d6ilnqvkijhs7387boc0`; existing services are reused.
+- Frontend: [tekatech-web.onrender.com](https://tekatech-web.onrender.com), static site `srv-db5v70tckfvc73biitc0`.
+- API: [tekatech-api.onrender.com](https://tekatech-api.onrender.com/health), free Python service `srv-db5v6sijnfac73brl4mg`, Singapore, one worker. Database stays in Supabase.
+- Read-only smoke at `2026-10-11T20:42:36Z`: both services serve `a9d9bc39887b91154e4d096f0b8afddc09db58ae`; health, one-gadget database read, frontend shell and actual frontend CORS origin pass. Browser catalog displays Rog Ally.
+- Live API configuration deploy `dep-db5v749pogns73a2n6f0` finished `2026-10-11T20:39:37Z`; frontend deploy `dep-db5v715ckfvc73biiuf0` finished `2026-10-11T20:37:40Z`.
+- This is an initial provisioning snapshot before the requested merge. It does not prove pipeline-triggered delivery from main. See [safe smoke evidence](evidence/render-provisioning.json). Hooks must be supplied privately before merging so the main deployment job can pass.
 
 The course allows the team to choose its AI provider. For the Sprint 1 connectivity check, reuse the already installed local Ollama `qwen3:8b` while OpenAI has exhausted its credit. Backend code made a real generation call, requested JSON and validated `{"project":"TekaTech","status":"ready"}`. It generated 19 tokens. All five live table reads and the retrieval RPC also passed in that probe; no database rows were written. [Recorded evidence](evidence/local-llm-sprint-1.json).
 

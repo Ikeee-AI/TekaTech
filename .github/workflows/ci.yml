@@ -138,7 +138,7 @@ jobs:
         shell: bash
         run: |
           if [[ -z "$BACKEND_HOOK" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
-            echo "Deployment is not configured: add both Render deploy hooks and public URL variables to the production environment." >> "$GITHUB_STEP_SUMMARY"
+            echo "Deployment is not configured: add both Render deploy hooks as repository Actions secrets and public URLs as repository Actions variables." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           curl --fail --silent --show-error --request POST "$BACKEND_HOOK&ref=${{ github.sha }}" > /dev/null

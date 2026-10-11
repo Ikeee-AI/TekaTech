@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "checked_at": "2026-10-11T20:42:36.067244+00:00",
+  "attempts": 1,
+  "wait_seconds": 1.52,
+  "commit": "a9d9bc39887b91154e4d096f0b8afddc09db58ae",
+  "gadget_count": 1,
+  "cors": "passed"
+}

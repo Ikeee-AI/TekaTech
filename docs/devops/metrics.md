@@ -20,3 +20,9 @@ Measurement rules:
 ## Initial hosted data point
 
 [CI run 38167468464](https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464), commit `b82e068499a5920821842b52c67e5fd70d20673b`, PR #1. Started `2026-10-11T19:18:39Z`; finished `2026-10-11T19:19:19Z`: 40 seconds (0.67 minutes). Backend job 18 seconds; frontend 22 seconds; database 36 seconds. Jobs ran in parallel. Deployment skipped because this is a PR. This single run establishes a baseline, not an optimization before/after comparison.
+
+## Later verification snapshot
+
+[PR run 38172679951](https://github.com/Ikeee-AI/TekaTech/actions/runs/38172679951), commit `a9d9bc39887b91154e4d096f0b8afddc09db58ae`, PR #15: successful; started `2026-10-11T20:33:02Z`, finished `2026-10-11T20:33:46Z`, 44 seconds (0.73 minutes). This is another observed run, not a complete weekly average or a measured optimization.
+
+Initial free Render provisioning: frontend deploy `dep-db5v715ckfvc73biiuf0` took about 16 seconds (`20:37:24Z` to `20:37:40Z`). API provisioning took about 76 seconds (`20:37:09Z` to `20:38:25Z`), followed by a CORS-configuration deployment completed at `20:39:37Z`. Public smoke passed at `20:42:36Z`, all on 11 October 2026 UTC / 12 October locally. These were setup deployments before a merge; they do not establish main-pipeline duration or merge-to-live lead time. Record the eventual main workflow separately.
