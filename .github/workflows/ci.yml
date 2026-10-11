@@ -122,7 +122,8 @@ jobs:
     needs: [backend, frontend, database]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: production
+    # Repository-level production hooks support this private repository on GitHub Free.
+    # Environment secrets on private repositories require an eligible paid GitHub plan.
     env:
       BACKEND_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
       FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
