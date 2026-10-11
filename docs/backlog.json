@@ -1,0 +1,93 @@
+[
+  {
+    "id": "TTK-01",
+    "title": "[TTK-01] CRUD on a real database",
+    "sprint": "Sprint 2",
+    "owner_area": "Developer: backend/full stack",
+    "body": "# TTK-01: CRUD on a real database\n\nTarget: Sprint 2\nOwnership area: Developer: backend/full stack. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Create, list, read, update and admin-delete gadgets through the backend API and UI.\n- [ ] Records persist across refreshes and redeploys on the production database.\n- [ ] Malformed IDs and invalid payloads return useful 4xx responses; authorization is tested.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-02",
+    "title": "[TTK-02] Non-trivial AI with backend output processing",
+    "sprint": "Sprint 3",
+    "owner_area": "Developer: AI",
+    "body": "# TTK-02: Non-trivial AI with backend output processing\n\nTarget: Sprint 3\nOwnership area: Developer: AI. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Retrieve indexed specs with pgvector and answer gadget questions/comparisons with numbered citations.\n- [ ] Backend processes the model result before responding: store answer/history, construct validated response/source objects, and check citation validity.\n- [ ] Show a small evaluation set with measurable grounding and citation results; include unknown-spec and variant cases.\n- [ ] CI uses mocked AI calls and evaluates output shape/grounding rather than exact prose.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-03",
+    "title": "[TTK-03] Backend owns database and AI logic",
+    "sprint": "Sprint 1-2",
+    "owner_area": "Developer: backend",
+    "body": "# TTK-03: Backend owns database and AI logic\n\nTarget: Sprint 1-2\nOwnership area: Developer: backend. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Frontend data and AI calls go through FastAPI; browser Supabase is used for auth only.\n- [ ] Backend verifies access tokens; admin actions check app_metadata.is_admin.\n- [ ] API reference and tests cover core routes; OpenAI/service-role keys stay backend-only.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-04",
+    "title": "[TTK-04] Functional frontend wired to backend",
+    "sprint": "Sprint 1-2",
+    "owner_area": "Developer: frontend",
+    "body": "# TTK-04: Functional frontend wired to backend\n\nTarget: Sprint 1-2\nOwnership area: Developer: frontend. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Production catalog reads real gadget data from the production API.\n- [ ] Catalog/detail/edit/comparison screens handle loading, empty and error states.\n- [ ] Refresh a nested SPA route successfully and verify production CORS/browser requests.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-05",
+    "title": "[TTK-05] Relational database design and migration",
+    "sprint": "Sprint 1-2",
+    "owner_area": "Developer: database/backend",
+    "body": "# TTK-05: Relational database design and migration\n\nTarget: Sprint 1-2\nOwnership area: Developer: database/backend. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Track and apply the five-table schema, foreign keys and vector-search RPC from repository SQL.\n- [ ] Demonstrate gadget -> spec_documents -> spec_corrections relationships and deletion behavior.\n- [ ] Test pending versus indexed retrieval and invalidation of vectors after a correction.\n- [ ] Record the real Supabase migration and verify table/RPC compatibility before closing.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-06",
+    "title": "[TTK-06] Environment and secrets management",
+    "sprint": "Sprint 1-4",
+    "owner_area": "DevOps Engineer",
+    "body": "# TTK-06: Environment and secrets management\n\nTarget: Sprint 1-4\nOwnership area: DevOps Engineer. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] README documents setup; both .env.example files cover all configuration.\n- [ ] No real .env, account file or credentials in staged files or Git history.\n- [ ] Production configuration is injected through Render and GitHub environment secrets.\n- [ ] Document local/production separation and add isolated staging configuration before Sprint 3.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-07",
+    "title": "[TTK-07] Graceful AI and request errors",
+    "sprint": "Sprint 3-4",
+    "owner_area": "Developer: AI/backend/frontend",
+    "body": "# TTK-07: Graceful AI and request errors\n\nTarget: Sprint 3-4\nOwnership area: Developer: AI/backend/frontend. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Save specs independently of AI availability; failed indexing preserves saved text.\n- [ ] Test provider timeout, quota exhaustion, malformed/empty model output, and invalid client payloads.\n- [ ] Query/index endpoints return safe, understandable failures rendered by the frontend.\n- [ ] Keep input/token caps and rate limits; avoid provider calls for unrelated CI checks.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-08",
+    "title": "[TTK-08] Declare roles and prioritize Sprint 1",
+    "sprint": "Sprint 1",
+    "owner_area": "Whole team / product owner",
+    "body": "# TTK-08: Declare roles and prioritize Sprint 1\n\nTarget: Sprint 1\nOwnership area: Whole team / product owner. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Name exactly one DevOps Engineer and all other members as Developers in README.\n- [ ] Name the product owner for this sprint; create one GitHub issue per course requirement.\n- [ ] Assign owners, create the board, and use real standup/review/retro entries.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-09",
+    "title": "[TTK-09] PR quality gates and reviewed main branch",
+    "sprint": "Sprint 1",
+    "owner_area": "DevOps Engineer",
+    "body": "# TTK-09: PR quality gates and reviewed main branch\n\nTarget: Sprint 1\nOwnership area: DevOps Engineer. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] GitHub Actions installs dependencies, lints/builds frontend, tests/import-checks backend and tests migrations on every PR.\n- [ ] main requires one other teammate review and the three CI check jobs; dismiss stale approvals.\n- [ ] Keep provider calls mocked and no deployment secrets available to PR jobs.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-10",
+    "title": "[TTK-10] Pipeline-triggered walking skeleton on a live URL",
+    "sprint": "Sprint 1",
+    "owner_area": "DevOps Engineer",
+    "body": "# TTK-10: Pipeline-triggered walking skeleton on a live URL\n\nTarget: Sprint 1\nOwnership area: DevOps Engineer. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Connect repository and free Render backend/static frontend services; set CORS/auth callback URLs.\n- [ ] After a reviewed merge, the passing pipeline deploys the exact tested commit to both services.\n- [ ] Verify live frontend -> API -> real Supabase data and capture URL, commit, CI run and browser evidence.\n- [ ] A deploy request alone does not prove successful deployment.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-11",
+    "title": "[TTK-11] One real backend AI-provider connectivity test",
+    "sprint": "Sprint 1",
+    "owner_area": "Developer: AI",
+    "body": "# TTK-11: One real backend AI-provider connectivity test\n\nTarget: Sprint 1\nOwnership area: Developer: AI. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Resolve the existing provider credit blocker and run scripts/sprint1_check.py --ai once.\n- [ ] Record a successful 1536-dimension response, model, tokens and request ID without exposing a key.\n- [ ] Do not run billed AI connectivity checks in normal PR CI.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-12",
+    "title": "[TTK-12] Pipeline metrics, optimization and recovery evidence",
+    "sprint": "Sprint 1-4",
+    "owner_area": "DevOps Engineer",
+    "body": "# TTK-12: Pipeline metrics, optimization and recovery evidence\n\nTarget: Sprint 1-4\nOwnership area: DevOps Engineer. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Update the weekly metrics log with actual CI/deployment timings and success rates.\n- [ ] Measure before/after each optimization and keep an incident log for failures reaching main/production.\n- [ ] Any teammate can use the deploy/rollback runbook; demonstrate a rollback before release.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  },
+  {
+    "id": "TTK-13",
+    "title": "[TTK-13] Release documentation and Demo Day",
+    "sprint": "Sprint 4",
+    "owner_area": "Whole team",
+    "body": "# TTK-13: Release documentation and Demo Day\n\nTarget: Sprint 4\nOwnership area: Whole team. Named assignee: pending team declaration.\n\n## Acceptance criteria\n\n- [ ] Complete architecture/API/setup documentation, changelog and tagged production release.\n- [ ] Demo the tagged release on its live URL and explain each member contribution with issues/PRs.\n- [ ] Confirm the instructor code-freeze date before release.\n\n## Definition of Done\n\n- [ ] Reviewed by at least one other teammate and merged to main through a PR.\n- [ ] Required CI checks passed.\n- [ ] Deployed and checked in the deployed environment.\n- [ ] Link the issue, PR, CI run, commit and live verification evidence.\n\nCurrent status: drafted locally; not yet created as a GitHub issue.\n"
+  }
+]
