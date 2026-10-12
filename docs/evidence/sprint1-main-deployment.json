@@ -57,8 +57,8 @@
     "direct_login_http_status": 200
   },
   "remaining_course_items": [
-    "Manuel collaborator invitation acceptance and GitHub ownership assignments",
-    "Real teammate review of the follow-up PR before merge",
+    "Real teammate review of PR #16 before merge",
+    "Reviewed merge, latest passing CI and exact-commit main deployment verification",
     "Genuine team standups and consultation retrospective when held"
   ],
   "ai_scope": "Local Ollama backend connectivity probe passed; application RAG remains OpenAI-backed and credit-blocked; local model is not hosted on Render",
@@ -79,12 +79,22 @@
         "database",
         "AI"
       ],
-      "repository_access": "pending invitation acceptance"
+      "repository_access": "write; verified 2026-10-12",
+      "project_board_access": "write; verified 2026-10-12",
+      "assigned_issues": [
+        2,
+        3,
+        4,
+        6,
+        8,
+        12
+      ]
     }
   ],
   "project_board": {
     "url": "https://github.com/users/Ikeee-AI/projects/1",
     "visibility": "private",
     "existing_issues_imported": 13
-  }
+  },
+  "team_review_pull_request": "https://github.com/Ikeee-AI/TekaTech/pull/16"
 }

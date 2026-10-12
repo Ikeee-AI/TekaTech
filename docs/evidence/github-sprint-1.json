@@ -45,21 +45,27 @@
       "title": "[TTK-01] CRUD on a real database",
       "url": "https://github.com/Ikeee-AI/TekaTech/issues/2",
       "state": "open",
-      "assignees": []
+      "assignees": [
+        "s2302827-byte"
+      ]
     },
     {
       "number": 3,
       "title": "[TTK-02] Non-trivial AI with backend output processing",
       "url": "https://github.com/Ikeee-AI/TekaTech/issues/3",
       "state": "open",
-      "assignees": []
+      "assignees": [
+        "s2302827-byte"
+      ]
     },
     {
       "number": 4,
       "title": "[TTK-03] Backend owns database and AI logic",
       "url": "https://github.com/Ikeee-AI/TekaTech/issues/4",
       "state": "open",
-      "assignees": []
+      "assignees": [
+        "s2302827-byte"
+      ]
     },
     {
       "number": 5,
@@ -75,7 +81,9 @@
       "title": "[TTK-05] Relational database design and migration",
       "url": "https://github.com/Ikeee-AI/TekaTech/issues/6",
       "state": "open",
-      "assignees": []
+      "assignees": [
+        "s2302827-byte"
+      ]
     },
     {
       "number": 7,
@@ -91,7 +99,9 @@
       "title": "[TTK-07] Graceful AI and request errors",
       "url": "https://github.com/Ikeee-AI/TekaTech/issues/8",
       "state": "open",
-      "assignees": []
+      "assignees": [
+        "s2302827-byte"
+      ]
     },
     {
       "number": 9,
@@ -125,7 +135,9 @@
       "title": "[TTK-11] One real backend AI-provider connectivity test",
       "url": "https://github.com/Ikeee-AI/TekaTech/issues/12",
       "state": "open",
-      "assignees": []
+      "assignees": [
+        "s2302827-byte"
+      ]
     },
     {
       "number": 13,
@@ -188,10 +200,20 @@
         "database",
         "AI"
       ],
-      "repository_access": "pending invitation acceptance"
+      "repository_access": "write; verified 2026-10-12",
+      "project_board_access": "write; verified 2026-10-12",
+      "assigned_issues": [
+        2,
+        3,
+        4,
+        6,
+        8,
+        12
+      ]
     }
   ],
   "product_owner": "Ikeee-AI",
   "snapshot_date": "2026-10-12",
-  "deployment_evidence": "sprint1-main-deployment.json"
+  "deployment_evidence": "sprint1-main-deployment.json",
+  "team_review_pull_request": "https://github.com/Ikeee-AI/TekaTech/pull/16"
 }

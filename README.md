@@ -15,7 +15,7 @@ Sprint 1 product owner: **Ikeee-AI**, confirmed by the project owner on 12 Octob
 
 ## Sprint 1 status
 
-The private [GitHub repository](https://github.com/Ikeee-AI/TekaTech), merged [Sprint 1 PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15), and [13 backlog issues](https://github.com/Ikeee-AI/TekaTech/issues) are live. The source branch is `tekatech/sprint-1`; GitHub closed the original PR #1 when its branch was renamed. Commit history is preserved. The private [TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) contains all 13 issues. Sprint 1 still needs actual teammate review and remaining ownership/access setup under the course Definition of Done. See the [team review guide](docs/team-review.md).
+The private [GitHub repository](https://github.com/Ikeee-AI/TekaTech), merged [Sprint 1 PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15), and [13 backlog issues](https://github.com/Ikeee-AI/TekaTech/issues) are live. The source branch is `tekatech/sprint-1`; GitHub closed the original PR #1 when its branch was renamed. Commit history is preserved. The private [TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) contains all 13 issues. Sprint 1 still needs actual teammate review and genuine team process entries under the course Definition of Done. See the [team review guide](docs/team-review.md).
 
 - Frontend production build and lint pass locally.
 - Backend: 77 mocked tests pass, including save/index failure, authorization and local-provider output validation.

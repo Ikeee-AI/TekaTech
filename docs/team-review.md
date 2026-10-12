@@ -9,12 +9,14 @@ Confirmed on 12 October 2026: Ikeee-AI is the one DevOps Engineer, contributes f
 | Owner | Issues | Access/assignment state |
 | --- | --- | --- |
 | Ikeee-AI | #5 frontend; #7 secrets; #9 product owner/roles; #10 review gates; #11 deployment; #13 metrics/recovery | Assignments can be maintained by the repository owner |
-| Manuel Mirasol (`s2302827-byte`) | #2 CRUD/backend; #3 AI; #4 API; #6 database; #8 AI/request errors; #12 provider acceptance | Declared responsibility; GitHub assignments pending collaborator invitation acceptance |
+| Manuel Mirasol (`s2302827-byte`) | #2 CRUD/backend; #3 AI; #4 API; #6 database; #8 AI/request errors; #12 provider acceptance | Declared responsibility; GitHub assignments and repository/board Write access verified |
 | Team, owner to be selected | #14 release/demo | Pending later sprint planning |
 
-Manuel's account was verified to exist. The repository collaborator check returned no existing access on 12 October 2026. No invitation, access grant or review request was sent by the assistant.
+Manuel's account, repository Write access and private-board Write access were verified on 12 October 2026 after the owner explicitly approved the grants. Issues #2/3/4/6/8/12 are assigned to him. No review or authored contribution is claimed from this setup.
 
-## Owner setup
+## Access setup (completed for the declared team)
+
+The steps below are now completed for Manuel; do not send a duplicate invitation. They document the setup path for future confirmed teammates. His repository Write access and board Write access are verified, and all six ownership issues are assigned.
 
 1. Open [TekaTech](https://github.com/Ikeee-AI/TekaTech) -> Settings -> Collaborators -> Add people. Choose exactly `s2302827-byte`, confirm the account with Manuel, and send the repository invitation. A personal private-repository collaborator gets write access; do not share account credentials.
 2. Manuel accepts the invitation while signed into his own account.

@@ -2,7 +2,7 @@
 
 Source: the course requirements supplied on 12 October 2026 and the existing TekaTech scope. The seven mandatory final-product requirements map one-to-one to TTK-01 through TTK-07. Product-specific pitch details beyond the existing gadget/spec/RAG scope still need team confirmation.
 
-All 13 [GitHub issues](https://github.com/Ikeee-AI/TekaTech/issues) are created (#2-14). [backlog.json](backlog.json) maps each TTK ID to its hosted issue; [issues/](issues/) keeps the acceptance text. The private [TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) contains all 13 issues. Ikeee-AI owns frontend, product-owner planning and DevOps items (#5/7/9/10/11/13). Manuel Mirasol (`s2302827-byte`) owns backend/database/AI (#2/3/4/6/8/12); his GitHub assignments wait for collaborator invitation acceptance. #14 remains a later team planning decision. See [team review and access guide](team-review.md). Do not mark existing code Done until it meets the course Definition of Done.
+All 13 [GitHub issues](https://github.com/Ikeee-AI/TekaTech/issues) are created (#2-14). [backlog.json](backlog.json) maps each TTK ID to its hosted issue; [issues/](issues/) keeps the acceptance text. The private [TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) contains all 13 issues. Ikeee-AI owns frontend, product-owner planning and DevOps items (#5/7/9/10/11/13). Manuel Mirasol (`s2302827-byte`) owns backend/database/AI (#2/3/4/6/8/12); his six GitHub ownership assignments and repository/board Write access are verified. #14 remains a later team planning decision. See [team review and access guide](team-review.md). Do not mark existing code Done until it meets the course Definition of Done.
 
 | ID | Requirement / work item | Target | Current state |
 | --- | --- | --- | --- |
@@ -13,7 +13,7 @@ All 13 [GitHub issues](https://github.com/Ikeee-AI/TekaTech/issues) are created 
 | TTK-05 | Related tables, reproducible schema and migration | Sprint 1-2 | Supabase migrations/table/RPC checks pass; reviewed deploy and feature acceptance pending |
 | TTK-06 | Environment and secret management | Sprint 1-4 | Examples/ignore rules/config prepared; host configuration and main deployment verified |
 | TTK-07 | Graceful AI/provider/request failure handling | Sprint 3-4 | Save/index behavior tested; query failure hardening pending |
-| TTK-08 | Roles, product owner, board and backlog | Sprint 1 | Two members and product owner declared; board created; access/assignment and teammate review pending |
+| TTK-08 | Roles, product owner, board and backlog | Sprint 1 | Two members and product owner declared; board created; assignments/access verified; real teammate review pending |
 | TTK-09 | PR CI and protected reviewed main branch | Sprint 1 | First hosted CI passed; private-plan branch protection unavailable |
 | TTK-10 | Pipeline-triggered live walking skeleton | Sprint 1 | Main pipeline deployed exact merge SHA; catalog/database/CORS passed; teammate review pending |
 | TTK-11 | One successful real backend AI test | Sprint 1 | Temporary local Ollama call/JSON validation passed; app RAG/OpenAI credit and public acceptance still pending |

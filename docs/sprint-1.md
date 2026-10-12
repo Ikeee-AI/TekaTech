@@ -7,21 +7,21 @@ Plan recorded: 12 October 2026. Source: course Sprint 1 checklist and project re
 | Requirement | Evidence currently available | Remaining acceptance |
 | --- | --- | --- |
 | Repository/README/branch strategy/ignore/env examples | Private GitHub repository, pushed feature branch and merged PR #15 | Owner-directed merge lacked another teammate review; follow-up PR awaits real review |
-| Roles and backlog | Ikeee-AI is the single DevOps Engineer and product owner; Manuel is a Developer for backend/database/AI; private board contains 13 issues; #5/7/9/10/11/13 assigned to Ikeee-AI | Collaborator access and Manuel's GitHub assignments pending |
+| Roles and backlog | Ikeee-AI is the single DevOps Engineer and product owner; Manuel is a Developer for backend/database/AI; private board contains 13 issues; #5/7/9/10/11/13 assigned to Ikeee-AI | Real teammate review and genuine process entries pending |
 | Schema migrated | Two registered migrations on the existing ACTIVE_HEALTHY Supabase project; all five table checks and the retrieval RPC pass | Broader relationship feature acceptance and real teammate review |
 | Frontend -> API -> database | Public browser catalog displays the existing Rog Ally through real FastAPI/Supabase; deployed version and CORS checks pass | Broader UI/API acceptance in later sprints |
 | CI on every PR | First GitHub PR run passed all three jobs (40 seconds) | Required statuses/review protection unavailable on current private-repo plan |
 | Pipeline-triggered live deployment | Main pipeline 38174257006 succeeded and deployed exact merge commit 53f62e9 to both services; live smoke passed | Real teammate review remains pending |
 | One backend AI test | Temporary local Ollama `qwen3:8b` call passed; backend validated JSON | Application RAG remains OpenAI-backed and credit-blocked; public AI acceptance is separate |
 
-Nothing is counted Done yet under the course Definition of Done. Hosted PR CI and public provisioning checks pass. The initial merge lacks another teammate's review. The two known members and product owner are now declared; collaborator access and remaining assignments are pending. The owner requested a merge after checks and deployment configuration; owner authorization does not count as teammate review.
+Nothing is counted Done yet under the course Definition of Done. Hosted PR CI and public provisioning checks pass. The initial merge lacks another teammate's review. The two known members and product owner are now declared; repository/board access and all 12 named ownership assignments are verified. The owner requested a merge after checks and deployment configuration; owner authorization does not count as teammate review.
 
 ## GitHub evidence on 12 October 2026
 
 - Repository: [Ikeee-AI/TekaTech](https://github.com/Ikeee-AI/TekaTech), private. Main contains application code at merge commit `53f62e994e1431171608c999694b0206a0984dfb`.
 - [Merged PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15): merged at the owner's request without another teammate approval; that historical exception remains documented. Original [PR #1](https://github.com/Ikeee-AI/TekaTech/pull/1) was closed by GitHub when its source branch was renamed; commits were preserved.
 - [Initial CI run](https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464): success at `b82e068499a5920821842b52c67e5fd70d20673b`. Backend, frontend and database passed; PR deployment skipped by design.
-- [13 issues](https://github.com/Ikeee-AI/TekaTech/issues), #2-14, open. Frontend/product-owner/DevOps items #5/7/9/10/11/13 assigned to Ikeee-AI; Manuel assignments wait for repository access.
+- [13 issues](https://github.com/Ikeee-AI/TekaTech/issues), #2-14, open. Frontend/product-owner/DevOps items #5/7/9/10/11/13 assigned to Ikeee-AI; Manuel owns #2/3/4/6/8/12 with repository/board Write access verified.
 - Branch protection: GitHub returned 403 requiring Pro or public visibility for this repository. No upgrade or visibility change made.
 - Project board: private [TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) created and linked to TekaTech, containing all 13 existing issues.
 - Machine-readable initial evidence: [github-sprint-1.json](evidence/github-sprint-1.json).
@@ -40,7 +40,7 @@ Machine-readable local provider/database evidence: ignored `.local/sprint1-live-
 
 ## Planned review/demo
 
-Next: follow [team-review.md](team-review.md) to invite Manuel, assign his issues and obtain his real review of the follow-up documentation PR. After its reviewed merge, verify the new main deployment. Bring the live URL, board, reviewed PR, CI run, commit and updated metrics to the 15-minute consultation.
+Next: follow [team-review.md](team-review.md) to use the completed access/assignments and obtain his real review of the follow-up documentation PR. After its reviewed merge, verify the new main deployment. Bring the live URL, board, reviewed PR, CI run, commit and updated metrics to the 15-minute consultation.
 
 ## Temporary provider and branch adjustment
 
