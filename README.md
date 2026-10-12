@@ -4,25 +4,25 @@ An AI subject project that helps shoppers understand and compare gadget specific
 
 ## Team and responsibilities
 
-The project owner (you) is the **one DevOps Engineer** and also contributes full-stack application code, as allowed by the course. Every other team member is a Developer. Add actual submission names before the first consultation; the remaining roster is pending.
+The project owner, **Ikeee-AI**, is the **one DevOps Engineer** and also contributes full-stack application code, as allowed by the course. Every other team member is a Developer. These are the two members declared so far; record any additional teammates when confirmed.
 
 | Member | Course role | Ownership |
 | --- | --- | --- |
-| Project owner (you) | DevOps Engineer (exactly one) | CI/CD, environments/secrets, quality gates, metrics, releases/rollback; additional full-stack development |
-| Pending team roster | Developer(s) | Frontend, backend/API, database and AI features; divide areas among named developers |
+| Ikeee-AI | DevOps Engineer (exactly one); full-stack contributor | CI/CD, environments/secrets, quality gates, metrics, releases/rollback; frontend and full-stack development |
+| Manuel Mirasol (`s2302827-byte`) | Developer | Backend/API, database and AI |
 
-Sprint 1 product owner: pending team confirmation. Every member reviews another teammate's PRs. Record any approved mid-project role change in the sprint log and notify the instructor.
+Sprint 1 product owner: **Ikeee-AI**, confirmed by the project owner on 12 October 2026. The product owner prioritizes the board and reports progress at consultation. Every member reviews another teammate's PRs. Record any approved mid-project role change in the sprint log and notify the instructor.
 
 ## Sprint 1 status
 
-The private [GitHub repository](https://github.com/Ikeee-AI/TekaTech), [Sprint 1 PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15), and [13 backlog issues](https://github.com/Ikeee-AI/TekaTech/issues) are live. The source branch is `tekatech/sprint-1`; GitHub closed the original PR #1 when its branch was renamed. Commit history is preserved. Sprint 1 is **not done under the course Definition of Done** without another teammate's review, declared team roles and verified pipeline deployment evidence.
+The private [GitHub repository](https://github.com/Ikeee-AI/TekaTech), merged [Sprint 1 PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15), and [13 backlog issues](https://github.com/Ikeee-AI/TekaTech/issues) are live. The source branch is `tekatech/sprint-1`; GitHub closed the original PR #1 when its branch was renamed. Commit history is preserved. The private [TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) contains all 13 issues. Sprint 1 still needs actual teammate review and genuine team process entries under the course Definition of Done. See the [team review guide](docs/team-review.md).
 
 - Frontend production build and lint pass locally.
 - Backend: 77 mocked tests pass, including save/index failure, authorization and local-provider output validation.
 - Tracked SQL passes fresh/replay and legacy-overload acceptance checks, with vector in either public or extensions. The existing Supabase project is ACTIVE_HEALTHY; all five table reads and the vector RPC now pass using the backend configuration.
 - PR CI passes backend tests, frontend lint/build and real Postgres/pgvector migration acceptance. [Latest code check before hosting evidence](https://github.com/Ikeee-AI/TekaTech/actions/runs/38172679951) passed at `a9d9bc3`.
-- Main branch protection is unavailable for this private repository on its current plan (GitHub returned 403 requiring Pro or public visibility). The project board requires a GitHub browser sign-in or connection with Projects access. Both remain pending. The owner requested a merge after passing checks; that authorization does not count as another teammate's review.
-- [Public frontend](https://tekatech-web.onrender.com) and [API health](https://tekatech-api.onrender.com/health) are live on free Render services. The browser catalog displays the existing Rog Ally through the API and Supabase. Version, database read and production CORS checks passed. See [provisioning evidence](docs/evidence/render-provisioning.json); initial provisioning is separate from pipeline-triggered deployment.
+- Main branch protection is unavailable for this private repository on its current plan (GitHub returned 403 requiring Pro or public visibility). Follow the review/check gates manually. The owner requested PR #15's merge after passing checks; that authorization does not count as another teammate's review.
+- [Public frontend](https://tekatech-web.onrender.com) and [API health](https://tekatech-api.onrender.com/health) are live on free Render services. Successful [main pipeline 38174257006](https://github.com/Ikeee-AI/TekaTech/actions/runs/38174257006) deployed merge commit `53f62e9` to both services. Exact version, database read, production CORS and direct `/login` checks passed. See [main deployment evidence](docs/evidence/sprint1-main-deployment.json); initial provisioning is recorded separately.
 - Supabase migrations are applied and verified; existing query history remains intact. An obsolete vector RPC overload was reconciled. See [database evidence](docs/evidence/supabase-sprint-1.json).
 - Temporary Sprint 1 AI connectivity: a real backend call to local Ollama `qwen3:8b` succeeded and its JSON output was validated. [Evidence](docs/evidence/local-llm-sprint-1.json). This verifies the local provider, not the full RAG feature. The application's OpenAI embedding/chat path still has the `credit_balance_exhausted` blocker.
 

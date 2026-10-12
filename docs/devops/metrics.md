@@ -26,3 +26,9 @@ Measurement rules:
 [PR run 38172679951](https://github.com/Ikeee-AI/TekaTech/actions/runs/38172679951), commit `a9d9bc39887b91154e4d096f0b8afddc09db58ae`, PR #15: successful; started `2026-10-11T20:33:02Z`, finished `2026-10-11T20:33:46Z`, 44 seconds (0.73 minutes). This is another observed run, not a complete weekly average or a measured optimization.
 
 Initial free Render provisioning: frontend deploy `dep-db5v715ckfvc73biiuf0` took about 16 seconds (`20:37:24Z` to `20:37:40Z`). API provisioning took about 76 seconds (`20:37:09Z` to `20:38:25Z`), followed by a CORS-configuration deployment completed at `20:39:37Z`. Public smoke passed at `20:42:36Z`, all on 11 October 2026 UTC / 12 October locally. These were setup deployments before a merge; they do not establish main-pipeline duration or merge-to-live lead time. Record the eventual main workflow separately.
+
+## First main deployment: 12 October 2026 local time
+
+[Main run 38174257006](https://github.com/Ikeee-AI/TekaTech/actions/runs/38174257006) succeeded at merge commit `53f62e994e1431171608c999694b0206a0984dfb`. Merge: `2026-10-11T20:55:55Z`; workflow: `20:55:57Z` to `20:57:49Z`, **112 seconds (1.87 minutes)**. API deployment `dep-db5vg1bbc2fs73a956pg` finished at `20:57:39.692752Z`; frontend `dep-db5vg1nlk1mc73bcmb70` finished at `20:56:55.270767Z`. Both were live **104.692 seconds (1.74 minutes)** after merge.
+
+This is one observed main release with two successful service deployments and no failed service deployments in that release. It is not a complete weekly average or optimization comparison. Post-deploy smoke passed exact SHA, API health, one real gadget, frontend CORS and direct `/login`; see [safe evidence](../evidence/sprint1-main-deployment.json). Rollback/recovery has not been exercised.
