@@ -1,29 +1,29 @@
 # Sprint 1: foundation and walking skeleton
 
-Plan recorded: 12 October 2026. Source: course Sprint 1 checklist and project requirements supplied by the team. DevOps Engineer: project owner (you), also doing full-stack development. Remaining developer roster and named product owner: pending.
+Plan recorded: 12 October 2026. Source: course Sprint 1 checklist and project requirements supplied by the team. DevOps Engineer and Sprint 1 product owner: Ikeee-AI, also doing full-stack/frontend work. Developer: Manuel Mirasol (`s2302827-byte`), owning backend, database and AI. These are the two members declared so far.
 
 ## Consultation readiness
 
 | Requirement | Evidence currently available | Remaining acceptance |
 | --- | --- | --- |
-| Repository/README/branch strategy/ignore/env examples | Private GitHub repository, pushed feature branch and ready-for-review PR #15 | Another teammate review and merge |
-| Roles and backlog | Project owner declared as the single DevOps Engineer, with full-stack contribution; 13 hosted issues covering all seven requirements; four DevOps items assigned to Ikeee-AI | Other developers named/assigned; project board created |
-| Schema migrated | Two registered migrations on the existing ACTIVE_HEALTHY Supabase project; all five table checks and the retrieval RPC pass | Teammate review, merge and public deployment acceptance |
-| Frontend -> API -> database | Public browser catalog displays the existing Rog Ally through real FastAPI/Supabase; deployed version and CORS checks pass | Pipeline-triggered deployment acceptance after merge |
+| Repository/README/branch strategy/ignore/env examples | Private GitHub repository, pushed feature branch and merged PR #15 | Owner-directed merge lacked another teammate review; follow-up PR awaits real review |
+| Roles and backlog | Ikeee-AI is the single DevOps Engineer and product owner; Manuel is a Developer for backend/database/AI; private board contains 13 issues; #5/7/9/10/11/13 assigned to Ikeee-AI | Collaborator access and Manuel's GitHub assignments pending |
+| Schema migrated | Two registered migrations on the existing ACTIVE_HEALTHY Supabase project; all five table checks and the retrieval RPC pass | Broader relationship feature acceptance and real teammate review |
+| Frontend -> API -> database | Public browser catalog displays the existing Rog Ally through real FastAPI/Supabase; deployed version and CORS checks pass | Broader UI/API acceptance in later sprints |
 | CI on every PR | First GitHub PR run passed all three jobs (40 seconds) | Required statuses/review protection unavailable on current private-repo plan |
-| Pipeline-triggered live deployment | Free Render API and frontend provisioned; live catalog and read-only deployment smoke pass | Deploy hooks configured in GitHub; passing main pipeline deploying its exact commit |
+| Pipeline-triggered live deployment | Main pipeline 38174257006 succeeded and deployed exact merge commit 53f62e9 to both services; live smoke passed | Real teammate review remains pending |
 | One backend AI test | Temporary local Ollama `qwen3:8b` call passed; backend validated JSON | Application RAG remains OpenAI-backed and credit-blocked; public AI acceptance is separate |
 
-Nothing is counted Done yet under the course Definition of Done. Hosted PR CI and public provisioning checks pass. Another teammate's review and declared developer roster are still missing. The owner requested a merge after checks and deployment configuration; owner authorization does not count as teammate review.
+Nothing is counted Done yet under the course Definition of Done. Hosted PR CI and public provisioning checks pass. The initial merge lacks another teammate's review. The two known members and product owner are now declared; collaborator access and remaining assignments are pending. The owner requested a merge after checks and deployment configuration; owner authorization does not count as teammate review.
 
 ## GitHub evidence on 12 October 2026
 
-- Repository: [Ikeee-AI/TekaTech](https://github.com/Ikeee-AI/TekaTech), private. Main is the empty bootstrap; application code is on `tekatech/sprint-1`.
-- [Ready-for-review PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15): unmerged, teammate review pending. Original [PR #1](https://github.com/Ikeee-AI/TekaTech/pull/1) was closed by GitHub when its source branch was renamed; commits were preserved.
+- Repository: [Ikeee-AI/TekaTech](https://github.com/Ikeee-AI/TekaTech), private. Main contains application code at merge commit `53f62e994e1431171608c999694b0206a0984dfb`.
+- [Merged PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15): merged at the owner's request without another teammate approval; that historical exception remains documented. Original [PR #1](https://github.com/Ikeee-AI/TekaTech/pull/1) was closed by GitHub when its source branch was renamed; commits were preserved.
 - [Initial CI run](https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464): success at `b82e068499a5920821842b52c67e5fd70d20673b`. Backend, frontend and database passed; PR deployment skipped by design.
-- [13 issues](https://github.com/Ikeee-AI/TekaTech/issues), #2-14, open. DevOps items #7/10/11/13 assigned to Ikeee-AI.
+- [13 issues](https://github.com/Ikeee-AI/TekaTech/issues), #2-14, open. Frontend/product-owner/DevOps items #5/7/9/10/11/13 assigned to Ikeee-AI; Manuel assignments wait for repository access.
 - Branch protection: GitHub returned 403 requiring Pro or public visibility for this repository. No upgrade or visibility change made.
-- Project board: current Git sign-in lacks Projects scope; in-app browser is signed out. Board creation pending.
+- Project board: private [TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) created and linked to TekaTech, containing all 13 existing issues.
 - Machine-readable initial evidence: [github-sprint-1.json](evidence/github-sprint-1.json).
 
 ## Local verification on 12 October 2026
@@ -40,11 +40,11 @@ Machine-readable local provider/database evidence: ignored `.local/sprint1-live-
 
 ## Planned review/demo
 
-Next: complete deploy-hook configuration and verify the main pipeline's exact deployed commit; create the board, finish team assignments and obtain teammate review. Bring the live URL, board, reviewed PR, CI run, commit and updated metrics to the 15-minute consultation.
+Next: follow [team-review.md](team-review.md) to invite Manuel, assign his issues and obtain his real review of the follow-up documentation PR. After its reviewed merge, verify the new main deployment. Bring the live URL, board, reviewed PR, CI run, commit and updated metrics to the 15-minute consultation.
 
 ## Temporary provider and branch adjustment
 
-On 12 October 2026 the project owner requested the project-named `tekatech/sprint-1` branch and authorized free public Render hosting. The branch was renamed without rewriting commits. GitHub automatically closed #1; replacement #15 was made ready for review. Remaining teammates have no declared roles yet; none were fabricated. Both Render services are now live. Deploy hooks and teammate review remain separate outstanding items.
+On 12 October 2026 the project owner requested the project-named `tekatech/sprint-1` branch and authorized free public Render hosting. The branch was renamed without rewriting commits. GitHub automatically closed #1; replacement #15 was made ready for review. The initial roster was pending; the owner later declared Manuel and selected Ikeee-AI as product owner. Both Render services are now live. Deploy hooks are configured and the main pipeline passed; teammate review remains outstanding.
 
 ## Render provisioning snapshot: 12 October 2026
 

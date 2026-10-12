@@ -1,0 +1,90 @@
+{
+  "checked_at": "2026-10-11T20:58:28.653789+00:00",
+  "timezone": "Asia/Singapore",
+  "repository": "https://github.com/Ikeee-AI/TekaTech",
+  "source_branch": "tekatech/sprint-1",
+  "pull_request": {
+    "url": "https://github.com/Ikeee-AI/TekaTech/pull/15",
+    "merged": true,
+    "merged_at": "2026-10-11T20:55:55Z",
+    "commit": "53f62e994e1431171608c999694b0206a0984dfb",
+    "other_teammate_reviews": 0,
+    "authorization": "Owner explicitly requested merge after checks; course teammate-review requirement remains pending"
+  },
+  "pipeline": {
+    "id": 38174257006,
+    "url": "https://github.com/Ikeee-AI/TekaTech/actions/runs/38174257006",
+    "status": "completed",
+    "conclusion": "success",
+    "started_at": "2026-10-11T20:55:57Z",
+    "completed_at": "2026-10-11T20:57:49Z",
+    "duration_seconds": 112
+  },
+  "services": [
+    {
+      "id": "srv-db5v6sijnfac73brl4mg",
+      "url": "https://tekatech-api.onrender.com",
+      "plan": "free",
+      "deploy_id": "dep-db5vg1bbc2fs73a956pg",
+      "status": "live",
+      "commit": "53f62e994e1431171608c999694b0206a0984dfb",
+      "started_at": "2026-10-11T20:56:37.987529Z",
+      "finished_at": "2026-10-11T20:57:39.692752Z",
+      "health_check_path": "/health"
+    },
+    {
+      "id": "srv-db5v70tckfvc73biitc0",
+      "url": "https://tekatech-web.onrender.com",
+      "type": "static_site",
+      "deploy_id": "dep-db5vg1nlk1mc73bcmb70",
+      "status": "live",
+      "commit": "53f62e994e1431171608c999694b0206a0984dfb",
+      "started_at": "2026-10-11T20:56:38.511046Z",
+      "finished_at": "2026-10-11T20:56:55.270767Z",
+      "spa_rewrite": {
+        "source": "/*",
+        "destination": "/index.html",
+        "type": "rewrite"
+      }
+    }
+  ],
+  "both_live_seconds_after_merge": 104.692,
+  "public_verification": {
+    "status": "passed",
+    "gadget_count": 1,
+    "cors": "passed",
+    "exact_commit": "53f62e994e1431171608c999694b0206a0984dfb",
+    "direct_login_http_status": 200
+  },
+  "remaining_course_items": [
+    "Manuel collaborator invitation acceptance and GitHub ownership assignments",
+    "Real teammate review of the follow-up PR before merge",
+    "Genuine team standups and consultation retrospective when held"
+  ],
+  "ai_scope": "Local Ollama backend connectivity probe passed; application RAG remains OpenAI-backed and credit-blocked; local model is not hosted on Render",
+  "team_declared_on": "2026-10-12",
+  "product_owner": "Ikeee-AI",
+  "team": [
+    {
+      "github": "Ikeee-AI",
+      "role": "DevOps Engineer",
+      "additional_work": "full-stack/frontend"
+    },
+    {
+      "name": "Manuel Mirasol",
+      "github": "s2302827-byte",
+      "role": "Developer",
+      "ownership": [
+        "backend",
+        "database",
+        "AI"
+      ],
+      "repository_access": "pending invitation acceptance"
+    }
+  ],
+  "project_board": {
+    "url": "https://github.com/users/Ikeee-AI/projects/1",
+    "visibility": "private",
+    "existing_issues_imported": 13
+  }
+}

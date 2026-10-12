@@ -3,7 +3,7 @@
   "visibility": "private",
   "branch": "tekatech/sprint-1",
   "pull_request": "https://github.com/Ikeee-AI/TekaTech/pull/15",
-  "pull_request_status": "ready for review; unmerged; teammate review pending",
+  "pull_request_status": "merged at owner request; no other teammate approval before merge",
   "initial_ci": {
     "run_id": 38167468464,
     "url": "https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464",
@@ -66,7 +66,9 @@
       "title": "[TTK-04] Functional frontend wired to backend",
       "url": "https://github.com/Ikeee-AI/TekaTech/issues/5",
       "state": "open",
-      "assignees": []
+      "assignees": [
+        "Ikeee-AI"
+      ]
     },
     {
       "number": 6,
@@ -96,7 +98,9 @@
       "title": "[TTK-08] Declare roles and prioritize Sprint 1",
       "url": "https://github.com/Ikeee-AI/TekaTech/issues/9",
       "state": "open",
-      "assignees": []
+      "assignees": [
+        "Ikeee-AI"
+      ]
     },
     {
       "number": 10,
@@ -146,15 +150,48 @@
     "reason": "GitHub requires Pro or public visibility to enable this feature for this repository. Visibility was not changed and no upgrade was purchased."
   },
   "project_board": {
-    "status": "not created",
-    "reason": "Current Git sign-in lacks Projects scope and the in-app browser is signed out."
+    "url": "https://github.com/users/Ikeee-AI/projects/1",
+    "visibility": "private",
+    "existing_issues_imported": 13
   },
   "deployment": {
-    "status": "not configured; no production deployment from this PR"
+    "status": "main pipeline deployed exact merge commit to both Render services; smoke passed",
+    "evidence": "sprint1-main-deployment.json"
   },
   "superseded_pull_request": {
     "url": "https://github.com/Ikeee-AI/TekaTech/pull/1",
     "state": "closed by GitHub branch rename; not merged",
     "original_branch": "codex/sprint-1"
-  }
+  },
+  "current_main": "53f62e994e1431171608c999694b0206a0984dfb",
+  "main_pipeline": {
+    "id": 38174257006,
+    "url": "https://github.com/Ikeee-AI/TekaTech/actions/runs/38174257006",
+    "status": "completed",
+    "conclusion": "success",
+    "started_at": "2026-10-11T20:55:57Z",
+    "completed_at": "2026-10-11T20:57:49Z",
+    "duration_seconds": 112
+  },
+  "team": [
+    {
+      "github": "Ikeee-AI",
+      "role": "DevOps Engineer",
+      "additional_work": "full-stack/frontend"
+    },
+    {
+      "name": "Manuel Mirasol",
+      "github": "s2302827-byte",
+      "role": "Developer",
+      "ownership": [
+        "backend",
+        "database",
+        "AI"
+      ],
+      "repository_access": "pending invitation acceptance"
+    }
+  ],
+  "product_owner": "Ikeee-AI",
+  "snapshot_date": "2026-10-12",
+  "deployment_evidence": "sprint1-main-deployment.json"
 }
