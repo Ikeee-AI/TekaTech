@@ -10,6 +10,7 @@ The project owner, **Ikeee-AI**, is the **one DevOps Engineer** and also contrib
 | --- | --- | --- |
 | Ikeee-AI | DevOps Engineer (exactly one); full-stack contributor | CI/CD, environments/secrets, quality gates, metrics, releases/rollback; frontend and full-stack development |
 | Manuel Mirasol (`s2302827-byte`) | Developer | Backend/API, database and AI |
+| Adrian Flores (`s2302756-cloud`) | AI Developer | Prompt/answer spec, grounded citations, source pack, eval questions, scoring runner |
 
 Sprint 1 product owner: **Ikeee-AI**, confirmed by the project owner on 12 October 2026. The product owner prioritizes the board and reports progress at consultation. Every member reviews another teammate's PRs. Record any approved mid-project role change in the sprint log and notify the instructor.
 
