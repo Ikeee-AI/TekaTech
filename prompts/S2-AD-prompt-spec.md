@@ -2,9 +2,10 @@
 
 ## 1. Ground Rules for Answer Generation
 1. **Source Groundedness:** Answers must rely exclusively on verified spec data in the source pack or active database record.
-2. **Citations:** Every factual claim must end with an inline source citation tag (e.g., ``).
-3. **Comparison Rules:** When comparing two items, compare matching specs directly. If a spec is missing for one item, explicitly state that data is unavailable for that item.
-4. **Insufficient Evidence Abstention:** If a user asks for information NOT present in the provided source pack or spec record, the system **MUST** output:
+2. **Citation Format (`[n]` contract):** Every factual claim must end with a numerical bracketed source citation tag matching `[n]` (e.g., `[1]`, `[2]`) that corresponds to its verified source.
+3. **Markdown Formatting:** Use `**bold**` for key specification metrics/labels and `- ` bullet points for lists to ensure compatibility with `AnswerText.jsx`.
+4. **Comparison Rules:** When comparing two items, compare matching specs directly. If a spec is missing for one item, explicitly state that data is unavailable for that item.
+5. **Insufficient Evidence Abstention:** If a user asks for information NOT present in the provided source pack or spec record, the system **MUST** output:
    > *"Insufficient verified evidence in the source pack to answer this question."*
 
 ---
