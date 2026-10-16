@@ -8,7 +8,7 @@ Every pull request runs all three independent quality jobs. Pushes to main run t
 
 | Job | Stages | Purpose |
 | --- | --- | --- |
-| Backend tests | tracked-file secret scan; workflow lint (actionlint 1.7.12, checksum-verified, with the runner's shellcheck); uv dependency install from lock; source compile; pytest; app import check | Reject leaked credentials and broken workflow syntax/expressions/shell first (cheap checks fail fast), then verify API logic, authorization, input limits and AI behavior using fakes/mocks |
+| Backend tests | tracked-file secret scan; full-history secret scan (gitleaks 8.30.1, checksum-verified, redacted, all branches); workflow lint (actionlint 1.7.12, checksum-verified, with the runner's shellcheck); uv dependency install from lock; source compile; pytest; app import check | Reject leaked credentials and broken workflow syntax/expressions/shell first (cheap checks fail fast), then verify API logic, authorization, input limits and AI behavior using fakes/mocks |
 | Frontend lint and build | cached Node/npm install; ESLint; Vite production build; short-lived build artifact | Reject invalid code and prove the UI compiles |
 | Database migrations | scratch pgvector/Postgres; roles; apply SQL twice; reconcile legacy RPC; verify vector in public; transactional acceptance checks | Prove reproducible setup, replay safety, retrieval, relationships and access grants without touching production |
 | Deploy main after checks | gated on all three jobs; POST both secret Render hooks for the tested SHA; poll public deployment smoke checks | Deploy only checked main commits; production secrets are injected by the host |
