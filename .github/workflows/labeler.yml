@@ -1,0 +1,19 @@
+name: Label PR by owner area
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    name: Owner-area labels
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/labeler@v7
+        with:
+          sync-labels: true  # remove an area label when its files leave the PR
