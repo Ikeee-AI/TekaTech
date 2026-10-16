@@ -1,7 +1,7 @@
 # TTK-03: Backend owns database and AI logic
 
 Target: Sprint 1-2
-Ownership area: Developer: backend. Named assignee: pending team declaration.
+Ownership area: Developer: backend. GitHub assignee (16 Oct 2026): Manuel Mirasol (`s2302827-byte`). Sprint 2–5 work-package owners: see `docs/sprints-2-to-5.md`.
 
 ## Acceptance criteria
 

@@ -1,7 +1,7 @@
 # TTK-13: Release documentation and Demo Day
 
 Target: Sprint 4
-Ownership area: Whole team. Named assignee: pending team declaration.
+Ownership area: Whole team. GitHub assignee (16 Oct 2026): none yet (team, later sprint planning). Sprint 2–5 work-package owners: see `docs/sprints-2-to-5.md`.
 
 ## Acceptance criteria
 

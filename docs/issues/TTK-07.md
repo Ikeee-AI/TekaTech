@@ -1,7 +1,7 @@
 # TTK-07: Graceful AI and request errors
 
 Target: Sprint 3-4
-Ownership area: Developer: AI/backend/frontend. Named assignee: pending team declaration.
+Ownership area: Developer: AI/backend/frontend. GitHub assignee (16 Oct 2026): Manuel Mirasol (`s2302827-byte`). Sprint 2–5 work-package owners: see `docs/sprints-2-to-5.md`.
 
 ## Acceptance criteria
 

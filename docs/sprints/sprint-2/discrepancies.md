@@ -1,0 +1,14 @@
+# Sprint 2 discrepancies register
+
+Maintained by the `documenter` agent and the `log-work` skill. Keep fixed rows; update status instead of deleting.
+
+| ID | Found (date) | File:line | Claim | Reality + evidence | Owner | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| D1 | 2026-10-16 | README.md:7, docs/sprint-1.md:3, docs/team-review.md:3, docs/backlog.md:5 | Two declared members | Five-person roster in `docs/sprints-2-to-5.md` and `docs/claude-handoff.md` supersedes | Ikeee-AI | fixed 2026-10-16 (branch tekatech/docs-sprint2-sync) |
+| D2 | 2026-10-16 | docs/devops/incidents.md:3 | "The application is not deployed" | Main runs 38174257006 and 38238577447 deployed `53f62e9` and `68b4c5a`; smoke passed 2026-10-16T06:51:54Z | Ikeee-AI | fixed 2026-10-16 (branch tekatech/docs-sprint2-sync) |
+| D3 | 2026-10-16 | docs/issues/TTK-01.md…TTK-13.md (line 4) | "Named assignee: pending team declaration" | Assignments recorded in docs/backlog.md:5 and docs/team-review.md:9-13 | Ikeee-AI | fixed 2026-10-16 (branch tekatech/docs-sprint2-sync) |
+| D4 | 2026-10-16 | docs/issues/TTK-06.md:10 | Production config via GitHub environment secrets | Private repo on GitHub Free uses repository secrets (PIPELINE.md:36, ci.yml:125-126) | Ikeee-AI | fixed 2026-10-16 (branch tekatech/docs-sprint2-sync) |
+| D5 | 2026-10-16 | README.md:21, docs/sprint-1.md:31 | "77 mocked tests pass" | 97 passed locally on 2026-10-16 (historical count, not wrong for its date); 79 after Ollama local mode was removed | Ikeee-AI | accepted (historical) |
+| D6 | 2026-10-16 | docs/sprint-1.md:9-17, docs/team-review.md:28 | Real teammate review still pending | PR #16 was APPROVED by `s2302827-byte` (Manuel) before its merge on 2026-10-12 (`gh pr list` reviews) | Ikeee-AI | fixed 2026-10-16 (branch tekatech/docs-sprint2-sync) |
+| D7 | 2026-10-16 | docs/claude-handoff.md, docs/sprints-2-to-5.md, docs/devops/free-automation-tools.md (Ollama/provider rule lines) | Ollama is an optional local development path to preserve | Owner dropped Ollama local mode on 2026-10-16; only the historical Sprint 1 probe remains | Ikeee-AI | fixed 2026-10-16 (branch tekatech/docs-sprint2-sync) |
+| D8 | 2026-10-16 | README.md:7-12 vs repo collaborators | Members not yet confirmed | Write access: `s2302827-byte`, `s2100932`; invites pending: `meka-moka`, `s2302756-cloud` (sent 2026-10-16 14:32 Manila). Mapping confirmed by Ikeee-AI 2026-10-16: `s2302756-cloud` = Adrian, `meka-moka` = Mika, `s2100932` = Jopher | Ikeee-AI | fixed 2026-10-16 (branch tekatech/docs-sprint2-sync) |

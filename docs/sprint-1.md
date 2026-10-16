@@ -1,5 +1,7 @@
 # Sprint 1: foundation and walking skeleton
 
+> **Update, 16 October 2026:** the follow-up documentation PR [#16](https://github.com/Ikeee-AI/TekaTech/pull/16) was **approved by Manuel (`s2302827-byte`) on 2026-10-12 05:02 UTC** and merged at 10:47 UTC; [main run 38238577447](https://github.com/Ikeee-AI/TekaTech/actions/runs/38238577447) deployed `68b4c5a`. PR #15 remains an unreviewed owner-directed merge. The team is now five people (see README and `docs/sprints-2-to-5.md`). The record below is kept as written for Sprint 1.
+
 Plan recorded: 12 October 2026. Source: course Sprint 1 checklist and project requirements supplied by the team. DevOps Engineer and Sprint 1 product owner: Ikeee-AI, also doing full-stack/frontend work. Developer: Manuel Mirasol (`s2302827-byte`), owning backend, database and AI. These are the two members declared so far.
 
 ## Consultation readiness

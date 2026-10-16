@@ -1,7 +1,7 @@
 # TTK-01: CRUD on a real database
 
 Target: Sprint 2
-Ownership area: Developer: backend/full stack. Named assignee: pending team declaration.
+Ownership area: Developer: backend/full stack. GitHub assignee (16 Oct 2026): Manuel Mirasol (`s2302827-byte`). Sprint 2–5 work-package owners: see `docs/sprints-2-to-5.md`.
 
 ## Acceptance criteria
 

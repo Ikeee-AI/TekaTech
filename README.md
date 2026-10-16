@@ -4,14 +4,17 @@ An AI subject project that helps shoppers understand and compare gadget specific
 
 ## Team and responsibilities
 
-The project owner, **Ikeee-AI**, is the **one DevOps Engineer** and also contributes full-stack application code, as allowed by the course. Every other team member is a Developer. These are the two members declared so far; record any additional teammates when confirmed.
+The project owner, **Ikeee-AI**, is the **one DevOps Engineer**. Every other team member is a Developer with the specialty below. Full ownership boundaries, the Sprint 2–5 work packages and the review table are in [docs/sprints-2-to-5.md](docs/sprints-2-to-5.md). This five-person roster replaces the two-member Sprint 1 roster.
 
 | Member | Course role | Ownership |
 | --- | --- | --- |
-| Ikeee-AI | DevOps Engineer (exactly one); full-stack contributor | CI/CD, environments/secrets, quality gates, metrics, releases/rollback; frontend and full-stack development |
-| Manuel Mirasol (`s2302827-byte`) | Developer | Backend/API, database and AI |
+| Ikeee-AI (`Ikeee-AI`) | DevOps Engineer (exactly one); planned weekly product owner | CI/CD, hosting, environments/secrets, quality gates, metrics, release/rollback, incidents, board coordination |
+| Adrian (`s2302756-cloud`) | Developer — AI Developer | Versioned prompts, grounding/citation behavior, evaluation datasets and evaluator |
+| Mika (`meka-moka`) | Developer — Frontend Engineer | Layouts, responsive styling, accessibility, visual components, citation rendering, slide deck |
+| Manuel Mirasol (`s2302827-byte`) | Developer — Backend / AI Engineer | API contracts, auth, schema/migrations, provider adapters, retrieval/indexing, output validation |
+| Jopher (`s2100932`) | Developer — Backend / Frontend Developer | Feature endpoints and workflows, API wiring, forms/state, integration tests, local seed |
 
-Sprint 1 product owner: **Ikeee-AI**, confirmed by the project owner on 12 October 2026. The product owner prioritizes the board and reports progress at consultation. Every member reviews another teammate's PRs. Record any approved mid-project role change in the sprint log and notify the instructor.
+Repository access on 16 October 2026: Manuel and Jopher have write access; Adrian's and Mika's invitations were sent that day. Sprint 1 product owner: **Ikeee-AI**, confirmed by the project owner on 12 October 2026. The product owner prioritizes the board and reports progress at consultation. Every member reviews another teammate's PRs. Record any approved mid-project role change in the sprint log and notify the instructor.
 
 ## Sprint 1 status
 

@@ -1,5 +1,16 @@
 # CLAUDE.md
 
+## Current team and DevOps handoff
+
+Use the Desktop checkout at `C:\Users\ivana\Desktop\TekaTech`, as selected by the user. Do not switch to the old Documents/Codex project copy.
+
+Read the current project handoff:
+@docs/claude-handoff.md
+
+The current five-person ownership and Sprint 2–5 plan are documented in `docs/sprints-2-to-5.md`; free DevOps tools and Claude/Render integration options are in `docs/devops/free-automation-tools.md`. These current assignments supersede the older two-member roster in README. OpenAI is the app's only AI provider: the optional Ollama local mode was dropped by the project owner on 16 October 2026 (the Sprint 1 Ollama connectivity probe in `scripts/sprint1_check.py` remains as historical TTK-11 evidence). Use `uv sync --frozen` and `npm ci` for reproducible dependency installation; do not overwrite existing environment files.
+
+The technical guidance below is preserved from the existing CLAUDE.md.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Commands
@@ -89,3 +100,4 @@ Tests never make real Supabase or OpenAI calls. Mock OpenAI with `unittest.mock.
 - Both halves need matching config to talk to each other: the frontend's `VITE_API_BASE_URL` must point at the backend, and that frontend's own origin must appear in the backend's `cors_origins`. Vite inlines env vars **at build time**, so changing `VITE_*` requires a dev-server restart or rebuild — it is not read at runtime.
 - The backend's allowed CORS origin comes from `cors_origins` in its `.env` (comma-separated, defaults to `http://localhost:5173`). If Vite starts on a different port because 5173 is taken, requests fail CORS until that origin is added.
 - A paused Supabase project surfaces as DNS failure then Cloudflare 521, and takes a few minutes to fully wake after resuming — not an app bug.
+

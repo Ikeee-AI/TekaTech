@@ -1,7 +1,7 @@
 # TTK-11: One real backend AI-provider connectivity test
 
 Target: Sprint 1
-Ownership area: Developer: AI. Named assignee: pending team declaration.
+Ownership area: Developer: AI. GitHub assignee (16 Oct 2026): Manuel Mirasol (`s2302827-byte`). Sprint 2–5 work-package owners: see `docs/sprints-2-to-5.md`.
 
 ## Acceptance criteria
 
