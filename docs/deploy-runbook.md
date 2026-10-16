@@ -49,8 +49,12 @@ Preferred code rollback preserves the reviewed history:
 4. Open a PR, get another teammate review and passing checks, then merge. The pipeline deploys the reverted main state.
 5. Check `/health`, `/gadgets`, frontend/API wiring and affected behavior. Record time to recover and an incident postmortem.
 
-For an urgent outage, the DevOps Engineer may redeploy the last known good commit through Render's deploy controls. Immediately reconcile main with a reviewed revert PR so automatic deployment does not restore the broken code. Record the emergency action. Never roll schema backward by dropping tables; inspect compatibility and restore data from backups only with explicit team approval.
+For an urgent outage, the DevOps Engineer may redeploy the last known good commit. Preferred: **Actions → Rollback production → Run workflow** with the full 40-character SHA and the reason (incident issue). The workflow (`.github/workflows/rollback.yml`) refuses commits that are not on main or lack successful `Backend tests`, `Frontend lint and build` and `Database migrations` checks, triggers both Render hooks for that exact SHA, and runs the same smoke checks as a release; its summary and artifact are the recovery evidence. Fallback: Render's deploy controls. Immediately reconcile main with a reviewed revert PR so automatic deployment does not restore the broken code. Record the emergency action. Never roll schema backward by dropping tables; inspect compatibility and restore data from backups only with explicit team approval.
 
-Rollback rehearsal status: NOT RUN. A written runbook is not evidence of a tested rollback.
+Rollback rehearsal status: NOT RUN. A written runbook or workflow is not evidence of a tested rollback; rehearse it in Sprint 4 and record the elapsed recovery time.
+
+## Release tagging
+
+After the release candidate is merged and verified live, push a version tag on that main commit (for example `git tag v1.0.0 <sha>` then `git push origin v1.0.0`). `.github/workflows/release.yml` refuses tags not on main and creates a GitHub Release with notes generated from merged PRs. Add known limitations and migration notes to the release before announcing it. Tagging does not deploy.
 
 References: [Render Blueprint](https://render.com/docs/blueprint-spec), [deploy hooks and exact commit deployment](https://render.com/docs/deploy-hooks).

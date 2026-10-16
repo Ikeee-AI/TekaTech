@@ -1,0 +1,89 @@
+name: Rollback production
+
+# Emergency redeploy of a known-good main commit to both Render services,
+# followed by the same smoke checks as a normal release. Afterwards main must
+# be reconciled with a reviewed revert PR (docs/deploy-runbook.md), otherwise
+# the next merge redeploys the broken code.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full 40-character commit SHA on main to restore
+        required: true
+        type: string
+      reason:
+        description: Why (incident issue number or short description)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: production-rollback
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: Redeploy known-good commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SHA: ${{ inputs.sha }}
+      REASON: ${{ inputs.reason }}
+      BACKEND_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
+      FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
+      API_URL: ${{ vars.PRODUCTION_API_URL }}
+      FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Verify the target is a checked commit on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Provide the full 40-character lowercase commit SHA."; exit 1
+          fi
+          if ! git merge-base --is-ancestor "$SHA" origin/main; then
+            echo "::error::$SHA is not on main. Only previously merged commits can be restored."; exit 1
+          fi
+          for check in "Backend tests" "Frontend lint and build" "Database migrations"; do
+            conclusion=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs?check_name=$(jq -rn --arg c "$check" '$c|@uri')" --jq '[.check_runs[].conclusion] | map(select(. == "success")) | length')
+            if [[ "$conclusion" -lt 1 ]]; then
+              echo "::error::$SHA has no successful '$check' check run; refusing to deploy it."; exit 1
+            fi
+          done
+          if [[ -z "$BACKEND_HOOK" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
+            echo "::error::Deploy hooks or production URL variables are not configured."; exit 1
+          fi
+      - name: Trigger Render deployments of the target commit
+        run: |
+          curl --fail --silent --show-error --request POST "$BACKEND_HOOK&ref=$SHA" > /dev/null
+          curl --fail --silent --show-error --request POST "$FRONTEND_HOOK&ref=$SHA" > /dev/null
+      - name: Verify live commit, database path and CORS
+        run: |
+          python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" \
+            --commit "$SHA" --attempts 30 --delay 10 --report /tmp/rollback-smoke.json
+      - name: Summarize and remind
+        if: always()
+        run: |
+          {
+            echo "### Rollback to \`$SHA\`"
+            echo "Reason: $REASON · started by @$GITHUB_ACTOR · $(date -u +%Y-%m-%dT%H:%MZ)"
+            echo '```json'; cat /tmp/rollback-smoke.json 2>/dev/null || echo '{"status": "no report"}'; echo '```'
+            echo "**Next:** open a reviewed revert PR so main matches production, and record detection/recovery times in docs/devops/incidents.md."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rollback-smoke-${{ inputs.sha }}
+          path: /tmp/rollback-smoke.json
+          if-no-files-found: ignore
+          retention-days: 30

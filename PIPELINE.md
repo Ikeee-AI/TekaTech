@@ -39,6 +39,13 @@ Protect main: one other teammate review, dismiss stale approvals, required `Back
 
 Dependency caching and parallel jobs are enabled. Older PR runs on the same ref are cancelled for fast feedback. Main runs are serialized and not cancelled in progress; if several merges queue up, GitHub concurrency keeps the latest pending run. This coalesces superseded pending commits while ensuring the latest main state reaches production. Record that behavior when measuring throughput. Use separate staging credentials before adding preview deployments; never point previews at writable production data by accident.
 
+## Manual release workflows
+
+| Workflow | Trigger | Purpose |
+| --- | --- | --- |
+| `rollback.yml` — Rollback production | Actions tab, inputs: full SHA + reason | Redeploy a known-good main commit that passed all three checks to both Render services, then smoke-test it. Main must then be reconciled with a reviewed revert PR (see runbook). |
+| `release.yml` — Release notes | Push a `v*` tag on a main commit | Create a GitHub Release with generated notes; does not deploy. |
+
 ## Measurement and evidence
 
 Update [metrics](docs/devops/metrics.md), [optimizations](docs/devops/optimizations.md) and [incidents](docs/devops/incidents.md) before each consultation. Keep real run links, commit SHAs and timestamps. The [first hosted PR run](https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464) passed all three quality jobs in 40 seconds; deployment correctly skipped for the PR. The metrics log records this initial baseline and its cutoff. Local command time must not be reported as CI pipeline time.
