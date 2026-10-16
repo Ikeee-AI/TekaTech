@@ -29,6 +29,8 @@ flowchart TD
   J --> K[Record consultation evidence and metrics]
 ```
 
+**Team engineering workflow diagram:** [docs/devops/engineering-workflow.html](docs/devops/engineering-workflow.html) (download and open in a browser) shows the whole path from issue to verified release: which steps run automatically in GitHub Actions, which are assisted Claude Code skills (`/review-deliverable`, `/pr-gate`, `/verify-deploy`, `/incident`, `/log-work`, `/pipeline-metrics`, `/consultation-packet`), and which need a human (teammate review, merge). Its editable source is `docs/devops/engineering-workflow.archify.json`, rendered with the archify skill.
+
 Deployment does not migrate the real Supabase database automatically. Apply compatible tracked SQL first as described in the runbook. A liveness health check does not prove database readiness. A successful hook request only proves a deploy was requested; confirm deploy completion and browser/API behavior before Done.
 
 ## Configuration and quality gates
