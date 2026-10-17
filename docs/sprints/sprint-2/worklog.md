@@ -292,3 +292,11 @@ None.
 
 **Next**
 - Merge teammate PRs as reviews arrive (`/pr-gate`), then verify live; confirm instructor consultation time — Ikeee-AI — tonight / Sunday.
+
+## 2026-10-17 ~22:30 Asia/Manila — S2-AD support while Adrian is unavailable
+**Who:** Ikeee-AI (AI-assisted: yes), covering for Adrian · **Task:** S2-AD (#20) · **PR:** #65
+
+**Why:** Adrian is unavailable 17–18 Oct; review fixes on his #35 were needed before Consultation 2 (Mon 19 Oct 19:30).
+**What Adrian delivered (his, unchanged, PR #35):** prompt/answer spec, two-gadget source pack with URLs, 10 evaluation cases, first evaluator script.
+**What Ikeee-AI changed (PR #65, separate commit `f4e37b8`):** re-verified facts on official pages (Apple tech specs 111831; Samsung PH, Exynos 2400) and removed facts the pages do not state; single S24 variant; untrusted-snippet and one-variant rules; machine-readable sources/cases; evaluator now scores any answer set for all 10 cases; 8 tests showing it rejects invented facts and bad citations. Only the `Closes #12` line of #35's description was edited (to `Refs #20, #3`) so merging would not close the OpenAI issue.
+**Status:** S2-AD remains **Partial** for Adrian; the support is credited to Ikeee-AI. Adrian is asked to read #65 and be able to explain the evaluator in Sprint 3.
