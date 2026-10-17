@@ -33,6 +33,16 @@ flowchart TD
 
 Deployment does not migrate the real Supabase database automatically. Apply compatible tracked SQL first as described in the runbook. A liveness health check does not prove database readiness. A successful hook request only proves a deploy was requested; confirm deploy completion and browser/API behavior before Done.
 
+## Scheduled operations
+
+Read-only workflows that run from `main` on a schedule (GitHub may start them late) and can also be run from the Actions tab. They make no AI calls and never deploy.
+
+| Workflow | When | What it does | On failure |
+| --- | --- | --- | --- |
+| `ops-health.yml` — Production smoke | Daily 08:00 Asia/Manila | `deployed_smoke.py` against production for the latest `main` commit: both hosts' version, database-backed `/gadgets`, CORS, frontend shell; retries cover the free API's cold start | Opens one `incident` issue (or comments on the open one) with the run link; recovery is recorded in `docs/devops/incidents.md` |
+| `ops-weekly.yml` — Delivery metrics | Saturday 09:00 Asia/Manila | `scripts/pipeline_metrics.py` for the last 7 days into the run summary plus a 30-day JSON artifact | Job fails visibly; values with no runs stay N/A |
+| `ops-weekly.yml` — Dependency audit | Saturday 09:00 Asia/Manila | `pip-audit 2.10.1` on backend runtime dependencies (from `uv.lock`) and `npm audit --omit=dev --audit-level=high` on the frontend | Job fails visibly; fixes go through reviewed PRs, never forced upgrades |
+
 ## Configuration and quality gates
 
 Set GitHub repository Actions secrets `RENDER_BACKEND_DEPLOY_HOOK` and `RENDER_FRONTEND_DEPLOY_HOOK`, and repository Actions variables `PRODUCTION_API_URL` and `PRODUCTION_FRONTEND_URL`. This private repository uses GitHub Free; environment secrets for private repositories require an eligible paid plan. The deploy job references the production hooks only on pushes to main and after all three checks pass; PR check jobs are not given those hook variables. Missing hooks or URL variables fail the deployment job explicitly. The smoke stage waits for both exact commits, database-backed `/gadgets`, the frontend shell and allowed CORS, then uploads its result as evidence. No paid AI calls occur in deployment smoke tests. Keep automatic hosting deploys off so the Actions pipeline is the deploy trigger. Set production API/frontend configuration in Render, never in code. If adding preview/staging environments, use separate service credentials and hook names.

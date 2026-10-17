@@ -1,0 +1,87 @@
+name: Ops - weekly report
+
+# Saturday-morning DevOps report before the sprint deadline: delivery metrics
+# from real GitHub runs and known-vulnerable dependency audits. Read-only;
+# results appear in the run summary and as short-lived artifacts.
+
+on:
+  schedule:
+    - cron: '0 1 * * 6'  # Saturday 09:00 Asia/Manila
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ops-weekly
+  cancel-in-progress: true
+
+jobs:
+  metrics:
+    name: Delivery metrics (last 7 days)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Compute the metrics row
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ ! -f scripts/pipeline_metrics.py ]]; then
+            echo "scripts/pipeline_metrics.py is not on this branch yet (added by PR #17)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          since=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          until=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          {
+            echo "### Delivery metrics ${since} to ${until}"
+            echo "| Week | Avg PR pipeline (min) | Main pipeline (min) | Success rate (%) | Production deploys | Avg merge-to-live (min) | Failed deploys | Recovery (min) | Change this week |"
+            echo "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"
+            python3 scripts/pipeline_metrics.py --repo "$GITHUB_REPOSITORY" --label "Last 7 days" \
+              --since "$since" --until "$until" --report /tmp/metrics.json
+            echo
+            echo "Unknown values stay N/A. Recovery time comes from docs/devops/incidents.md."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weekly-metrics
+          path: /tmp/metrics.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: '0.12.3'
+      - name: Python runtime dependencies (pip-audit)
+        working-directory: backend
+        run: |
+          uv export --frozen --no-dev --no-hashes --no-emit-project > /tmp/requirements.txt
+          uvx pip-audit==2.10.1 --strict --desc on -r /tmp/requirements.txt | tee /tmp/pip-audit.txt
+      - uses: actions/setup-node@v6
+        if: always()
+        with:
+          node-version: '22'
+      - name: Frontend runtime dependencies (npm audit, high and above)
+        if: always()
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high | tee /tmp/npm-audit.txt
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "### Dependency audit"
+            echo "Fixes go through reviewed PRs to the owning area; never force-upgrade automatically."
+            echo '#### pip-audit'; echo '```'; cat /tmp/pip-audit.txt 2>/dev/null || echo "not run"; echo '```'
+            echo '#### npm audit'; echo '```'; cat /tmp/npm-audit.txt 2>/dev/null || echo "not run"; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

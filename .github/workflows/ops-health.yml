@@ -1,0 +1,68 @@
+name: Ops - production health
+
+# Daily read-only production check: both hosts serve the latest main commit,
+# the database-backed /gadgets endpoint works and CORS allows the frontend.
+# No AI calls and no writes. A failure opens (or updates) one `incident` issue.
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 08:00 Asia/Manila; GitHub may start scheduled runs late
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ops-health
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Production smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      API_URL: ${{ vars.PRODUCTION_API_URL }}
+      FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Check production serves the latest main commit
+        id: smoke
+        run: |
+          if [[ -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
+            echo "PRODUCTION_API_URL / PRODUCTION_FRONTEND_URL repository variables are not set." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          # Retries cover the free API's cold start (about a minute).
+          python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" \
+            --commit "$GITHUB_SHA" --attempts 12 --delay 10 --report /tmp/health.json
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "### Production health ($(date -u +%Y-%m-%dT%H:%MZ))"
+            echo "Expected commit: \`$GITHUB_SHA\`"
+            echo '```json'
+            cat /tmp/health.json 2>/dev/null || echo '{"status": "no report"}'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Open or update the incident issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Production health check failing"
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --label incident --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          body="Automated check failed at $(date -u +%Y-%m-%dT%H:%MZ) for expected commit \`$GITHUB_SHA\`. Run: $RUN_URL
+
+          Next: confirm impact, then follow the incident skill / docs/deploy-runbook.md. Record detection and recovery times in docs/devops/incidents.md. Close this issue only after a passing health run."
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label incident --assignee Ikeee-AI --body "$body"
+          fi
