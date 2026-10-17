@@ -129,3 +129,15 @@ def test_update_gadget_requires_login(client, fake_supabase):
         assert resp.status_code == 401
     finally:
         app.dependency_overrides[get_current_user] = previous
+
+
+def test_create_gadget_rejects_missing_brand(client, fake_supabase):
+    resp = client.post(
+        "/gadgets", json={"name": "Phone", "category": "smartphone"}
+    )
+    assert resp.status_code == 422
+
+
+def test_create_gadget_rejects_missing_category(client, fake_supabase):
+    resp = client.post("/gadgets", json={"name": "Phone", "brand": "Samsung"})
+    assert resp.status_code == 422
