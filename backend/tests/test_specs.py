@@ -172,3 +172,11 @@ def test_ingest_spec_requires_login(client, fake_supabase):
         assert fake_supabase.writes == []
     finally:
         app.dependency_overrides[get_current_user] = previous
+
+
+def test_ingest_spec_whitespace_only_text_returns_400(client, fake_supabase):
+    gadget_id = str(uuid4())
+    fake_supabase.set_response("gadgets", "select", [{"id": gadget_id}])
+    resp = client.post(f"/gadgets/{gadget_id}/specs", json={"raw_text": "   "})
+    assert resp.status_code == 400
+    assert fake_supabase.writes == []
