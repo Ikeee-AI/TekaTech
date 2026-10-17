@@ -80,3 +80,7 @@ def test_delete_gadget_requires_admin(client, fake_supabase):
         app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
             id="00000000-0000-0000-0000-000000000001", email="test@example.com", app_metadata={"is_admin": True}
         )
+
+def test_get_gadget_malformed_id(client, fake_supabase):
+    resp = client.get("/gadgets/not-a-uuid")
+    assert resp.status_code == 422
