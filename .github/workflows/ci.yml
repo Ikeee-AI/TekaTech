@@ -127,9 +127,55 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f /tmp/tekatech-setup.sql
           psql -v ON_ERROR_STOP=1 -f backend/tests/sql/schema_acceptance.sql
 
+  main-guard:
+    # Free-plan substitute for branch protection (HTTP 403 on this private repo):
+    # it cannot stop a push, but unreviewed code never deploys and an issue is opened.
+    name: Main guard (reviewed PR required)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ github.sha }}
+      PUSHER: ${{ github.actor }}
+    steps:
+      - name: Require a merged PR approved by another teammate on its final commit
+        id: guard
+        run: |
+          pr=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" --jq '[.[] | select(.merged_at != null and .base.ref == "main")][0].number // empty')
+          if [[ -z "$pr" ]]; then
+            echo "reason=Commit $SHA reached main without a merged pull request (pushed by @$PUSHER)." >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          author=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$pr" --jq '.user.login')
+          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$pr" --jq '.head.sha')
+          approvals=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$pr/reviews" --paginate \
+            --jq ".[] | select(.state == \"APPROVED\" and .user.login != \"$author\" and .commit_id == \"$head\") | .id" | wc -l)
+          if [[ "$approvals" -lt 1 ]]; then
+            echo "reason=PR #$pr by @$author was merged without another teammate's approval on its final commit." >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "PR #$pr by @$author: $approvals teammate approval(s) on final commit \`$head\`." >> "$GITHUB_STEP_SUMMARY"
+      - name: Open a process issue and stop the deploy
+        if: failure()
+        env:
+          REASON: ${{ steps.guard.outputs.reason }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          echo "### Deploy blocked: $REASON" >> "$GITHUB_STEP_SUMMARY"
+          gh issue create --repo "$GITHUB_REPOSITORY" --label process --assignee Ikeee-AI \
+            --title "Main guard: unreviewed change on main (${SHA:0:7})" \
+            --body "${REASON:-Main guard failed.} Production was **not** deployed. Run: $RUN_URL
+
+          Next: open a PR that reverts or re-submits the change for teammate review, or get the change reviewed and merged normally. Record the exception in the sprint log."
+
   deploy:
     name: Deploy main after checks
-    needs: [backend, frontend, database]
+    needs: [backend, frontend, database, main-guard]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     # Repository-level production hooks support this private repository on GitHub Free.
