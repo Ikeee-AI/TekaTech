@@ -9,6 +9,7 @@ import DeleteGadgetButton from '../components/DeleteGadgetButton'
 import BackLink from '../components/ui/BackLink'
 import Button from '../components/ui/Button'
 import ErrorState from '../components/ui/ErrorState'
+import { useAuth } from '../hooks/useAuth'
 
 function toFormValues(g) {
   return {
@@ -24,6 +25,7 @@ function toFormValues(g) {
 export default function EditGadget() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [state, setState] = useState({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   useDocumentTitle(state.gadget ? `Edit ${state.gadget.name}` : 'Edit Gadget')
@@ -82,18 +84,20 @@ export default function EditGadget() {
         />
       </div>
 
-      <section
-        aria-labelledby="danger-zone-title"
-        className="mt-6 bg-white border border-red-200 rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div>
-          <h2 id="danger-zone-title" className="text-base font-bold text-red-800">
-            Delete This Gadget
-          </h2>
-          <p className="text-sm text-slate-600 mt-0.5">Removes it and its specs from the catalog for everyone.</p>
-        </div>
-        <DeleteGadgetButton gadget={gadget} onDeleted={() => navigate('/', { replace: true })} />
-      </section>
+      {user?.app_metadata?.is_admin && (
+        <section
+          aria-labelledby="danger-zone-title"
+          className="mt-6 bg-white border border-red-200 rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div>
+            <h2 id="danger-zone-title" className="text-base font-bold text-red-800">
+              Delete This Gadget
+            </h2>
+            <p className="text-sm text-slate-600 mt-0.5">Removes it and its specs from the catalog for everyone.</p>
+          </div>
+          <DeleteGadgetButton gadget={gadget} onDeleted={() => navigate('/', { replace: true })} />
+        </section>
+      )}
     </div>
   )
 }

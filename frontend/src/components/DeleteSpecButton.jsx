@@ -12,9 +12,10 @@ function preview(text, max = 140) {
 }
 
 /**
- * Delete control for one spec chunk, shown to everyone. The backend has no spec
- * DELETE route yet, so until it does the confirmation dialog reports that
- * nothing was removed instead of failing silently.
+ * Delete control for one spec chunk. NOT RENDERED YET: the backend has no
+ * DELETE /gadgets/{gadget_id}/specs/{spec_id} route. Once it exists, render
+ * <DeleteSpecButton gadgetId={gadgetId} spec={spec} onDeleted={loadSpecs} />
+ * in SpecCard (SpecManager.jsx), gated on the same permission the route uses.
  */
 export default function DeleteSpecButton({ gadgetId, spec, onDeleted }) {
   const [open, setOpen] = useState(false)

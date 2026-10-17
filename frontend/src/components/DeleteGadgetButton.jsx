@@ -2,19 +2,24 @@ import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
+import { useAuth } from '../hooks/useAuth'
 import { deleteErrorMessage } from '../utils/deleteErrors'
 import Button from './ui/Button'
 import ConfirmDialog from './ui/ConfirmDialog'
 
 /**
- * Delete control for one gadget, shown to everyone for now. The backend's
- * DELETE /gadgets/{id} still requires an admin account, so for anyone else the
- * request fails and the confirmation dialog stays open explaining why.
+ * Delete control for one gadget. Only rendered for admins — the backend's
+ * DELETE /gadgets/{id} requires app_metadata.is_admin, so showing it to anyone
+ * else would only lead to a 401/403. The request runs from the confirmation
+ * dialog, which stays open with the error if it fails.
  */
 export default function DeleteGadgetButton({ gadget, onDeleted, size = 'md', iconOnly = false, className = '' }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const { user } = useAuth()
+
+  if (!user?.app_metadata?.is_admin) return null
 
   function close() {
     setOpen(false)

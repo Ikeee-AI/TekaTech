@@ -17,20 +17,16 @@ Frontend-only pass over the catalog, gadget detail, gadget/spec forms and the AI
 Feature components built on them:
 
 - `GadgetForm`: shared Add/Edit gadget form with client-side validation (`utils/gadgetValidation.js`). Validates on submit, then live per field. Server errors show in the form and keep what the user typed.
-- `DeleteGadgetButton` / `DeleteSpecButton`: delete controls with confirmation (see below).
+- `DeleteGadgetButton`: the admin-only delete control (see below). `DeleteSpecButton` is built but not rendered yet.
 - `SpecManager`: Add Specs form (character counter, URL check), Suggest Correction form, and per-spec status.
 - `AiAnswerResult`: shared loading / error / no-sources / answer states for both AI panels (single question and comparison).
 
-## Delete with confirmation
+## Authorized delete
 
-Delete buttons are shown to **every user for now** (no admin check in the UI). Each one opens the same `ConfirmDialog`.
-
-- **Gadgets:** `DeleteGadgetButton`, used as an icon button on each catalog card (accessible name such as "Delete Pixel 8"), Delete on the detail page, and a "Delete This Gadget" section on the edit page. The dialog states what is removed: the gadget plus its specs and pending corrections, which the database deletes in cascade. On success: a toast, the card disappears (catalog) or the user returns to the catalog (detail/edit), and the gadget leaves the compare tray.
-- **Specs:** `DeleteSpecButton`, an icon button on each spec card ("Delete spec #0"). The dialog quotes the start of the spec text so the user can check they picked the right one. On success, the spec list reloads.
-- **When the server refuses,** the dialog stays open with a plain-language reason (`utils/deleteErrors.js`):
-  - Logged out (401): "Log in first, then try deleting this gadget again."
-  - Not an admin (403): the backend's `DELETE /gadgets/{id}` still requires an admin account, and the message says so.
-  - Spec delete (404/405): the backend has **no spec delete endpoint yet**, so the dialog says "The server doesn't support deleting specs yet, so nothing was removed." The button starts working once `DELETE /gadgets/{gadget_id}/specs/{spec_id}` exists (the client already calls that path).
+- `DELETE /gadgets/{id}` requires `app_metadata.is_admin` on the backend, so `DeleteGadgetButton` **only renders for admins** (the check lives in the component, covering every placement). Logged-out and non-admin users never see a button that would fail with 401/403.
+- Placements: icon button on each catalog card (accessible name such as "Delete Pixel 8"), Delete on the detail page, and a "Delete This Gadget" section on the edit page (also admin-only).
+- The dialog states what is removed: the gadget plus its specs and pending corrections, which the database deletes in cascade. On success: a toast, the card disappears (catalog) or the user returns to the catalog (detail/edit), and the gadget leaves the compare tray. On failure the dialog stays open with a plain-language reason (`utils/deleteErrors.js`).
+- **Spec delete is hidden** until the backend has a `DELETE /gadgets/{gadget_id}/specs/{spec_id}` route. `DeleteSpecButton` and `api.deleteSpec` are ready; enabling it is one line in `SpecCard`, gated on whatever permission the route uses.
 
 ## CRUD coverage
 
@@ -39,7 +35,7 @@ Delete buttons are shown to **every user for now** (no admin check in the UI). E
 | Create | Add Gadget page (navbar button) | Add Specs form on the detail page |
 | Read | Catalog, detail page, compare page | Specifications list on the detail page |
 | Update | Edit Gadget page | Suggest Correction → admin Review Queue (approve applies it) |
-| Delete | Delete with confirmation (card, detail, edit); server allows admins only | Delete with confirmation on each spec card; needs a backend endpoint to succeed |
+| Delete | Admin-only Delete (card, detail, edit) with confirmation | Hidden until the backend adds a spec delete route |
 
 Note: the backend's `PATCH /gadgets/{id}` drops empty fields, so an optional value (price, date, image) can't be cleared from the edit form. The form says so under the field instead of failing silently.
 
@@ -53,14 +49,14 @@ Note: the backend's `PATCH /gadgets/{id}` drops empty fields, so an optional val
 | Add/Edit gadget form | Edit: form skeleton | – | Toast, then redirect to the gadget | Field errors + summary; server error `Alert`; edit load failure `ErrorState` |
 | Add specs / correction | Spinner on submit button | – | Toast; list reloads | Field errors; server error `Alert` |
 | AI answer panel | "Searching the spec sheets…" + skeleton (`aria-live`) | "No Matching Specs Found" | Answer with numbered citations, sources, Copy, Regenerate | "Couldn't Get an Answer" with Try Again |
-| Delete dialogs (gadget, spec) | "Deleting…" spinner, controls locked | – | Toast; card removed, redirect, or spec list reloads | Plain-language reason inside the dialog (401/403/not supported) |
+| Delete dialog | "Deleting…" spinner, controls locked | – | Toast, card removed / redirect | Plain-language reason inside the dialog |
 | Review queue | Skeleton | "Nothing to Review" | Approve/Reject toast | `ErrorState` with Try Again (previously showed "queue is clear" on failure) |
 | Login | Spinner on submit | – | Toast, redirect | Inline `Alert` (replaces a disappearing toast) |
 
 ## Keyboard, focus and contrast review
 
 - **Focus:** every control has a visible focus ring (component-level `focus-visible` rings plus a global fallback outline in `index.css`). Checkbox labels show the ring around the whole row.
-- **Delete buttons** are icon-only on cards, so each has an accessible name and tooltip ("Delete Pixel 8", "Delete spec #0").
+- **Delete buttons** are icon-only on cards, so each has an accessible name and tooltip ("Delete Pixel 8").
 - **Keyboard paths checked:** `/` focuses the navbar search; Enter asks the AI. Tab order follows reading order. The delete dialog traps Tab, closes on Escape and returns focus (verified: focus goes to Cancel on open, wraps from the last button to Cancel, and returns to "Delete Pixel 8" on close). After a failed form submit, focus moves to the error summary, and its links focus the field.
 - **Screen readers:** repeated buttons carry the gadget name ("Compare ROG Ally", "Ask AI about ROG Ally", "Details for ROG Ally"). External links say "(opens in a new tab)". Loading regions use `role="status"`; the AI answer is an `aria-live` region.
 - **Contrast:** low-contrast greys (`gray-400`/`slate-400`, about 2.5:1 on white) were raised to `slate-500`/`slate-600` (4.7:1 or better) for text, placeholders and icon-only buttons. Amber warning text moved from `amber-600` (3.2:1) to `amber-700`/`amber-800`. Primary buttons are white on `#254b35` (about 9.5:1). The active nav pill is `#0f3723` on `#84ae92` (about 5.4:1).
