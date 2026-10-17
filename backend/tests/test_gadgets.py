@@ -84,3 +84,7 @@ def test_delete_gadget_requires_admin(client, fake_supabase):
 def test_get_gadget_malformed_id(client, fake_supabase):
     resp = client.get("/gadgets/not-a-uuid")
     assert resp.status_code == 422
+
+def test_create_gadget_without_name_returns_422(client, fake_supabase):
+    resp = client.post("/gadgets", json={"brand": "Samsung", "category": "smartphone"})
+    assert resp.status_code == 422
