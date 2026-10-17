@@ -1,0 +1,53 @@
+# Owner-area labels for pull requests (ownership table: docs/sprints-2-to-5.md).
+# A PR touching several areas gets several labels: a hint to split it or to
+# involve the other owner. Labels are hints, not review approval.
+
+area:ai:  # Adrian: prompt assets, grounding rules, evaluation
+  - changed-files:
+      - any-glob-to-any-file:
+          - backend/prompts/**
+          - backend/evals/**
+          - evals/**
+          - backend/routers/query.py
+
+area:backend:  # Manuel: API contracts, auth, schema, providers, retrieval
+  - changed-files:
+      - any-glob-to-any-file:
+          - backend/*.py
+          - backend/sql/**
+          - backend/routers/query.py
+          - backend/pyproject.toml
+          - backend/uv.lock
+
+area:workflows:  # Jopher: feature endpoints, API wiring, forms, state, integration tests
+  - changed-files:
+      - any-glob-to-any-file:
+          - backend/routers/gadgets.py
+          - backend/routers/specs.py
+          - backend/routers/corrections.py
+          - backend/routers/comparisons.py
+          - backend/routers/stats.py
+          - backend/tests/**
+          - frontend/src/api/**
+          - frontend/src/pages/**
+          - frontend/src/hooks/**
+
+area:frontend:  # Mika: layouts, styling, accessibility, visual components
+  - changed-files:
+      - any-glob-to-any-file:
+          - frontend/src/components/**
+          - frontend/src/assets/**
+          - frontend/src/**/*.css
+          - frontend/index.html
+          - frontend/package.json
+          - frontend/package-lock.json
+
+area:devops:  # Ikeee-AI: CI/CD, hosting, ops scripts and docs
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+          - .claude/**
+          - render.yaml
+          - scripts/**
+          - PIPELINE.md
+          - docs/devops/**
