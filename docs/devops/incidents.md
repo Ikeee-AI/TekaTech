@@ -38,3 +38,11 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
 - **What:** the first run of `ops-weekly.yml` ([39030954463](https://github.com/Ikeee-AI/TekaTech/actions/runs/39030954463)) found 18 known vulnerabilities in 3 packages but reported success: steps ran without `pipefail` so `audit | tee` masked the exit code.
 - **Detection:** same evening, by checking the run against the known findings in #28. **Fix:** [#52](https://github.com/Ikeee-AI/TekaTech/pull/52) sets `shell: bash`; verified on the branch ([39031057744](https://github.com/Ikeee-AI/TekaTech/actions/runs/39031057744)) — audit now fails correctly.
 - **Lesson:** verify a new check can fail before trusting its green result. Owner: Ikeee-AI.
+
+### PE-4 — Main guard false positive blocked an approved deploy (17 Oct 2026)
+- **What:** after PR #26 (approved by Manuel on its final commit) was squash-merged at 21:57:54 Manila, the main guard ran 2 s later, before GitHub had linked commit `28132c9` to the PR. It reported "no merged pull request", skipped the deploy and opened #63 ([run 39038725331](https://github.com/Ikeee-AI/TekaTech/actions/runs/39038725331)).
+- **Impact:** none for users — a CI-only change; production stayed on the previous good commit `7cb92f3` for ~5 minutes.
+- **Detection:** immediately, by the gated merge script (`STOP #26: main pipeline/deploy not successful`).
+- **Recovery:** re-ran the failed jobs once GitHub had linked the PR; guard passed, deploy and smoke succeeded. #63 closed as a false positive. Recovery time ≈ 5 min.
+- **Cause:** the guard assumed the commit→PR link exists the moment `main` changes; it is created asynchronously.
+- **Prevention:** [#64](https://github.com/Ikeee-AI/TekaTech/pull/64) retries the lookup up to 6×10 s before failing. Owner: Ikeee-AI.
