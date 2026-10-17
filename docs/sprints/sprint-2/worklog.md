@@ -139,3 +139,41 @@ None new.
 
 **Next**
 - Share dev credentials privately with Jopher and Manuel; close #18 after that — Ikeee-AI.
+
+## 2026-10-17 22:55 Asia/Manila — Reviewer pass on open PRs #52, #64, #65, #53
+**Who:** Manuel Mirasol (`s2302827-byte`) (AI-assisted: yes — `pre-reviewer` subagents produced read-only pre-reviews; the review decisions were posted by Manuel's session on his instruction) · **Task:** S2-MA (reviewer duty on Ikeee-AI PRs) · **Branch:** `tekatech/S2-MA-auth-contract-tests` (no files changed during the review work)
+
+**Done**
+- Listed open PRs; four had a review request for Manuel: #65, #64, #53, #52 (the other open PRs were already approved, Dependabot with no reviewer, or #35 requesting Ikeee-AI) — evidence: `gh pr list`.
+- #52 (weekly dependency audit fails on findings): pre-review recommended approve; **APPROVED** 2026-10-17T14:48:07Z — https://github.com/Ikeee-AI/TekaTech/pull/52
+- #64 (main guard retries PR lookup): pre-review recommended approve; **APPROVED** 2026-10-17T14:48:08Z — https://github.com/Ikeee-AI/TekaTech/pull/64
+- #65 (S2-AD support, verified source pack and evaluator): pre-review recommended changes; **CHANGES_REQUESTED** posted — https://github.com/Ikeee-AI/TekaTech/pull/65
+- #53 (Sprint 2 evidence pack): pre-review recommended small changes; **CHANGES_REQUESTED** posted — https://github.com/Ikeee-AI/TekaTech/pull/53
+- Recorded states re-read via `gh pr view --json reviews`: #52 and #64 APPROVED, #65 and #53 CHANGES_REQUESTED, each with one review by `s2302827-byte`.
+
+**Errors and fixes**
+None.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #65's branch is stacked on #35's commits (143cfb7, f952fad) and overlaps #35 on `prompts/README.md`, `prompts/S2-AD-prompt-spec.md`, `scripts/eval_runner.py` (Adrian's area, authored by Ikeee-AI) | Merging #65 first would conflict with or supersede #35 and misplace Adrian's attribution | Asked to merge #35 first and rebase #65; Adrian to acknowledge — Ikeee-AI / Adrian — open |
+| #53 consultation packet text vs its own later entries (packet at ~20:15 lists PE-1..PE-3; incidents/worklog add PE-4; consultation time "to be confirmed" vs 19 Oct 19:30) | Stale evidence pack | Change requested — Ikeee-AI — open (D9) |
+| #53 PE-2 "~30 h" vs #35 opened 2026-10-16 13:03Z and recovery ~19:00 Sat Manila (~22 h) | Wrong figure in incidents.md and consultation.md | Change requested — Ikeee-AI — open (D9). From the pre-review; not independently recomputed by Manuel |
+
+**Decisions**
+- Approved #52 and #64 with optional, non-blocking notes (pipefail side effects; `|| pr=""` hardening; post-merge run link before marking Done) — Manuel.
+- Requested changes on #65 and #53 rather than approving with caveats — Manuel.
+- AI pre-reviews are advisory only and do not count as peer review; the approvals/requests are Manuel's own decisions.
+
+**Blockers / risks**
+- #65 and #53 are blocked on author changes; #65 is also gated on #35 landing — Ikeee-AI / Adrian — Sprint 2 deadline is today 3:00 PM Asia/Manila (already passed at time of writing; slip to be reported at consultation).
+- Not verified by this session: the "85 passed", "ruff clean", and "facts re-checked" claims in #65; vendor-page facts (Apple/Samsung); the actionlint/shellcheck and `workflow_dispatch` run results claimed in #52/#64; PE-4 and the metrics figures in #53. Pre-reviewers also did not open the cited runs.
+- The packet's note that Claude attribution was removed from PR descriptions differs from the standing session attribution rule; left as the owner's call.
+
+**Plan alignment** — S2-MA: unchanged by this session (reviewer duty only; #37 auth contract tests still awaiting merge per Ikeee-AI). Review of #52/#64 done; Done status for those PRs requires merge, deploy and a post-merge check, none of which occurred in this session. Nothing was merged or deployed.
+
+**Next**
+- Re-review #65 and #53 when fixes are pushed and review is re-requested — Manuel — when requested.
+- Merge #52 and #64, then record the post-merge main run link for #64 — Ikeee-AI — after approval.
+- Open a follow-up ticket for evaluator strictness before Sprint 3 (#54) — Ikeee-AI / Adrian.
