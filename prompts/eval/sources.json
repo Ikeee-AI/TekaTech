@@ -1,0 +1,28 @@
+{
+  "version": "s2-ad-sources-v2",
+  "note": "Every fact is copied from the cited official page as accessed on 2026-10-17. One model variant per gadget. Numbered like the app's grounding context ([n] snippets).",
+  "gadgets": {
+    "iphone-15": {
+      "label": "Apple iPhone 15 (base model, not Plus/Pro)",
+      "source_url": "https://support.apple.com/en-us/111831",
+      "accessed": "2026-10-17"
+    },
+    "galaxy-s24-ph": {
+      "label": "Samsung Galaxy S24 (base model, Philippines, Exynos 2400)",
+      "source_url": "https://www.samsung.com/ph/smartphones/galaxy-s24/specs/",
+      "accessed": "2026-10-17"
+    }
+  },
+  "snippets": [
+    {"id": 1, "gadget": "iphone-15", "text": "6.1-inch (diagonal) all-screen OLED display, 2556-by-1179-pixel resolution at 460 ppi; 2000 nits peak brightness (outdoor)."},
+    {"id": 2, "gadget": "iphone-15", "text": "A16 Bionic chip."},
+    {"id": 3, "gadget": "iphone-15", "text": "Rear cameras: 48MP Main (f/1.6 aperture) and 12MP Ultra Wide (f/2.4 aperture)."},
+    {"id": 4, "gadget": "iphone-15", "text": "Video playback up to 20 hours. USB-C connector with USB 2 (up to 480Mb/s). MagSafe and Qi2 wireless charging up to 15W."},
+    {"id": 5, "gadget": "iphone-15", "text": "Rated IP68 (maximum depth of 6 meters up to 30 minutes) under IEC standard 60529."},
+    {"id": 6, "gadget": "galaxy-s24-ph", "text": "6.2-inch Dynamic AMOLED 2X display, FHD+ (2340 x 1080), 120Hz refresh rate."},
+    {"id": 7, "gadget": "galaxy-s24-ph", "text": "Exynos 2400 processor."},
+    {"id": 8, "gadget": "galaxy-s24-ph", "text": "Rear cameras: 50MP main (f/1.8), 12MP ultra-wide (f/2.2) and 10MP telephoto (f/2.4)."},
+    {"id": 9, "gadget": "galaxy-s24-ph", "text": "4000mAh battery; up to 29 hours video playback."},
+    {"id": 10, "gadget": "galaxy-s24-ph", "text": "IP68 water resistance."}
+  ]
+}

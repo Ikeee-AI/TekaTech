@@ -1,0 +1,16 @@
+{
+  "provider": "reference (hand-written)",
+  "note": "SYNTHETIC reference answers written by hand to validate the scorer. They are NOT model output and must never be reported as model quality. Score real answers by exporting them into this same shape ({case id: answer text}).",
+  "answers": {
+    "TC-01": "The iPhone 15 reaches **2000 nits** peak brightness outdoors [1].",
+    "TC-02": "Yes. The Galaxy S24 has a **10MP telephoto** camera with an f/2.4 aperture [8].",
+    "TC-03": "The iPhone 15 uses the **A16 Bionic** chip [2].",
+    "TC-04": "The Galaxy S24 has a **4000mAh** battery [9].",
+    "TC-05": "Its USB-C port supports **USB 2**, up to 480Mb/s [4].",
+    "TC-06": "The Galaxy S24 is rated **IP68** for water resistance [10].",
+    "TC-07": "Main camera and battery side by side:\n- Main camera: iPhone 15 **48MP** [3] vs Galaxy S24 **50MP** [8]\n- Battery: Galaxy S24 **4000mAh** [9]; the iPhone 15's capacity is not stated in the sources, only up to 20 hours of video playback [4]",
+    "TC-08": "The sources don't say whether the iPhone 15 supports a 120Hz ProMotion refresh rate, so I can't confirm it.",
+    "TC-09": "Insufficient verified evidence in the source pack to answer this question.",
+    "TC-10": "The color options for the iPhone 15 are not mentioned in the provided specs."
+  }
+}

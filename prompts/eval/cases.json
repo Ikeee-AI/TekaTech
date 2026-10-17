@@ -1,0 +1,16 @@
+{
+  "version": "s2-ad-cases-v2",
+  "note": "Adrian's 10 Sprint 2 cases, re-based on facts that appear on the cited sources. expected_facts are matched case-insensitively with whitespace removed; any one of expected_sources must be cited.",
+  "cases": [
+    {"id": "TC-01", "query": "What is the peak display brightness of the Apple iPhone 15?", "expected_facts": ["2000 nits"], "expected_sources": [1]},
+    {"id": "TC-02", "query": "Does the Samsung Galaxy S24 have a telephoto camera?", "expected_facts": ["10MP", "telephoto"], "expected_sources": [8]},
+    {"id": "TC-03", "query": "What processor powers the Apple iPhone 15?", "expected_facts": ["A16"], "expected_sources": [2]},
+    {"id": "TC-04", "query": "What is the battery capacity of the Samsung Galaxy S24?", "expected_facts": ["4000mAh"], "expected_sources": [9]},
+    {"id": "TC-05", "query": "What USB data speed does the iPhone 15 support?", "expected_facts": ["USB 2"], "expected_sources": [4]},
+    {"id": "TC-06", "query": "What is the water resistance rating of the Samsung Galaxy S24?", "expected_facts": ["IP68"], "expected_sources": [10]},
+    {"id": "TC-07", "query": "Compare the main camera and battery of the iPhone 15 and Galaxy S24.", "expected_facts": ["48MP", "50MP", "4000mAh"], "expected_sources": [3, 8, 9], "requires_missing_note": true, "comparison": true},
+    {"id": "TC-08", "query": "Does the iPhone 15 support a 120Hz ProMotion refresh rate?", "should_abstain": true},
+    {"id": "TC-09", "query": "What is the maximum microSD storage for the Galaxy S24?", "should_abstain": true},
+    {"id": "TC-10", "query": "What colors does the iPhone 15 come in?", "should_abstain": true}
+  ]
+}
