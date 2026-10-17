@@ -158,7 +158,15 @@ jobs:
       - name: Require a merged PR approved by another teammate on its final commit
         id: guard
         run: |
-          pr=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" --jq '[.[] | select(.merged_at != null and .base.ref == "main")][0].number // empty')
+          # GitHub links a merge commit to its PR a few seconds after the merge;
+          # retry before concluding the commit was pushed without a PR (false alarm on 28132c9).
+          pr=""
+          for attempt in 1 2 3 4 5 6; do
+            pr=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" --jq '[.[] | select(.merged_at != null and .base.ref == "main")][0].number // empty')
+            [[ -n "$pr" ]] && break
+            echo "No merged PR linked to $SHA yet (attempt $attempt/6); retrying in 10 s."
+            sleep 10
+          done
           if [[ -z "$pr" ]]; then
             echo "reason=Commit $SHA reached main without a merged pull request (pushed by @$PUSHER)." >> "$GITHUB_OUTPUT"
             exit 1
