@@ -5,7 +5,7 @@ Owner: the one DevOps Engineer. Record real GitHub Actions and Render deployment
 | Week | Avg PR pipeline (min) | Main pipeline (min) | Success rate (%) | Production deploys | Avg merge-to-live (min) | Failed deploys | Recovery (min) | Change this week |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Sprint 1 initial baseline | 0.67 (1 run) | Not run | 100 (1/1 completed) | 0 | Not applicable (no merge) | 0 (no deploy attempts) | Not applicable | First PR CI passed with caches, parallel checks and SQL integration |
-| Sprint 2 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Sprint 2 (to date, snapshot 2026-10-16 06:52 UTC) | 0.67 (9 runs) | 2.12 (2 runs) | 100.0 (11/11 completed) | 2 | 2.14 (2 samples) | 0 | N/A (no incident) | Metrics now computed by `scripts/pipeline_metrics.py` from GitHub run data |
 | Sprint 3 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
 | Sprint 4 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
 
@@ -31,4 +31,10 @@ Initial free Render provisioning: frontend deploy `dep-db5v715ckfvc73biiuf0` too
 
 [Main run 38174257006](https://github.com/Ikeee-AI/TekaTech/actions/runs/38174257006) succeeded at merge commit `53f62e994e1431171608c999694b0206a0984dfb`. Merge: `2026-10-11T20:55:55Z`; workflow: `20:55:57Z` to `20:57:49Z`, **112 seconds (1.87 minutes)**. API deployment `dep-db5vg1bbc2fs73a956pg` finished at `20:57:39.692752Z`; frontend `dep-db5vg1nlk1mc73bcmb70` finished at `20:56:55.270767Z`. Both were live **104.692 seconds (1.74 minutes)** after merge.
 
-This is one observed main release with two successful service deployments and no failed service deployments in that release. It is not a complete weekly average or optimization comparison. Post-deploy smoke passed exact SHA, API health, one real gadget, frontend CORS and direct `/login`; see [safe evidence](../evidence/sprint1-main-deployment.json). Rollback/recovery has not been exercised.
+This is one observed main release with two successful service deployments and no failed service deployments in that release.
+
+## Sprint 2 snapshot: 16 October 2026
+
+Window: Sprint 2 week in Manila time (12–18 Oct), i.e. `2026-10-11T16:00:00Z` to `2026-10-18T16:00:00Z`, workflow `ci.yml` only. Command: `python scripts/pipeline_metrics.py --label "Sprint 2 (to date)" --since 2026-10-11T16:00:00Z --until 2026-10-18T16:00:00Z`. Because the window starts at Manila midnight, it includes the PR #15 merge and [main run 38174257006](https://github.com/Ikeee-AI/TekaTech/actions/runs/38174257006) also described above as the first main deployment. The second deployment is [main run 38238577447](https://github.com/Ikeee-AI/TekaTech/actions/runs/38238577447) for PR #16, merge commit `68b4c5a6cc98852d72f98f818b8fd75de50d827a`. Lead time = PR `merged_at` to deploy-job completion, which only finishes after `deployed_smoke.py` confirms both hosts serve the commit. The GitHub "Dependency Graph" run is a different workflow and is excluded. This row is provisional until the Saturday deadline.
+
+Independent production check at `2026-10-16T06:51:54Z`: `deployed_smoke.py` passed for `68b4c5a` (health, both hosts on the exact commit, 3 gadgets from the database, CORS). The first two attempts timed out while the free API woke; it passed after 55.3 seconds. Record cold starts separately from deployment lead time. It is not a complete weekly average or optimization comparison. Post-deploy smoke passed exact SHA, API health, one real gadget, frontend CORS and direct `/login`; see [safe evidence](../evidence/sprint1-main-deployment.json). Rollback/recovery has not been exercised.
