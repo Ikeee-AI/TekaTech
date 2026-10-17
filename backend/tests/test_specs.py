@@ -159,3 +159,16 @@ def test_index_spec_requires_login(client, fake_supabase):
         assert fake_supabase.writes == []
     finally:
         app.dependency_overrides[get_current_user] = previous
+
+
+def test_ingest_spec_requires_login(client, fake_supabase):
+    from main import app
+    from auth import get_current_user
+
+    previous = app.dependency_overrides.pop(get_current_user)
+    try:
+        resp = client.post(f"/gadgets/{uuid4()}/specs", json={"raw_text": "Display: 6.2 inch"})
+        assert resp.status_code == 401
+        assert fake_supabase.writes == []
+    finally:
+        app.dependency_overrides[get_current_user] = previous
