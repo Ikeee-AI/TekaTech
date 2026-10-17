@@ -5,7 +5,7 @@ Owner: the one DevOps Engineer. Record real GitHub Actions and Render deployment
 | Week | Avg PR pipeline (min) | Main pipeline (min) | Success rate (%) | Production deploys | Avg merge-to-live (min) | Failed deploys | Recovery (min) | Change this week |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Sprint 1 initial baseline | 0.67 (1 run) | Not run | 100 (1/1 completed) | 0 | Not applicable (no merge) | 0 (no deploy attempts) | Not applicable | First PR CI passed with caches, parallel checks and SQL integration |
-| Sprint 2 (to date, snapshot 2026-10-16 06:52 UTC) | 0.67 (9 runs) | 2.12 (2 runs) | 100.0 (11/11 completed) | 2 | 2.14 (2 samples) | 0 | N/A (no incident) | Metrics now computed by `scripts/pipeline_metrics.py` from GitHub run data |
+| Sprint 2 (12–18 Oct; as of 17 Oct 20:04 Manila) | 0.66 (37 runs) | 2.19 (10 runs) | 100.0 (48/48 completed) | 10 | 2.19 (9 samples) | 0 | N/A (no production incident) | Metrics script; actionlint + gitleaks gates; main guard; scheduled ops; Dependabot; squash-only merges |
 | Sprint 3 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
 | Sprint 4 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
 
@@ -38,3 +38,14 @@ This is one observed main release with two successful service deployments and no
 Window: Sprint 2 week in Manila time (12–18 Oct), i.e. `2026-10-11T16:00:00Z` to `2026-10-18T16:00:00Z`, workflow `ci.yml` only. Command: `python scripts/pipeline_metrics.py --label "Sprint 2 (to date)" --since 2026-10-11T16:00:00Z --until 2026-10-18T16:00:00Z`. Because the window starts at Manila midnight, it includes the PR #15 merge and [main run 38174257006](https://github.com/Ikeee-AI/TekaTech/actions/runs/38174257006) also described above as the first main deployment. The second deployment is [main run 38238577447](https://github.com/Ikeee-AI/TekaTech/actions/runs/38238577447) for PR #16, merge commit `68b4c5a6cc98852d72f98f818b8fd75de50d827a`. Lead time = PR `merged_at` to deploy-job completion, which only finishes after `deployed_smoke.py` confirms both hosts serve the commit. The GitHub "Dependency Graph" run is a different workflow and is excluded. This row is provisional until the Saturday deadline.
 
 Independent production check at `2026-10-16T06:51:54Z`: `deployed_smoke.py` passed for `68b4c5a` (health, both hosts on the exact commit, 3 gadgets from the database, CORS). The first two attempts timed out while the free API woke; it passed after 55.3 seconds. Record cold starts separately from deployment lead time. It is not a complete weekly average or optimization comparison. Post-deploy smoke passed exact SHA, API health, one real gadget, frontend CORS and direct `/login`; see [safe evidence](../evidence/sprint1-main-deployment.json). Rollback/recovery has not been exercised.
+
+## Sprint 2 final row: 17 October 2026
+
+Computed with `python scripts/pipeline_metrics.py --since 2026-10-11T16:00:00Z --until 2026-10-17T12:04Z` (Sprint 2 week in Manila time; `ci.yml` only). Raw JSON kept locally; the scheduled `ops-weekly.yml` produced the same values for its rolling window ([run 39030954463](https://github.com/Ikeee-AI/TekaTech/actions/runs/39030954463), artifact `weekly-metrics`).
+
+- **PR pipeline:** 37 completed PR runs, average 0.66 min. Includes the four teammate fork PRs, which only started running CI after fork workflows were enabled on 17 Oct ~18:55 Manila.
+- **Main pipeline:** 10 runs, average 2.19 min; **10 successful production deploys, 0 failed**. Seven of them were the gated merge sequence on 17 Oct (#19, #17, #25, #27, #29, #30, #40; 19:42–20:01 Manila), each smoke-verified before the next merge.
+- **Merge → live:** 2.19 min average over 9 PR-backed deploys. The tenth main deploy (`ed37f45`) was a direct push without a PR, so it has no merge timestamp; it is recorded as a process exception in `docs/devops/incidents.md`.
+- **Success rate:** 48/48 completed runs; no cancelled or skipped runs in the window.
+- **Recovery time:** N/A — no production incident.
+- **Persistence across redeploys (Sprint 2 gate):** production served the same 3 gadgets (created 8 Aug and 12 Oct) after all seven 17 Oct redeploys (checked at ~20:00 Manila, commit `a79076d`).

@@ -19,3 +19,22 @@ For every later broken build reaching main or failed production deployment, add:
 Fix: inspect the ACTIVE_HEALTHY schema, save its function definitions locally, verify the known old five-column signature has zero dependent objects, and remove only that overload through a registered reconciliation migration. All six read-only backend database checks then passed, and FastAPI `/gadgets` returned 200.
 
 Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown signatures/dependents; run the legacy-overload and public-vector cases in CI. The Supabase advisor findings remain documented in `docs/evidence/supabase-sprint-1.json` for hardening.
+
+## Sprint 2 process exceptions (no production impact)
+
+### PE-1 — Unreviewed commit reached main (16 Oct 2026)
+- **What:** `ed37f45` "Add Adrian Flores as AI Developer in README" was committed directly to `main` through the GitHub web editor (16 Oct 19:54 Manila), without a PR or review. Main CI ran and deployed it ([run 38896878097](https://github.com/Ikeee-AI/TekaTech/actions/runs/38896878097)).
+- **Impact:** documentation-only, one line; production behaviour unchanged. Process impact: a merge to main without teammate review.
+- **Detection:** 17 Oct during the Saturday status review (commit had no associated PR).
+- **Cause:** branch protection and rulesets are unavailable on this private Free-plan repository (HTTP 403), so direct pushes cannot be blocked; the rule was only a team convention.
+- **Prevention:** `Main guard` job ([#40](https://github.com/Ikeee-AI/TekaTech/pull/40), live since `20909ab`): a commit without a merged, teammate-approved PR no longer deploys and opens a `process` issue. Guard tested against history (blocks `ed37f45` and the unreviewed #15 merge). Team reminded: all changes through PRs. Owner: Ikeee-AI.
+
+### PE-2 — Teammate PRs ran no CI (16–17 Oct 2026)
+- **What:** PRs #35, #36, #37 and #39 were opened from forks. Fork PR workflows were disabled by default on the private repository, so none of them ran the required checks.
+- **Detection:** 17 Oct ~18:30 Manila (PR checks list empty). **Recovery:** fork PR workflows enabled with read-only token and no secrets; PRs re-triggered; all four green by ~19:00. About 30 hours for the earliest PR (#35).
+- **Prevention:** settings recorded in PIPELINE.md; teammates now have write access and should push branches to the main repository.
+
+### PE-3 — Weekly dependency audit could not fail (17 Oct 2026)
+- **What:** the first run of `ops-weekly.yml` ([39030954463](https://github.com/Ikeee-AI/TekaTech/actions/runs/39030954463)) found 18 known vulnerabilities in 3 packages but reported success: steps ran without `pipefail` so `audit | tee` masked the exit code.
+- **Detection:** same evening, by checking the run against the known findings in #28. **Fix:** [#52](https://github.com/Ikeee-AI/TekaTech/pull/52) sets `shell: bash`; verified on the branch ([39031057744](https://github.com/Ikeee-AI/TekaTech/actions/runs/39031057744)) — audit now fails correctly.
+- **Lesson:** verify a new check can fail before trusting its green result. Owner: Ikeee-AI.

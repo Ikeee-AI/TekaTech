@@ -154,6 +154,27 @@ None new.
 **Errors and fixes**
 None.
 
+## 2026-10-16 20:14 Asia/Manila — DevOps automation batch: secret scanning, scheduled ops, Dependabot, labels, release tools, Sprint 2/3 board
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S2-IK, Sprint 3 DevOps prep · **Branches:** `tekatech/ci-actionlint`, `ci-gitleaks`, `ops-scheduled`, `repo-hygiene`, `release-tools`
+
+**Done**
+- Board: `project` token scope added; Sprint 2 owner issues #20–#24 and #18 placed with real statuses; PRs #17, #19, #25–#27, #29, #30 in *In review*; Sprint 3 DevOps issues #31–#34 in *Backlog*; #28 *Ready*. 31 board items.
+- [PR #25](https://github.com/Ikeee-AI/TekaTech/pull/25): actionlint 1.7.12 (checksum-verified) + shellcheck in Backend tests — CI run 38889524499 green; step ~1 s, job 19 s.
+- [PR #26](https://github.com/Ikeee-AI/TekaTech/pull/26) (stacked on #25): gitleaks 8.30.1 full-history scan, redacted — local and CI: **no leaks** (14 local non-merge commits, all branches; 15 in CI); step ~1 s.
+- [PR #27](https://github.com/Ikeee-AI/TekaTech/pull/27): `ops-health.yml` daily production smoke with auto `incident` issue; `ops-weekly.yml` Saturday metrics + pip-audit/npm audit. CI green.
+- [PR #29](https://github.com/Ikeee-AI/TekaTech/pull/29): Dependabot (uv, npm, actions; weekly, grouped, capped) + owner-area labeler — CI green; labeler applied `area:devops` to its own PR.
+- [PR #30](https://github.com/Ikeee-AI/TekaTech/pull/30): guarded `rollback.yml` (SHA on main + 3 successful checks; guard query verified on `68b4c5a`) and tag-based `release.yml`; runbook updated. Not executed (would deploy production); rehearsal stays NOT RUN.
+- Local dependency audit found vulnerable transitive packages → [issue #28](https://github.com/Ikeee-AI/TekaTech/issues/28): pyjwt 2.13.0 (14 advisories), urllib3 2.7.0 (3), multidict 6.7.1 (1), source-map-js (1 high). Routed to Manuel (backend) / Mika (frontend).
+- Claude attribution removed from PR descriptions at the owner's request; future commits/PRs carry none.
+
+**Errors and fixes**
+| Error | Cause | Fix / status |
+| --- | --- | --- |
+| `refusing to allow an OAuth App to create or update workflow ... without workflow scope` | Windows Credential Manager Git token lacks `workflow` scope | One-off push via `gh auth git-credential` (Ikeee-AI, has `workflow`); git config unchanged. Resolved |
+| `gh auth refresh` failed when typed with extra words after `!` | Question text included on the command line | Owner ran it in a separate PowerShell window. Resolved |
+| gitleaks first scan covered 13 of 16 commits | Default scans current branch only | `--log-opts="--all"` locally and in CI. Resolved |
+| `jq: command not found` locally | jq not installed on this laptop | Used gh `--jq`; runners have jq. Accepted |
+
 **Conflicts and contradictions**
 | What conflicts | Impact | Resolution / owner / status |
 | --- | --- | --- |
@@ -194,6 +215,44 @@ None.
 | `git reset --hard`, first `git push --force-with-lease`, and `gh pr review --approve` were blocked by the auto-mode classifier | Safety classifier (destructive/self-approval) | Avoided reset; push re-run after Manuel's explicit instruction; approvals posted by Manuel himself |
 | #37 check "Owner-area labels" fails: `Resource not accessible by integration` | `labeler.yml` uses `pull_request`; fork PRs get a read-only token | Not fixed; skipped by decision. Fix is Ikeee-AI's: `pull_request_target` (no PR-head checkout) or the repo's fork write-token setting |
 
+| #26 edits the same `ci.yml` lines as #25 | Merge conflict risk | Stacked #26 on #25; merge #25 first — Ikeee-AI — open |
+| `ops-weekly` metrics job needs `scripts/pipeline_metrics.py` from #17 | Job would fail before #17 merges | Job skips with a notice until #17 is merged — resolved by design |
+
+**Decisions**
+- Dependency fixes go through owners' reviewed PRs; no forced upgrades — Ikeee-AI.
+- Automations that need other members or credit (prompt-eval CI, live OpenAI smoke, staging, measured optimization) planned as Sprint 3 issues #31–#34 — Ikeee-AI.
+
+**Blockers / risks**
+- Seven PRs (#17, #19, #25, #26, #27, #29, #30) wait on Manuel's review; review load is high — Ikeee-AI to agree merge order with Manuel.
+- Vulnerable dependencies (#28) — Manuel / Mika — Sprint 3 start.
+
+**Plan alignment** — S2-IK: Partial → strong DevOps evidence prepared; nothing new counted Done until reviewed, merged and verified. Sprint 3 DevOps work pulled forward as reviewable PRs.
+
+**Next**
+- Owner enables board built-in workflows (Projects → Workflows) — Ikeee-AI — tonight.
+- Agree merge order with Manuel: #19 → #17 → #25 → #26 → #27 → #29 → #30 — Saturday morning.
+
+## 2026-10-17 18:00–20:20 Asia/Manila — Merges, guardrails, deliverable reviews, Sprint 2 evidence
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S2-IK · **Branch:** `tekatech/sprint2-evidence`
+
+**Done**
+- Gated merge sequence (approval on latest commit by a teammate + 3 green checks, then squash merge and wait for deploy + smoke): #19 `f6b86a9`, #17 `4d41a34`, #25 `8909316`, #27 `0223744`, #29 `9e94580`, #30 `a79076d`, #40 `20909ab` — all deployed and smoke-verified, 19:42–20:01. First real main-guard run passed on #40.
+- Repository guardrails applied: squash-only merges, delete merged branches, Dependabot alerts + security-fix PRs (#41–#45 opened), Actions allowlist (GitHub-owned + `astral-sh/setup-uv`), fork PR workflows with read-only token/no secrets. Rulesets/branch protection re-checked: HTTP 403.
+- PRs opened: #40 main guard (merged), #46 automated PR review + reviewer assignment, #52 audit pipefail fix. #26 rebased onto main after #25's squash merge; re-approval requested.
+- Teammate contributions verified on GitHub (all commits under their own accounts): Adrian #35, Jopher #36, Manuel #37 (+9 reviews), Mika #39. CI re-triggered on all four fork PRs → all green.
+- Deliverable reviews against Sprint 2 task rows → `docs/sprints/sprint-2/reviews/sprint-2-deliverable-reviews.md`; casual fix messages drafted for each member.
+- Ops workflows run once by hand: `ops-health` (run 39030952194) passed; `ops-weekly` (run 39030954463) metrics passed.
+- Final Sprint 2 metrics (37 PR runs 0.66 min; 10 main runs 2.19 min; 48/48; 10 deploys; 0 failed) and persistence-after-redeploy evidence in `docs/devops/metrics.md`; process exceptions PE-1..PE-3 in `docs/devops/incidents.md`; quality-gate costs in `docs/devops/optimizations.md`; consultation packet finalized.
+
+**Errors and fixes**
+| Error | Cause | Fix / status |
+| --- | --- | --- |
+| Told the owner it was 10:08 Manila (5 h before deadline); it was 18:08 | `TZ=Asia/Manila date` in Git Bash printed UTC | Corrected immediately; PowerShell time conversion now used (saved as a standing rule). Team deadline had already passed |
+| `STOP #26: mergeable=CONFLICTING` | #26 was stacked on #25; squash merge rewrote the base commit | `git rebase --onto origin/main d5abfde`; force-pushed own branch; re-approval requested |
+| Weekly dependency audit green despite 18 findings | No `pipefail` without explicit shell | #52; verified failing correctly on branch run 39031057744 |
+| Empty `/gadgets` response once | Render restarting during the #40 deploy | Retried; 3 gadgets served |
+| Optimization row first written from memory (18 s) | Not measured | Re-measured: 14 s; corrected before commit |
+
 **Conflicts and contradictions**
 | What conflicts | Impact | Resolution / owner / status |
 | --- | --- | --- |
@@ -214,3 +273,22 @@ None.
 - Re-approve #37 on `02daa7d` — s2100932 — when available.
 - Merge #46, #53, #65, then #37 once approved — Ikeee-AI — after gate.
 - Labeler `pull_request_target` fix PR — Ikeee-AI — after #46.
+
+| #36 (Jopher) and #37 (Manuel) append to the same test files with a duplicate test name | Merge conflict / shadowed test | Merge #37 first, Jopher rebases — Manuel/Jopher — open |
+| #37 API reference marks 4 public routes as login-required | Wrong contract for integration | Manuel to correct — open |
+| #35 says `Closes #12` (wrong issue); #39 `Closes #21` | Would auto-close issues before verification | Owners change to `Refs` — open |
+| Merged PRs moved to Done (not Deployed verification) by board workflows | PR merge already includes smoke verification | Accepted for PRs; issues close only after owner verification |
+
+**Decisions**
+- Reviews are AI-assisted pre-reviews for the DevOps owner; they are not posted as approvals on teammates' PRs — Ikeee-AI.
+- Unreviewed changes are blocked from production by the main guard rather than tolerated — Ikeee-AI.
+
+**Blockers / risks**
+- Teammate PRs need peer reviews and fixes (asked before 22:00 tonight) — all owners.
+- #26, #46, #52, #41–#45 awaiting review — Manuel / area owners.
+- OpenAI credit — Ikeee-AI.
+
+**Plan alignment** — S2-IK: CI/CD scope delivered and live; Sprint 2 overall Partial for all developer tasks (see consultation packet). Team deadline (Sat 15:00) passed; Mika's PR arrived 15:55.
+
+**Next**
+- Merge teammate PRs as reviews arrive (`/pr-gate`), then verify live; confirm instructor consultation time — Ikeee-AI — tonight / Sunday.
