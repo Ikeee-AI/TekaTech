@@ -1,5 +1,7 @@
 # Team ownership and real teammate review
 
+> **Update, 16 October 2026:** the review requested below happened — Manuel approved [PR #16](https://github.com/Ikeee-AI/TekaTech/pull/16) on 2026-10-12 before its merge. The team is now five people; current ownership, the review table and GitHub accounts are in README and `docs/sprints-2-to-5.md`. This page is kept as the Sprint 1 access/review record.
+
 Confirmed on 12 October 2026: Ikeee-AI is the one DevOps Engineer, contributes full-stack/frontend work, and is Sprint 1 product owner. Manuel Mirasol (`s2302827-byte`) is a Developer owning backend, database and AI. Only these two members have been declared so far. Ownership describes future responsibility, not authorship of earlier code.
 
 [Private TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) contains all 13 existing course issues. Workflow: Backlog -> Ready -> In Progress -> In review -> Deployed verification -> Done. Do not mark an item Done until its acceptance criteria and reviewed-merge/CI/deployment checks pass.

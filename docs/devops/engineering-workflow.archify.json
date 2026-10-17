@@ -1,0 +1,79 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "TekaTech Engineering Workflow",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "output": ".archify/workflow-engineering-process-20261016-183156/engineering-process.html",
+    "legend": {
+      "entries": {
+        "external": { "label": "Team member action" },
+        "backend": { "label": "Automatic (GitHub Actions)" },
+        "messagebus": { "label": "Assisted (Claude skill, you trigger)" },
+        "security": { "label": "Human gate (review / approval)" },
+        "cloud": { "label": "Production (Render + Supabase)" }
+      }
+    }
+  },
+  "lanes": [
+    { "id": "owner", "label": "Feature owner (Adrian · Mika · Manuel · Jopher · Ikeee-AI)" },
+    { "id": "ci", "label": "GitHub Actions — automatic" },
+    { "id": "gate", "label": "Review & merge gate" },
+    { "id": "prod", "label": "Production (Render + Supabase)" },
+    { "id": "evidence", "label": "Evidence & reporting" }
+  ],
+  "phases": [
+    { "id": "build", "label": "Build", "fromCol": 0, "toCol": 1 },
+    { "id": "review", "label": "Review gate", "fromCol": 2, "toCol": 4, "variant": "security" },
+    { "id": "release", "label": "Release + verify", "fromCol": 5, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["issue", "build", "checks", "precheck", "review", "merge", "mainci", "deploy", "verify"],
+  "nodes": [
+    { "id": "issue", "lane": "owner", "col": 0, "type": "external", "icon": "flag", "label": "Issue + branch", "sublabel": "one task, one owner" },
+    { "id": "build", "lane": "owner", "col": 1, "type": "external", "icon": "person", "label": "Build + open PR", "sublabel": "tests on TekaTech-dev", "tag": "never prod data" },
+    { "id": "checks", "lane": "ci", "col": 1, "type": "backend", "label": "PR checks", "sublabel": "secrets · pytest · lint/build · SQL ×2", "tag": "mocked AI, no secrets" },
+    { "id": "precheck", "lane": "gate", "col": 2, "type": "messagebus", "label": "/review-deliverable", "sublabel": "vs sprint task: Met/Partial/Missing" },
+    { "id": "review", "lane": "gate", "col": 3, "type": "security", "icon": "person", "label": "Teammate review", "sublabel": "real approval, not the author" },
+    { "id": "merge", "lane": "gate", "col": 4, "type": "security", "label": "/pr-gate → merge", "sublabel": "approval on latest commit + 3 green", "tag": "Ikeee-AI merges" },
+    { "id": "mainci", "lane": "ci", "col": 5, "type": "backend", "label": "Main pipeline", "sublabel": "re-run checks → deploy hooks" },
+    { "id": "deploy", "lane": "prod", "col": 5, "type": "cloud", "label": "Render deploy + smoke", "sublabel": "exact SHA · DB · CORS" },
+    { "id": "incident", "lane": "prod", "col": 4, "type": "messagebus", "label": "/incident + rollback", "sublabel": "revert PR via runbook" },
+    { "id": "verify", "lane": "evidence", "col": 5, "type": "messagebus", "label": "/verify-deploy", "sublabel": "owner checks feature live", "tag": "= Done" },
+    { "id": "report", "lane": "evidence", "col": 4, "type": "messagebus", "label": "Weekly evidence", "sublabel": "/log-work · /pipeline-metrics", "tag": "/consultation-packet" }
+  ],
+  "edges": [
+    { "id": "start-work", "from": "issue", "to": "build", "variant": "default" },
+    { "id": "pr-opened", "from": "build", "to": "checks", "label": "PR", "variant": "emphasis" },
+    { "id": "checks-green", "from": "checks", "to": "precheck", "label": "green", "variant": "emphasis" },
+    { "id": "checks-red", "from": "checks", "to": "build", "label": "red: fix", "variant": "security", "role": "error" },
+    { "id": "scored", "from": "precheck", "to": "review", "label": "scorecard", "variant": "default" },
+    { "id": "approved", "from": "review", "to": "merge", "label": "approved", "variant": "emphasis" },
+    { "id": "changes", "from": "review", "to": "build", "label": "changes requested", "variant": "security", "role": "return" },
+    { "id": "merged", "from": "merge", "to": "mainci", "label": "merge to main", "variant": "emphasis" },
+    { "id": "deploy-hooks", "from": "mainci", "to": "deploy", "label": "exact SHA", "variant": "emphasis" },
+    { "id": "smoke-pass", "from": "deploy", "to": "verify", "label": "smoke passed", "variant": "emphasis" },
+    { "id": "smoke-fail", "from": "deploy", "to": "incident", "label": "fails", "variant": "security", "role": "error" },
+    { "id": "record", "from": "verify", "to": "report", "label": "record", "variant": "dashed", "role": "async" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Definition of Done",
+      "items": [
+        "Teammate-reviewed PR, three CI checks green, merged to main",
+        "Deployed by the main pipeline and verified live on the exact commit",
+        "Local test passes alone are not Done"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Still manual or planned",
+      "items": [
+        "Branch protection unavailable on private Free plan: /pr-gate is a manual gate",
+        "SQL migrations applied by hand in Supabase; secrets set in Render",
+        "Planned: actionlint, Gitleaks, Dependabot, prompt-eval CI, staging (Sprint 3)"
+      ]
+    }
+  ]
+}

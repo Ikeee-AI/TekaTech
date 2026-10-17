@@ -1,7 +1,7 @@
 # TTK-04: Functional frontend wired to backend
 
 Target: Sprint 1-2
-Ownership area: Developer: frontend. Named assignee: pending team declaration.
+Ownership area: Developer: frontend. GitHub assignee (16 Oct 2026): Ikeee-AI. Sprint 2–5 work-package owners: see `docs/sprints-2-to-5.md`.
 
 ## Acceptance criteria
 
