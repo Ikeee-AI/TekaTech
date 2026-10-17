@@ -88,3 +88,15 @@ def test_get_gadget_malformed_id(client, fake_supabase):
 def test_create_gadget_without_name_returns_422(client, fake_supabase):
     resp = client.post("/gadgets", json={"brand": "Samsung", "category": "smartphone"})
     assert resp.status_code == 422
+
+def test_delete_gadget_without_login_returns_401(client, fake_supabase):
+    from main import app
+    from auth import get_current_user
+
+    previous = app.dependency_overrides.pop(get_current_user)
+    try:
+        resp = client.delete(f"/gadgets/{uuid4()}")
+        assert resp.status_code == 401
+        assert fake_supabase.writes == []
+    finally:
+        app.dependency_overrides[get_current_user] = previous
