@@ -63,7 +63,7 @@ The browser never queries data tables directly. Supabase is used from the browse
 3. The backend verifies it with `supabase.auth.get_user(token)` in `auth.py`.
 4. Route-level authorization (`get_current_user`, `get_current_admin_user`) is the only access control — the backend's service-role key bypasses RLS, so Supabase RLS policies provide zero defense-in-depth here.
 
-Admin is a flag on the Supabase auth user's `app_metadata`, which only the admin API (service-role key) can set. A user can never grant it to themselves. Admin-only operations today: delete gadget, list/resolve corrections. Any logged-in user can create/edit gadgets, ingest specs, and submit corrections.
+Admin is a flag on the Supabase auth user's `app_metadata`, which only the admin API (service-role key) can set. A user can never grant it to themselves. Admin-only operations today: delete gadget, list/resolve corrections. Any logged-in user can create/edit gadgets, ingest/index specs, and submit corrections.
 
 The relationship actually used by the app is `gadgets.id -> spec_documents.gadget_id` (one gadget, many spec chunks, cascade delete). `spec_documents` -> `spec_corrections` (one spec, many corrections, cascade delete) is the second relationship. Both are reproduced in scratch Postgres by `backend/sql/001_baseline.sql` without Supabase-managed Auth tables.
 
@@ -81,7 +81,7 @@ Environment variables (no secret values committed):
 
 Count with the matching encoder: `count_embedding_tokens` for anything headed to `embed_texts`, `count_chat_tokens` for anything headed into a prompt.
 
-Rate limits: `/query` 10/min, spec ingestion and comparison creation 20/hour. `memory://` is per-process and correct only for a single worker; use a shared store (e.g. Redis) for multi-worker deploys. Startup aborts if a configured shared store is unreachable — no silent fallback.
+Rate limits: `/query` 10/min; spec ingestion, spec indexing and comparison creation 20/hour each. `memory://` is per-process and correct only for a single worker; use a shared store (e.g. Redis) for multi-worker deploys. Startup aborts if a configured shared store is unreachable — no silent fallback.
 
 ## API reference
 
@@ -97,15 +97,15 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/gadgets/{id}` | PATCH | logged-in | `GadgetUpdate` | 200 `GadgetResponse` | 400, 401, 404, 422 |
 | `/gadgets/{id}` | DELETE | admin | path `id` | 204 | 401, 403, 404 |
 | `/gadgets/{id}/specs` | GET | none | path `id` | 200 list | — |
-| `/gadgets/{id}/specs` | POST | logged-in | `{"raw_text": "...", "source_url": "..."}` | 201 | 401, 404, 422 |
-| `/gadgets/{id}/specs/{spec_id}/index` | POST | logged-in | path ids | 200 | 401, 404, 409, 422, 503 |
-| `/comparisons` | POST | none | `{"gadget_ids": [...]}` | 201 | — |
-| `/comparisons/{slug}` | GET | none | path `slug` | 200 | 404 |
+| `/gadgets/{id}/specs` | POST | logged-in | `{"raw_text": "...", "source_url": "..."}` | 201 `{"gadget_id", "chunks_created", "indexing_status"}` | 400, 401, 404, 422, 429 |
+| `/gadgets/{id}/specs/{spec_id}/index` | POST | logged-in | path ids | 200 `{"id", "indexing_status"}` | 401, 404, 409, 422, 429, 503 |
+| `/comparisons` | POST | none | `{"gadget_ids": [...]}` (2–5 ids) | 201 | 400 (fewer than 2), 422, 429 |
+| `/comparisons/{slug}` | GET | none | path `slug` | 200 `{"slug", "gadget_ids"}` | 404 |
 | `/stats/spec-coverage` | GET | none | none | 200 `{"covered": N, "total": N}` | — |
 | `/stats/trending-questions` | GET | none | query: `limit` | 200 list | — |
 | `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` | 201 | 401, 404 |
 | `/corrections` | GET | admin | query `status` | 200 list | 401, 403 |
 | `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}` | 200 | 400, 401, 403, 404 |
-| `/query` | POST | none | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 | — |
+| `/query` | POST | none | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 `{"answer", "sources", "model_used"}` | 422 (empty or over-limit question), 429 |
 
-Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route.
+Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route. Rate-limited routes (`/query`, spec ingestion/indexing, comparison creation) return 429 once the limit is exceeded.

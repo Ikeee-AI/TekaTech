@@ -180,3 +180,45 @@ def test_ingest_spec_whitespace_only_text_returns_400(client, fake_supabase):
     resp = client.post(f"/gadgets/{gadget_id}/specs", json={"raw_text": "   "})
     assert resp.status_code == 400
     assert fake_supabase.writes == []
+
+
+def test_ingested_spec_chunks_are_linked_to_their_gadget(client, fake_supabase):
+    """gadgets.id -> spec_documents.gadget_id: every saved chunk carries the gadget it was posted to."""
+    gadget_id = str(uuid4())
+    fake_supabase.set_response("gadgets", "select", [{"id": gadget_id}])
+    fake_supabase.set_response(
+        "spec_documents",
+        "insert",
+        [
+            {"id": str(uuid4()), "gadget_id": gadget_id, "content": "c1", "chunk_index": 0},
+            {"id": str(uuid4()), "gadget_id": gadget_id, "content": "c2", "chunk_index": 1},
+        ],
+    )
+    raw_text = "Display: 6.2-inch AMOLED, 120Hz.\n\nBattery: 4000mAh, 25W fast charging."
+    resp = client.post(f"/gadgets/{gadget_id}/specs", json={"raw_text": raw_text})
+    assert resp.status_code == 201
+    table, operation, rows = fake_supabase.writes[-1]
+    assert (table, operation) == ("spec_documents", "insert")
+    assert rows
+    assert {row["gadget_id"] for row in rows} == {gadget_id}
+    assert ("gadgets", "id", gadget_id) in fake_supabase.filters
+
+
+def test_list_specs_is_scoped_to_the_requested_gadget(client, fake_supabase):
+    gadget_id = str(uuid4())
+    fake_supabase.set_response("spec_documents", "select", [{
+        "id": str(uuid4()), "gadget_id": gadget_id, "content": "Battery: 4000mAh",
+        "source_url": None, "chunk_index": 0, "verified_at": "2026-10-01T00:00:00+00:00",
+        "indexing_status": "pending",
+    }])
+    resp = client.get(f"/gadgets/{gadget_id}/specs")
+    assert resp.status_code == 200
+    assert [spec["gadget_id"] for spec in resp.json()] == [gadget_id]
+    assert ("spec_documents", "gadget_id", gadget_id) in fake_supabase.filters
+
+
+def test_ingest_spec_for_missing_gadget_writes_no_spec_rows(client, fake_supabase):
+    fake_supabase.set_response("gadgets", "select", [])
+    resp = client.post(f"/gadgets/{uuid4()}/specs", json={"raw_text": "Display: 6.2 inch"})
+    assert resp.status_code == 404
+    assert fake_supabase.writes == []
