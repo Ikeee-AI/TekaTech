@@ -108,4 +108,6 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}` | 200 | 400, 401, 403, 404 |
 | `/query` | POST | none | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 `{"answer", "sources", "model_used"}` | 422 (empty or over-limit question), 429 |
 
+Every route with an `{id}`, `{gadget_id}`, `{spec_id}` or `{correction_id}` path parameter returns 422 for a malformed UUID.
+
 Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route. Rate-limited routes (`/query`, spec ingestion/indexing, comparison creation) return 429 once the limit is exceeded.
