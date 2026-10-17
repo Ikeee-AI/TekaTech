@@ -44,6 +44,17 @@ Read-only workflows that run from `main` on a schedule (GitHub may start them la
 | `ops-weekly.yml` — Delivery metrics | Saturday 09:00 Asia/Manila | `scripts/pipeline_metrics.py` for the last 7 days into the run summary plus a 30-day JSON artifact | Job fails visibly; values with no runs stay N/A |
 | `ops-weekly.yml` — Dependency audit | Saturday 09:00 Asia/Manila | `pip-audit 2.10.1` on backend runtime dependencies (from `uv.lock`) and `npm audit --omit=dev --audit-level=high` on the frontend | Job fails visibly; fixes go through reviewed PRs, never forced upgrades |
 
+## Automated PR review and repository guardrails
+
+| Control | Where | Effect |
+| --- | --- | --- |
+| PR policy | `pr-review.yml` | Fails when a PR links no issue/task, changes `backend/sql/` without manual-migration instructions, or includes a `.env` file; warns on PRs over 600 changed lines and on CI/hosting/secret-check changes not authored by DevOps |
+| Python review | `pr-review.yml` | `ruff 0.16.10` bug and security rules (`E4,E7,E9,F,B,S`; ignores FastAPI `B008` and test `S101`) as inline annotations; non-blocking hints for author and reviewer |
+| Reviewer assignment | `pr-reviewers.yml` (`pull_request_target`, no PR code executed) | Requests the reviewer from the team review table; works for fork PRs |
+| Repository settings (applied 2026-10-17) | GitHub settings | Squash merge only; head branches deleted after merge; Dependabot alerts and security-fix PRs on; Actions limited to GitHub-owned actions plus `astral-sh/setup-uv`; fork PR workflows run with read-only token and no secrets; workflows cannot approve PRs |
+
+Automated review supports, and never replaces, the required teammate approval.
+
 ## Configuration and quality gates
 
 Set GitHub repository Actions secrets `RENDER_BACKEND_DEPLOY_HOOK` and `RENDER_FRONTEND_DEPLOY_HOOK`, and repository Actions variables `PRODUCTION_API_URL` and `PRODUCTION_FRONTEND_URL`. This private repository uses GitHub Free; environment secrets for private repositories require an eligible paid plan. The deploy job references the production hooks only on pushes to main and after all three checks pass; PR check jobs are not given those hook variables. Missing hooks or URL variables fail the deployment job explicitly. The smoke stage waits for both exact commits, database-backed `/gadgets`, the frontend shell and allowed CORS, then uploads its result as evidence. No paid AI calls occur in deployment smoke tests. Keep automatic hosting deploys off so the Actions pipeline is the deploy trigger. Set production API/frontend configuration in Render, never in code. If adding preview/staging environments, use separate service credentials and hook names.

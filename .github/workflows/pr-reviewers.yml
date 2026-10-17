@@ -1,0 +1,38 @@
+name: PR reviewer assignment
+
+# Requests the reviewer from the team review table (docs/sprints-2-to-5.md).
+# Uses pull_request_target so it also works for PRs from forks; it never checks
+# out or runs PR code, it only calls the GitHub API with the PR metadata.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  assign:
+    name: Request reviewer from review table
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.number }}
+      AUTHOR: ${{ github.event.pull_request.user.login }}
+    steps:
+      - name: Pick the reviewer for this author
+        run: |
+          # Author -> primary reviewer (review table). Accounts: README.
+          case "$AUTHOR" in
+            s2302756-cloud) reviewer="s2302827-byte" ;;   # Adrian -> Manuel
+            s2302827-byte)  reviewer="s2100932" ;;        # Manuel -> Jopher
+            meka-moka)      reviewer="s2100932" ;;        # Mika -> Jopher
+            s2100932)       reviewer="s2302827-byte" ;;   # Jopher -> Manuel (backend/integration)
+            Ikeee-AI)       reviewer="s2302827-byte" ;;   # Ikeee-AI -> Manuel
+            "dependabot[bot]") reviewer="Ikeee-AI" ;;      # DevOps triages, then routes to the area owner
+            *) echo "No mapping for @$AUTHOR; request a reviewer manually." >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+          esac
+          gh api -X POST "repos/$GITHUB_REPOSITORY/pulls/$PR/requested_reviewers" -f "reviewers[]=$reviewer" --silent
+          echo "Requested review from @$reviewer for PR #$PR by @$AUTHOR." >> "$GITHUB_STEP_SUMMARY"
