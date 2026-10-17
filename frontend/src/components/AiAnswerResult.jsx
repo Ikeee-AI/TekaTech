@@ -1,20 +1,23 @@
-import { ChevronDown, ChevronUp, ExternalLink, RefreshCw, AlertCircle, Copy, Check, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, RefreshCw, Copy, Check } from 'lucide-react'
 import AnswerText from './AnswerText'
+import Alert from './ui/Alert'
+import Button from './ui/Button'
 
 export function AnswerSkeleton({ lines = 3 }) {
   const widths = ['100%', '92%', '95%', '78%', '70%']
   return (
-    <div className="space-y-2 py-1 animate-pulse">
+    <div className="space-y-2.5 py-1 animate-pulse" aria-hidden="true">
       {widths.slice(0, lines).map((w, i) => (
-        <div key={i} className="h-3.5 bg-gray-100 rounded" style={{ width: w }} />
+        <div key={i} className="h-4 bg-slate-100 rounded" style={{ width: w }} />
       ))}
     </div>
   )
 }
 
-/** Shared error / answer / sources / footer block for both AIAnswerPanel
- * and AIComparisonPanel — the two panels only differ in their header and
- * question-input UI above this. */
+/** Shared loading / error / answer / sources / footer block for both
+ * AIAnswerPanel and AIComparisonPanel — the two panels only differ in their
+ * header and question-input UI above this. The wrapper is an aria-live region
+ * so screen readers hear "searching…", then the answer or the error. */
 export default function AiAnswerResult({
   loading,
   error,
@@ -29,33 +32,42 @@ export default function AiAnswerResult({
   togglePlainLanguage,
   handleCopy,
   copied,
+  skeletonLines = 3,
 }) {
   return (
-    <>
-      {error && (
-        <div className="mt-2 space-y-2">
-          <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-md px-3 py-2.5 text-sm text-red-700">
-            <AlertCircle size={15} className="shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-          <button
-            onClick={onRetry}
-            className="flex items-center gap-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-md px-3 py-1.5 hover:bg-gray-50 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-          >
-            <RefreshCw size={12} /> Try again
-          </button>
+    <div aria-live="polite" aria-busy={loading || undefined}>
+      {loading && (
+        <div className="mt-3 space-y-3">
+          <p className="text-sm font-medium text-slate-600">Searching the spec sheets and writing an answer…</p>
+          <AnswerSkeleton lines={skeletonLines} />
         </div>
       )}
 
-      {result && !loading && (
-        <div className="space-y-3 mt-2">
+      {error && !loading && (
+        <Alert
+          tone="error"
+          title="Couldn't Get an Answer"
+          className="mt-3"
+          action={
+            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={onRetry}>
+              Try Again
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      )}
+
+      {result && !loading && !error && (
+        <div className="space-y-4 mt-3">
           {result.sources.length === 0 ? (
-            <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 border-dashed rounded-md px-3 py-3 text-sm text-gray-500">
-              <Sparkles size={15} className="shrink-0 mt-0.5 text-gray-300" />
-              <span>{result.answer}</span>
-            </div>
+            <Alert tone="info" title="No Matching Specs Found">
+              {result.answer}
+            </Alert>
           ) : (
-            <AnswerText text={result.answer} onCiteClick={handleCiteClick} />
+            <div className="text-[15px] text-slate-800 leading-relaxed">
+              <AnswerText text={result.answer} onCiteClick={handleCiteClick} />
+            </div>
           )}
 
           {result.sources.length > 0 && (
@@ -63,76 +75,74 @@ export default function AiAnswerResult({
               <button
                 onClick={() => setSourcesOpen((s) => !s)}
                 aria-expanded={sourcesOpen}
-                className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-teal-600 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded"
+                aria-controls="answer-sources"
+                className="inline-flex items-center gap-1 min-h-9 text-sm font-semibold text-slate-700 hover:text-sage-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 rounded"
               >
-                {sourcesOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                {result.sources.length} source{result.sources.length === 1 ? '' : 's'} cited
+                {sourcesOpen ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
+                {result.sources.length} Source{result.sources.length === 1 ? '' : 's'} Cited
               </button>
               {sourcesOpen && (
-                <div className="mt-2 space-y-2 animate-fade-in">
+                <ol id="answer-sources" className="mt-2 space-y-2 animate-fade-in">
                   {result.sources.map((s, i) => (
-                    <div
+                    <li
                       key={i}
                       ref={(el) => (sourceRefs.current[i] = el)}
-                      className={`bg-gray-50 border rounded-md px-3 py-2 transition-colors duration-500 ${
-                        highlightedIndex === i ? 'border-teal-400 bg-teal-50' : 'border-gray-100'
+                      className={`border rounded-lg px-3.5 py-3 transition-colors duration-500 ${
+                        highlightedIndex === i ? 'border-sage-400 bg-sage-50' : 'border-slate-200 bg-slate-50'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-teal-700">
-                          <span className="font-mono text-[10px] bg-white border border-teal-200 rounded px-1">{i + 1}</span>
-                          {s.gadget_name}
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-sage-800 min-w-0">
+                          <span className="text-xs bg-white border border-sage-200 rounded px-1.5" aria-label={`Source ${i + 1}`}>
+                            {i + 1}
+                          </span>
+                          <span className="truncate">{s.gadget_name}</span>
                         </span>
-                        <span className="text-[10px] font-mono text-gray-400">{Math.round(s.similarity * 100)}% match</span>
+                        <span className="text-xs text-slate-600 shrink-0">{Math.round(s.similarity * 100)}% match</span>
                       </div>
-                      <div className="h-1 bg-gray-200 rounded-full overflow-hidden mb-1.5">
-                        <div className="h-full bg-teal-500 rounded-full" style={{ width: `${Math.round(s.similarity * 100)}%` }} />
+                      <div className="h-1 bg-slate-200 rounded-full overflow-hidden mb-2" aria-hidden="true">
+                        <div className="h-full bg-sage-600 rounded-full" style={{ width: `${Math.round(s.similarity * 100)}%` }} />
                       </div>
-                      <p className="text-xs text-gray-600">{s.content}</p>
+                      <p className="text-sm text-slate-700 break-words">{s.content}</p>
                       {s.source_url && (
                         <a
                           href={s.source_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-teal-600 hover:underline mt-1"
+                          className="inline-flex items-center gap-1 text-sm font-medium text-sage-700 hover:underline mt-1.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
                         >
-                          <ExternalLink size={10} /> Source
+                          <ExternalLink size={13} aria-hidden="true" /> Source
+                          <span className="sr-only">(opens in a new tab)</span>
                         </a>
                       )}
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ol>
               )}
             </div>
           )}
 
-          <div className="flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-gray-100">
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+          <div className="flex items-center justify-between flex-wrap gap-3 pt-3 border-t border-slate-200">
+            <label className="flex items-center gap-2 min-h-9 text-sm font-medium text-slate-700 cursor-pointer select-none rounded focus-within:ring-2 focus-within:ring-sage-400 px-1 -mx-1">
               <input
                 type="checkbox"
                 checked={plainLanguage}
                 onChange={(e) => togglePlainLanguage(e.target.checked)}
-                className="rounded border-gray-300 text-teal-600 focus:ring-teal-400"
+                className="w-4 h-4 rounded border-slate-300 accent-sage-700 focus:outline-none"
               />
-              Plain-language answer
+              Plain-Language Answer
             </label>
             <div className="flex gap-2">
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-md px-3 py-1.5 hover:bg-gray-50 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-              >
-                {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? 'Copied' : 'Copy'}
-              </button>
-              <button
-                onClick={onRetry}
-                className="flex items-center gap-1.5 text-xs font-medium text-teal-600 border border-teal-200 rounded-md px-3 py-1.5 hover:bg-teal-50 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-              >
-                <RefreshCw size={12} /> Regenerate
-              </button>
+              <Button variant="secondary" size="sm" icon={copied ? Check : Copy} onClick={handleCopy}>
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
+              <Button variant="outline" size="sm" icon={RefreshCw} onClick={onRetry}>
+                Regenerate
+              </Button>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

@@ -1,12 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Space Grotesk", ui-sans-serif, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, sans-serif;
+  /* One typeface site-wide: Open Sans Condensed (Open Sans at 75% width). */
+  --font-sans: "Open Sans", ui-sans-serif, sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: var(--font-sans);
+
+  /* Sage palette: the site's accent color (matches the logo) */
+  --color-sage-50: #eaf4ee;
+  --color-sage-100: #d9ecdf;
+  --color-sage-200: #bfeecc;
+  --color-sage-300: #a7d0b3;
+  --color-sage-400: #84ae92;
+  --color-sage-600: #3a6a4c;
+  --color-sage-700: #254b35;
+  --color-sage-800: #1b3727;
+  --color-sage-900: #0f3723;
 }
 
 body {
   font-family: var(--font-sans);
+  font-stretch: 75%;
+  font-weight: 500;
 }
 
 @keyframes fade-in {
@@ -15,4 +30,18 @@ body {
 }
 .animate-fade-in {
   animation: fade-in 0.25s ease-out;
+}
+/* Fallback keyboard focus ring for any control that doesn't set its own. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-sage-700);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -15,7 +15,13 @@ async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, { headers, ...options });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(error.detail || "Request failed");
+    // FastAPI validation errors arrive as a list of { msg } objects.
+    const detail = Array.isArray(error.detail)
+      ? error.detail.map((d) => d.msg).filter(Boolean).join("; ")
+      : error.detail;
+    const err = new Error(detail || `Request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
   }
   if (res.status === 204) return null;
   return res.json();
@@ -29,6 +35,8 @@ export const api = {
   deleteGadget: (id) => request(`/gadgets/${id}`, { method: "DELETE" }),
   getSpecs: (gadgetId) => request(`/gadgets/${gadgetId}/specs`),
   ingestSpecs: (gadgetId, data) => request(`/gadgets/${gadgetId}/specs`, { method: "POST", body: JSON.stringify(data) }),
+  // The backend has no spec DELETE route yet; until it does this returns 404/405.
+  deleteSpec: (gadgetId, specId) => request(`/gadgets/${gadgetId}/specs/${specId}`, { method: "DELETE" }),
   indexSpec: (gadgetId, specId) => request(`/gadgets/${gadgetId}/specs/${specId}/index`, { method: "POST" }),
   submitCorrection: (specId, data) => request(`/specs/${specId}/corrections`, { method: "POST", body: JSON.stringify(data) }),
   getCorrections: (status = "pending") => request(`/corrections?status=${status}`),

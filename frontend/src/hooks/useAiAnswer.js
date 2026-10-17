@@ -31,7 +31,12 @@ export function useAiAnswer() {
   }
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(result.answer)
+    try {
+      await navigator.clipboard.writeText(result.answer)
+    } catch {
+      toast.error('Copy failed — your browser blocked clipboard access')
+      return
+    }
     setCopied(true)
     toast.success('Answer copied')
     setTimeout(() => setCopied(false), 1500)

@@ -75,14 +75,14 @@ export default function ComparePage() {
     return (
       <EmptyState
         icon={Sparkles}
-        title="Pick at least 2 gadgets to compare"
+        title="Pick at Least 2 Gadgets to Compare"
         description="Head back to the catalog, select 2–3 gadgets using the checkmarks, then hit Compare."
         action={
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 bg-teal-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-teal-700 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-1.5 bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-sage-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2"
           >
-            Back to catalog
+            Back to Catalog
           </Link>
         }
       />
@@ -96,7 +96,7 @@ export default function ComparePage() {
     { label: 'Category', get: (g) => g.category },
     {
       label: 'Price',
-      get: (g) => (g.price_php ? `₱${g.price_php.toLocaleString()}` : '—'),
+      get: (g) => (g.price_php ? `Php ${g.price_php.toLocaleString()}` : '—'),
       highlight: (g) => g.price_php === cheapestPrice,
     },
     { label: 'Released', get: (g) => g.release_date || '—' },
@@ -106,21 +106,21 @@ export default function ComparePage() {
     <div>
       <Link
         to="/"
-        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
       >
-        <ArrowLeft size={15} /> Back to catalog
+        <ArrowLeft size={15} /> Back to Catalog
       </Link>
 
       <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
         <h1 className="font-display text-xl sm:text-2xl font-medium text-gray-900 tracking-tight">
-          Comparing {gadgets.length} gadgets
+          Comparing {gadgets.length} Gadgets
         </h1>
         <button
           onClick={handleShare}
           disabled={sharing}
-          className="flex items-center gap-1.5 text-xs font-medium text-teal-600 border border-teal-200 rounded-md px-3 py-1.5 hover:bg-teal-50 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+          className="flex items-center gap-1.5 text-xs font-medium text-sage-700 border border-sage-200 rounded-md px-3 py-1.5 hover:bg-sage-50 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
         >
-          <Share2 size={13} /> {sharing ? 'Creating link...' : 'Share'}
+          <Share2 size={13} /> {sharing ? 'Creating Link…' : 'Share'}
         </button>
       </div>
       <p className="text-sm text-gray-500 mb-6">Side-by-side spec comparison.</p>
@@ -137,7 +137,7 @@ export default function ComparePage() {
                     <button
                       onClick={() => removeGadget(g.id)}
                       aria-label={`Remove ${g.name} from comparison`}
-                      className="absolute top-2 right-2 text-gray-300 hover:text-red-500 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      className="absolute top-2 right-2 text-slate-500 hover:text-red-700 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
                       <X size={15} />
                     </button>
@@ -150,7 +150,7 @@ export default function ComparePage() {
                     </div>
                     <Link
                       to={`/gadgets/${g.id}`}
-                      className="font-semibold text-sm text-gray-900 hover:underline block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                      className="font-semibold text-sm text-gray-900 hover:underline block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
                     >
                       {g.name}
                     </Link>
@@ -193,7 +193,7 @@ export default function ComparePage() {
             <button
               onClick={() => removeGadget(g.id)}
               aria-label={`Remove ${g.name} from comparison`}
-              className="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+              className="absolute top-3 right-3 text-slate-500 hover:text-red-700 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
             >
               <X size={16} />
             </button>
@@ -207,7 +207,7 @@ export default function ComparePage() {
               </div>
               <Link
                 to={`/gadgets/${g.id}`}
-                className="font-semibold text-gray-900 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                className="font-semibold text-gray-900 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
               >
                 {g.name}
               </Link>

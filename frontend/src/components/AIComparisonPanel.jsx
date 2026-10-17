@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Sparkles, AlertTriangle } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
-import AiAnswerResult, { AnswerSkeleton } from './AiAnswerResult'
+import AiAnswerResult from './AiAnswerResult'
+import Button from './ui/Button'
+import Alert from './ui/Alert'
 
 const DEFAULT_QUESTION = 'Compare these gadgets and highlight the key trade-offs someone should know before buying.'
 const SUGGESTED_QUESTIONS = ['Which offers better value for the price?', 'Compare battery life', 'Compare camera quality']
@@ -69,71 +71,68 @@ export default function AIComparisonPanel({ gadgetIds, gadgetNames }) {
   }
 
   return (
-    <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6">
+    <section aria-labelledby="ai-compare-title" className="mt-8 bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-xs">
       <div className="flex items-center gap-2 mb-1">
-        <Sparkles size={17} className="text-teal-600" />
-        <h2 className="font-display text-base font-semibold text-gray-900">AI trade-off comparison</h2>
+        <Sparkles size={18} className="text-sage-700" aria-hidden="true" />
+        <h2 id="ai-compare-title" className="text-lg font-bold text-slate-900">AI Trade-Off Comparison</h2>
       </div>
-      <p className="text-sm text-gray-500 mb-3">
+      <p className="text-sm text-slate-600 mb-4">
         Grounded in the specs added for {gadgetNames.join(', ')} — this only uses real spec data, not general knowledge.
       </p>
 
       {!checkingSpecs && missingSpecs.length > 0 && (
-        <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-md px-3 py-2.5 text-sm text-amber-800 mb-4">
-          <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-          <span>
-            <strong className="font-medium">{missingSpecs.join(', ')}</strong> {missingSpecs.length === 1 ? 'has' : 'have'} no
-            specs added yet — the AI won't be able to say anything grounded about{' '}
-            {missingSpecs.length === 1 ? 'it' : 'them'}.
-          </span>
-        </div>
+        <Alert tone="warning" className="mb-4">
+          <strong className="font-semibold">{missingSpecs.join(', ')}</strong> {missingSpecs.length === 1 ? 'has' : 'have'} no
+          specs added yet — the AI won&apos;t be able to say anything grounded about {missingSpecs.length === 1 ? 'it' : 'them'}.
+        </Alert>
       )}
 
       {!result && !loading && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-1.5">
-            {SUGGESTED_QUESTIONS.map((q) => (
-              <button
-                key={q}
-                onClick={() => handleSuggestedClick(q)}
-                className="text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-full px-2.5 py-1 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-              >
-                {q}
-              </button>
-            ))}
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm font-semibold text-slate-800 mb-2" id="suggested-questions-label">
+              Suggested Questions
+            </p>
+            <div className="flex flex-wrap gap-2" role="group" aria-labelledby="suggested-questions-label">
+              {SUGGESTED_QUESTIONS.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => handleSuggestedClick(q)}
+                  className="text-sm font-medium text-sage-800 bg-sage-50 hover:bg-sage-100 border border-sage-200 rounded-full px-3 py-1.5 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
-          <label htmlFor="ai-question" className="sr-only">
-            Question to ask
-          </label>
-          <textarea
-            id="ai-question"
-            rows={2}
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:border-teal-400 focus:ring-1 focus:ring-teal-400 outline-none transition resize-none"
-          />
+          <div>
+            <label htmlFor="ai-question" className="block text-sm font-semibold text-slate-800 mb-1.5">
+              Question to Ask
+            </label>
+            <textarea
+              id="ai-question"
+              rows={2}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              className="w-full bg-white text-slate-900 border border-slate-300 hover:border-slate-400 rounded-lg px-3 py-2.5 text-[15px] focus:border-sage-600 focus:ring-2 focus:ring-sage-200 outline-none transition resize-y"
+            />
+          </div>
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+            <label className="flex items-center gap-2 min-h-9 text-sm font-medium text-slate-700 cursor-pointer select-none rounded focus-within:ring-2 focus-within:ring-sage-400 px-1 -mx-1">
               <input
                 type="checkbox"
                 checked={plainLanguage}
                 onChange={(e) => togglePlainLanguage(e.target.checked)}
-                className="rounded border-gray-300 text-teal-600 focus:ring-teal-400"
+                className="w-4 h-4 rounded border-slate-300 accent-sage-700 focus:outline-none"
               />
-              Plain-language answer
+              Plain-Language Answer
             </label>
-            <button
-              onClick={() => handleAsk()}
-              disabled={!question.trim()}
-              className="flex items-center gap-1.5 bg-teal-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-teal-700 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-            >
-              <Sparkles size={14} /> Generate comparison
-            </button>
+            <Button variant="primary" icon={Sparkles} onClick={() => handleAsk()} disabled={!question.trim()}>
+              Generate Comparison
+            </Button>
           </div>
         </div>
       )}
-
-      {loading && <AnswerSkeleton lines={4} />}
 
       <AiAnswerResult
         loading={loading}
@@ -149,7 +148,8 @@ export default function AIComparisonPanel({ gadgetIds, gadgetNames }) {
         togglePlainLanguage={togglePlainLanguage}
         handleCopy={handleCopy}
         copied={copied}
+        skeletonLines={4}
       />
-    </div>
+    </section>
   )
 }
