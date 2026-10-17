@@ -85,25 +85,27 @@ Rate limits: `/query` 10/min, spec ingestion and comparison creation 20/hour. `m
 
 ## API reference
 
-All routes require a valid Supabase bearer token unless noted as "none". The `client` pytest fixture overrides auth with an admin user; unauthorized/non-admin tests restore their own dependency overrides.
+Routes marked "none" are public; all others need a valid Supabase bearer token. The `client` pytest fixture overrides auth with an admin user; unauthorized/non-admin tests restore their own dependency overrides.
 
 | Endpoint | Method | Auth | Payload | Success | Errors |
 |----------|--------|------|---------|---------|--------|
 | `/health` | GET | none | none | 200 `{"status": "ok"}` | — |
 | `/version` | GET | none | none | 200 `{"commit": "..."}` | — |
-| `/gadgets` | GET | logged-in | query: `category`, `brand` | 200 list | 401 |
+| `/gadgets` | GET | none | query: `category`, `brand` | 200 list | — |
 | `/gadgets` | POST | logged-in | `GadgetCreate` | 201 `GadgetResponse` | 401, 422 |
 | `/gadgets/{id}` | GET | none | path `id` | 200 `GadgetResponse` | 404 |
 | `/gadgets/{id}` | PATCH | logged-in | `GadgetUpdate` | 200 `GadgetResponse` | 400, 401, 404, 422 |
 | `/gadgets/{id}` | DELETE | admin | path `id` | 204 | 401, 403, 404 |
-| `/gadgets/{id}/specs` | GET | logged-in | path `id` | 200 list | 401 |
+| `/gadgets/{id}/specs` | GET | none | path `id` | 200 list | — |
 | `/gadgets/{id}/specs` | POST | logged-in | `{"raw_text": "...", "source_url": "..."}` | 201 | 401, 404, 422 |
 | `/gadgets/{id}/specs/{spec_id}/index` | POST | logged-in | path ids | 200 | 401, 404, 409, 422, 503 |
-| `/comparisons` | POST | logged-in | `{"gadget_ids": [...]}` | 201 | 400, 401 |
+| `/comparisons` | POST | none | `{"gadget_ids": [...]}` | 201 | — |
 | `/comparisons/{slug}` | GET | none | path `slug` | 200 | 404 |
+| `/stats/spec-coverage` | GET | none | none | 200 `{"covered": N, "total": N}` | — |
+| `/stats/trending-questions` | GET | none | query: `limit` | 200 list | — |
 | `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` | 201 | 401, 404 |
 | `/corrections` | GET | admin | query `status` | 200 list | 401, 403 |
 | `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}` | 200 | 400, 401, 403, 404 |
-| `/query` | POST | logged-in | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 | 401, 422 |
+| `/query` | POST | none | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 | — |
 
 Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route.
