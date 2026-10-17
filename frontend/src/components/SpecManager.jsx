@@ -1,257 +1,354 @@
-import { useEffect, useState } from 'react'
-import { FileText, Plus, Loader2, ExternalLink, Calendar, Flag } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { timeAgo } from '../utils/timeAgo'
+import Button from './ui/Button'
+import Alert from './ui/Alert'
+import { TextField, TextAreaField } from './ui/FormField'
+
+const MAX_SPEC_CHARS = 20_000 // mirrors MAX_RAW_TEXT_LENGTH in backend/routers/specs.py
+const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-export default function SpecManager({ gadgetId, onSpecsChange }) {
-  const { user } = useAuth()
-  const [indexingId, setIndexingId] = useState(null)
-  const [specs, setSpecs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+function isHttpUrl(value) {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function validateSpecForm({ rawText, sourceUrl }) {
+  const errors = {}
+  if (!rawText.trim()) errors['raw-text'] = 'Paste at least one spec line.'
+  else if (rawText.length > MAX_SPEC_CHARS) errors['raw-text'] = `Shorten this to ${MAX_SPEC_CHARS.toLocaleString()} characters or fewer.`
+  if (sourceUrl.trim() && !isHttpUrl(sourceUrl.trim())) errors['source-url'] = 'Enter a full link starting with http:// or https://.'
+  return errors
+}
+
+function AddSpecForm({ gadgetId, onSaved, onCancel }) {
   const [rawText, setRawText] = useState('')
   const [sourceUrl, setSourceUrl] = useState('')
+  const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [correctingId, setCorrectingId] = useState(null)
-  const [correctionText, setCorrectionText] = useState('')
-  const [submittingCorrection, setSubmittingCorrection] = useState(false)
+  const [serverError, setServerError] = useState(null)
 
-  useEffect(() => {
-    loadSpecs()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gadgetId])
-
-  function loadSpecs() {
-    setLoading(true)
-    api
-      .getSpecs(gadgetId)
-      .then((data) => {
-        setSpecs(data)
-        onSpecsChange?.(data)
-      })
-      .catch((err) => toast.error(err.message))
-      .finally(() => setLoading(false))
-  }
+  const errors = submitted ? validateSpecForm({ rawText, sourceUrl }) : {}
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!rawText.trim()) return
+    setSubmitted(true)
+    const found = validateSpecForm({ rawText, sourceUrl })
+    if (Object.keys(found).length > 0) {
+      document.getElementById(Object.keys(found)[0])?.focus()
+      return
+    }
     setSubmitting(true)
+    setServerError(null)
     try {
-      const result = await api.ingestSpecs(gadgetId, { raw_text: rawText, source_url: sourceUrl || undefined })
+      const result = await api.ingestSpecs(gadgetId, { raw_text: rawText, source_url: sourceUrl.trim() || undefined })
       toast.success(`${result.chunks_created} spec chunk${result.chunks_created === 1 ? '' : 's'} saved — AI indexing pending`)
-      setRawText('')
-      setSourceUrl('')
-      setShowForm(false)
-      loadSpecs()
+      onSaved()
     } catch (err) {
-      toast.error(err.message)
-    } finally {
+      setServerError(err.message || 'Specs could not be saved. Please try again.')
       setSubmitting(false)
     }
   }
 
-  async function handleIndex(specId) {
+  return (
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      aria-labelledby="add-specs-title"
+      className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 mb-4 space-y-4 animate-fade-in"
+    >
+      <h3 id="add-specs-title" className="text-base font-bold text-slate-900">
+        Add Specs
+      </h3>
+      <TextAreaField
+        id="raw-text"
+        label="Raw Spec Text"
+        required
+        rows={7}
+        value={rawText}
+        onChange={(v) => {
+          setRawText(v)
+          setServerError(null)
+        }}
+        error={errors['raw-text']}
+        hint={`Separate distinct facts with blank lines — each becomes its own searchable chunk. ${rawText.length.toLocaleString()} / ${MAX_SPEC_CHARS.toLocaleString()} characters.`}
+        placeholder={'Display: 6.2-inch AMOLED, 120Hz\n\nBattery: 4000mAh, 25W fast charging'}
+      />
+      <TextField
+        id="source-url"
+        label="Source URL"
+        optional
+        type="url"
+        inputMode="url"
+        value={sourceUrl}
+        onChange={(v) => {
+          setSourceUrl(v)
+          setServerError(null)
+        }}
+        error={errors['source-url']}
+        hint="Link to the official spec sheet, so others can check it."
+        placeholder="https://…"
+      />
+      {serverError && (
+        <Alert tone="error" title="Specs Not Saved">
+          {serverError}
+        </Alert>
+      )}
+      <div className="flex flex-col-reverse sm:flex-row gap-2">
+        <Button variant="secondary" onClick={onCancel} disabled={submitting}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="primary" icon={Save} loading={submitting} className="sm:flex-1">
+          {submitting ? 'Saving…' : 'Save Specs'}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function CorrectionForm({ spec, onDone }) {
+  const [text, setText] = useState(spec.content)
+  const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [serverError, setServerError] = useState(null)
+  const id = `correction-${spec.id}`
+
+  let error
+  if (submitted && !text.trim()) error = 'Write the corrected spec text.'
+  else if (submitted && text.trim() === spec.content.trim()) error = 'Change something before submitting — this matches the current text.'
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSubmitted(true)
+    if (!text.trim() || text.trim() === spec.content.trim()) {
+      document.getElementById(id)?.focus()
+      return
+    }
+    setSubmitting(true)
+    setServerError(null)
+    try {
+      await api.submitCorrection(spec.id, { suggested_content: text })
+      toast.success('Correction submitted for review')
+      onDone()
+    } catch (err) {
+      setServerError(err.message || 'The correction could not be sent. Please try again.')
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="mt-4 pt-4 border-t border-slate-200 space-y-3 animate-fade-in">
+      <TextAreaField
+        id={id}
+        label="Suggested Correction"
+        required
+        rows={3}
+        value={text}
+        onChange={setText}
+        error={error}
+        hint="An admin reviews every correction before it replaces the current text."
+      />
+      {serverError && <Alert tone="error">{serverError}</Alert>}
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="primary" size="sm" icon={Send} loading={submitting}>
+          {submitting ? 'Submitting…' : 'Submit for Review'}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={onDone} disabled={submitting}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function SpecCard({ spec, user, gadgetId, indexingId, onIndex }) {
+  const [correcting, setCorrecting] = useState(false)
+  const indexed = spec.indexing_status === 'indexed'
+  const [now] = useState(() => Date.now())
+  const outdated = now - new Date(spec.verified_at).getTime() > SIX_MONTHS_MS
+
+  return (
+    <li className="bg-white border border-slate-200 rounded-xl px-4 sm:px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+        <span
+          className={`inline-flex items-center gap-1 text-xs font-semibold rounded-full px-2 py-0.5 border ${
+            indexed ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 'text-amber-800 bg-amber-50 border-amber-200'
+          }`}
+        >
+          {indexed ? <CheckCircle2 size={13} aria-hidden="true" /> : <Clock size={13} aria-hidden="true" />}
+          {indexed ? 'Ready for AI' : 'Pending AI Indexing'}
+        </span>
+        <div className="flex items-center gap-2">
+          {user && !indexed && (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={Sparkles}
+              loading={indexingId === spec.id}
+              disabled={indexingId !== null}
+              onClick={() => onIndex(gadgetId, spec.id)}
+            >
+              {indexingId === spec.id ? 'Indexing…' : 'Index for AI'}
+            </Button>
+          )}
+          <span className="text-xs text-slate-500 bg-slate-100 rounded px-1.5 py-0.5" aria-label={`Chunk ${spec.chunk_index}`}>
+            #{spec.chunk_index}
+          </span>
+        </div>
+      </div>
+
+      <p className="text-[15px] text-slate-800 whitespace-pre-line break-words">{spec.content}</p>
+
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mt-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {spec.source_url && (
+            <a
+              href={spec.source_url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-medium text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+            >
+              <ExternalLink size={13} aria-hidden="true" /> Source
+              <span className="sr-only">(opens in a new tab)</span>
+            </a>
+          )}
+          <span className="inline-flex items-center gap-1 text-sm text-slate-600" title={formatDate(spec.verified_at)}>
+            <Calendar size={13} aria-hidden="true" /> Verified {timeAgo(spec.verified_at)}
+          </span>
+          {outdated && <span className="text-sm text-amber-800 font-semibold">May Be Outdated</span>}
+        </div>
+        {user && !correcting && (
+          <Button variant="ghost" size="sm" icon={Flag} onClick={() => setCorrecting(true)}>
+            Suggest Correction
+          </Button>
+        )}
+      </div>
+
+      {correcting && <CorrectionForm spec={spec} onDone={() => setCorrecting(false)} />}
+    </li>
+  )
+}
+
+export default function SpecManager({ gadgetId, onSpecsChange }) {
+  const { user } = useAuth()
+  const [state, setState] = useState({ status: 'loading', specs: [] })
+  const [showForm, setShowForm] = useState(false)
+  const [indexingId, setIndexingId] = useState(null)
+
+  const loadSpecs = useCallback(() => {
+    setState((s) => ({ ...s, status: 'loading' }))
+    api
+      .getSpecs(gadgetId)
+      .then((data) => {
+        setState({ status: 'ready', specs: data })
+        onSpecsChange?.(data)
+      })
+      .catch((err) => setState({ status: 'error', specs: [], error: err.message }))
+  }, [gadgetId, onSpecsChange])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- app-wide fetch convention (see CLAUDE.md)
+    loadSpecs()
+  }, [loadSpecs])
+
+  async function handleIndex(gid, specId) {
     setIndexingId(specId)
     try {
-      await api.indexSpec(gadgetId, specId)
+      await api.indexSpec(gid, specId)
       toast.success('Spec ready for AI questions')
       loadSpecs()
     } catch (err) {
-      toast.error(err.message)
+      toast.error(`Indexing failed: ${err.message}`)
     } finally {
       setIndexingId(null)
     }
   }
 
-  function startCorrection(spec) {
-    setCorrectingId(spec.id)
-    setCorrectionText(spec.content)
-  }
-
-  async function submitCorrection(specId) {
-    if (!correctionText.trim()) return
-    setSubmittingCorrection(true)
-    try {
-      await api.submitCorrection(specId, { suggested_content: correctionText })
-      toast.success('Correction submitted for review')
-      setCorrectingId(null)
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setSubmittingCorrection(false)
-    }
-  }
+  const { status, specs } = state
 
   return (
-    <div className="mt-6">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="font-display text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <FileText size={17} className="text-teal-600" /> Specifications
+    <section aria-labelledby="specs-title" className="mt-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <h2 id="specs-title" className="text-xl font-bold text-slate-900 flex items-center gap-2">
+          <FileText size={20} className="text-sage-700" aria-hidden="true" /> Specifications
+          {status === 'ready' && <span className="text-sm font-medium text-slate-500">({specs.length})</span>}
         </h2>
-        <button
-          onClick={() => setShowForm((s) => !s)}
-          aria-expanded={showForm}
-          className="flex items-center gap-1 text-xs font-medium text-teal-600 border border-teal-200 rounded-md px-2.5 py-1.5 hover:bg-teal-50 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-        >
-          <Plus size={14} /> Add specs
-        </button>
+        {user ? (
+          !showForm && (
+            <Button variant="outline" icon={Plus} onClick={() => setShowForm(true)}>
+              Add Specs
+            </Button>
+          )
+        ) : (
+          <Button as={Link} to="/login" variant="outline" icon={LogIn}>
+            Log In to Add Specs
+          </Button>
+        )}
       </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-4 mb-4 space-y-3 animate-fade-in">
-          <div>
-            <label htmlFor="raw-text" className="block text-xs font-medium text-gray-700 mb-1">Raw spec text</label>
-            <textarea
-              id="raw-text"
-              required
-              rows={6}
-              value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
-              placeholder={'Paste spec sheet text here, e.g.:\n\nDisplay: 6.2-inch AMOLED, 120Hz...\n\nBattery: 4000mAh, 25W fast charging...'}
-              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm font-mono focus:border-teal-400 focus:ring-1 focus:ring-teal-400 outline-none transition resize-y"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Separate distinct facts with blank lines — each becomes its own retrievable chunk.
-            </p>
-          </div>
-          <div>
-            <label htmlFor="source-url" className="block text-xs font-medium text-gray-700 mb-1">Source URL (optional)</label>
-            <input
-              id="source-url"
-              type="url"
-              value={sourceUrl}
-              onChange={(e) => setSourceUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:border-teal-400 focus:ring-1 focus:ring-teal-400 outline-none transition"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex items-center justify-center gap-1.5 flex-1 bg-teal-600 text-white text-sm font-medium py-2 rounded-md hover:bg-teal-700 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" /> Saving...
-                </>
-              ) : (
-                'Save specs'
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
-      <p className="text-xs text-gray-500 mb-3">
+      <p className="text-sm text-slate-600 mb-4">
         Specs are saved immediately. Use Index for AI when credit is available; pending specs remain readable here.
       </p>
-      {loading ? (
-        <div className="space-y-2">
+
+      {showForm && (
+        <AddSpecForm
+          gadgetId={gadgetId}
+          onCancel={() => setShowForm(false)}
+          onSaved={() => {
+            setShowForm(false)
+            loadSpecs()
+          }}
+        />
+      )}
+
+      {status === 'loading' && (
+        <div className="space-y-3" role="status" aria-label="Loading specs">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
-          ))}
-        </div>
-      ) : specs.length === 0 ? (
-        <p className="text-sm text-gray-400 bg-white border border-gray-200 border-dashed rounded-xl px-4 py-6 text-center">
-          No specs added yet. Add some so this gadget can be searched and compared by the AI.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {specs.map((spec) => (
-            <div key={spec.id} className="bg-white border border-gray-200 rounded-lg px-4 py-3">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs text-gray-500">
-                  {spec.indexing_status === 'indexed' ? 'Ready for AI' : 'Pending AI indexing'}
-                </span>
-                {user && spec.indexing_status !== 'indexed' && (
-                  <button onClick={() => handleIndex(spec.id)} disabled={indexingId !== null}
-                    className="text-xs text-teal-600 hover:underline disabled:opacity-50">
-                    {indexingId === spec.id ? 'Indexing...' : 'Index for AI'}
-                  </button>
-                )}
-              </div>
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm text-gray-700 whitespace-pre-line">{spec.content}</p>
-                <span className="shrink-0 text-[10px] font-mono text-gray-400 bg-gray-50 rounded px-1.5 py-0.5">
-                  #{spec.chunk_index}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-3">
-                  {spec.source_url && (
-
-                    <a  href={spec.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-teal-600 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-                    >
-                      <ExternalLink size={11} /> Source
-                    </a>
-                  )}
-                  <span className="inline-flex items-center gap-1 text-xs text-gray-400" title={formatDate(spec.verified_at)}>
-                    <Calendar size={11} /> Verified {timeAgo(spec.verified_at)}
-                  </span>
-                  {Date.now() - new Date(spec.verified_at).getTime() > 1000 * 60 * 60 * 24 * 180 && (
-                    <span className="text-xs text-amber-600 font-medium">May be outdated</span>
-                  )}
-                </div>
-                <button
-                  onClick={() => startCorrection(spec)}
-                  className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-teal-600 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-                >
-                  <Flag size={11} /> Suggest correction
-                </button>
-              </div>
-
-              {correctingId === spec.id && (
-                <div className="mt-3 pt-3 border-t border-gray-100 animate-fade-in">
-                  <label htmlFor={`correction-${spec.id}`} className="block text-xs font-medium text-gray-700 mb-1">
-                    Suggested correction
-                  </label>
-                  <textarea
-                    id={`correction-${spec.id}`}
-                    rows={3}
-                    value={correctionText}
-                    onChange={(e) => setCorrectionText(e.target.value)}
-                    className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm font-mono focus:border-teal-400 focus:ring-1 focus:ring-teal-400 outline-none transition resize-y"
-                  />
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => submitCorrection(spec.id)}
-                      disabled={submittingCorrection}
-                      className="text-xs font-medium bg-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-teal-700 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-                    >
-                      {submittingCorrection ? 'Submitting...' : 'Submit for review'}
-                    </button>
-                    <button
-                      onClick={() => setCorrectingId(null)}
-                      className="text-xs font-medium text-gray-600 border border-gray-200 px-3 py-1.5 rounded-md hover:bg-gray-50 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <div key={i} className="h-24 bg-slate-100 rounded-xl animate-pulse" />
           ))}
         </div>
       )}
-    </div>
+
+      {status === 'error' && (
+        <Alert
+          tone="error"
+          title="Couldn't Load Specs"
+          action={
+            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={loadSpecs}>
+              Try Again
+            </Button>
+          }
+        >
+          {state.error}
+        </Alert>
+      )}
+
+      {status === 'ready' && specs.length === 0 && (
+        <div className="text-center bg-white border border-slate-300 border-dashed rounded-xl px-6 py-10">
+          <FileText size={24} className="mx-auto text-slate-400" aria-hidden="true" />
+          <p className="font-semibold text-slate-800 mt-2">No Specs Yet</p>
+          <p className="text-sm text-slate-600 mt-1">Add a spec sheet so the AI can answer questions about this gadget.</p>
+        </div>
+      )}
+
+      {status === 'ready' && specs.length > 0 && (
+        <ul className="space-y-3">
+          {specs.map((spec) => (
+            <SpecCard key={spec.id} spec={spec} user={user} gadgetId={gadgetId} indexingId={indexingId} onIndex={handleIndex} />
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }

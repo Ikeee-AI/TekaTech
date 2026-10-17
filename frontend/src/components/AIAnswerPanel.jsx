@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Sparkles, X } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
-import AiAnswerResult, { AnswerSkeleton } from './AiAnswerResult'
+import AiAnswerResult from './AiAnswerResult'
 
 export default function AIAnswerPanel({ question, onClose }) {
   const {
@@ -43,22 +43,22 @@ export default function AIAnswerPanel({ question, onClose }) {
   }, [question])
 
   return (
-    <div className="bg-white border border-teal-200 rounded-xl p-5 mb-4 animate-fade-in">
-      <div className="flex items-start justify-between gap-3 mb-1">
-        <div className="flex items-center gap-2 min-w-0">
-          <Sparkles size={16} className="text-teal-600 shrink-0" />
-          <p className="text-sm font-medium text-gray-900 truncate">&quot;{question}&quot;</p>
+    <section aria-labelledby="ai-answer-title" className="bg-white border border-sage-300 rounded-xl p-5 sm:p-6 shadow-xs animate-fade-in">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id="ai-answer-title" className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-sage-700">
+            <Sparkles size={14} aria-hidden="true" /> AI Answer
+          </h2>
+          <p className="text-lg font-semibold text-slate-900 mt-1 break-words">&ldquo;{question}&rdquo;</p>
         </div>
         <button
           onClick={onClose}
           aria-label="Close AI answer"
-          className="text-gray-400 hover:text-gray-600 transition shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+          className="p-2 -m-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
         >
-          <X size={16} />
+          <X size={18} aria-hidden="true" />
         </button>
       </div>
-
-      {loading && <AnswerSkeleton />}
 
       <AiAnswerResult
         loading={loading}
@@ -75,6 +75,6 @@ export default function AIAnswerPanel({ question, onClose }) {
         handleCopy={handleCopy}
         copied={copied}
       />
-    </div>
+    </section>
   )
 }

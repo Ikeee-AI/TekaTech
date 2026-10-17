@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowLeft, ShieldCheck, Check, X } from 'lucide-react'
+import { ShieldCheck, Check, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import EmptyState from '../components/EmptyState'
+import ErrorState from '../components/ui/ErrorState'
+import BackLink from '../components/ui/BackLink'
+import Button from '../components/ui/Button'
 
 export default function AdminCorrections() {
   useDocumentTitle('Review Corrections')
   const [corrections, setCorrections] = useState([])
   const [loading, setLoading] = useState(true)
   const [resolvingId, setResolvingId] = useState(null)
+  const [loadError, setLoadError] = useState(null)
 
   function load() {
     setLoading(true)
-    api.getCorrections('pending').then(setCorrections).catch((err) => toast.error(err.message)).finally(() => setLoading(false))
+    setLoadError(null)
+    api.getCorrections('pending').then(setCorrections).catch((err) => setLoadError(err.message)).finally(() => setLoading(false))
   }
 
   useEffect(() => {
@@ -41,7 +45,7 @@ export default function AdminCorrections() {
 
   if (loading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3" role="status" aria-label="Loading corrections">
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-28 bg-gray-100 rounded-xl animate-pulse" />
         ))}
@@ -49,31 +53,35 @@ export default function AdminCorrections() {
     )
   }
 
+  if (loadError) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <BackLink to="/">Back to Catalog</BackLink>
+        <ErrorState title="Couldn't Load the Review Queue" message={loadError} onRetry={load} />
+      </div>
+    )
+  }
+
   return (
     <div>
-      <Link
-        to="/"
-        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-      >
-        <ArrowLeft size={15} /> Back to catalog
-      </Link>
+      <BackLink to="/">Back to Catalog</BackLink>
 
       <h1 className="font-display text-2xl font-medium text-gray-900 tracking-tight mb-1 flex items-center gap-2">
-        <ShieldCheck size={22} className="text-teal-600" /> Review Corrections
+        <ShieldCheck size={22} className="text-sage-700" /> Review Corrections
       </h1>
-      <p className="text-sm text-gray-500 mb-6">Community-submitted spec corrections awaiting approval.</p>
+      <p className="text-sm text-gray-600 mb-6">Community-submitted spec corrections awaiting approval.</p>
 
       {corrections.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
-          title="Nothing to review"
+          title="Nothing to Review"
           description="No pending corrections right now — the queue is clear."
         />
       ) : (
         <div className="space-y-3">
           {corrections.map((c) => (
             <div key={c.id} className="bg-white border border-gray-200 rounded-xl p-4">
-              <p className="text-xs font-medium text-teal-600 uppercase">
+              <p className="text-xs font-medium text-sage-700 uppercase">
                 {c.spec_documents?.gadgets?.name} · {c.spec_documents?.gadgets?.brand}
               </p>
               <div className="mt-3 grid sm:grid-cols-2 gap-3">
@@ -85,26 +93,25 @@ export default function AdminCorrections() {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-500 mb-1">Suggested</p>
-                  <p className="text-sm text-gray-900 bg-teal-50 rounded-md p-2 whitespace-pre-line">
+                  <p className="text-sm text-gray-900 bg-sage-50 rounded-md p-2 whitespace-pre-line">
                     {c.suggested_content}
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2 mt-3">
-                <button
+              <div className="flex flex-wrap gap-2 mt-4">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Check}
+                  loading={resolvingId === c.id}
+                  disabled={resolvingId !== null}
                   onClick={() => resolve(c.id, 'approve')}
-                  disabled={resolvingId === c.id}
-                  className="flex items-center gap-1 text-xs font-medium bg-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-teal-700 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
                 >
-                  <Check size={13} /> Approve
-                </button>
-                <button
-                  onClick={() => resolve(c.id, 'reject')}
-                  disabled={resolvingId === c.id}
-                  className="flex items-center gap-1 text-xs font-medium text-red-600 border border-red-200 px-3 py-1.5 rounded-md hover:bg-red-50 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                >
-                  <X size={13} /> Reject
-                </button>
+                  Approve
+                </Button>
+                <Button variant="danger" size="sm" icon={X} disabled={resolvingId !== null} onClick={() => resolve(c.id, 'reject')}>
+                  Reject
+                </Button>
               </div>
             </div>
           ))}

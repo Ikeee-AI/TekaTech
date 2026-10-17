@@ -15,7 +15,7 @@ function renderInline(text, onCiteClick) {
         <button
           key={i}
           onClick={() => onCiteClick?.(index)}
-          className="inline-flex items-center justify-center min-w-[22px] min-h-[22px] text-xs leading-none font-mono font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded px-1.5 py-1 mx-0.5 align-text-top transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+          className="inline-flex items-center justify-center min-w-[22px] min-h-[22px] text-xs leading-none font-mono font-medium text-sage-800 bg-sage-50 hover:bg-sage-100 rounded px-1.5 py-1 mx-0.5 align-text-top transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
           aria-label={`Jump to source ${citeMatch[1]}`}
         >
           {citeMatch[1]}
@@ -33,7 +33,7 @@ export default function AnswerText({ text, onCiteClick }) {
 
   if (isMostlyBullets) {
     return (
-      <ul className="space-y-1.5 list-disc list-inside marker:text-teal-500">
+      <ul className="space-y-1.5 list-disc list-inside marker:text-sage-600">
         {lines.map((line, i) => (
           <li key={i} className="text-sm text-gray-800 leading-relaxed">
             {renderInline(line.trim().replace(/^[-•]\s*/, ''), onCiteClick)}

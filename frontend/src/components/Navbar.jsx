@@ -1,0 +1,244 @@
+import { useEffect, useRef, useState } from 'react'
+import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Plus, LogIn, LogOut, Menu, X, Search, Sparkles, CornerDownLeft, User } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { useAuth } from '../hooks/useAuth'
+import logo from '../assets/logo.webp'
+
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400'
+
+function navLinkClass({ isActive }) {
+  return `px-3.5 py-2 rounded-lg text-[15px] transition-colors ${focusRing} ${
+    isActive
+      ? 'bg-sage-400 text-sage-900 font-semibold'
+      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+  }`
+}
+
+function mobileLinkClass({ isActive }) {
+  return `block px-3 py-2.5 rounded-lg text-base transition-colors ${focusRing} ${
+    isActive ? 'bg-sage-50 text-sage-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+  }`
+}
+
+// The catalog's search lives in the URL (?q= filters, ?ask= opens the AI answer),
+// so this bar can drive the catalog from any page.
+function SearchBar() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const inputRef = useRef(null)
+  const onCatalog = location.pathname === '/'
+  const query = onCatalog ? (searchParams.get('q') ?? '') : ''
+
+  useEffect(() => {
+    function handleKey(e) {
+      const tag = document.activeElement?.tagName
+      if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
+
+  function goToCatalog(update) {
+    const params = new URLSearchParams(onCatalog ? searchParams : undefined)
+    update(params)
+    navigate({ pathname: '/', search: params.toString() }, { replace: onCatalog })
+  }
+
+  function setQuery(value) {
+    goToCatalog((params) => (value ? params.set('q', value) : params.delete('q')))
+  }
+
+  function ask() {
+    const question = query.trim()
+    if (!question) return
+    goToCatalog((params) => params.set('ask', question))
+  }
+
+  return (
+    <div className="relative flex items-center w-full">
+      <Search size={18} className="absolute left-3 text-slate-500 pointer-events-none" />
+      <label htmlFor="gadget-search" className="sr-only">
+        Search gadgets by name or brand, or press Enter to ask the AI
+      </label>
+      <input
+        id="gadget-search"
+        ref={inputRef}
+        type="text"
+        placeholder="Search gadgets, or ask a question and press Enter"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            ask()
+          }
+        }}
+        className="w-full bg-slate-100 text-slate-900 placeholder:text-slate-500 text-[15px] pl-10 pr-12 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-sage-400 focus:bg-white focus:ring-1 focus:ring-sage-400 transition-all"
+      />
+      {query.trim() ? (
+        <button
+          onClick={ask}
+          aria-label="Ask the AI"
+          title="Ask the AI"
+          className={`absolute right-2 flex items-center gap-1 text-xs font-semibold text-sage-700 bg-sage-50 border border-sage-200 rounded-md px-2 py-1 hover:bg-sage-200 transition ${focusRing}`}
+        >
+          <Sparkles size={12} /> Ask <CornerDownLeft size={12} />
+        </button>
+      ) : (
+        <kbd className="absolute right-3 text-xs text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200 pointer-events-none">
+          /
+        </kbd>
+      )}
+    </div>
+  )
+}
+
+function Navbar() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { user, signOut } = useAuth()
+  const isAdmin = user?.app_metadata?.is_admin
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [lastPath, setLastPath] = useState(location.pathname)
+
+  // Close the mobile menu whenever the route changes.
+  if (lastPath !== location.pathname) {
+    setLastPath(location.pathname)
+    setMenuOpen(false)
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function handleKey(e) {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [menuOpen])
+
+  async function handleSignOut() {
+    setMenuOpen(false)
+    await signOut()
+    toast.success('Logged out')
+    navigate('/')
+  }
+
+  const renderLinks = (className) => (
+    <>
+      <NavLink to="/" end className={className}>
+        Catalog
+      </NavLink>
+      <NavLink to="/compare" className={className}>
+        Compare
+      </NavLink>
+      {isAdmin && (
+        <NavLink to="/corrections" className={className}>
+          Review Queue
+        </NavLink>
+      )}
+    </>
+  )
+
+  return (
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap md:flex-nowrap items-center gap-x-6 gap-y-3">
+        <Link to="/" aria-label="TekaTech home" className={`shrink-0 rounded-md ${focusRing}`}>
+          <img src={logo} alt="TekaTech" className="h-10 w-auto" />
+        </Link>
+
+        <div className="order-last w-full md:order-none md:w-auto md:flex-1 md:max-w-xl">
+          <SearchBar />
+        </div>
+
+        <nav aria-label="Main" className="hidden lg:flex items-center gap-1 shrink-0">
+          {renderLinks(navLinkClass)}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-3 shrink-0">
+          <Link
+            to="/add"
+            aria-label="Add gadget"
+            className={`flex items-center gap-2 bg-sage-700 text-white text-[15px] font-bold px-3 sm:px-5 py-2.5 rounded-lg shadow-md shadow-sage-700/25 ring-2 ring-sage-400/50 hover:bg-sage-800 hover:shadow-lg active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
+          >
+            <Plus size={18} strokeWidth={2.5} /> <span className="hidden sm:inline">Add Gadget</span>
+          </Link>
+
+          {user ? (
+            <div className="hidden lg:flex items-center gap-2">
+              <div className="hidden xl:flex items-center gap-2 bg-slate-100 border border-slate-200 text-slate-600 text-sm px-3 py-1.5 rounded-lg max-w-[260px]">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                <span className="truncate" title={user.email}>
+                  Signed in as <strong className="text-slate-900 font-semibold">{user.email}</strong>
+                </span>
+              </div>
+              <span
+                className="w-9 h-9 rounded-full bg-sage-700 text-white flex items-center justify-center shrink-0"
+                title={user.email}
+                aria-hidden="true"
+              >
+                <User size={18} />
+              </span>
+              <button
+                onClick={handleSignOut}
+                aria-label="Log out"
+                title="Log out"
+                className={`p-2 text-slate-500 hover:text-red-600 rounded-lg transition ${focusRing}`}
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className={`hidden lg:flex items-center gap-1.5 px-3.5 py-2 text-[15px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition ${focusRing}`}
+            >
+              <LogIn size={18} /> Log In
+            </Link>
+          )}
+
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            className={`lg:hidden p-2 -mr-2 text-slate-600 hover:text-slate-900 rounded-lg transition ${focusRing}`}
+          >
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+      </div>
+
+      {menuOpen && (
+        <div id="mobile-menu" className="lg:hidden border-t border-slate-200 px-4 py-3 space-y-1 animate-fade-in">
+          <nav aria-label="Main" className="space-y-1">
+            {renderLinks(mobileLinkClass)}
+          </nav>
+          <div className="border-t border-slate-200 mt-2 pt-2">
+            {user ? (
+              <div className="flex items-center justify-between gap-2 px-3">
+                <span className="text-sm text-slate-500 truncate">Signed in as {user.email}</span>
+                <button
+                  onClick={handleSignOut}
+                  className={`flex items-center gap-1.5 py-2 text-sm text-slate-600 hover:text-red-600 rounded-md transition ${focusRing}`}
+                >
+                  <LogOut size={16} /> Log Out
+                </button>
+              </div>
+            ) : (
+              <NavLink to="/login" className={mobileLinkClass}>
+                Log In
+              </NavLink>
+            )}
+          </div>
+        </div>
+      )}
+    </header>
+  )
+}
+
+export default Navbar

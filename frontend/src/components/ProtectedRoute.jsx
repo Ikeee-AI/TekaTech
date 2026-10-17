@@ -5,7 +5,7 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
   const { user, loading } = useAuth()
   const location = useLocation()
 
-  if (loading) return <p className="text-gray-400 animate-pulse">Loading...</p>
+  if (loading) return <p role="status" className="text-slate-600 animate-pulse">Loading…</p>
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />
   if (adminOnly && !user.app_metadata?.is_admin) return <Navigate to="/" replace />
   return children
