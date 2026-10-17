@@ -43,6 +43,9 @@ def test_ingest_spec_rejects_empty_text(client, fake_supabase):
     resp = client.post(f"/gadgets/{uuid4()}/specs", json={"raw_text": ""})
     assert resp.status_code == 422
 
+def test_ingest_spec_rejects_missing_text(client, fake_supabase):
+    resp = client.post(f"/gadgets/{uuid4()}/specs", json={})
+    assert resp.status_code == 422
 
 def test_ingest_spec_rejects_overlong_text(client, fake_supabase):
     resp = client.post(f"/gadgets/{uuid4()}/specs", json={"raw_text": "x" * 20_001})
