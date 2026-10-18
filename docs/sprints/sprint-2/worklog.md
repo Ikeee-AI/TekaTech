@@ -140,20 +140,6 @@ None new.
 **Next**
 - Share dev credentials privately with Jopher and Manuel; close #18 after that — Ikeee-AI.
 
-## 2026-10-17 22:55 Asia/Manila — Reviewer pass on open PRs #52, #64, #65, #53
-**Who:** Manuel Mirasol (`s2302827-byte`) (AI-assisted: yes — `pre-reviewer` subagents produced read-only pre-reviews; the review decisions were posted by Manuel's session on his instruction) · **Task:** S2-MA (reviewer duty on Ikeee-AI PRs) · **Branch:** `tekatech/S2-MA-auth-contract-tests` (no files changed during the review work)
-
-**Done**
-- Listed open PRs; four had a review request for Manuel: #65, #64, #53, #52 (the other open PRs were already approved, Dependabot with no reviewer, or #35 requesting Ikeee-AI) — evidence: `gh pr list`.
-- #52 (weekly dependency audit fails on findings): pre-review recommended approve; **APPROVED** 2026-10-17T14:48:07Z — https://github.com/Ikeee-AI/TekaTech/pull/52
-- #64 (main guard retries PR lookup): pre-review recommended approve; **APPROVED** 2026-10-17T14:48:08Z — https://github.com/Ikeee-AI/TekaTech/pull/64
-- #65 (S2-AD support, verified source pack and evaluator): pre-review recommended changes; **CHANGES_REQUESTED** posted — https://github.com/Ikeee-AI/TekaTech/pull/65
-- #53 (Sprint 2 evidence pack): pre-review recommended small changes; **CHANGES_REQUESTED** posted — https://github.com/Ikeee-AI/TekaTech/pull/53
-- Recorded states re-read via `gh pr view --json reviews`: #52 and #64 APPROVED, #65 and #53 CHANGES_REQUESTED, each with one review by `s2302827-byte`.
-
-**Errors and fixes**
-None.
-
 ## 2026-10-16 20:14 Asia/Manila — DevOps automation batch: secret scanning, scheduled ops, Dependabot, labels, release tools, Sprint 2/3 board
 **Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S2-IK, Sprint 3 DevOps prep · **Branches:** `tekatech/ci-actionlint`, `ci-gitleaks`, `ops-scheduled`, `repo-hygiene`, `release-tools`
 
@@ -198,39 +184,6 @@ None.
 - Re-review #65 and #53 when fixes are pushed and review is re-requested — Manuel — when requested.
 - Merge #52 and #64, then record the post-merge main run link for #64 — Ikeee-AI — after approval.
 - Open a follow-up ticket for evaluator strictness before Sprint 3 (#54) — Ikeee-AI / Adrian.
-
-## 2026-10-18 17:46 Asia/Manila — Rebase #37, re-review follow-up on #46/#53/#65
-**Who:** Manuel Mirasol (AI-assisted: yes) · **Task:** S2-MA · **Branch:** `s2-ma-rebase` (pushed as `tekatech/S2-MA-auth-contract-tests`)
-
-**Done**
-- Rebased #37 onto `upstream/main` (PR base is `Ikeee-AI/TekaTech`, not the fork's `origin/main`). Three conflicts in `backend/tests/test_gadgets.py` and `test_specs.py` resolved by keeping both sides; one `test_ingest_spec_requires_login` remains (in `test_specs.py`); duplicate missing-name test dropped (main's `test_create_gadget_without_name_returns_422` covers it). Local backend suite: 92 passed (local run). Force-pushed with lease, head `02daa7d`; PR reports MERGEABLE — evidence: PR #37, commit 02daa7d.
-- Verified the run links cited in #53/#65: 39108173515 = pull_request run on `d7d9227` (success); 39108438489 = main push on `b3c98e0`, log shows "38 commits scanned" / "no leaks found"; 39030954463 = first `ops-weekly` run (PE-3); 39038725331 attempt 2 success (PE-4).
-- Posted a comment on #37 asking s2100932 to re-approve (their approval is on the old commit `0cef0b3`) — https://github.com/Ikeee-AI/TekaTech/pull/37#issuecomment-6248302905
-- Manuel re-approved #46 (`f1e0285`), #53 (`c04ee1f`) and #65 (`d7d9227`) on the website, replacing the earlier changes-requested reviews on #53/#65. AI drafted the review text; the approvals are Manuel's own.
-
-**Errors and fixes**
-| Error (exact message, secrets redacted) | Cause | Fix / status |
-| --- | --- | --- |
-| First rebase onto `origin/main` replayed 15 commits | `origin` is the fork and was behind; PR targets `upstream` | Discarded (never pushed); redone on a new branch from `upstream/main` |
-| `git reset --hard`, first `git push --force-with-lease`, and `gh pr review --approve` were blocked by the auto-mode classifier | Safety classifier (destructive/self-approval) | Avoided reset; push re-run after Manuel's explicit instruction; approvals posted by Manuel himself |
-| #37 check "Owner-area labels" fails: `Resource not accessible by integration` | `labeler.yml` uses `pull_request`; fork PRs get a read-only token | Not fixed; skipped by decision. Fix is Ikeee-AI's: `pull_request_target` (no PR-head checkout) or the repo's fork write-token setting |
-
-| #26 edits the same `ci.yml` lines as #25 | Merge conflict risk | Stacked #26 on #25; merge #25 first — Ikeee-AI — open |
-| `ops-weekly` metrics job needs `scripts/pipeline_metrics.py` from #17 | Job would fail before #17 merges | Job skips with a notice until #17 is merged — resolved by design |
-
-**Decisions**
-- Dependency fixes go through owners' reviewed PRs; no forced upgrades — Ikeee-AI.
-- Automations that need other members or credit (prompt-eval CI, live OpenAI smoke, staging, measured optimization) planned as Sprint 3 issues #31–#34 — Ikeee-AI.
-
-**Blockers / risks**
-- Seven PRs (#17, #19, #25, #26, #27, #29, #30) wait on Manuel's review; review load is high — Ikeee-AI to agree merge order with Manuel.
-- Vulnerable dependencies (#28) — Manuel / Mika — Sprint 3 start.
-
-**Plan alignment** — S2-IK: Partial → strong DevOps evidence prepared; nothing new counted Done until reviewed, merged and verified. Sprint 3 DevOps work pulled forward as reviewable PRs.
-
-**Next**
-- Owner enables board built-in workflows (Projects → Workflows) — Ikeee-AI — tonight.
-- Agree merge order with Manuel: #19 → #17 → #25 → #26 → #27 → #29 → #30 — Saturday morning.
 
 ## 2026-10-17 18:00–20:20 Asia/Manila — Merges, guardrails, deliverable reviews, Sprint 2 evidence
 **Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S2-IK · **Branch:** `tekatech/sprint2-evidence`
@@ -301,6 +254,20 @@ None.
 **What Ikeee-AI changed (PR #65, separate commit `f4e37b8`):** re-verified facts on official pages (Apple tech specs 111831; Samsung PH, Exynos 2400) and removed facts the pages do not state; single S24 variant; untrusted-snippet and one-variant rules; machine-readable sources/cases; evaluator now scores any answer set for all 10 cases; 8 tests showing it rejects invented facts and bad citations. Only the `Closes #12` line of #35's description was edited (to `Refs #20, #3`) so merging would not close the OpenAI issue.
 **Status:** S2-AD remains **Partial** for Adrian; the support is credited to Ikeee-AI. Adrian is asked to read #65 and be able to explain the evaluator in Sprint 3.
 
+## 2026-10-17 22:55 Asia/Manila — Reviewer pass on open PRs #52, #64, #65, #53
+**Who:** Manuel Mirasol (`s2302827-byte`) (AI-assisted: yes — `pre-reviewer` subagents produced read-only pre-reviews; the review decisions were posted by Manuel's session on his instruction) · **Task:** S2-MA (reviewer duty on Ikeee-AI PRs) · **Branch:** `tekatech/S2-MA-auth-contract-tests` (no files changed during the review work)
+
+**Done**
+- Listed open PRs; four had a review request for Manuel: #65, #64, #53, #52 (the other open PRs were already approved, Dependabot with no reviewer, or #35 requesting Ikeee-AI) — evidence: `gh pr list`.
+- #52 (weekly dependency audit fails on findings): pre-review recommended approve; **APPROVED** 2026-10-17T14:48:07Z — https://github.com/Ikeee-AI/TekaTech/pull/52
+- #64 (main guard retries PR lookup): pre-review recommended approve; **APPROVED** 2026-10-17T14:48:08Z — https://github.com/Ikeee-AI/TekaTech/pull/64
+- #65 (S2-AD support, verified source pack and evaluator): pre-review recommended changes; **CHANGES_REQUESTED** posted — https://github.com/Ikeee-AI/TekaTech/pull/65
+- #53 (Sprint 2 evidence pack): pre-review recommended small changes; **CHANGES_REQUESTED** posted — https://github.com/Ikeee-AI/TekaTech/pull/53
+- Recorded states re-read via `gh pr view --json reviews`: #52 and #64 APPROVED, #65 and #53 CHANGES_REQUESTED, each with one review by `s2302827-byte`.
+
+**Errors and fixes**
+None.
+
 ## 2026-10-17 23:00 – 2026-10-18 16:00 Asia/Manila — Security fixes complete, Manuel's review addressed
 **Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S2-IK, S2-AD support · **Branch:** `tekatech/sprint2-evidence`
 
@@ -328,3 +295,36 @@ None.
 
 **Next**
 - Re-reviews: Manuel on #53/#65/#46; Jopher on #37. Final metrics and packet before Mon 19 Oct 19:30.
+
+## 2026-10-18 17:46 Asia/Manila — Rebase #37, re-review follow-up on #46/#53/#65
+**Who:** Manuel Mirasol (AI-assisted: yes) · **Task:** S2-MA · **Branch:** `s2-ma-rebase` (pushed as `tekatech/S2-MA-auth-contract-tests`)
+
+**Done**
+- Rebased #37 onto `upstream/main` (PR base is `Ikeee-AI/TekaTech`, not the fork's `origin/main`). Three conflicts in `backend/tests/test_gadgets.py` and `test_specs.py` resolved by keeping both sides; one `test_ingest_spec_requires_login` remains (in `test_specs.py`); duplicate missing-name test dropped (main's `test_create_gadget_without_name_returns_422` covers it). Local backend suite: 92 passed (local run). Force-pushed with lease, head `02daa7d`; PR reports MERGEABLE — evidence: PR #37, commit 02daa7d.
+- Verified the run links cited in #53/#65: 39108173515 = pull_request run on `d7d9227` (success); 39108438489 = main push on `b3c98e0`, log shows "38 commits scanned" / "no leaks found"; 39030954463 = first `ops-weekly` run (PE-3); 39038725331 attempt 2 success (PE-4).
+- Posted a comment on #37 asking s2100932 to re-approve (their approval is on the old commit `0cef0b3`) — https://github.com/Ikeee-AI/TekaTech/pull/37#issuecomment-6248302905
+- Manuel re-approved #46 (`f1e0285`), #53 (`c04ee1f`) and #65 (`d7d9227`) on the website, replacing the earlier changes-requested reviews on #53/#65. AI drafted the review text; the approvals are Manuel's own.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| First rebase onto `origin/main` replayed 15 commits | `origin` is the fork and was behind; PR targets `upstream` | Discarded (never pushed); redone on a new branch from `upstream/main` |
+| `git reset --hard`, first `git push --force-with-lease`, and `gh pr review --approve` were blocked by the auto-mode classifier | Safety classifier (destructive/self-approval) | Avoided reset; push re-run after Manuel's explicit instruction; approvals posted by Manuel himself |
+| #37 check "Owner-area labels" fails: `Resource not accessible by integration` | `labeler.yml` uses `pull_request`; fork PRs get a read-only token | Not fixed; skipped by decision. Fix is Ikeee-AI's: `pull_request_target` (no PR-head checkout) or the repo's fork write-token setting |
+
+| #26 edits the same `ci.yml` lines as #25 | Merge conflict risk | Stacked #26 on #25; merge #25 first — Ikeee-AI — open |
+| `ops-weekly` metrics job needs `scripts/pipeline_metrics.py` from #17 | Job would fail before #17 merges | Job skips with a notice until #17 is merged — resolved by design |
+
+**Decisions**
+- Dependency fixes go through owners' reviewed PRs; no forced upgrades — Ikeee-AI.
+- Automations that need other members or credit (prompt-eval CI, live OpenAI smoke, staging, measured optimization) planned as Sprint 3 issues #31–#34 — Ikeee-AI.
+
+**Blockers / risks**
+- Seven PRs (#17, #19, #25, #26, #27, #29, #30) wait on Manuel's review; review load is high — Ikeee-AI to agree merge order with Manuel.
+- Vulnerable dependencies (#28) — Manuel / Mika — Sprint 3 start.
+
+**Plan alignment** — S2-IK: Partial → strong DevOps evidence prepared; nothing new counted Done until reviewed, merged and verified. Sprint 3 DevOps work pulled forward as reviewable PRs.
+
+**Next**
+- Owner enables board built-in workflows (Projects → Workflows) — Ikeee-AI — tonight.
+- Agree merge order with Manuel: #19 → #17 → #25 → #26 → #27 → #29 → #30 — Saturday morning.
