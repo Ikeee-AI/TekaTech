@@ -32,8 +32,12 @@ ABSTAIN = re.compile(
 TARGETS = {"factual_supported": 0.9, "citation_validity": 1.0, "abstention": 1.0}
 
 
-def normalize(text):
-    return re.sub(r"\s+", "", text).lower()
+def has_fact(answer, fact):
+    """Whole-value match: spacing may differ ("4000 mAh" == "4000mAh"), but the fact must
+    not sit inside a longer value ("2000 nits" does not match "12000 nits")."""
+    chars = [re.escape(c) for c in re.sub(r"\s+", "", fact.lower())]
+    pattern = r"(?<![0-9a-z])" + r"\s*".join(chars) + r"(?![0-9a-z])"
+    return re.search(pattern, answer.lower()) is not None
 
 
 def score_case(case, answer, valid_ids):
@@ -46,9 +50,11 @@ def score_case(case, answer, valid_ids):
     if case.get("should_abstain"):
         if not abstained:
             problems.append("should have said the sources don't answer this")
+        if cited:
+            # No snippet answers an abstention case, so a citation means a claim was made.
+            problems.append(f"abstention answer cites {sorted(set(cited))}")
     else:
-        flat = normalize(answer)
-        missing = [fact for fact in case["expected_facts"] if normalize(fact) not in flat]
+        missing = [fact for fact in case["expected_facts"] if not has_fact(answer, fact)]
         if missing:
             problems.append(f"missing fact(s) {missing}")
         if not set(cited) & set(case["expected_sources"]):

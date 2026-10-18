@@ -51,6 +51,22 @@ def test_wrong_fact_fails_even_with_citation():
     assert "missing fact(s) ['2000 nits']" in result(report, "TC-01")["problems"]
 
 
+def test_fact_inside_a_longer_value_does_not_count():
+    report = evaluate_with(**{"TC-01": "The iPhone 15 reaches 12000 nits outdoors [1]."})
+    assert "missing fact(s) ['2000 nits']" in result(report, "TC-01")["problems"]
+
+
+def test_spacing_differences_still_match():
+    report = evaluate_with(**{"TC-04": "The Galaxy S24 has a 4000 mAh battery [9]."})
+    assert result(report, "TC-04")["passed"]
+
+
+def test_abstention_that_cites_a_snippet_fails():
+    answer = "The sources don't mention colors, but it is IP68 rated [5]."
+    report = evaluate_with(**{"TC-10": answer})
+    assert "abstention answer cites [5]" in result(report, "TC-10")["problems"]
+
+
 def test_comparison_must_mention_missing_iphone_battery_capacity():
     answer = "- iPhone 15 **48MP** [3] vs Galaxy S24 **50MP** [8]\n- Galaxy S24 battery **4000mAh** [9]"
     report = evaluate_with(**{"TC-07": answer})
