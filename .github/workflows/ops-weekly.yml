@@ -12,6 +12,12 @@ on:
 permissions:
   contents: read
 
+# Explicit bash enables `-eo pipefail`, so `audit | tee` fails when the audit
+# finds vulnerabilities (the implicit default shell has no pipefail).
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: ops-weekly
   cancel-in-progress: true
@@ -67,7 +73,7 @@ jobs:
         working-directory: backend
         run: |
           uv export --frozen --no-dev --no-hashes --no-emit-project > /tmp/requirements.txt
-          uvx pip-audit==2.10.1 --strict --desc on -r /tmp/requirements.txt | tee /tmp/pip-audit.txt
+          uvx pip-audit==2.10.1 --strict --desc off -r /tmp/requirements.txt | tee /tmp/pip-audit.txt
       - uses: actions/setup-node@v6
         if: always()
         with:
