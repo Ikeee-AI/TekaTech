@@ -1,7 +1,12 @@
 name: Label PR by owner area
 
+# pull_request_target so labels also work on PRs from forks (a pull_request run
+# from a fork only gets a read-only token). Safe here: actions/labeler never
+# checks out or runs PR code; it reads the changed-file list through the API and
+# its config (.github/labeler.yml) from the base branch.
+
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 permissions:
