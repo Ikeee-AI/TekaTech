@@ -1,0 +1,25 @@
+{
+  "checked_at_utc": "2026-10-18T07:42:58+00:00",
+  "purpose": "Sprint 2 gate: core records persist across redeploys, not only refreshes. Read-only GET requests; no writes.",
+  "backend_commit": "b3c98e0e593771c977011cadffef24b8498cde48",
+  "frontend_commit": "b3c98e0e593771c977011cadffef24b8498cde48",
+  "gadget_count": 3,
+  "gadgets": [
+    {
+      "id": "b099dab9-4983-4e00-8a1c-4b516e17789c",
+      "name": "Infinix Note 50 Pro 5G+",
+      "created_at": "2026-10-12T11:35:55.324716Z"
+    },
+    {
+      "id": "a621bb58-4c4b-431f-b776-09189150c727",
+      "name": "Poco",
+      "created_at": "2026-10-12T06:23:01.767065Z"
+    },
+    {
+      "id": "88f75ae3-44b0-46d8-8760-4fa5fd892486",
+      "name": "Rog Ally",
+      "created_at": "2026-08-08T19:37:59.101571Z"
+    }
+  ],
+  "redeploys_since_records_created": "21 successful production deploys between 2026-10-11T16:00Z and 2026-10-18T07:41Z (docs/evidence/sprint2-metrics.json, deploy_runs)"
+}

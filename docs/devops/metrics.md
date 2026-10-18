@@ -5,7 +5,7 @@ Owner: the one DevOps Engineer. Record real GitHub Actions and Render deployment
 | Week | Avg PR pipeline (min) | Main pipeline (min) | Success rate (%) | Production deploys | Avg merge-to-live (min) | Failed deploys | Recovery (min) | Change this week |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Sprint 1 initial baseline | 0.67 (1 run) | Not run | 100 (1/1 completed) | 0 | Not applicable (no merge) | 0 (no deploy attempts) | Not applicable | First PR CI passed with caches, parallel checks and SQL integration |
-| Sprint 2 (to date, snapshot 2026-10-16 06:52 UTC) | 0.67 (9 runs) | 2.12 (2 runs) | 100.0 (11/11 completed) | 2 | 2.14 (2 samples) | 0 | N/A (no incident) | Metrics now computed by `scripts/pipeline_metrics.py` from GitHub run data |
+| Sprint 2 (12–18 Oct; cut-off 18 Oct 15:41 Manila) | 0.68 (55 runs) | 2.17 (21 runs) | 100.0 (77/77 runs, run level; 1 first-attempt failure re-run, PE-4) | 21 | 2.27 (20 samples) | 0 (1 failed first attempt, no impact) | N/A (no production incident) | Metrics script; actionlint + gitleaks gates; main guard; scheduled ops; Dependabot; squash-only merges |
 | Sprint 3 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
 | Sprint 4 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
 
@@ -38,3 +38,18 @@ This is one observed main release with two successful service deployments and no
 Window: Sprint 2 week in Manila time (12–18 Oct), i.e. `2026-10-11T16:00:00Z` to `2026-10-18T16:00:00Z`, workflow `ci.yml` only. Command: `python scripts/pipeline_metrics.py --label "Sprint 2 (to date)" --since 2026-10-11T16:00:00Z --until 2026-10-18T16:00:00Z`. Because the window starts at Manila midnight, it includes the PR #15 merge and [main run 38174257006](https://github.com/Ikeee-AI/TekaTech/actions/runs/38174257006) also described above as the first main deployment. The second deployment is [main run 38238577447](https://github.com/Ikeee-AI/TekaTech/actions/runs/38238577447) for PR #16, merge commit `68b4c5a6cc98852d72f98f818b8fd75de50d827a`. Lead time = PR `merged_at` to deploy-job completion, which only finishes after `deployed_smoke.py` confirms both hosts serve the commit. The GitHub "Dependency Graph" run is a different workflow and is excluded. This row is provisional until the Saturday deadline.
 
 Independent production check at `2026-10-16T06:51:54Z`: `deployed_smoke.py` passed for `68b4c5a` (health, both hosts on the exact commit, 3 gadgets from the database, CORS). The first two attempts timed out while the free API woke; it passed after 55.3 seconds. Record cold starts separately from deployment lead time. It is not a complete weekly average or optimization comparison. Post-deploy smoke passed exact SHA, API health, one real gadget, frontend CORS and direct `/login`; see [safe evidence](../evidence/sprint1-main-deployment.json). Rollback/recovery has not been exercised.
+
+## Sprint 2 final row (cut-off Sunday 18 October 2026, 15:41 Asia/Manila)
+
+Source: `python scripts/pipeline_metrics.py --since 2026-10-11T16:00:00Z --until 2026-10-18T07:41:25Z`, workflow `ci.yml` only. **Raw output committed:** [`docs/evidence/sprint2-metrics.json`](../evidence/sprint2-metrics.json) (includes every deploy run link). The scheduled report produced the same metrics for its rolling window in [run 39030954463](https://github.com/Ikeee-AI/TekaTech/actions/runs/39030954463) (artifact `weekly-metrics`).
+
+Definitions, so the two "about 2.2 minutes" values are not confused:
+- **Main pipeline (2.17 min, 21 runs):** start to finish of each `push` run on `main` — checks, main guard, deploy hooks and smoke.
+- **Merge → live (2.27 min, 20 samples):** the PR's `merged_at` to completion of that run's deploy job, which only succeeds after `deployed_smoke.py` sees both hosts on the exact commit. One main deploy (`ed37f45`, PE-1) had no PR, so there are 20 samples, not 21.
+- **Success rate (77/77):** completed workflow **runs** whose final conclusion is `success`. Job-level skips by design (the deploy job on PR runs) are not failures. No run was cancelled or skipped.
+- **Re-run disclosure:** main run [39038725331](https://github.com/Ikeee-AI/TekaTech/actions/runs/39038725331) (#26) failed on its **first attempt** because of the main-guard false positive (PE-4) and passed on a re-run ~5 min later. GitHub reports the final attempt, so it counts as a success above; counting first attempts, main success would be 20/21 and failed deploy attempts 1 (no production impact).
+- **PR runs (55):** include the four teammate fork PRs, which ran no CI until fork workflows were enabled on 17 Oct (~22 h for #35, PE-2).
+
+**Persistence across redeploys (Sprint 2 gate):** [`docs/evidence/sprint2-persistence.json`](../evidence/sprint2-persistence.json) — at the cut-off both hosts served `b3c98e0` and the API returned the same 3 gadgets (created 8 Aug and 12 Oct) after the 21 deploys listed in the metrics JSON. Read-only GET requests.
+
+**Full-history secret scan:** gitleaks 8.30.1 runs on every PR and main run since #26; latest main run [39108438489](https://github.com/Ikeee-AI/TekaTech/actions/runs/39108438489): "38 commits scanned", "no leaks found".
