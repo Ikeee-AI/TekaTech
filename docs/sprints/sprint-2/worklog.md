@@ -177,3 +177,40 @@ None.
 - Re-review #65 and #53 when fixes are pushed and review is re-requested — Manuel — when requested.
 - Merge #52 and #64, then record the post-merge main run link for #64 — Ikeee-AI — after approval.
 - Open a follow-up ticket for evaluator strictness before Sprint 3 (#54) — Ikeee-AI / Adrian.
+
+## 2026-10-18 17:46 Asia/Manila — Rebase #37, re-review follow-up on #46/#53/#65
+**Who:** Manuel Mirasol (AI-assisted: yes) · **Task:** S2-MA · **Branch:** `s2-ma-rebase` (pushed as `tekatech/S2-MA-auth-contract-tests`)
+
+**Done**
+- Rebased #37 onto `upstream/main` (PR base is `Ikeee-AI/TekaTech`, not the fork's `origin/main`). Three conflicts in `backend/tests/test_gadgets.py` and `test_specs.py` resolved by keeping both sides; one `test_ingest_spec_requires_login` remains (in `test_specs.py`); duplicate missing-name test dropped (main's `test_create_gadget_without_name_returns_422` covers it). Local backend suite: 92 passed (local run). Force-pushed with lease, head `02daa7d`; PR reports MERGEABLE — evidence: PR #37, commit 02daa7d.
+- Verified the run links cited in #53/#65: 39108173515 = pull_request run on `d7d9227` (success); 39108438489 = main push on `b3c98e0`, log shows "38 commits scanned" / "no leaks found"; 39030954463 = first `ops-weekly` run (PE-3); 39038725331 attempt 2 success (PE-4).
+- Posted a comment on #37 asking s2100932 to re-approve (their approval is on the old commit `0cef0b3`) — https://github.com/Ikeee-AI/TekaTech/pull/37#issuecomment-6248302905
+- Manuel re-approved #46 (`f1e0285`), #53 (`c04ee1f`) and #65 (`d7d9227`) on the website, replacing the earlier changes-requested reviews on #53/#65. AI drafted the review text; the approvals are Manuel's own.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| First rebase onto `origin/main` replayed 15 commits | `origin` is the fork and was behind; PR targets `upstream` | Discarded (never pushed); redone on a new branch from `upstream/main` |
+| `git reset --hard`, first `git push --force-with-lease`, and `gh pr review --approve` were blocked by the auto-mode classifier | Safety classifier (destructive/self-approval) | Avoided reset; push re-run after Manuel's explicit instruction; approvals posted by Manuel himself |
+| #37 check "Owner-area labels" fails: `Resource not accessible by integration` | `labeler.yml` uses `pull_request`; fork PRs get a read-only token | Not fixed; skipped by decision. Fix is Ikeee-AI's: `pull_request_target` (no PR-head checkout) or the repo's fork write-token setting |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Earlier entry blocks #65 on Adrian's acknowledgement of the "covering for Adrian" PR | Merge condition | Dropped by Manuel: Adrian's task was covered by Ikeee-AI, so no confirmation is requested — Manuel — closed |
+| #37 required-check set is green but "Owner-area labels" is red | Cosmetic; not a required check | Open — Ikeee-AI |
+
+**Decisions**
+- Skip the labeler failure for now and revisit after #46 is approved — Manuel.
+- Do not ask Adrian to confirm the #65/#35 coverage edits — Manuel.
+
+**Blockers / risks**
+- #37 awaits re-approval from s2100932 on head `02daa7d` (gate counts only latest-commit approvals) — s2100932 — open.
+- Not verified: vendor-page facts in `docs/evidence/s2-ad-source-check.md`; evaluator tests were read, not run — Manuel — open.
+
+**Plan alignment** — S2-MA: Partial. #37 is rebased, mergeable and has green required checks, but is not approved on the latest commit, merged or deployed. Sprint 2 deadline (17 Oct 3 PM) has passed.
+
+**Next**
+- Re-approve #37 on `02daa7d` — s2100932 — when available.
+- Merge #46, #53, #65, then #37 once approved — Ikeee-AI — after gate.
+- Labeler `pull_request_target` fix PR — Ikeee-AI — after #46.
