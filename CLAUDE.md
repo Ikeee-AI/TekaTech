@@ -48,7 +48,7 @@ Admin is a flag on the Supabase auth user's `app_metadata`, which **only** the a
 ```python
 supabase.auth.admin.update_user_by_id(user_id, {"app_metadata": {"is_admin": True}})
 ```
-Admin-only today: delete gadget, list/resolve corrections. Any logged-in user can create/edit gadgets, ingest specs, and submit corrections.
+Admin-only today: delete gadget, list/resolve corrections. Any logged-in user can create/edit gadgets, ingest/index specs, and submit corrections. **No auth at all** (deliberately public, rate limit is the only guard): `POST /query`, `POST /comparisons`, `GET /comparisons/{slug}`, `/stats/*`, and the gadget/spec `GET` routes. An endpoint with no `Depends(get_current_user…)` is public — check for it when adding routes.
 
 ### The database schema is tracked and manually applied
 `backend/sql/001_baseline.sql` tracks the five application tables, and `backend/sql/match_spec_documents.sql` tracks vector retrieval. `backend/scripts/assemble_sql.py` prints all SQL in application order; `docs/database.md` explains setup and compatibility checks for existing databases. SQL is still **hand-applied in Supabase SQL Editor**: nothing auto-migrates production. CI applies it twice to scratch Postgres/pgvector and runs transactional behavior/access checks. If you add DB-side functions, put them in `backend/sql/` and tell the user how to apply them.
@@ -75,7 +75,7 @@ Input limits are enforced twice on purpose: a loose character cap (free, rejects
 `query.py` records `embedding_tokens` / `prompt_tokens` / `completion_tokens` into `query_history` from the `usage` block OpenAI returns on every response. Those columns only exist after `sql/add_query_history_token_columns.sql` is applied, so the insert retries without them on schema error — and the whole history write is wrapped so it can never fail the request, since both OpenAI calls are already billed by the time it runs.
 
 ### Rate limiting
-`rate_limit.py` holds a module-level `slowapi` `Limiter`. Applied to `/query` (10/min), spec ingestion and comparison creation (20/hr). **slowapi requires the endpoint to accept `request: Request`** even if unused — omitting it breaks the decorator at runtime, not at import.
+`rate_limit.py` holds a module-level `slowapi` `Limiter`. Applied to `/query` (10/min), spec ingestion, spec indexing, and comparison creation (20/hr each). **slowapi requires the endpoint to accept `request: Request`** even if unused — omitting it breaks the decorator at runtime, not at import.
 
 Counter storage comes from `settings.rate_limit_storage_uri` (default `memory://`). `memory://` is per-process and therefore only correct on a single worker; a shared store (`redis://`) is required for multi-worker/replica deploys. `verify_storage_reachable()` runs in the app lifespan and **aborts startup** if a configured store is unreachable — deliberately no `in_memory_fallback`, since a silent downgrade to per-process counters looks healthy while the protection is gone. Don't "helpfully" add a fallback.
 
@@ -92,8 +92,19 @@ Tests never make real Supabase or OpenAI calls. Mock OpenAI with `unittest.mock.
 
 `npm run lint` is currently clean and should stay that way. Two deliberate patterns:
 
-- **`react-hooks/set-state-in-effect` is suppressed at specific call sites.** The app-wide data-fetching convention is `setLoading(true)` → `api.x().then(...).finally(() => setLoading(false))` inside a `useEffect`, used in ~12 components. The strict rule flags this categorically. Suppress at the line with a comment explaining why; do **not** restructure the fetch pattern in one component only, and do not disable the rule project-wide.
+- **`react-hooks/set-state-in-effect` is suppressed at specific call sites.** The app-wide data-fetching convention is `setLoading(true)` → `api.x().then(...).finally(() => setLoading(false))` inside a `useEffect`, used across many components. The strict rule flags it where the `setState` runs synchronously in the effect body (currently suppressed in `AIComparisonPanel`, `ComparePage`, `AdminCorrections`). Suppress at the line with a comment explaining why; do **not** restructure the fetch pattern in one component only, and do not disable the rule project-wide.
 - **`AuthContext.jsx` exports only components.** `react-refresh/only-export-components` forced a three-file split: the provider (`context/AuthContext.jsx`), the raw context object (`context/authContextValue.js`), and the hook (`hooks/useAuth.js`). Don't consolidate them.
+
+## CI and deploy
+
+`.github/workflows/ci.yml` runs three parallel jobs on every PR — mirror them locally before pushing:
+- **Backend tests**: `python ../scripts/check_secrets.py` (fails on tracked `.env*`, `account.txt`, or `sk-`/`sb_secret_`/GitHub-token/Render-hook patterns — including in test fixtures), `compileall`, `uv run pytest`, then `from main import app`.
+- **Frontend lint and build**: `npm ci && npm run lint && npm run build`.
+- **Database migrations**: `python backend/scripts/assemble_sql.py` output applied **twice** to scratch pgvector Postgres (so every SQL file must be idempotent/replay-safe), then `backend/tests/sql/schema_acceptance.sql`. A new file in `backend/sql/` must also be registered in `assemble_sql.py` or CI never applies it.
+
+Pushes to `main` additionally trigger Render deploy hooks and `scripts/deployed_smoke.py`. Deploys never touch the database — SQL is applied by hand first (`docs/deploy-runbook.md`, `PIPELINE.md`). PRs follow `.github/PULL_REQUEST_TEMPLATE.md`, which asks for any manual migration/env step to be listed.
+
+`AGENTS.md` is a copy of this file for Codex; update both together.
 
 ## Gotchas
 

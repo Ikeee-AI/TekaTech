@@ -53,3 +53,61 @@ The Ollama probe calls `http://127.0.0.1:11434/api/generate` from backend code, 
 - The prompt treats snippets as untrusted data and matches the frontend renderer's citation/bold/bullet rules. Keep those contracts when changing AI code.
 - Query history stores model output and token telemetry; history failures cannot fail an already-billed query.
 - `memory://` counters are single-process only. Use healthy shared Redis for multiple workers/replicas. Startup must fail if the configured shared store is unreachable; no silent fallback.
+
+## Browser-to-API boundary
+
+The browser never queries data tables directly. Supabase is used from the browser for auth only (sign up / sign in). All data flows through FastAPI:
+
+1. Browser signs in via Supabase and receives an access token.
+2. The frontend `src/api/client.js` wraps `fetch`, pulls the current Supabase session's `access_token`, and sends it as a `Bearer` header.
+3. The backend verifies it with `supabase.auth.get_user(token)` in `auth.py`.
+4. Route-level authorization (`get_current_user`, `get_current_admin_user`) is the only access control — the backend's service-role key bypasses RLS, so Supabase RLS policies provide zero defense-in-depth here.
+
+Admin is a flag on the Supabase auth user's `app_metadata`, which only the admin API (service-role key) can set. A user can never grant it to themselves. Admin-only operations today: delete gadget, list/resolve corrections. Any logged-in user can create/edit gadgets, ingest/index specs, and submit corrections.
+
+The relationship actually used by the app is `gadgets.id -> spec_documents.gadget_id` (one gadget, many spec chunks, cascade delete). `spec_documents` -> `spec_corrections` (one spec, many corrections, cascade delete) is the second relationship. Both are reproduced in scratch Postgres by `backend/sql/001_baseline.sql` without Supabase-managed Auth tables.
+
+## Provider configuration
+
+Environment variables (no secret values committed):
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `openai_api_key` | OpenAI key for embeddings (`text-embedding-3-small`, `cl100k_base`) and chat (`gpt-5-mini`, `o200k_base`) | required |
+| `supabase_url` | Supabase project URL | required |
+| `supabase_key` | Supabase service-role key (`sb_secret_…`), bypasses RLS | required |
+| `cors_origins` | Comma-separated allowed browser origins | `http://localhost:5173` |
+| `rate_limit_storage_uri` | Counter store; `memory://` is single-process only | `memory://` |
+
+Count with the matching encoder: `count_embedding_tokens` for anything headed to `embed_texts`, `count_chat_tokens` for anything headed into a prompt.
+
+Rate limits: `/query` 10/min; spec ingestion, spec indexing and comparison creation 20/hour each. `memory://` is per-process and correct only for a single worker; use a shared store (e.g. Redis) for multi-worker deploys. Startup aborts if a configured shared store is unreachable — no silent fallback.
+
+## API reference
+
+Routes marked "none" are public; all others need a valid Supabase bearer token. The `client` pytest fixture overrides auth with an admin user; unauthorized/non-admin tests restore their own dependency overrides.
+
+| Endpoint | Method | Auth | Payload | Success | Errors |
+|----------|--------|------|---------|---------|--------|
+| `/health` | GET | none | none | 200 `{"status": "ok"}` | — |
+| `/version` | GET | none | none | 200 `{"commit": "..."}` | — |
+| `/gadgets` | GET | none | query: `category`, `brand` | 200 list | — |
+| `/gadgets` | POST | logged-in | `GadgetCreate` | 201 `GadgetResponse` | 401, 422 |
+| `/gadgets/{id}` | GET | none | path `id` | 200 `GadgetResponse` | 404 |
+| `/gadgets/{id}` | PATCH | logged-in | `GadgetUpdate` | 200 `GadgetResponse` | 400, 401, 404, 422 |
+| `/gadgets/{id}` | DELETE | admin | path `id` | 204 | 401, 403, 404 |
+| `/gadgets/{id}/specs` | GET | none | path `id` | 200 list | — |
+| `/gadgets/{id}/specs` | POST | logged-in | `{"raw_text": "...", "source_url": "..."}` | 201 `{"gadget_id", "chunks_created", "indexing_status"}` | 400, 401, 404, 422, 429 |
+| `/gadgets/{id}/specs/{spec_id}/index` | POST | logged-in | path ids | 200 `{"id", "indexing_status"}` | 401, 404, 409, 422, 429, 503 |
+| `/comparisons` | POST | none | `{"gadget_ids": [...]}` (2–5 ids) | 201 | 400 (fewer than 2), 422, 429 |
+| `/comparisons/{slug}` | GET | none | path `slug` | 200 `{"slug", "gadget_ids"}` | 404 |
+| `/stats/spec-coverage` | GET | none | none | 200 `{"covered": N, "total": N}` | — |
+| `/stats/trending-questions` | GET | none | query: `limit` | 200 list | — |
+| `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` | 201 | 401, 404 |
+| `/corrections` | GET | admin | query `status` | 200 list | 401, 403 |
+| `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}` | 200 | 400, 401, 403, 404 |
+| `/query` | POST | none | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 `{"answer", "sources", "model_used"}` | 422 (empty or over-limit question), 429 |
+
+Every route with an `{id}`, `{gadget_id}`, `{spec_id}` or `{correction_id}` path parameter returns 422 for a malformed UUID.
+
+Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route. Rate-limited routes (`/query`, spec ingestion/indexing, comparison creation) return 429 once the limit is exceeded.
