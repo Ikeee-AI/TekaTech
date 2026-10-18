@@ -43,6 +43,9 @@ def test_ingest_spec_rejects_empty_text(client, fake_supabase):
     resp = client.post(f"/gadgets/{uuid4()}/specs", json={"raw_text": ""})
     assert resp.status_code == 422
 
+def test_ingest_spec_rejects_missing_text(client, fake_supabase):
+    resp = client.post(f"/gadgets/{uuid4()}/specs", json={})
+    assert resp.status_code == 422
 
 def test_ingest_spec_rejects_overlong_text(client, fake_supabase):
     resp = client.post(f"/gadgets/{uuid4()}/specs", json={"raw_text": "x" * 20_001})
@@ -156,3 +159,24 @@ def test_index_spec_requires_login(client, fake_supabase):
         assert fake_supabase.writes == []
     finally:
         app.dependency_overrides[get_current_user] = previous
+
+
+def test_ingest_spec_requires_login(client, fake_supabase):
+    from main import app
+    from auth import get_current_user
+
+    previous = app.dependency_overrides.pop(get_current_user)
+    try:
+        resp = client.post(f"/gadgets/{uuid4()}/specs", json={"raw_text": "Display: 6.2 inch"})
+        assert resp.status_code == 401
+        assert fake_supabase.writes == []
+    finally:
+        app.dependency_overrides[get_current_user] = previous
+
+
+def test_ingest_spec_whitespace_only_text_returns_400(client, fake_supabase):
+    gadget_id = str(uuid4())
+    fake_supabase.set_response("gadgets", "select", [{"id": gadget_id}])
+    resp = client.post(f"/gadgets/{gadget_id}/specs", json={"raw_text": "   "})
+    assert resp.status_code == 400
+    assert fake_supabase.writes == []

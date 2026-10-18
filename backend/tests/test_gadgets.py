@@ -80,3 +80,23 @@ def test_delete_gadget_requires_admin(client, fake_supabase):
         app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
             id="00000000-0000-0000-0000-000000000001", email="test@example.com", app_metadata={"is_admin": True}
         )
+
+def test_get_gadget_malformed_id(client, fake_supabase):
+    resp = client.get("/gadgets/not-a-uuid")
+    assert resp.status_code == 422
+
+def test_create_gadget_without_name_returns_422(client, fake_supabase):
+    resp = client.post("/gadgets", json={"brand": "Samsung", "category": "smartphone"})
+    assert resp.status_code == 422
+
+def test_delete_gadget_without_login_returns_401(client, fake_supabase):
+    from main import app
+    from auth import get_current_user
+
+    previous = app.dependency_overrides.pop(get_current_user)
+    try:
+        resp = client.delete(f"/gadgets/{uuid4()}")
+        assert resp.status_code == 401
+        assert fake_supabase.writes == []
+    finally:
+        app.dependency_overrides[get_current_user] = previous
