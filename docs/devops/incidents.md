@@ -31,7 +31,7 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
 
 ### PE-2 — Teammate PRs ran no CI (16–17 Oct 2026)
 - **What:** PRs #35, #36, #37 and #39 were opened from forks. Fork PR workflows were disabled by default on the private repository, so none of them ran the required checks.
-- **Detection:** 17 Oct ~18:30 Manila (PR checks list empty). **Recovery:** fork PR workflows enabled with read-only token and no secrets; PRs re-triggered; all four green by ~19:00. About 30 hours for the earliest PR (#35).
+- **Detection:** 17 Oct ~18:30 Manila (PR checks list empty). **Recovery:** fork PR workflows enabled with read-only token and no secrets; PRs re-triggered; all four green by ~19:00. About 22 hours for the earliest PR (#35: opened Fri 16 Oct 21:03, checks green Sat 17 Oct ~19:00 Manila).
 - **Prevention:** settings recorded in PIPELINE.md; teammates now have write access and should push branches to the main repository.
 
 ### PE-3 — Weekly dependency audit could not fail (17 Oct 2026)

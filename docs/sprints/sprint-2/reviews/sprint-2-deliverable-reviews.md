@@ -78,4 +78,4 @@ Times are Asia/Manila. Team deadline was Saturday 17 October, 3:00 PM.
 | S2-JO | Jopher | Partial | 6 API tests delivered; CRUD browser journey, seed script and redeploy persistence missing |
 | S2-IK | Ikeee-AI | Partial → see merge/deploy evidence | CI/CD, guardrails, environments, board delivered; merges in progress |
 
-Process exceptions to disclose: `ed37f45` direct push to main (Adrian); fork-based PRs ran no CI until settings were fixed on 17 Oct ~18:55; #36/#37 ownership overlap; three PRs used `Closes #` against the Definition of Done.
+Process exceptions to disclose: one direct commit to main (`ed37f45`); fork-based PRs ran no CI until settings were fixed on 17 Oct ~18:55; #36/#37 ownership overlap; three PRs used `Closes #` against the Definition of Done.

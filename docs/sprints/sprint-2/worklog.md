@@ -300,3 +300,31 @@ None.
 **What Adrian delivered (his, unchanged, PR #35):** prompt/answer spec, two-gadget source pack with URLs, 10 evaluation cases, first evaluator script.
 **What Ikeee-AI changed (PR #65, separate commit `f4e37b8`):** re-verified facts on official pages (Apple tech specs 111831; Samsung PH, Exynos 2400) and removed facts the pages do not state; single S24 variant; untrusted-snippet and one-variant rules; machine-readable sources/cases; evaluator now scores any answer set for all 10 cases; 8 tests showing it rejects invented facts and bad citations. Only the `Closes #12` line of #35's description was edited (to `Refs #20, #3`) so merging would not close the OpenAI issue.
 **Status:** S2-AD remains **Partial** for Adrian; the support is credited to Ikeee-AI. Adrian is asked to read #65 and be able to explain the evaluator in Sprint 3.
+
+## 2026-10-17 23:00 – 2026-10-18 16:00 Asia/Manila — Security fixes complete, Manuel's review addressed
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S2-IK, S2-AD support · **Branch:** `tekatech/sprint2-evidence`
+
+**Done**
+- Merged through the gate, each deployed with guard and smoke passing: #45, #43, #44 (backend security; approved by Ikeee-AI after a combined check: 79 tests, pip-audit clean), #39 (Mika, approved by Jopher), #35 (Adrian, approved by Ikeee-AI), #41, #42 (frontend security; combined check: npm ci/lint/build, npm audit 0), then on 18 Oct #64, #52, #36 (approved by Manuel).
+- Dependabot: **0 open alerts, 22 fixed**; #28 closed.
+- #65 (S2-AD support) rebased to a single Ikeee-AI commit after #35 merged; Manuel's review addressed: whole-value fact matching, abstention answers may not cite, 3 more tests, `docs/evidence/s2-ad-source-check.md`; remaining evaluator tightening in #66.
+- #53 updated for Manuel's review (this entry, packet, metrics evidence, wording).
+
+**Errors and fixes**
+| Error | Cause | Fix / status |
+| --- | --- | --- |
+| PE-2 duration written as "~30 h" | Arithmetic error (Fri 21:03 → Sat ~19:00 is ~22 h) | Corrected in incidents.md and the packet after Manuel's review |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #35's description was edited (`Closes #12` → `Refs #20, #3`) by Ikeee-AI as repository admin **without Adrian's prior consent**, because he was unavailable | Changing a teammate's PR text without asking | Disclosed here and on #35; Adrian notified on the PR and asked to confirm when back — open |
+| #36 merged before #37 although both add `test_ingest_spec_requires_login` | #37 will conflict / duplicate test | Manuel to rebase #37 and drop the duplicate — open |
+
+**Decisions**
+- Version-update PRs #47–#51 frozen until after Consultation 2; #50 (openai major) to Sprint 3 — Ikeee-AI.
+
+**Plan alignment** — S2-MI deployed (verification pending in the demo); S2-JO tests, seed and CRUD proof merged; S2-AD Adrian's work merged + support in review; S2-MA pending re-approval; S2-IK delivered.
+
+**Next**
+- Re-reviews: Manuel on #53/#65/#46; Jopher on #37. Final metrics and packet before Mon 19 Oct 19:30.
