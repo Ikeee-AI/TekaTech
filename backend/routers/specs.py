@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
+import cache
 from auth import get_current_user
 from embeddings import chunk_text, embed_texts
 from rate_limit import limiter
@@ -71,6 +72,8 @@ def ingest_spec_text(request: Request, gadget_id: UUID, payload: SpecIngestReque
     ]
 
     result = supabase.table("spec_documents").insert(rows).execute()
+    # Spec coverage counts gadgets that have spec rows.
+    cache.invalidate("stats")
     return {"gadget_id": gadget_id, "chunks_created": len(result.data), "indexing_status": "pending"}
 
 
