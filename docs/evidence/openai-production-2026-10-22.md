@@ -8,6 +8,7 @@ Recorded by Ikeee-AI (S3-IK). Times are Asia/Manila (UTC+8). No key values, requ
 | --- | --- | --- | --- |
 | `TekaTech_Render` | `u8QA` | Render `tekatech-api` (`OPENAI_API_KEY`) | Active; dashboard shows last used 22 Oct after the live checks |
 | `TekaTech_Credit` | `GngA` | Local development `backend/.env` | Active |
+| `TekaTech_Smoke` | `W-sA` | GitHub repo secret `OPENAI_SMOKE_API_KEY` (weekly smoke job, #79) | Active; secret set 23 Oct 00:28 Manila |
 | `TekaTech_Latest` | `3DQA` | Local `.env` before the rotation | Revoked 22 Oct after Usage showed only 1 embeddings request / 9 tokens (the 18:08 check) and no chat use |
 | `TekaTech_Latest` | `OTIA` | Unused spare | Revoked, never used |
 | `TekaTech` | `MF0A` | Original key (4 Sep 2026) | Revoked |
