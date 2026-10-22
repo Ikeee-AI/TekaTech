@@ -17,3 +17,17 @@ python scripts/eval_runner.py --answers prompts/eval/reference_answers.json --re
 It prints PASS/FAIL per case and three metrics with denominators — factual cases supported, valid citations, correct abstentions — and exits with code 1 when a target is missed (≥90% supported, 100% valid citations, all abstentions; see `docs/sprints-2-to-5.md`). To score real answers, export them in the same shape (`{"provider": "...", "answers": {"TC-01": "..."}}`).
 
 `backend/tests/test_eval_runner.py` runs in CI and checks that the scorer rejects invented facts, citations outside the pack, uncited facts, wrong values and incomplete comparisons.
+
+## Case format (`eval/cases.json`, version `s3-ad-cases-v1`)
+
+Each case has an `id`, a `type`, a `query`, and either expected facts or an abstention flag:
+
+| Field | Used by | Meaning |
+| --- | --- | --- |
+| `type` | reporting | `factual`, `comparison`, `missing`, `variant` or `override` (Sprint 3 targets: 8 / 4 / 4 / 2 / 2) |
+| `expected_facts` | factual, comparison | values that must appear in the answer (whitespace/case-insensitive, whole value) |
+| `expected_sources` | factual, comparison | snippet ids; at least one must be cited |
+| `should_abstain` | `missing` | the answer must decline and cite nothing |
+| `requires_missing_note`, `comparison` | comparison | the answer must say when one gadget's spec is not stated |
+
+`type` is not scored yet; the runner ignores it until the per-category report lands.
