@@ -18,7 +18,7 @@ All 13 [GitHub issues](https://github.com/Ikeee-AI/TekaTech/issues) are created 
 | TTK-08 | Roles, product owner, board and backlog | Sprint 1 | Two members and product owner declared; board created; assignments/access verified; real teammate review pending |
 | TTK-09 | PR CI and protected reviewed main branch | Sprint 1 | First hosted CI passed; private-plan branch protection unavailable |
 | TTK-10 | Pipeline-triggered live walking skeleton | Sprint 1 | Main pipeline deployed exact merge SHA; catalog/database/CORS passed; teammate review pending |
-| TTK-11 | One successful real backend AI test | Sprint 1 | Temporary local Ollama call/JSON validation passed; OpenAI credit restored and a real local embeddings call passed on 22 Oct 2026 ([evidence](evidence/openai-local-2026-10-22.json)); deployed OpenAI path and public acceptance still pending |
+| TTK-11 | One successful real backend AI test | Sprint 1 | Temporary local Ollama call/JSON validation passed; OpenAI credit restored and a real local embeddings call passed on 22 Oct 2026 ([evidence](evidence/openai-local-2026-10-22.json)); production key rotated and a cited answer verified on the live site the same day ([evidence](evidence/openai-production-2026-10-22.md)) |
 | TTK-12 | Metrics, optimization and recovery evidence | Sprint 1-4 | Logs/runbook prepared; First CI baseline recorded; main pipeline and lead time measured; recovery exercise pending |
 | TTK-13 | Tagged release, documentation and Demo Day | Sprint 4 | Planned |
 
