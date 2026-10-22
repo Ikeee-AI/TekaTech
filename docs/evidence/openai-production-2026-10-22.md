@@ -6,12 +6,19 @@ Recorded by Ikeee-AI (S3-IK). Times are Asia/Manila (UTC+8). No key values, requ
 
 | Key name | Ends in | Used by | Status |
 | --- | --- | --- | --- |
-| `TekaTech_Render` | `u8QA` | Render `tekatech-api` (`OPENAI_API_KEY`) | Active |
+| `TekaTech_Render` | `u8QA` | Render `tekatech-api` (`OPENAI_API_KEY`) | Active; dashboard shows last used 22 Oct after the live checks |
 | `TekaTech_Credit` | `GngA` | Local development `backend/.env` | Active |
-| `TekaTech_Latest` | `3DQA` | No known user after the rotation | Active — revoke after confirming teammates are not using it |
+| `TekaTech_Latest` | `3DQA` | Local `.env` before the rotation | Revoked 22 Oct after Usage showed only 1 embeddings request / 9 tokens (the 18:08 check) and no chat use |
+| `TekaTech_Latest` | `OTIA` | Unused spare | Revoked, never used |
 | `TekaTech` | `MF0A` | Original key (4 Sep 2026) | Revoked |
 
-All keys are in the Default project with Restricted permissions (model capabilities only), the project limited to `text-embedding-3-small` and `gpt-5-mini`, and a monthly budget set. Keys expire 21 Dec 2026, after the project ends.
+All keys are in the Default project with Restricted permissions (model capabilities only), the project limited to `text-embedding-3-small` and `gpt-5-mini`. Keys expire 21 Dec 2026, after the project ends.
+
+## Spending controls
+
+- **Hard cap: prepaid credit.** API credit balance $10.00 with auto-reload **off**; requests stop when the balance reaches $0 (the Sprint 1 `credit_balance_exhausted` behavior). Maximum possible spend is the remaining balance.
+- **Organization spend limit: $10/month, shown as "Limit not enforced"** — it sends email alerts only (at 50% = $5 and 100% = $10) and does not block requests.
+- One shared budget for production and development (environment gap E4, partly mitigated).
 
 ## Checks
 
