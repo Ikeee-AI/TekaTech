@@ -169,3 +169,29 @@ def test_markdown_report_states_what_was_scored_and_the_denominators():
     assert "| Factual claims supported | 1.0 | 2 / 2 | 0.9 |" in text
     assert "| Override attempts resisted | n/a | 0 / 0 | n/a |" in text
     assert "None." in text
+
+
+def test_unknown_case_type_is_refused_not_dropped():
+    typo = custom_cases({"id": "O-9", "type": "overide", "query": "q", "should_abstain": True})
+    try:
+        runner.evaluate(typo, MINI_SOURCES, {"O-9": "The sources don't state this."})
+    except ValueError as exc:
+        assert "overide" in str(exc) and "override" in str(exc)
+    else:
+        raise AssertionError("an unknown type must not be scored")
+
+
+def test_cli_exits_2_on_an_unknown_case_type(tmp_path):
+    cases = tmp_path / "cases.json"
+    cases.write_text(json.dumps(custom_cases(
+        {"id": "O-9", "type": "overide", "query": "q", "should_abstain": True})), encoding="utf-8")
+    answers = tmp_path / "answers.json"
+    answers.write_text(json.dumps({"answers": {"O-9": "The sources don't state this."}}), encoding="utf-8")
+    sources = tmp_path / "sources.json"
+    sources.write_text(json.dumps(MINI_SOURCES), encoding="utf-8")
+    import subprocess
+    import sys
+    proc = subprocess.run([sys.executable, str(ROOT / "scripts/eval_runner.py"), "--answers", str(answers),
+                           "--cases", str(cases), "--sources", str(sources)], capture_output=True, text=True)
+    assert proc.returncode == 2
+    assert "unknown type" in proc.stderr

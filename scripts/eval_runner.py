@@ -52,6 +52,11 @@ def has_fact(answer, fact):
 
 def case_type(case):
     if case.get("type"):
+        # A typo such as "overide" would leave no override cases and skip that target, so the
+        # report could still say "Targets met". Refuse the dataset instead.
+        if case["type"] not in CASE_TYPES:
+            raise ValueError(f"case {case.get('id', '?')}: unknown type {case['type']!r}; "
+                             f"use one of {', '.join(CASE_TYPES)}")
         return case["type"]
     if case.get("should_abstain"):
         return "missing"
@@ -183,7 +188,11 @@ def main():
         return json.loads(path.read_text(encoding="utf-8"))
 
     answers_file = load(args.answers)
-    report = evaluate(load(args.cases), load(args.sources), answers_file["answers"])
+    try:
+        report = evaluate(load(args.cases), load(args.sources), answers_file["answers"])
+    except ValueError as exc:
+        print(f"Invalid cases file: {exc}", file=sys.stderr)
+        sys.exit(2)
     report["provider"] = answers_file.get("provider", "unknown")
     report["model"] = args.model or answers_file.get("model", "unknown")
     report["prompt_version"] = args.prompt_version or answers_file.get("prompt_version", "unknown")
