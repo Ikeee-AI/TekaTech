@@ -36,8 +36,9 @@ The free API sleeps after about 15 minutes without traffic. The first request th
 | 16 Oct | `68b4c5a` | 55.3 s | 1 | Sprint 2 work log |
 | 19 Oct 22:30 | — | 42.54 s (`/health`), after about 3 h idle | 1 | Consultation 2 measurement, Sprint 2 work log |
 | 22 Oct 00:26 | `096f8f2` | 42.65 s | 1 | Before-run of #73 |
+| 23 Oct 16:37 | `61deaa2` | 52.56 s (`/health`; TCP connect 0.11 s, so all the wait is service start), after 17 min idle | 1 | The `/gadgets` request right after: 1.09 s, cache MISS (first database call) |
 
-Caching and cold start are separate problems. Cold-start mitigation (a "server is waking up" UI state, S3-MI; a warm-up ping before demos) is tracked in #58 and #55.
+Four samples so far: 42.5–55.3 s, median about 48 s. Each is a single request, so this is a range, not a precise figure. Caching and cold start are separate problems. Cold-start mitigation (a "server is waking up" UI state, S3-MI; a warm-up ping before demos) is tracked in #58 and #55.
 
 ## AI answers (`POST /query`)
 
