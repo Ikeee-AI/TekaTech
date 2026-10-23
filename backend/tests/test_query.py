@@ -1,6 +1,12 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import httpx
+import openai
+import pytest
+
+from routers.query import DETAIL_TIMEOUT, DETAIL_UNAVAILABLE, DETAIL_UNUSABLE
+
 
 def _fake_embedding_response():
     return SimpleNamespace(data=[SimpleNamespace(embedding=[0.0] * 1536)])
@@ -10,6 +16,27 @@ def _fake_completion_response(content="AMD's chip has more cores [1]."):
     message = SimpleNamespace(content=content)
     choice = SimpleNamespace(message=message)
     return SimpleNamespace(choices=[choice])
+
+
+def _set_matching_spec(fake_supabase, gadget_id="22222222-2222-2222-2222-222222222222"):
+    fake_supabase.set_response(
+        "_rpc",
+        None,
+        [{"gadget_id": gadget_id, "content": "spec chunk", "source_url": None, "similarity": 0.5}],
+    )
+    fake_supabase.set_response("gadgets", "select", [{"id": gadget_id, "name": "Gadget X", "brand": "Brand"}])
+
+
+def _provider_error(cls):
+    """Build an OpenAI SDK exception of the given class with a realistic request/response."""
+    request = httpx.Request("POST", "https://api.openai.com/v1/test")
+    if cls is openai.APITimeoutError:
+        return cls(request=request)
+    if cls is openai.APIConnectionError:
+        return cls(request=request)
+    status = {openai.RateLimitError: 429, openai.AuthenticationError: 401, openai.InternalServerError: 500}[cls]
+    response = httpx.Response(status, request=request)
+    return cls("provider said: secret-detail sk-should-never-leak", response=response, body=None)
 
 
 def test_ask_question_no_matches_returns_fallback(client, fake_supabase):
@@ -55,14 +82,8 @@ def test_ask_question_with_matches_returns_grounded_answer(client, fake_supabase
     assert data["sources"][0]["similarity"] == 0.823  # rounded to 3 places
 
 
-def test_ask_question_null_completion_content_falls_back(client, fake_supabase):
-    gadget_id = "22222222-2222-2222-2222-222222222222"
-    fake_supabase.set_response(
-        "_rpc",
-        None,
-        [{"gadget_id": gadget_id, "content": "spec chunk", "source_url": None, "similarity": 0.5}],
-    )
-    fake_supabase.set_response("gadgets", "select", [{"id": gadget_id, "name": "Gadget X", "brand": "Brand"}])
+def test_ask_question_null_completion_content_returns_503(client, fake_supabase):
+    _set_matching_spec(fake_supabase)
 
     with patch("routers.query.client") as mock_client:
         mock_client.embeddings.create.return_value = _fake_embedding_response()
@@ -70,8 +91,8 @@ def test_ask_question_null_completion_content_falls_back(client, fake_supabase):
         mock_client.chat.completions.create.return_value = _fake_completion_response(content=None)
         resp = client.post("/query", json={"question": "Anything?"})
 
-    assert resp.status_code == 200
-    assert "didn't return an answer" in resp.json()["answer"]
+    assert resp.status_code == 503
+    assert resp.json()["detail"] == DETAIL_UNUSABLE
 
 
 def test_ask_question_scoped_to_gadget_ids_passes_them_to_rpc(client, fake_supabase):
@@ -213,3 +234,133 @@ def test_ask_question_rate_limited_after_10_per_minute(client, fake_supabase):
             assert resp.status_code == 200
         resp = client.post("/query", json={"question": "How much RAM?"})
     assert resp.status_code == 429
+
+
+# --- provider failures: every AI-side failure is a safe 503 with a plain `detail` ---
+
+@pytest.mark.parametrize(
+    "error_class, expected_detail",
+    [
+        (openai.APITimeoutError, DETAIL_TIMEOUT),
+        (openai.APIConnectionError, DETAIL_UNAVAILABLE),
+        (openai.RateLimitError, DETAIL_UNAVAILABLE),
+        (openai.AuthenticationError, DETAIL_UNAVAILABLE),
+        (openai.InternalServerError, DETAIL_UNAVAILABLE),
+    ],
+)
+def test_embedding_failure_returns_safe_503(client, fake_supabase, error_class, expected_detail):
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.side_effect = _provider_error(error_class)
+        resp = client.post("/query", json={"question": "How long does the battery last?"})
+
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": expected_detail}
+    mock_client.chat.completions.create.assert_not_called()
+    assert fake_supabase.writes == []
+
+
+@pytest.mark.parametrize(
+    "error_class, expected_detail",
+    [
+        (openai.APITimeoutError, DETAIL_TIMEOUT),
+        (openai.APIConnectionError, DETAIL_UNAVAILABLE),
+        (openai.RateLimitError, DETAIL_UNAVAILABLE),
+        (openai.AuthenticationError, DETAIL_UNAVAILABLE),
+        (openai.InternalServerError, DETAIL_UNAVAILABLE),
+    ],
+)
+def test_completion_failure_returns_safe_503(client, fake_supabase, error_class, expected_detail):
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.side_effect = _provider_error(error_class)
+        resp = client.post("/query", json={"question": "How long does the battery last?"})
+
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": expected_detail}
+    # Nothing was answered, so nothing is logged as a query.
+    assert fake_supabase.writes == []
+
+
+def test_provider_error_details_never_reach_the_user(client, fake_supabase):
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.side_effect = _provider_error(openai.RateLimitError)
+        resp = client.post("/query", json={"question": "Anything?"})
+
+    body = resp.text
+    assert "secret-detail" not in body
+    assert "sk-" not in body
+    assert "429" not in body
+    assert "openai" not in body.lower()
+
+
+@pytest.mark.parametrize("content", [None, "", "   \n  "])
+def test_empty_model_answer_returns_unusable_503(client, fake_supabase, content):
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response(content=content)
+        resp = client.post("/query", json={"question": "Anything?"})
+
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": DETAIL_UNUSABLE}
+    assert fake_supabase.writes == []
+
+
+def test_completion_without_choices_returns_unusable_503(client, fake_supabase):
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = SimpleNamespace(choices=[])
+        resp = client.post("/query", json={"question": "Anything?"})
+
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": DETAIL_UNUSABLE}
+
+
+def test_embedding_response_without_vector_returns_unusable_503(client, fake_supabase):
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = SimpleNamespace(data=[])
+        resp = client.post("/query", json={"question": "Anything?"})
+
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": DETAIL_UNUSABLE}
+    mock_client.chat.completions.create.assert_not_called()
+
+
+def test_provider_client_has_bounded_timeout_and_retries():
+    from routers import query
+
+    assert query.client.timeout == query.PROVIDER_TIMEOUT_SECONDS
+    assert query.client.max_retries == query.PROVIDER_MAX_RETRIES
+    assert query.PROVIDER_TIMEOUT_SECONDS <= 60
+
+
+def test_unreadable_embedding_reply_returns_unusable_503(client, fake_supabase):
+    # The real SDK raises a bare ValueError ("No embedding data received") for an empty 200 reply.
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.side_effect = ValueError("No embedding data received")
+        resp = client.post("/query", json={"question": "Anything?"})
+
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": DETAIL_UNUSABLE}
+    mock_client.chat.completions.create.assert_not_called()
+
+
+def test_unreadable_completion_reply_returns_unusable_503(client, fake_supabase):
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.side_effect = ValueError("Expecting value: line 1 column 1")
+        resp = client.post("/query", json={"question": "Anything?"})
+
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": DETAIL_UNUSABLE}
+    assert fake_supabase.writes == []
