@@ -7,6 +7,27 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import EmptyState from '../components/EmptyState'
 import AIComparisonPanel from '../components/AIComparisonPanel'
 
+function formatDate(date) {
+  if (!date) return '—'
+  const d = new Date(date)
+  return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+/** Value cell; the cheapest price gets a visible "Lowest price" label, not just color and an icon. */
+function CompareValue({ row, gadget }) {
+  const isHighlighted = row.highlight?.(gadget)
+  if (!isHighlighted) return row.get(gadget)
+  return (
+    <span className="inline-flex flex-col items-center sm:items-start gap-0.5">
+      <span className="inline-flex items-center gap-1 text-green-800 font-semibold bg-green-50 rounded-full px-2 py-0.5">
+        <Trophy size={11} aria-hidden="true" />
+        {row.get(gadget)}
+      </span>
+      <span className="text-xs font-semibold text-green-800">Lowest price</span>
+    </span>
+  )
+}
+
 export default function ComparePage() {
   useDocumentTitle('Compare')
   const [searchParams, setSearchParams] = useSearchParams()
@@ -99,7 +120,7 @@ export default function ComparePage() {
       get: (g) => (g.price_php ? `Php ${g.price_php.toLocaleString()}` : '—'),
       highlight: (g) => g.price_php === cheapestPrice,
     },
-    { label: 'Released', get: (g) => g.release_date || '—' },
+    { label: 'Released', get: (g) => formatDate(g.release_date) },
   ]
 
   return (
@@ -128,18 +149,19 @@ export default function ComparePage() {
       {/* Desktop / tablet: table */}
       <div className="hidden sm:block overflow-x-auto">
         <table className="w-full border-collapse min-w-[500px]">
+          <caption className="sr-only">Spec comparison of {gadgets.map((g) => g.name).join(', ')}</caption>
           <thead>
             <tr>
-              <th className="w-28"></th>
+              <td className="w-28" />
               {gadgets.map((g) => (
-                <th key={g.id} className="text-left align-top pb-3 px-2">
+                <th key={g.id} scope="col" className="text-left align-top pb-3 px-2">
                   <div className="relative bg-white border border-gray-200 rounded-xl p-3">
                     <button
                       onClick={() => removeGadget(g.id)}
                       aria-label={`Remove ${g.name} from comparison`}
-                      className="absolute top-2 right-2 text-slate-500 hover:text-red-700 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      className="absolute top-1.5 right-1.5 w-8 h-8 flex items-center justify-center text-slate-600 hover:text-red-700 hover:bg-red-50 transition rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
-                      <X size={15} />
+                      <X size={16} aria-hidden="true" />
                     </button>
                     <div className="h-20 w-full bg-gray-50 rounded-lg overflow-hidden mb-2 flex items-center justify-center">
                       {g.image_url ? (
@@ -162,24 +184,14 @@ export default function ComparePage() {
           <tbody>
             {rows.map((row) => (
               <tr key={row.label} className="border-t border-gray-100">
-                <td className="text-xs font-medium text-gray-500 py-3 pr-2">{row.label}</td>
-                {gadgets.map((g) => {
-                  const isHighlighted = row.highlight?.(g)
-                  return (
-                    <td key={g.id} className="py-3 px-2 text-sm text-gray-800">
-                      <span
-                        className={
-                          isHighlighted
-                            ? 'inline-flex items-center gap-1 text-green-700 font-medium bg-green-50 rounded-full px-2 py-0.5'
-                            : ''
-                        }
-                      >
-                        {isHighlighted && <Trophy size={11} />}
-                        {row.get(g)}
-                      </span>
-                    </td>
-                  )
-                })}
+                <th scope="row" className="text-left text-xs font-semibold uppercase tracking-wider text-gray-600 py-3 pr-2">
+                  {row.label}
+                </th>
+                {gadgets.map((g) => (
+                  <td key={g.id} className="py-3 px-2 text-sm text-gray-800">
+                    <CompareValue row={row} gadget={g} />
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -227,24 +239,12 @@ export default function ComparePage() {
                 className="grid gap-2"
                 style={{ gridTemplateColumns: `repeat(${gadgets.length}, minmax(0, 1fr))` }}
               >
-                {gadgets.map((g) => {
-                  const isHighlighted = row.highlight?.(g)
-                  return (
-                    <dd key={g.id} className="min-w-0 text-center text-sm text-gray-800 break-words">
-                      <span className="sr-only">{g.name}: </span>
-                      <span
-                        className={
-                          isHighlighted
-                            ? 'inline-flex items-center justify-center gap-1 text-green-800 font-semibold bg-green-50 rounded-full px-2 py-0.5'
-                            : ''
-                        }
-                      >
-                        {isHighlighted && <Trophy size={11} aria-hidden="true" />}
-                        {row.get(g)}
-                      </span>
-                    </dd>
-                  )
-                })}
+                {gadgets.map((g) => (
+                  <dd key={g.id} className="min-w-0 text-center text-sm text-gray-800 break-words">
+                    <span className="sr-only">{g.name}: </span>
+                    <CompareValue row={row} gadget={g} />
+                  </dd>
+                ))}
               </div>
             </div>
           ))}
