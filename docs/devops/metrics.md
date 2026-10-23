@@ -62,7 +62,7 @@ Source: `python scripts/pipeline_metrics.py --since 2026-10-18T07:41:25Z --until
 - **The one failure (51/52):** PR run [39108805358](https://github.com/Ikeee-AI/TekaTech/actions/runs/39108805358) on 18 Oct 15:44 (PR #53), in the gitleaks full-history step: "leaks found: 1".
   - The branch was force-pushed 1 minute later, and the next run passed.
   - The flagged commit `e6e7b7f` changed only docs and evidence files. Gitleaks printed no rule or file because the step runs without `-v`.
-  - Not recorded at the time. It is being checked with a local gitleaks run on that commit; the result goes in `docs/devops/incidents.md`.
+  - Not recorded at the time. Checked on 23 Oct with a local gitleaks 8.30.1 run (checksum-verified): **false positive**, rule `generic-api-key`, a Git commit SHA under the JSON key `api_commit`. Details are in `docs/devops/incidents.md`.
 - **Cancelled runs (5, excluded from the rate):** all were main push runs superseded by back-to-back merges on 23 Oct (same concurrency group): `a0ef344`, `8fd96be`, `0a8337a`, `e4cd02b`, `818e412`. The final main state of each batch was tested and deployed.
 - **Main pipeline 2.70 min vs Sprint 2's 2.17 min.** Main runs now include the gitleaks history scan and actionlint (added late in Sprint 2) and the post-deploy smoke retries. The sample is 12 runs, so this is not yet a trend.
 - **Merge → live (2.70 min, 12 samples):** from each PR's `merged_at` until that run's deploy job finished, after `deployed_smoke.py` confirmed both hosts were on the exact commit.
