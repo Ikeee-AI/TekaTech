@@ -2,7 +2,8 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Loader2 } from 'lucide-react'
 import { subscribe, getWakingSince } from '../api/serverStatus'
 
-const EXPECTED_SECONDS = 45
+// Consultation 2 measured a 42.5 s cold start; allow headroom before suggesting a refresh.
+const EXPECTED_SECONDS = 60
 
 function ElapsedNote({ since }) {
   const [now, setNow] = useState(() => Date.now())
@@ -33,7 +34,7 @@ export default function ServerWakeBanner() {
         <Loader2 size={18} className="shrink-0 mt-px animate-spin text-sky-700" aria-hidden="true" />
         <p>
           <strong className="font-semibold">The server is waking up.</strong> The first load after a quiet period can take
-          up to {EXPECTED_SECONDS} seconds. Everything will appear here once it&apos;s ready.
+          up to about a minute. Everything will appear here once it&apos;s ready.
           <ElapsedNote since={since} />
         </p>
       </div>
