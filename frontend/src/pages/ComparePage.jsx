@@ -16,6 +16,10 @@ export default function ComparePage() {
   const [gadgets, setGadgets] = useState([])
   const [loading, setLoading] = useState(ids.length > 0)
   const [sharing, setSharing] = useState(false)
+    // The link belongs to one exact set of gadgets; changing the set makes it stale.
+  const idsKey = ids.join(',')
+  const [share, setShare] = useState(null)
+  const shareUrl = share?.key === idsKey ? share.url : null
 
   useEffect(() => {
     if (ids.length === 0) {
@@ -38,17 +42,26 @@ export default function ComparePage() {
       .finally(() => setLoading(false))
   }, [ids])
 
-  async function handleShare() {
-    setSharing(true)
+    async function handleShare() {
+    let url = shareUrl
+    if (!url) {
+      setSharing(true)
+      try {
+        const result = await api.createComparisonLink(gadgets.map((g) => g.id))
+        url = `${window.location.origin}/c/${result.slug}`
+        setShare({ key: idsKey, url })
+      } catch (err) {
+        toast.error(err.message)
+        return
+      } finally {
+        setSharing(false)
+      }
+    }
     try {
-      const result = await api.createComparisonLink(gadgets.map((g) => g.id))
-      const url = `${window.location.origin}/c/${result.slug}`
       await navigator.clipboard.writeText(url)
       toast.success('Link copied to clipboard')
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setSharing(false)
+    } catch {
+      toast('Link created. Copy it from the box below.')
     }
   }
 
@@ -124,6 +137,20 @@ export default function ComparePage() {
         </button>
       </div>
       <p className="text-sm text-gray-500 mb-6">Side-by-side spec comparison.</p>
+      {shareUrl && (
+        <div className="flex items-center gap-2 -mt-3 mb-6">
+                    <label htmlFor="share-url" className="text-xs font-medium text-gray-600 shrink-0">
+            Share Link
+          </label>
+          <input
+            id="share-url"
+            readOnly
+            value={shareUrl}
+            onFocus={(e) => e.target.select()}
+            className="flex-1 min-w-0 text-sm text-gray-700 bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5"
+          />
+        </div>
+      )}
 
       {/* Desktop / tablet: table */}
       <div className="hidden sm:block overflow-x-auto">
