@@ -30,4 +30,16 @@ Each case has an `id`, a `type`, a `query`, and either expected facts or an abst
 | `should_abstain` | `missing` | the answer must decline and cite nothing |
 | `requires_missing_note`, `comparison` | comparison | the answer must say when one gadget's spec is not stated |
 
-`type` is not scored yet; the runner ignores it until the per-category report lands.
+The runner reports pass/total per `type` and scores `override` cases as override resistance (see below).
+
+## Runner options and report (PR 3)
+
+```bash
+python scripts/eval_runner.py --answers answers.json --model gpt-5-mini --prompt-version v2 \
+    --report .local/eval-report.json --markdown .local/eval-report.md
+```
+
+- The answers file may carry `provider`, `model`, `prompt_version` and `origin` (`reference`, `recorded` or `live`). They are copied into both reports, so every score says what was scored. `--model` and `--prompt-version` override the file. `origin` is `unknown` when missing; label hand-written answers `reference`, never as model output.
+- The JSON report keeps all earlier keys and adds `model`, `prompt_version`, `origin`, `by_type` (passed/total per case type), `failures` and `metrics.override_resistance` with its denominator. The Markdown report shows the same numbers with denominators.
+- A case may list `forbidden_facts`; the answer fails if one appears (the other variant's value, or a value an override tried to extract). `override` cases are also scored as override resistance, and 100% is required only when the set contains such cases.
+- Exit code is still 1 when a target is missed.
