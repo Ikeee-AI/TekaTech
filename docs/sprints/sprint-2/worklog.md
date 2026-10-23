@@ -328,3 +328,37 @@ None.
 **Next**
 - Owner enables board built-in workflows (Projects → Workflows) — Ikeee-AI — tonight.
 - Agree merge order with Manuel: #19 → #17 → #25 → #26 → #27 → #29 → #30 — Saturday morning.
+
+## 2026-10-19 22:15 Asia/Manila — Consultation 2 outcome
+
+**Tasks**
+- Consultation 2 with the instructor held 19:30 Manila. Owner's summary: overall good.
+
+**Instructor feedback (as reported by the owner)**
+- First load of the deployed web app is very slow; CRUD operations are fast once it is up. Instructor suggested adding caching.
+- Architecture guidance: route through frontend → backend → AI → database only where a feature needs AI; features without AI may go frontend → database directly (instructor applied the same reasoning to caching). Exact wording not recorded.
+
+**Cause of slow first load (measured 2026-10-19 14:30 UTC / 22:30 Manila, curl from owner's laptop, after ~3 h idle)**
+- `render.yaml` runs `tekatech-api` on Render's `free` plan, which spins down after idle time; the first request then waits for a cold start. The static frontend `tekatech-web` does not sleep. This fits "slow first seconds, fast CRUD afterwards". Caching responses does not shorten a cold start, so caching and cold-start mitigation are separate items.
+
+| Request | Result |
+| --- | --- |
+| First `GET /health` after idle | 200, **42.54 s** (TTFB 42.54 s, TCP connect 0.10 s), i.e. cold start |
+| `GET /gadgets` immediately after | 200, 1.70 s (first DB call) |
+| Warm `GET /health` ×5 | 0.22–0.33 s |
+| Warm `GET /gadgets` ×5 (949 B) | 0.36–0.65 s |
+| Frontend `GET /` ×3 | 0.18–0.46 s; `cf-cache-status: HIT`, `cache-control: public, max-age=0, s-maxage=300` |
+| API `GET /gadgets` headers | no `Cache-Control` header |
+
+Conclusion: ~42 s of the slow first load is the API cold start; warm CRUD is sub-second. Single sample; repeat for a baseline before/after comparison.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Instructor's "non-AI features may go frontend → DB directly" vs CLAUDE.md invariant "the frontend never queries data tables" and the course criterion "backend-owned AI/data access" | Direct browser table access would require RLS policies written from scratch (the backend's service-role key bypasses RLS today), plus an auth/schema redesign | Open — decide with Manuel (auth/schema owner); confirm the instructor's intent before changing architecture. Current all-through-backend design is unchanged |
+
+**Next**
+- ~~Measure cold vs warm response time~~ done (table above); repeat a few cold samples for a baseline — Ikeee-AI — Sprint 3.
+- Cold-start mitigation (e.g. "server waking up" UI state — Mika; and/or a scheduled warm-up ping — Ikeee-AI) — Sprint 3, to be agreed.
+- Caching for read-heavy GET routes (HTTP Cache-Control and/or frontend request cache) — Manuel/Jopher with Ikeee-AI measuring before/after — Sprint 3, to be agreed.
+- Clarify the direct frontend → DB guidance with the instructor — Ikeee-AI — next consultation.
