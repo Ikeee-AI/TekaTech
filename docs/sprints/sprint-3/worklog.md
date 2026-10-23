@@ -134,3 +134,52 @@ Deadlines are the ones posted on #62 and #54–#58 at Thu 22 Oct 00:17. Times co
 **Next**
 - Merge #86 after review, dispatch the smoke job on main, then close #85 — Ikeee-AI — today.
 - Review #75 — Ikeee-AI — today.
+
+## 2026-10-23 15:40 Asia/Manila — #75, #81 and #80 merged; Jopher's #91; retrieval issue #88
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S3-IK (#58, board coordination) · **Branch:** main
+
+**Done**
+- **#75 (Manuel):**
+  - Ikeee-AI's review comment came at 13:31. Manuel updated from main and fixed the timeout wording at 13:40. Ikeee-AI approved on `5e1d976`.
+  - Squash-merged as `6b613fd`. Main run [39908877286](https://github.com/Ikeee-AI/TekaTech/actions/runs/39908877286) succeeded and deployed; deployed smoke passed.
+  - Live follow-up comment posted on #75: a broad iPhone 15 question gave a cited `gpt-5-mini` answer in 11.3 s.
+- **#88 opened for Manuel (retrieval threshold):**
+  - A narrow question returned "no spec information" on live. Measured with the dev key, it scores 0.459 against the single 425-character chunk, below `MATCH_THRESHOLD = 0.5`.
+  - Other ordinary questions scored 0.518 and 0.522; the broad one scored 0.559, matching the live 0.56.
+- **#81 and #80 (Adrian):**
+  - Adrian resolved the conflicts at 14:01 and 14:22, and Manuel re-approved both on the new heads.
+  - Before merging, I tested them together with main locally: they merge cleanly and 155 tests pass.
+  - Merged as `ea44247` (#81) and `f450b2c` (#80). Main run [39917503414](https://github.com/Ikeee-AI/TekaTech/actions/runs/39917503414) succeeded and deployed; deployed smoke passed on `f450b2c` (`/gadgets` = 4, CORS passed).
+- **Reviewers:** Adrian added on #83 and #84 at Manuel's request. Stacking advice posted on #75.
+- **Jopher (S3-JO):**
+  - First Sprint 3 activity at 14:56: PR #91, opened from his fork. At 14:58 he commented on #57 that all S3-JO scope is done and verified on TekaTech-dev; all 3 checks are green.
+  - The screenshots I sampled have the email covered (0.6 MB total).
+- **#91 pre-review for Ikeee-AI** (AI, not peer review) suggests **Request changes**:
+  - `GadgetForm.jsx:64` calls `friendlyError(err)` and discards the result, so a failed gadget create or edit shows no error. Confirmed by reading the code.
+  - Screenshot 11 predates #75's 503 message.
+  - The automated failure-drill check from the S3-JO acceptance is missing.
+  - Minor: a compare URL with a malformed id dead-ends; the single-gadget panel goes stale after adding a spec; whitespace.
+
+**Errors and fixes** — None new.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #91 is from a fork; the kickoff (#62) asked for branches in this repo | Labeler and reviewer workflows run in fork mode | Note to Jopher — Ikeee-AI — open |
+| #91 edits presentation components (S3-MI, Mika's area) while Mika is absent | Shared-file ownership | Recorded; Mika to look if she returns — Ikeee-AI — open |
+
+**Decisions** — Ikeee-AI reviews #91 because Manuel has four reviews queued — Ikeee-AI.
+
+**Blockers / risks**
+- Mika: no Sprint 3 activity as of 15:40 — Ikeee-AI — the 18:00 check.
+- Narrow questions miss on live (#88) — Manuel.
+- The cost cap (#77) is still open — Manuel.
+
+**Plan alignment**
+- **Jopher:** first PR about 18 h after the Thu 21:00 deadline, and 2 h 56 min after the Fri 12:00 "all PRs" deadline. Full scope submitted before the Sat 10:00 cutoff; not Done until merged.
+- **Adrian:** #74, #81, #80 and #82 merged and deployed.
+- **Manuel:** #75 merged; #83 and #84 open.
+
+**Next**
+- Ikeee-AI reviews #91, requesting the `GadgetForm` fix — today.
+- Check on Mika at 18:00 — Ikeee-AI.
