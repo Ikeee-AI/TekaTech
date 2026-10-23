@@ -256,7 +256,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
         setState({ status: 'ready', specs: data })
         onSpecsChange?.(data)
       })
-      .catch((err) => setState({ status: 'error', specs: [], 	error: friendlyError(err) }))
+      .catch((err) => setState({ status: 'error', specs: [], error: friendlyError(err) }))
   }, [gadgetId, onSpecsChange])
 
   useEffect(() => {
