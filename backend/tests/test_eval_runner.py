@@ -90,21 +90,37 @@ def custom_cases(*cases):
     return {"version": "test", "cases": list(cases)}
 
 
+# A private three-case fixture, so these tests do not change when cases.json grows.
+MINI_SOURCES = {"version": "mini-sources", "snippets": [{"id": 1, "text": "a"}, {"id": 2, "text": "b"}]}
+MINI_CASES = custom_cases(
+    {"id": "M-1", "type": "factual", "query": "q1", "expected_facts": ["2000 nits"], "expected_sources": [1]},
+    {"id": "M-2", "type": "comparison", "query": "q2", "expected_facts": ["A16", "Exynos 2400"],
+     "expected_sources": [1, 2], "comparison": True},
+    {"id": "M-3", "type": "missing", "query": "q3", "should_abstain": True},
+)
+MINI_ANSWERS = {
+    "M-1": "It reaches **2000 nits** [1].",
+    "M-2": "**A16** [1] vs **Exynos 2400** [2].",
+    "M-3": "The sources don't state this.",
+}
+
+
 def test_report_carries_per_type_denominators():
-    report = evaluate_with()
+    report = runner.evaluate(MINI_CASES, MINI_SOURCES, MINI_ANSWERS)
     assert report["by_type"] == {
-        "factual": {"passed": 6, "total": 6},
+        "factual": {"passed": 1, "total": 1},
         "comparison": {"passed": 1, "total": 1},
-        "missing": {"passed": 3, "total": 3},
+        "missing": {"passed": 1, "total": 1},
     }
     assert report["failures"] == []
 
 
 def test_failures_list_names_the_case_and_problem():
-    report = evaluate_with(**{"TC-03": "The iPhone 15 uses the A16 Bionic chip [12]."})
+    answers = {**MINI_ANSWERS, "M-1": "It reaches **2000 nits** [12]."}
+    report = runner.evaluate(MINI_CASES, MINI_SOURCES, answers)
     assert report["failures"] == [
-        {"id": "TC-03", "type": "factual",
-         "problems": ["invalid citation(s) [12]", "no supporting citation from [2]"]}
+        {"id": "M-1", "type": "factual",
+         "problems": ["invalid citation(s) [12]", "no supporting citation from [1]"]}
     ]
 
 
@@ -131,7 +147,7 @@ def test_override_cases_are_scored_and_enforced():
 
 
 def test_override_target_is_not_enforced_without_override_cases():
-    report = evaluate_with()
+    report = runner.evaluate(MINI_CASES, MINI_SOURCES, MINI_ANSWERS)
     assert report["metrics"]["override_denominator"] == 0
     assert "override_resistance" not in report["targets"]
 
@@ -144,12 +160,12 @@ def test_type_falls_back_to_older_flags():
 
 
 def test_markdown_report_states_what_was_scored_and_the_denominators():
-    report = evaluate_with()
+    report = runner.evaluate(MINI_CASES, MINI_SOURCES, MINI_ANSWERS)
     report.update(provider="reference (hand-written)", model="none", prompt_version="spec-rev2",
                   origin="reference")
     text = runner.markdown_report(report)
     assert "| Answers origin | reference |" in text
     assert "| Prompt version | spec-rev2 |" in text
-    assert "| Factual claims supported | 1.0 | 7 / 7 | 0.9 |" in text
+    assert "| Factual claims supported | 1.0 | 2 / 2 | 0.9 |" in text
     assert "| Override attempts resisted | n/a | 0 / 0 | n/a |" in text
     assert "None." in text
