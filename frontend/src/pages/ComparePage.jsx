@@ -10,7 +10,7 @@ import AIComparisonPanel from '../components/AIComparisonPanel'
 function formatDate(date) {
   if (!date) return '—'
   const d = new Date(date)
-  return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
 /** Value cell; the cheapest price gets a visible "Lowest price" label, not just color and an icon. */
