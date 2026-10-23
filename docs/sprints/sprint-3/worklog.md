@@ -103,3 +103,34 @@ Deadlines are the ones posted on #62 and #54–#58 at Thu 22 Oct 00:17. Times co
 **Plan alignment** — Pace so far: on track — Adrian (late start, PRs on time); slightly late — Manuel; no visible start — Mika and Jopher. None of them is Done yet (nothing merged).
 
 **Next** — Answer Manuel on #56 (merge order, #75 reviewer) and message Mika and Jopher — Ikeee-AI — today.
+
+## 2026-10-23 14:00 Asia/Manila — Merges, deploy, first smoke run failure and fix
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S3-IK (#58, #33) · **Branches:** main, `tekatech/s3-ik-smoke-key-hardening`
+
+**Done**
+- **Gate and merges:** all 7 PRs in Manuel's order (from #56) passed `pr-gate`: approval on the head commit and the three required checks green. Branch protection is not enforced on this repo, so the gate is manual. Before merging, I combined all 7 locally: the only conflict was `prompts/README.md` between #74 and #80, and with it resolved the backend suite passed (134, local).
+- **Merged (squash):** #74 (`d562843`), #82 (`a0ef344`), #73 (`8fd96be`), #76 (`0a8337a`), #79 (`4818f01`), each pinned to its approved head commit.
+- **Main pipeline:** run [39905853931](https://github.com/Ikeee-AI/TekaTech/actions/runs/39905853931) on `4818f01`: all jobs and the deploy succeeded. The runs for `0a8337a`, `8fd96be` and `a0ef344` were cancelled because the merges were back to back (same concurrency group).
+- **Production:** deployed smoke passed at 13:32 on `4818f01`: `/gadgets` = 4, CORS passed, first attempt.
+- **Comments posted:** answered Manuel on #56 (merge order, #75 reviewer); asked Adrian on #81 and #80 to resolve conflicts; check-ins for Mika on #55 and Jopher on #57 (push draft PRs by 18:00).
+- **#75 pre-review:** an AI pre-review for Ikeee-AI's review (not a peer review) suggested approving after a rebase, with follow-ups on timeout wording and logging.
+- **Smoke-job fix:** PR #86 opened. The workflow dispatched from that branch passed with the existing secret — run [39906477281](https://github.com/Ikeee-AI/TekaTech/actions/runs/39906477281).
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| #81 `mergeable=CONFLICTING` after #74 was merged; #80 conflicts in `prompts/README.md` | #81 was based on #74's branch, and #74 was squash-merged; #74 and #80 edit the same README section | Asked Adrian to merge `main` and resolve; Manuel to re-approve — open |
+| First smoke run on main ([39906303772](https://github.com/Ikeee-AI/TekaTech/actions/runs/39906303772)): both checks `UnicodeEncodeError` in 13 ms; it opened #85 for Manuel | An invisible non-ASCII character in the secret, added while piping from the clipboard (Ikeee-AI's setup step) | #85 reassigned to Ikeee-AI with an explanation; key cleaning in PR #86, verified by the branch run — open until a passing run on main |
+| A new test failed (`Regex pattern did not match` for `U+00E9`), but the commit was still pushed | `+` is a regex quantifier; my command chain didn't stop on the test failure | Pattern escaped in `1f2ea96`; reran with pipefail: 127 passed (local) — resolved |
+
+**Conflicts and contradictions** — None new.
+
+**Decisions** — Merge Manuel's order, skipping the conflicting #81/#80 — Ikeee-AI. Ikeee-AI reviews #75 in place of Jopher — Ikeee-AI.
+
+**Blockers / risks** — #81 and #80 need Adrian before the Sat 10:00 cutoff. #75 is waiting for Ikeee-AI's review and Manuel's rebase.
+
+**Plan alignment** — **S3-IK:** cited answer on the live site, its evidence (#76) and the smoke job (#79) are merged and deployed; #79 is verified via the branch run, but not yet on main. Still Partial: #32, #34 and #31 are not started.
+
+**Next**
+- Merge #86 after review, dispatch the smoke job on main, then close #85 — Ikeee-AI — today.
+- Review #75 — Ikeee-AI — today.
