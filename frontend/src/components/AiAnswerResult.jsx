@@ -101,7 +101,7 @@ export default function AiAnswerResult({
                 Answer based on {result.sources.length} cited spec{result.sources.length === 1 ? '' : 's'}
               </p>
               <div className="text-[15px] text-slate-800 leading-relaxed">
-                <AnswerText text={result.answer} onCiteClick={handleCiteClick} />
+                <AnswerText text={result.answer} sources={result.sources} onCiteClick={handleCiteClick} />
               </div>
             </>
           )}
