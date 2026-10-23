@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save } from 'lucide-react'
+import { FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save, Loader2, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
@@ -173,34 +173,68 @@ function CorrectionForm({ spec, onDone }) {
   )
 }
 
-function SpecCard({ spec, user, gadgetId, indexingId, onIndex }) {
+// Plain sentences the index endpoint sends (backend/routers/specs.py). Anything else
+// gets fixed copy so raw errors never reach the screen.
+const SAFE_INDEX_STATUSES = [404, 409, 422, 503]
+
+function indexFailureMessage(err) {
+  if (SAFE_INDEX_STATUSES.includes(err?.status) && typeof err.message === 'string' && err.message.length < 200) {
+    return err.message
+  }
+  if (err?.status === 401) return 'Log in again, then retry.'
+  if (err?.status === 429) return 'Too many indexing requests. Wait a little, then retry.'
+  if (err instanceof TypeError) return 'Could not reach TekaTech. Check your connection, then retry.'
+  return 'Indexing did not finish. Your spec text is saved; please retry.'
+}
+
+/** Copy of `obj` with `key` set to `value`, or removed when `value` is undefined. */
+function withEntry(obj, key, value) {
+  const next = { ...obj }
+  if (value === undefined) delete next[key]
+  else next[key] = value
+  return next
+}
+
+const INDEX_STATES = {
+  indexed: { label: 'Ready for AI', icon: CheckCircle2, className: 'text-emerald-800 bg-emerald-50 border-emerald-200' },
+  pending: { label: 'Pending AI Indexing', icon: Clock, className: 'text-amber-800 bg-amber-50 border-amber-200' },
+  indexing: { label: 'Indexing…', icon: Loader2, className: 'text-sky-800 bg-sky-50 border-sky-200', spin: true },
+  failed: { label: 'Indexing Failed', icon: AlertCircle, className: 'text-red-800 bg-red-50 border-red-200' },
+}
+
+function IndexBadge({ state }) {
+  const { label, icon: Icon, className, spin } = INDEX_STATES[state]
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold rounded-full px-2 py-0.5 border ${className}`}>
+      <Icon size={13} aria-hidden="true" className={spin ? 'animate-spin' : ''} />
+      {label}
+    </span>
+  )
+}
+
+function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex }) {
   const [correcting, setCorrecting] = useState(false)
   const indexed = spec.indexing_status === 'indexed'
+  const isIndexing = indexingId === spec.id
+  const indexState = indexed ? 'indexed' : isIndexing ? 'indexing' : indexError ? 'failed' : 'pending'
   const [now] = useState(() => Date.now())
   const outdated = now - new Date(spec.verified_at).getTime() > SIX_MONTHS_MS
 
   return (
     <li className="bg-white border border-slate-200 rounded-xl px-4 sm:px-5 py-4">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-        <span
-          className={`inline-flex items-center gap-1 text-xs font-semibold rounded-full px-2 py-0.5 border ${
-            indexed ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 'text-amber-800 bg-amber-50 border-amber-200'
-          }`}
-        >
-          {indexed ? <CheckCircle2 size={13} aria-hidden="true" /> : <Clock size={13} aria-hidden="true" />}
-          {indexed ? 'Ready for AI' : 'Pending AI Indexing'}
-        </span>
+        <IndexBadge state={indexState} />
         <div className="flex items-center gap-2">
           {user && !indexed && (
             <Button
               variant="outline"
               size="sm"
               icon={Sparkles}
-              loading={indexingId === spec.id}
+              loading={isIndexing}
               disabled={indexingId !== null}
               onClick={() => onIndex(gadgetId, spec.id)}
             >
-              {indexingId === spec.id ? 'Indexing…' : 'Index for AI'}
+              {isIndexing ? 'Indexing…' : indexError ? 'Retry Indexing' : 'Index for AI'}
             </Button>
           )}
           <span className="text-xs text-slate-500 bg-slate-100 rounded px-1.5 py-0.5" aria-label={`Chunk ${spec.chunk_index}`}>
@@ -208,6 +242,17 @@ function SpecCard({ spec, user, gadgetId, indexingId, onIndex }) {
           </span>
         </div>
       </div>
+
+      {indexState === 'failed' && (
+        <Alert tone="error" title="Indexing Failed — Your Spec Is Saved" className="mb-3">
+          {indexError}
+        </Alert>
+      )}
+      {indexState === 'pending' && (
+        <p className="text-sm text-amber-900 mb-2">
+          The AI can&apos;t use this spec until it is indexed.{!user && ' A contributor needs to index it.'}
+        </p>
+      )}
 
       <p className="text-[15px] text-slate-800 whitespace-pre-line break-words">{spec.content}</p>
 
@@ -246,6 +291,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   const [state, setState] = useState({ status: 'loading', specs: [] })
   const [showForm, setShowForm] = useState(false)
   const [indexingId, setIndexingId] = useState(null)
+  const [indexErrors, setIndexErrors] = useState({})
 
   const loadSpecs = useCallback(() => {
     setState((s) => ({ ...s, status: 'loading' }))
@@ -265,12 +311,15 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
 
   async function handleIndex(gid, specId) {
     setIndexingId(specId)
+    setIndexErrors((prev) => withEntry(prev, specId, undefined))
     try {
       await api.indexSpec(gid, specId)
       toast.success('Spec ready for AI questions')
       loadSpecs()
     } catch (err) {
-      toast.error(`Indexing failed: ${err.message}`)
+      // Kept on the card (not just a toast) so the failure stays visible until retried.
+      const message = indexFailureMessage(err)
+      setIndexErrors((prev) => withEntry(prev, specId, message))
     } finally {
       setIndexingId(null)
     }
@@ -345,7 +394,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
       {status === 'ready' && specs.length > 0 && (
         <ul className="space-y-3">
           {specs.map((spec) => (
-            <SpecCard key={spec.id} spec={spec} user={user} gadgetId={gadgetId} indexingId={indexingId} onIndex={handleIndex} />
+            <SpecCard key={spec.id} spec={spec} user={user} gadgetId={gadgetId} indexingId={indexingId} indexError={indexErrors[spec.id]} onIndex={handleIndex} />
           ))}
         </ul>
       )}
