@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import EmptyState from '../components/EmptyState'
+import ErrorState from '../components/ui/ErrorState'
 import AIComparisonPanel from '../components/AIComparisonPanel'
 
 export default function ComparePage() {
@@ -16,6 +17,8 @@ export default function ComparePage() {
   const [gadgets, setGadgets] = useState([])
   const [loading, setLoading] = useState(ids.length > 0)
   const [sharing, setSharing] = useState(false)
+  const [loadError, setLoadError] = useState(null)
+  const [attempt, setAttempt] = useState(0)
     // The link belongs to one exact set of gadgets; changing the set makes it stale.
   const idsKey = ids.join(',')
   const [share, setShare] = useState(null)
@@ -32,15 +35,21 @@ export default function ComparePage() {
     setLoading(true)
     Promise.all(
       ids.map((id) =>
-        api.getGadget(id).catch(() => {
-          toast.error('One gadget could not be loaded — it may have been deleted')
+        api.getGadget(id).catch((err) => {
+          // Only a 404 means the gadget is gone; anything else should fail the whole load so it can be retried.
+          if (err.status !== 404) throw err
+          toast.error('One gadget could not be loaded — it may have been deleted', { id: 'gadget-missing' })
           return null
         })
       )
     )
-      .then((results) => setGadgets(results.filter(Boolean)))
+      .then((results) => {
+        setLoadError(null)
+        setGadgets(results.filter(Boolean))
+      })
+      .catch((err) => setLoadError(err))
       .finally(() => setLoading(false))
-  }, [ids])
+  }, [ids, attempt])
 
     async function handleShare() {
     let url = shareUrl
@@ -81,6 +90,19 @@ export default function ComparePage() {
           <div key={i} className="h-64 bg-gray-100 rounded-xl animate-pulse" />
         ))}
       </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <ErrorState
+        title="Couldn't Load This Comparison"
+        message={loadError.message}
+        onRetry={() => {
+          setLoadError(null)
+          setAttempt((a) => a + 1)
+        }}
+      />
     )
   }
 
