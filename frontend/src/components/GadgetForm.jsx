@@ -61,7 +61,7 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
     try {
       await onSubmit(toGadgetPayload(form))
     } catch (err) {
-      friendlyError(err)
+      setServerError(friendlyError(err))
       setSubmitting(false)
     }
   }

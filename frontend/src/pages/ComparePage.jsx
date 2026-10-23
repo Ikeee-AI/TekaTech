@@ -20,7 +20,7 @@ export default function ComparePage() {
   const [sharing, setSharing] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [attempt, setAttempt] = useState(0)
-    // The link belongs to one exact set of gadgets; changing the set makes it stale.
+  // The link belongs to one exact set of gadgets; changing the set makes it stale.
   const idsKey = ids.join(',')
   const [share, setShare] = useState(null)
   const shareUrl = share?.key === idsKey ? share.url : null
@@ -38,7 +38,7 @@ export default function ComparePage() {
       ids.map((id) =>
         api.getGadget(id).catch((err) => {
           // Only a 404 means the gadget is gone; anything else should fail the whole load so it can be retried.
-          if (err.status !== 404) throw err
+          if (err.status !== 404 && err.status !== 422) throw err
           toast.error('One gadget could not be loaded — it may have been deleted', { id: 'gadget-missing' })
           return null
         })
@@ -52,7 +52,7 @@ export default function ComparePage() {
       .finally(() => setLoading(false))
   }, [ids, attempt])
 
-    async function handleShare() {
+  async function handleShare() {
     let url = shareUrl
     if (!url) {
       setSharing(true)
