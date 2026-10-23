@@ -37,7 +37,7 @@ export default function ComparePage() {
     Promise.all(
       ids.map((id) =>
         api.getGadget(id).catch((err) => {
-          // Only a 404 means the gadget is gone; anything else should fail the whole load so it can be retried.
+          // 404 (gadget deleted) or 422 (malformed id) means this gadget can't load; anything else should fail the whole load so it can be retried.
           if (err.status !== 404 && err.status !== 422) throw err
           toast.error('One gadget could not be loaded — it may have been deleted', { id: 'gadget-missing' })
           return null
