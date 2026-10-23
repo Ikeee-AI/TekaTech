@@ -9,7 +9,6 @@ from routers.query import (
     ANSWER_MAX_COMPLETION_TOKENS,
     ANSWER_REASONING_EFFORT,
     DETAIL_TIMEOUT,
-    DETAIL_TOO_LONG,
     DETAIL_UNAVAILABLE,
     DETAIL_UNUSABLE,
 )
@@ -491,7 +490,7 @@ def test_answer_cut_off_by_the_cap_returns_503_not_the_partial_text(client, fake
         resp = client.post("/query", json={"question": "Tell me everything."})
 
     assert resp.status_code == 503
-    assert resp.json() == {"detail": DETAIL_TOO_LONG}
+    assert resp.json() == {"detail": DETAIL_UNUSABLE}
     assert fake_supabase.writes == []  # nothing saved for a failed answer
     assert "The chip has more cor" not in resp.text  # the partial answer is not echoed back
 

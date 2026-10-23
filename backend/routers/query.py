@@ -33,7 +33,6 @@ client = OpenAI(
 DETAIL_TIMEOUT = "The AI took too long to answer. Please try again."
 DETAIL_UNAVAILABLE = "AI answers are temporarily unavailable. Spec browsing still works."
 DETAIL_UNUSABLE = "The AI returned an answer we couldn't use. Please rephrase and try again."
-DETAIL_TOO_LONG = "That answer was too long to finish. Please ask about one feature at a time."
 
 MATCH_COUNT = 6
 MATCH_THRESHOLD = 0.5
@@ -253,15 +252,14 @@ def ask_question(request: Request, payload: QueryRequest):
         answer = completion.choices[0].message.content
     except (AttributeError, IndexError, TypeError):
         raise _unusable_output("completion had no choices") from None
-    # A cut-off answer can end mid-sentence with its citations missing, so it is not shown. The
-    # tokens were already billed, so log them; no query_history row is written for a failed answer.
+    # A cut-off answer can end mid-sentence with its citations missing, so it is not shown. It
+    # reuses the "unusable" sentence, which the frontend already maps to its own screen. The
+    # tokens were already billed, so they are logged; no query_history row is written.
     if getattr(completion.choices[0], "finish_reason", None) == "length":
-        logger.warning(
-            "OpenAI answer hit max_completion_tokens=%s (completion_tokens=%s)",
-            ANSWER_MAX_COMPLETION_TOKENS,
-            _token_count(completion, "completion_tokens"),
+        raise _unusable_output(
+            f"answer hit max_completion_tokens={ANSWER_MAX_COMPLETION_TOKENS} "
+            f"(completion_tokens={_token_count(completion, 'completion_tokens')})"
         )
-        raise HTTPException(status_code=503, detail=DETAIL_TOO_LONG)
     if not answer or not answer.strip():
         raise _unusable_output("completion content was empty")
 
