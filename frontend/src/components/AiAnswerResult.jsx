@@ -1,8 +1,9 @@
-import { ChevronDown, ChevronUp, ExternalLink, RefreshCw, Copy, Check } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ChevronDown, ChevronUp, ExternalLink, RefreshCw, Copy, Check, CheckCircle2 } from 'lucide-react'
 import AnswerText from './AnswerText'
 import Alert from './ui/Alert'
 import Button from './ui/Button'
-import { describeAiFailure } from '../utils/aiAnswerState'
+import { describeAiFailure, isMissingEvidence } from '../utils/aiAnswerState'
 
 export function AnswerSkeleton({ lines = 3 }) {
   const widths = ['100%', '92%', '95%', '78%', '70%']
@@ -11,6 +12,28 @@ export function AnswerSkeleton({ lines = 3 }) {
       {widths.slice(0, lines).map((w, i) => (
         <div key={i} className="h-4 bg-slate-100 rounded" style={{ width: w }} />
       ))}
+    </div>
+  )
+}
+
+const SLOW_ANSWER_MS = 10_000
+
+/** Loading state. Mounted only while a request runs, so the "still working" note
+ * resets on every new question. The backend gives up after 45 seconds. */
+function LoadingNotice({ skeletonLines }) {
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), SLOW_ANSWER_MS)
+    return () => clearTimeout(timer)
+  }, [])
+  return (
+    <div className="mt-3 space-y-3">
+      <p className="text-sm font-medium text-slate-600">
+        {slow
+          ? 'Still working — some answers take up to 45 seconds…'
+          : 'Searching the spec sheets and writing an answer…'}
+      </p>
+      <AnswerSkeleton lines={skeletonLines} />
     </div>
   )
 }
@@ -57,27 +80,30 @@ export default function AiAnswerResult({
   copied,
   skeletonLines = 3,
 }) {
+  const missingEvidence = result ? isMissingEvidence(result) : false
   return (
     <div aria-live="polite" aria-busy={loading || undefined}>
-      {loading && (
-        <div className="mt-3 space-y-3">
-          <p className="text-sm font-medium text-slate-600">Searching the spec sheets and writing an answer…</p>
-          <AnswerSkeleton lines={skeletonLines} />
-        </div>
-      )}
+      {loading && <LoadingNotice skeletonLines={skeletonLines} />}
 
       {error && !loading && <FailureNotice error={error} onRetry={onRetry} />}
 
       {result && !loading && !error && (
         <div className="space-y-4 mt-3">
-          {result.sources.length === 0 ? (
-            <Alert tone="info" title="No Matching Specs Found">
-              {result.answer}
+          {missingEvidence ? (
+            <Alert tone="warning" title="No Evidence Found">
+              <p>TekaTech has no saved specs that answer this, so there is no grounded answer to show.</p>
+              <p className="mt-1.5">Try rephrasing the question, or add specs to the gadget you are asking about.</p>
             </Alert>
           ) : (
-            <div className="text-[15px] text-slate-800 leading-relaxed">
-              <AnswerText text={result.answer} onCiteClick={handleCiteClick} />
-            </div>
+            <>
+              <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                <CheckCircle2 size={14} aria-hidden="true" />
+                Answer based on {result.sources.length} cited spec{result.sources.length === 1 ? '' : 's'}
+              </p>
+              <div className="text-[15px] text-slate-800 leading-relaxed">
+                <AnswerText text={result.answer} onCiteClick={handleCiteClick} />
+              </div>
+            </>
           )}
 
           {result.sources.length > 0 && (
@@ -143,9 +169,11 @@ export default function AiAnswerResult({
               Plain-Language Answer
             </label>
             <div className="flex gap-2">
-              <Button variant="secondary" size="sm" icon={copied ? Check : Copy} onClick={handleCopy}>
-                {copied ? 'Copied' : 'Copy'}
-              </Button>
+              {!missingEvidence && (
+                <Button variant="secondary" size="sm" icon={copied ? Check : Copy} onClick={handleCopy}>
+                  {copied ? 'Copied' : 'Copy'}
+                </Button>
+              )}
               <Button variant="outline" size="sm" icon={RefreshCw} onClick={onRetry}>
                 Regenerate
               </Button>
