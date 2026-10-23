@@ -212,6 +212,31 @@ function IndexBadge({ state }) {
   )
 }
 
+/** How much of this gadget's evidence the AI can actually use right now. */
+function AiReadiness({ specs }) {
+  const ready = specs.filter((s) => s.indexing_status === 'indexed').length
+  const total = specs.length
+  if (ready === total) {
+    return (
+      <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-800 mb-3">
+        <CheckCircle2 size={16} aria-hidden="true" /> All {total} spec{total === 1 ? ' is' : 's are'} ready for AI answers.
+      </p>
+    )
+  }
+  if (ready === 0) {
+    return (
+      <Alert tone="warning" title="The AI Has No Evidence for This Gadget Yet" className="mb-3">
+        None of its specs are indexed, so AI answers can&apos;t cite anything about it. Index the specs below to fix this.
+      </Alert>
+    )
+  }
+  return (
+    <Alert tone="info" title={`${ready} of ${total} Specs Ready for AI`} className="mb-3">
+      AI answers can only use the ready specs. Index the pending ones to give it the full picture.
+    </Alert>
+  )
+}
+
 function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex }) {
   const [correcting, setCorrecting] = useState(false)
   const indexed = spec.indexing_status === 'indexed'
@@ -390,6 +415,8 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
           <p className="text-sm text-slate-600 mt-1">Add a spec sheet so the AI can answer questions about this gadget.</p>
         </div>
       )}
+
+      {status === 'ready' && specs.length > 0 && <AiReadiness specs={specs} />}
 
       {status === 'ready' && specs.length > 0 && (
         <ul className="space-y-3">
