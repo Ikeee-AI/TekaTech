@@ -5,16 +5,23 @@ import httpx
 import openai
 import pytest
 
-from routers.query import DETAIL_TIMEOUT, DETAIL_UNAVAILABLE, DETAIL_UNUSABLE
+from routers.query import (
+    ANSWER_MAX_COMPLETION_TOKENS,
+    ANSWER_REASONING_EFFORT,
+    DETAIL_TIMEOUT,
+    DETAIL_TOO_LONG,
+    DETAIL_UNAVAILABLE,
+    DETAIL_UNUSABLE,
+)
 
 
 def _fake_embedding_response():
     return SimpleNamespace(data=[SimpleNamespace(embedding=[0.0] * 1536)])
 
 
-def _fake_completion_response(content="AMD's chip has more cores [1]."):
+def _fake_completion_response(content="AMD's chip has more cores [1].", finish_reason="stop"):
     message = SimpleNamespace(content=content)
-    choice = SimpleNamespace(message=message)
+    choice = SimpleNamespace(message=message, finish_reason=finish_reason)
     return SimpleNamespace(choices=[choice])
 
 
@@ -455,3 +462,49 @@ def test_query_uses_the_versioned_prompt_module(client, fake_supabase):
 
     sent = mock_client.chat.completions.create.call_args.kwargs["messages"][0]["content"]
     assert sent == prompts.build_system_prompt(True)
+
+
+def test_chat_call_is_capped(client, fake_supabase):
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response()
+        resp = client.post("/query", json={"question": "Anything?"})
+
+    assert resp.status_code == 200
+    kwargs = mock_client.chat.completions.create.call_args.kwargs
+    assert kwargs["max_completion_tokens"] == ANSWER_MAX_COMPLETION_TOKENS == 1500
+    assert kwargs["reasoning_effort"] == ANSWER_REASONING_EFFORT == "low"
+
+
+@pytest.mark.parametrize("content", ["The chip has more cor", None, ""])
+def test_answer_cut_off_by_the_cap_returns_503_not_the_partial_text(client, fake_supabase, content):
+    # With reasoning models the cap can be spent on thinking, so the content may be empty too.
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response(
+            content=content, finish_reason="length"
+        )
+        resp = client.post("/query", json={"question": "Tell me everything."})
+
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": DETAIL_TOO_LONG}
+    assert fake_supabase.writes == []  # nothing saved for a failed answer
+    assert "The chip has more cor" not in resp.text  # the partial answer is not echoed back
+
+
+def test_finished_answer_is_not_treated_as_cut_off(client, fake_supabase):
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response(
+            content="Short answer [1].", finish_reason="stop"
+        )
+        resp = client.post("/query", json={"question": "Anything?"})
+
+    assert resp.status_code == 200
+    assert resp.json()["answer"] == "Short answer [1]."
