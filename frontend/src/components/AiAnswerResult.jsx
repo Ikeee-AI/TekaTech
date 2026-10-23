@@ -123,6 +123,7 @@ export default function AiAnswerResult({
                     <li
                       key={i}
                       ref={(el) => (sourceRefs.current[i] = el)}
+                      tabIndex={-1}
                       className={`border rounded-lg px-3.5 py-3 transition-colors duration-500 ${
                         highlightedIndex === i ? 'border-sage-400 bg-sage-50' : 'border-slate-200 bg-slate-50'
                       }`}
