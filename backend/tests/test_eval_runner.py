@@ -23,8 +23,22 @@ def result(report, case_id):
 def test_reference_answers_meet_all_targets():
     report = evaluate_with()
     assert report["targets_met"]
-    assert report["metrics"]["factual_denominator"] == 7
-    assert report["metrics"]["abstention_denominator"] == 3
+    metrics = report["metrics"]
+    assert metrics["factual_denominator"] + metrics["abstention_denominator"] == len(CASES["cases"])
+
+
+def test_dataset_has_the_sprint_3_composition():
+    counts = {}
+    for case in CASES["cases"]:
+        counts[case["type"]] = counts.get(case["type"], 0) + 1
+    assert counts == {"factual": 8, "comparison": 4, "missing": 4, "variant": 2, "override": 2}
+
+
+def test_every_case_has_a_reference_answer_and_valid_expected_sources():
+    valid_ids = {snippet["id"] for snippet in SOURCES["snippets"]}
+    for case in CASES["cases"]:
+        assert case["id"] in REFERENCE
+        assert set(case.get("expected_sources", [])) <= valid_ids
 
 
 def test_invented_fact_on_abstention_case_fails():
