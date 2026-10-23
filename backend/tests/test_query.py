@@ -364,3 +364,94 @@ def test_unreadable_completion_reply_returns_unusable_503(client, fake_supabase)
     assert resp.status_code == 503
     assert resp.json() == {"detail": DETAIL_UNUSABLE}
     assert fake_supabase.writes == []
+
+
+# --- citation validation: markers outside the snippets that were sent are removed and counted ---
+
+def test_out_of_range_citation_is_removed_and_counted(client, fake_supabase):
+    _set_matching_spec(fake_supabase)  # one snippet, so only [1] is valid
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response(
+            "It has 6 cores [1] and 12 threads [4]."
+        )
+        resp = client.post("/query", json={"question": "How many cores?"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["answer"] == "It has 6 cores [1] and 12 threads."
+    assert data["invalid_citations_removed"] == 1
+    assert len(data["sources"]) == 1
+
+
+def test_valid_citations_leave_the_answer_untouched(client, fake_supabase):
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response("It has 6 cores [1].")
+        resp = client.post("/query", json={"question": "How many cores?"})
+
+    data = resp.json()
+    assert data["answer"] == "It has 6 cores [1]."
+    assert data["invalid_citations_removed"] == 0
+
+
+def test_history_stores_the_cleaned_answer(client, fake_supabase):
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response("Six cores [1][9].")
+        client.post("/query", json={"question": "How many cores?"})
+
+    history = [row for table, operation, row in fake_supabase.writes if table == "query_history"]
+    assert len(history) == 1
+    assert history[0]["answer_text"] == "Six cores [1]."
+
+
+def test_valid_range_follows_the_number_of_snippets_sent(client, fake_supabase):
+    gadget_id = "22222222-2222-2222-2222-222222222222"
+    fake_supabase.set_response(
+        "_rpc",
+        None,
+        [
+            {"gadget_id": gadget_id, "content": f"chunk {i}", "source_url": None, "similarity": 0.6}
+            for i in range(3)
+        ],
+    )
+    fake_supabase.set_response("gadgets", "select", [{"id": gadget_id, "name": "Gadget X", "brand": "Brand"}])
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response("A [3] B [4].")
+        resp = client.post("/query", json={"question": "Anything?"})
+
+    data = resp.json()
+    assert len(data["sources"]) == 3
+    assert data["answer"] == "A [3] B."
+    assert data["invalid_citations_removed"] == 1
+
+
+def test_no_matches_response_reports_zero_removed(client, fake_supabase):
+    fake_supabase.set_response("_rpc", None, [])
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        resp = client.post("/query", json={"question": "Anything?"})
+
+    assert resp.json()["invalid_citations_removed"] == 0
+
+
+def test_query_uses_the_versioned_prompt_module(client, fake_supabase):
+    import prompts
+
+    _set_matching_spec(fake_supabase)
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response("Fine [1].")
+        client.post("/query", json={"question": "Anything?", "plain_language": True})
+
+    sent = mock_client.chat.completions.create.call_args.kwargs["messages"][0]["content"]
+    assert sent == prompts.build_system_prompt(True)
