@@ -75,6 +75,17 @@ def test_missing_key_is_rejected():
         smoke.run_smoke("", request=fake_request())
 
 
+def test_invisible_characters_from_the_clipboard_are_stripped():
+    report = smoke.run_smoke(f"﻿{KEY}​\r\n", request=fake_request())
+    assert report["status"] == "passed"
+
+
+def test_other_non_ascii_characters_are_named_not_printed():
+    with pytest.raises(ValueError, match="U+00E9") as error:
+        smoke.run_smoke(f"{KEY}é", request=fake_request())
+    assert KEY not in str(error.value)
+
+
 def test_report_never_contains_the_key():
     report = smoke.run_smoke(KEY, request=fake_request())
     assert KEY not in json.dumps(report)

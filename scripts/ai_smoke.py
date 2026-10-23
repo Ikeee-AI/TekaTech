@@ -56,7 +56,20 @@ def timed(name, operation):
                 "error_type": type(exc).__name__}
 
 
+INVISIBLE = "﻿​‌‍⁠"  # BOM and zero-width characters that clipboard pipes can add
+
+
+def clean_key(api_key):
+    """Strip whitespace and invisible characters; name (never print) any other non-ASCII ones."""
+    key = "".join(ch for ch in (api_key or "") if ch not in INVISIBLE).strip()
+    odd = sorted({f"U+{ord(ch):04X}" for ch in key if not ch.isascii()})
+    if odd:
+        raise ValueError(f"OPENAI_API_KEY contains non-ASCII characters {', '.join(odd)}; re-create the secret")
+    return key
+
+
 def run_smoke(api_key, request=post):
+    api_key = clean_key(api_key)
     if not api_key:
         raise ValueError("OPENAI_API_KEY is not set")
 
