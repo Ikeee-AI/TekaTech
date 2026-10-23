@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp, ExternalLink, RefreshCw, Copy, Check } from 'lu
 import AnswerText from './AnswerText'
 import Alert from './ui/Alert'
 import Button from './ui/Button'
+import { describeAiFailure } from '../utils/aiAnswerState'
 
 export function AnswerSkeleton({ lines = 3 }) {
   const widths = ['100%', '92%', '95%', '78%', '70%']
@@ -11,6 +12,28 @@ export function AnswerSkeleton({ lines = 3 }) {
         <div key={i} className="h-4 bg-slate-100 rounded" style={{ width: w }} />
       ))}
     </div>
+  )
+}
+
+/** Shows why no answer was produced. The copy comes from describeAiFailure(),
+ * never from the raw error, so stack traces and provider details stay hidden. */
+function FailureNotice({ error, onRetry }) {
+  const failure = describeAiFailure(error)
+  return (
+    <Alert
+      tone="error"
+      title={failure.title}
+      className="mt-3"
+      action={
+        failure.retry && (
+          <Button variant="secondary" size="sm" icon={RefreshCw} onClick={onRetry}>
+            Try Again
+          </Button>
+        )
+      }
+    >
+      {failure.message}
+    </Alert>
   )
 }
 
@@ -43,20 +66,7 @@ export default function AiAnswerResult({
         </div>
       )}
 
-      {error && !loading && (
-        <Alert
-          tone="error"
-          title="Couldn't Get an Answer"
-          className="mt-3"
-          action={
-            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={onRetry}>
-              Try Again
-            </Button>
-          }
-        >
-          {error}
-        </Alert>
-      )}
+      {error && !loading && <FailureNotice error={error} onRetry={onRetry} />}
 
       {result && !loading && !error && (
         <div className="space-y-4 mt-3">
