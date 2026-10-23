@@ -1,0 +1,57 @@
+{
+  "checked_at": "2026-10-22T10:08:37.033203+00:00",
+  "checks": [
+    {
+      "check": "database_gadgets",
+      "status": "passed",
+      "detail": {
+        "row_count": 11
+      }
+    },
+    {
+      "check": "database_spec_documents",
+      "status": "passed",
+      "detail": {
+        "row_count": 2
+      }
+    },
+    {
+      "check": "database_spec_corrections",
+      "status": "passed",
+      "detail": {
+        "row_count": 1
+      }
+    },
+    {
+      "check": "database_comparison_links",
+      "status": "passed",
+      "detail": {
+        "row_count": 1
+      }
+    },
+    {
+      "check": "database_query_history",
+      "status": "passed",
+      "detail": {
+        "row_count": 0
+      }
+    },
+    {
+      "check": "database_match_rpc",
+      "status": "passed",
+      "detail": {
+        "reachable": true
+      }
+    },
+    {
+      "check": "ai_provider",
+      "status": "passed",
+      "detail": {
+        "model": "text-embedding-3-small",
+        "dimensions": 1536,
+        "total_tokens": 9,
+        "request_id": "req_3d3d42184feb4a6ea86552b891ff3161"
+      }
+    }
+  ]
+}
