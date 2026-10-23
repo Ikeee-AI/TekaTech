@@ -7,6 +7,7 @@ import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
 import BackLink from '../components/ui/BackLink'
 import Button from '../components/ui/Button'
+import { friendlyError } from '../utils/requestErrors'
 
 export default function AdminCorrections() {
   useDocumentTitle('Review Corrections')
@@ -18,7 +19,7 @@ export default function AdminCorrections() {
   function load() {
     setLoading(true)
     setLoadError(null)
-    api.getCorrections('pending').then(setCorrections).catch((err) => setLoadError(err.message)).finally(() => setLoading(false))
+    api.getCorrections('pending').then(setCorrections).catch((err) => setLoadError(friendlyError(err))).finally(() => setLoading(false))
   }
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function AdminCorrections() {
       toast.success(action === 'approve' ? 'Correction approved and applied' : 'Correction rejected')
       setCorrections((prev) => prev.filter((c) => c.id !== id))
     } catch (err) {
-      toast.error(err.message)
+      toast.error(friendlyError(err))
     } finally {
       setResolvingId(null)
     }

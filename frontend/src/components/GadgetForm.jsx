@@ -4,6 +4,7 @@ import Button from './ui/Button'
 import Alert from './ui/Alert'
 import { TextField, ErrorSummary } from './ui/FormField'
 import { GADGET_FIELD_LABELS, validateGadget, toGadgetPayload } from '../utils/gadgetValidation'
+import { friendlyError } from '../utils/requestErrors'
 
 /**
  * Shared create/edit form for a gadget. Validation runs on submit; after the
@@ -60,7 +61,7 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
     try {
       await onSubmit(toGadgetPayload(form))
     } catch (err) {
-      setServerError(err.message || 'Saving failed. Please try again.')
+      friendlyError(err)
       setSubmitting(false)
     }
   }

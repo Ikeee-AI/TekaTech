@@ -4,6 +4,7 @@ import { LinkIcon } from 'lucide-react'
 import { api } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
+import { friendlyError } from '../utils/requestErrors'
 
 export default function ShortLinkRedirect() {
   const { slug } = useParams()
@@ -29,7 +30,7 @@ export default function ShortLinkRedirect() {
     return (
       <ErrorState
         title="Couldn't Open This Comparison"
-        message={loadError.message}
+        message={friendlyError(loadError)}
         onRetry={retry}
       />
     )

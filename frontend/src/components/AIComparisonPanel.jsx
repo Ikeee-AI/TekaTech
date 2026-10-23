@@ -5,6 +5,7 @@ import { useAiAnswer } from '../hooks/useAiAnswer'
 import AiAnswerResult from './AiAnswerResult'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
+import { friendlyError } from '../utils/requestErrors'
 
 const DEFAULT_QUESTION = 'Compare these gadgets and highlight the key trade-offs someone should know before buying.'
 const SUGGESTED_QUESTIONS = ['Which offers better value for the price?', 'Compare battery life', 'Compare camera quality']
@@ -65,7 +66,7 @@ export default function AIComparisonPanel({
       setResult(data)
       setSourcesOpen(false)
     } catch (err) {
-      setError(err.message)
+      setError(friendlyError(err))
     } finally {
       setLoading(false)
     }

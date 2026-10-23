@@ -7,6 +7,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
 import AIComparisonPanel from '../components/AIComparisonPanel'
+import { friendlyError } from '../utils/requestErrors'
 
 export default function ComparePage() {
   useDocumentTitle('Compare')
@@ -60,7 +61,7 @@ export default function ComparePage() {
         url = `${window.location.origin}/c/${result.slug}`
         setShare({ key: idsKey, url })
       } catch (err) {
-        toast.error(err.message)
+        toast.error(friendlyError(err))
         return
       } finally {
         setSharing(false)
@@ -97,7 +98,7 @@ export default function ComparePage() {
     return (
       <ErrorState
         title="Couldn't Load This Comparison"
-        message={loadError.message}
+        message={friendlyError(loadError)}
         onRetry={() => {
           setLoadError(null)
           setAttempt((a) => a + 1)

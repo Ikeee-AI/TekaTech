@@ -3,6 +3,7 @@ import { Sparkles, X } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
 import AiAnswerResult from './AiAnswerResult'
+import { friendlyError } from '../utils/requestErrors'
 
 export default function AIAnswerPanel({ question, onClose }) {
   const {
@@ -31,7 +32,7 @@ export default function AIAnswerPanel({ question, onClose }) {
       setResult(data)
       setSourcesOpen(false)
     } catch (err) {
-      setError(err.message)
+      setError(friendlyError(err))
     } finally {
       setLoading(false)
     }
