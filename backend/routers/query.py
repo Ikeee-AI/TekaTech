@@ -3,7 +3,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
-from openai import OpenAI
+from openai import APITimeoutError, OpenAI, OpenAIError
 from pydantic import BaseModel, Field, field_validator
 
 from config import settings
@@ -14,7 +14,23 @@ from tokens import count_chat_tokens
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/query", tags=["query"])
-client = OpenAI(api_key=settings.openai_api_key)
+
+# The SDK default is a 10-minute timeout with 2 retries, so a stalled provider would hold
+# a request open far longer than a user will wait. One retry still absorbs a transient blip.
+PROVIDER_TIMEOUT_SECONDS = 45
+PROVIDER_MAX_RETRIES = 1
+client = OpenAI(
+    api_key=settings.openai_api_key,
+    timeout=PROVIDER_TIMEOUT_SECONDS,
+    max_retries=PROVIDER_MAX_RETRIES,
+)
+
+# Every AI-side failure is a 503 with a plain sentence in `detail`, the same shape the spec
+# indexing endpoint uses, so the frontend shows the message without branching on the cause.
+# Never put provider names, keys or quota details in these.
+DETAIL_TIMEOUT = "The AI took too long to answer. Please try again."
+DETAIL_UNAVAILABLE = "AI answers are temporarily unavailable. Spec browsing still works."
+DETAIL_UNUSABLE = "The AI returned an answer we couldn't use. Please rephrase and try again."
 
 MATCH_COUNT = 6
 MATCH_THRESHOLD = 0.5
@@ -68,6 +84,18 @@ def _token_count(response, field: str) -> int | None:
     return value if isinstance(value, int) else None
 
 
+def _provider_failure(exc: Exception) -> HTTPException:
+    """Turn a provider exception into a safe 503; the details go to the log, not the user."""
+    logger.warning("OpenAI call failed during /query: %s", type(exc).__name__, exc_info=True)
+    detail = DETAIL_TIMEOUT if isinstance(exc, APITimeoutError) else DETAIL_UNAVAILABLE
+    return HTTPException(status_code=503, detail=detail)
+
+
+def _unusable_output(reason: str) -> HTTPException:
+    logger.warning("Unusable OpenAI output during /query: %s", reason)
+    return HTTPException(status_code=503, detail=DETAIL_UNUSABLE)
+
+
 def _record_query(*, question, answer, cited_gadget_ids, embedding_response, completion) -> None:
     """Best-effort write to query_history.
 
@@ -111,10 +139,19 @@ def _record_query(*, question, answer, cited_gadget_ids, embedding_response, com
 @limiter.limit("10/minute")
 def ask_question(request: Request, payload: QueryRequest):
     # 1. Embed the question the same way spec chunks were embedded
-    embedding_response = client.embeddings.create(
-        model="text-embedding-3-small", input=[payload.question]
-    )
-    query_embedding = embedding_response.data[0].embedding
+    try:
+        embedding_response = client.embeddings.create(
+            model="text-embedding-3-small", input=[payload.question]
+        )
+    except OpenAIError as exc:
+        raise _provider_failure(exc) from None
+    except ValueError as exc:
+        # The SDK raises a bare ValueError when a 200 reply has no embedding data or isn't JSON.
+        raise _unusable_output(f"embedding reply could not be read ({type(exc).__name__})") from None
+    try:
+        query_embedding = embedding_response.data[0].embedding
+    except (AttributeError, IndexError, TypeError):
+        raise _unusable_output("embedding response had no vector") from None
 
     # 2. Retrieve the most relevant spec chunks via the SQL function in schema.sql
     rpc_params = {
@@ -212,19 +249,27 @@ def ask_question(request: Request, payload: QueryRequest):
     )
 
     # 5. Generate the answer, grounded in only what was retrieved
-    completion = client.chat.completions.create(
-        model="gpt-5-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": f"Spec snippets:\n{context}{scope_note}\n\nQuestion: {payload.question}",
-            },
-        ],
-    )
-    answer = completion.choices[0].message.content or (
-        "The model didn't return an answer for that question — try rephrasing it."
-    )
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-5-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": f"Spec snippets:\n{context}{scope_note}\n\nQuestion: {payload.question}",
+                },
+            ],
+        )
+    except OpenAIError as exc:
+        raise _provider_failure(exc) from None
+    except ValueError as exc:
+        raise _unusable_output(f"completion reply could not be read ({type(exc).__name__})") from None
+    try:
+        answer = completion.choices[0].message.content
+    except (AttributeError, IndexError, TypeError):
+        raise _unusable_output("completion had no choices") from None
+    if not answer or not answer.strip():
+        raise _unusable_output("completion content was empty")
 
     # 6. Log it — powers query_history / trending questions, plus token telemetry so the
     #    cost of a query is answerable after the fact rather than only via the OpenAI bill.
