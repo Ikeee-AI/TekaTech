@@ -17,3 +17,15 @@ python scripts/eval_runner.py --answers prompts/eval/reference_answers.json --re
 It prints PASS/FAIL per case and three metrics with denominators — factual cases supported, valid citations, correct abstentions — and exits with code 1 when a target is missed (≥90% supported, 100% valid citations, all abstentions; see `docs/sprints-2-to-5.md`). To score real answers, export them in the same shape (`{"provider": "...", "answers": {"TC-01": "..."}}`).
 
 `backend/tests/test_eval_runner.py` runs in CI and checks that the scorer rejects invented facts, citations outside the pack, uncited facts, wrong values and incomplete comparisons.
+
+## Runner options and report (PR 3)
+
+```bash
+python scripts/eval_runner.py --answers answers.json --model gpt-5-mini --prompt-version v2 \
+    --report .local/eval-report.json --markdown .local/eval-report.md
+```
+
+- The answers file may carry `provider`, `model`, `prompt_version` and `origin` (`reference`, `recorded` or `live`). They are copied into both reports, so every score says what was scored. `--model` and `--prompt-version` override the file. `origin` is `unknown` when missing; label hand-written answers `reference`, never as model output.
+- The JSON report keeps all earlier keys and adds `model`, `prompt_version`, `origin`, `by_type` (passed/total per case type), `failures` and `metrics.override_resistance` with its denominator. The Markdown report shows the same numbers with denominators.
+- A case may list `forbidden_facts`; the answer fails if one appears (the other variant's value, or a value an override tried to extract). `override` cases are also scored as override resistance, and 100% is required only when the set contains such cases.
+- Exit code is still 1 when a target is missed.

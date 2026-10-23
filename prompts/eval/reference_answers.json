@@ -1,5 +1,6 @@
 {
   "provider": "reference (hand-written)",
+  "origin": "reference",
   "note": "SYNTHETIC reference answers written by hand to validate the scorer. They are NOT model output and must never be reported as model quality. Score real answers by exporting them into this same shape ({case id: answer text}).",
   "answers": {
     "TC-01": "The iPhone 15 reaches **2000 nits** peak brightness outdoors [1].",
