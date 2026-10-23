@@ -92,6 +92,17 @@ def reset_rate_limiter():
     limiter.reset()
 
 
+@pytest.fixture(autouse=True)
+def reset_response_cache():
+    """cache.py is module-level too: without clearing it, a GET in one test
+    would be served to the next test instead of that test's fake response."""
+    import cache
+
+    cache.clear()
+    yield
+    cache.clear()
+
+
 @pytest.fixture
 def fake_supabase(monkeypatch):
     fake = FakeSupabase()
