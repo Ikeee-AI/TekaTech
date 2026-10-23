@@ -85,6 +85,57 @@ Count with the matching encoder: `count_embedding_tokens` for anything headed to
 
 Rate limits: `/query` 10/min; spec ingestion, spec indexing and comparison creation 20/hour each. `memory://` is per-process and correct only for a single worker; use a shared store (e.g. Redis) for multi-worker deploys. Startup aborts if a configured shared store is unreachable — no silent fallback.
 
+## Failure drill
+
+A safe way to show the `POST /query` error responses (timeout, quota, unusable output, empty retrieval) without calling OpenAI, so a drill costs nothing and cannot hit a real provider outage by accident. It is **off by default** and meant for a dev machine.
+
+Three gates must all be open, otherwise the header is ignored and the request behaves normally (a non-admin learns nothing about the feature):
+
+1. `failure_simulation_enabled=true` in `backend/.env`, then restart the server. It defaults to false and is deliberately **not** in `render.yaml`; a test fails if it ever is. Never set it on the production service.
+2. The request carries `X-Simulate-Failure: timeout | quota | bad_output | empty` (case-insensitive).
+3. The caller is a logged-in **admin** (`app_metadata.is_admin`). Use the `TekaTech-dev` test admin and its session `access_token`; never paste a token into chat, an issue or a commit.
+
+```bash
+curl -i -X POST http://127.0.0.1:8000/query \
+  -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
+  -H "X-Simulate-Failure: timeout" -d '{"question": "How big is the battery?"}'
+```
+
+On Windows PowerShell use `curl.exe` (not the `curl` alias) and put the JSON in a file, because PowerShell 5.1 strips the quotes from inline JSON:
+
+```powershell
+'{"question": "How big is the battery?"}' | Set-Content body.json -Encoding ascii
+curl.exe -i -X POST http://127.0.0.1:8000/query -H "Content-Type: application/json" `
+  -H "Authorization: Bearer $env:TOKEN" -H "X-Simulate-Failure: timeout" -d "@body.json"
+```
+
+| Header value | Status | `detail` / body | Also returned |
+| --- | --- | --- | --- |
+| `timeout` | 503 | "The AI took too long to answer. Please try again." | `X-Simulated-Failure: timeout` |
+| `quota` | 503 | "AI answers are temporarily unavailable. Spec browsing still works." | `X-Simulated-Failure: quota` |
+| `bad_output` | 503 | "The AI returned an answer we couldn't use. Please rephrase and try again." | `X-Simulated-Failure: bad_output` |
+| `empty` | 200 | the normal "couldn't find any spec information" answer, `sources: []`, `model_used: "none"` | none |
+| anything else (admin only) | 422 | lists the valid modes | none |
+
+The simulated responses come from the same code as real failures, so the drill shows the real contract. They still count against the 10-per-minute limit, never call OpenAI, and write nothing to `query_history`. The browser UI does not send the header; to watch the messages in the UI, run the frontend against the local backend while logged in as the admin and add the header with a header-injecting browser extension (not tested here).
+
+**Check it stays off:** with the setting unset, repeat the request above. The response must be a normal answer, with no `X-Simulated-Failure` header. The Render service's environment list should not contain the variable.
+
+## Collecting real answers for evaluation
+
+`scripts/eval_adapter.py` asks the evaluation questions through a running API and writes the answers in the shape `scripts/eval_runner.py` scores. The runner numbers the verified source pack `[1]`-`[10]`, but `/query` numbers whatever it retrieved `[1]`-`[N]` per question, so the adapter maps each retrieved chunk back to the pack snippet it holds and rewrites the markers to pack ids (a chunk outside the pack becomes `[0]`, which the runner reports as an invalid citation).
+
+```bash
+python scripts/eval_adapter.py --api-base http://127.0.0.1:8000                 # check and plan only
+python scripts/eval_adapter.py --api-base http://127.0.0.1:8000 --yes --out .local/answers.json
+python scripts/eval_runner.py --answers .local/answers.json --markdown .local/report.md
+```
+
+- **It spends real credit** (about half a cent per question, 20 cases is roughly $0.10 from the shared balance), so without `--yes` it only checks and plans. A non-local API is refused unless `--allow-remote`. Questions are paced to stay under the 10-per-minute limit, so 20 take about 2 minutes.
+- **Prerequisite:** every pack snippet saved and indexed as its **own** spec chunk (one `POST /gadgets/{id}/specs` per snippet) in the target database, preferably `TekaTech-dev`. The pre-check stops with a message if a snippet is missing or if a chunk holds several snippets (one citation would then credit all of them; `--allow-merged-chunks` accepts that coarser credit).
+- **Output** records `origin: "live"`, the model, the `prompt_version` (read from `backend/prompts.py`), `invalid_citations_removed` per case and any `errors`. A failed question has no answer, so the runner scores it as a failure.
+- **Invalid citations:** the backend strips markers that point outside the retrieved snippets, so the answers file only shows the ones that survived. The runner must also count `invalid_citations_removed`, otherwise the valid-citation rate is 100% by construction (tracked in #66).
+
 ## API reference
 
 Routes marked "none" are public; all others need a valid Supabase bearer token. The `client` pytest fixture overrides auth with an admin user; unauthorized/non-admin tests restore their own dependency overrides.

@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     # (e.g. "redis://host:6379", "rediss://" for TLS) for any multi-process deploy.
     rate_limit_storage_uri: str = "memory://"
 
+    # Failure drill for POST /query (see README "Failure drill"). Off unless set to true, and even
+    # then only a logged-in admin sending the X-Simulate-Failure header can trigger it. Never set
+    # this on the production service: render.yaml deliberately leaves it out (a test checks).
+    failure_simulation_enabled: bool = False
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property

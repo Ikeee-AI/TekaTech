@@ -2,10 +2,12 @@ import logging
 from typing import Optional
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, HTTPException, Request
-from openai import APITimeoutError, OpenAI, OpenAIError
+from openai import APITimeoutError, OpenAI, OpenAIError, RateLimitError
 from pydantic import BaseModel, Field, field_validator
 
+from auth import get_optional_user
 from citations import strip_invalid_citations
 from config import settings
 from prompts import build_system_prompt
@@ -33,6 +35,16 @@ client = OpenAI(
 DETAIL_TIMEOUT = "The AI took too long to answer. Please try again."
 DETAIL_UNAVAILABLE = "AI answers are temporarily unavailable. Spec browsing still works."
 DETAIL_UNUSABLE = "The AI returned an answer we couldn't use. Please rephrase and try again."
+NO_MATCHES_ANSWER = (
+    "I couldn't find any spec information relevant to that question. "
+    "Try adding more specs to the relevant gadgets first."
+)
+
+# Failure drill (README "Failure drill"). Disabled unless settings.failure_simulation_enabled,
+# and then only an admin sending this header can use it. It never calls OpenAI, so a drill
+# costs nothing, and it reuses the real error helpers below so the drill shows the real contract.
+SIMULATION_HEADER = "x-simulate-failure"
+SIMULATION_MODES = ("timeout", "quota", "bad_output", "empty")
 
 MATCH_COUNT = 6
 MATCH_THRESHOLD = 0.5
@@ -100,6 +112,42 @@ def _unusable_output(reason: str) -> HTTPException:
     return HTTPException(status_code=503, detail=DETAIL_UNUSABLE)
 
 
+def _requested_simulation(request: Request) -> str | None:
+    """The failure mode an admin asked for, or None for every normal request.
+
+    Inert unless the setting is on AND the header is present; only then is the caller checked
+    (so logged-in users pay no extra Supabase lookup on ordinary requests). A non-admin or
+    anonymous caller is ignored silently, so the feature is invisible to them.
+    """
+    mode = request.headers.get(SIMULATION_HEADER)
+    if not mode or not settings.failure_simulation_enabled:
+        return None
+    user = get_optional_user(request.headers.get("authorization"))
+    if not user or not (user.app_metadata or {}).get("is_admin"):
+        return None
+    mode = mode.strip().lower()
+    if mode not in SIMULATION_MODES:
+        raise HTTPException(status_code=422, detail=f"Unknown simulation mode. Use one of: {', '.join(SIMULATION_MODES)}.")
+    logger.warning("Failure simulation %r requested by admin %s", mode, getattr(user, "id", "?"))
+    return mode
+
+
+def _simulated_failure(mode: str) -> "QueryResponse":
+    """Produce the response a real failure of this kind would, without calling OpenAI."""
+    request = httpx.Request("POST", "https://simulated.invalid/v1")
+    if mode == "empty":
+        return QueryResponse(answer=NO_MATCHES_ANSWER, sources=[], model_used="none")
+    if mode == "timeout":
+        error = _provider_failure(APITimeoutError(request=request))
+    elif mode == "quota":
+        quota = RateLimitError("simulated", response=httpx.Response(429, request=request), body=None)
+        error = _provider_failure(quota)
+    else:  # bad_output
+        error = _unusable_output("simulated")
+    error.headers = {"X-Simulated-Failure": mode}
+    raise error
+
+
 def _record_query(*, question, answer, cited_gadget_ids, embedding_response, completion) -> None:
     """Best-effort write to query_history.
 
@@ -142,6 +190,10 @@ def _record_query(*, question, answer, cited_gadget_ids, embedding_response, com
 @router.post("", response_model=QueryResponse)
 @limiter.limit("10/minute")
 def ask_question(request: Request, payload: QueryRequest):
+    simulated = _requested_simulation(request)
+    if simulated:
+        return _simulated_failure(simulated)
+
     # 1. Embed the question the same way spec chunks were embedded
     try:
         embedding_response = client.embeddings.create(
@@ -169,11 +221,7 @@ def ask_question(request: Request, payload: QueryRequest):
     matches = supabase.rpc("match_spec_documents", rpc_params).execute().data
 
     if not matches:
-        return QueryResponse(
-            answer="I couldn't find any spec information relevant to that question. Try adding more specs to the relevant gadgets first.",
-            sources=[],
-            model_used="none",
-        )
+        return QueryResponse(answer=NO_MATCHES_ANSWER, sources=[], model_used="none")
 
     # 3. Attach gadget names to each matched chunk (the SQL function only returns gadget_id).
     #    In comparison mode also look up the gadgets that were *asked* about, so one with no

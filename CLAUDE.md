@@ -111,4 +111,4 @@ Pushes to `main` additionally trigger Render deploy hooks and `scripts/deployed_
 - Both halves need matching config to talk to each other: the frontend's `VITE_API_BASE_URL` must point at the backend, and that frontend's own origin must appear in the backend's `cors_origins`. Vite inlines env vars **at build time**, so changing `VITE_*` requires a dev-server restart or rebuild — it is not read at runtime.
 - The backend's allowed CORS origin comes from `cors_origins` in its `.env` (comma-separated, defaults to `http://localhost:5173`). If Vite starts on a different port because 5173 is taken, requests fail CORS until that origin is added.
 - A paused Supabase project surfaces as DNS failure then Cloudflare 521, and takes a few minutes to fully wake after resuming — not an app bug.
-
+- `FAILURE_SIMULATION_ENABLED` (the `/query` failure drill, admin + `X-Simulate-Failure` header only) must stay unset in production: do not add it to `render.yaml`. A test fails if it appears there. See `backend/README.md`, "Failure drill".
