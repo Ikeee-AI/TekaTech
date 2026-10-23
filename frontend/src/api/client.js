@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient'
+import { trackRequest } from './serverStatus'
 
 // Points at the local backend by default; set VITE_API_BASE_URL to the deployed
 // backend's origin when building for anywhere other than local dev. Trailing
@@ -12,7 +13,16 @@ async function request(path, options = {}) {
     headers["Authorization"] = `Bearer ${session.access_token}`
   }
 
-  const res = await fetch(`${API_BASE}${path}`, { headers, ...options });
+  // Lets the UI show "server is waking up" if this takes a cold-start's time.
+  const settle = trackRequest();
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { headers, ...options });
+  } catch (err) {
+    settle(false);
+    throw err;
+  }
+  settle(true);
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: res.statusText }));
     // FastAPI validation errors arrive as a list of { msg } objects.
