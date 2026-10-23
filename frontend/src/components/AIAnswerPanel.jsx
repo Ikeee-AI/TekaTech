@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Sparkles, X } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
+import { validateAnswerResponse } from '../utils/aiAnswerState'
 import AiAnswerResult from './AiAnswerResult'
 
 export default function AIAnswerPanel({ question, onClose }) {
@@ -28,10 +29,11 @@ export default function AIAnswerPanel({ question, onClose }) {
     setError(null)
     try {
       const data = await api.askQuestion({ question, plain_language: plainLanguage })
-      setResult(data)
+      // A reply without answer text or a valid source list is a failure, never an answer.
+      setResult(validateAnswerResponse(data))
       setSourcesOpen(false)
     } catch (err) {
-      setError(err.message)
+      setError(err)
     } finally {
       setLoading(false)
     }

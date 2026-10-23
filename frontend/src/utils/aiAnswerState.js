@@ -1,0 +1,100 @@
+// Turns /query results and failures into the three states a user must be able to
+// tell apart: an answer, missing evidence, and an AI/request failure.
+// Only messages written here (or the backend's own plain 503 sentences) reach the
+// screen, so a stack trace, HTML error page or provider detail is never displayed.
+
+// Plain sentences the backend sends with its 503s (backend/routers/query.py).
+const BACKEND_TIMEOUT = 'The AI took too long to answer'
+const BACKEND_UNUSABLE = "The AI returned an answer we couldn't use"
+
+export class MalformedAnswerError extends Error {
+  constructor(reason) {
+    super(`Malformed answer: ${reason}`)
+    this.name = 'MalformedAnswerError'
+  }
+}
+
+/** Returns the response if it has the shape the UI needs; throws MalformedAnswerError otherwise. */
+export function validateAnswerResponse(data) {
+  if (!data || typeof data !== 'object') throw new MalformedAnswerError('not an object')
+  if (typeof data.answer !== 'string' || !data.answer.trim()) throw new MalformedAnswerError('missing answer text')
+  if (!Array.isArray(data.sources)) throw new MalformedAnswerError('missing source list')
+  const badSource = data.sources.some(
+    (s) => !s || typeof s !== 'object' || typeof s.content !== 'string' || typeof s.gadget_name !== 'string',
+  )
+  if (badSource) throw new MalformedAnswerError('a source is missing its text or gadget name')
+  return data
+}
+
+/** A 200 reply with no sources means retrieval found nothing to ground an answer in. */
+export function isMissingEvidence(result) {
+  return result.sources.length === 0
+}
+
+const FAILURES = {
+  timeout: {
+    title: 'The AI Timed Out',
+    message: 'The AI took too long to answer, so no answer was produced. Please try again.',
+    retry: true,
+  },
+  unavailable: {
+    title: 'AI Answers Are Unavailable',
+    message: 'The AI service could not be reached, so no answer was produced. Spec browsing still works.',
+    retry: true,
+  },
+  malformed: {
+    title: 'Unusable AI Response',
+    message: 'The AI sent back something we could not read, so we are not showing it. Please try again or rephrase.',
+    retry: true,
+  },
+  rateLimited: {
+    title: 'Too Many Questions',
+    message: 'You have asked a lot of questions in a short time. Wait a minute, then try again.',
+    retry: true,
+  },
+  network: {
+    title: 'Connection Problem',
+    message: 'Your browser could not reach TekaTech, so no answer was produced. Check your connection and try again.',
+    retry: true,
+  },
+  invalidQuestion: {
+    title: 'Question Not Accepted',
+    message: 'Try a shorter, more specific question.',
+    retry: false,
+  },
+  unknown: {
+    title: 'Something Went Wrong',
+    message: 'No answer was produced. Please try again.',
+    retry: true,
+  },
+}
+
+function kindOf(err) {
+  if (err instanceof MalformedAnswerError || err instanceof SyntaxError) return 'malformed'
+  if (err instanceof TypeError) return 'network' // fetch() rejects with TypeError when offline / blocked
+  const message = typeof err?.message === 'string' ? err.message : ''
+  if (err?.status === 503) {
+    if (message.startsWith(BACKEND_TIMEOUT)) return 'timeout'
+    if (message.startsWith(BACKEND_UNUSABLE)) return 'malformed'
+    return 'unavailable'
+  }
+  if (err?.status === 504 || err?.status === 408) return 'timeout'
+  if (err?.status === 502) return 'unavailable'
+  if (err?.status === 429) return 'rateLimited'
+  if (err?.status === 422 || err?.status === 400) return 'invalidQuestion'
+  return 'unknown'
+}
+
+/**
+ * Describes a failed /query for display: { kind, title, message, retry }.
+ * For a rejected question the backend's validation sentence is kept when it is short
+ * and plain (e.g. the token-limit message); everything else uses fixed copy.
+ */
+export function describeAiFailure(err) {
+  const kind = kindOf(err)
+  const failure = { kind, ...FAILURES[kind] }
+  if (kind === 'invalidQuestion' && typeof err?.message === 'string' && err.message.length < 200 && !/[<{]/.test(err.message)) {
+    failure.message = err.message
+  }
+  return failure
+}
