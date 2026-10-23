@@ -56,7 +56,7 @@ def timed(name, operation):
                 "error_type": type(exc).__name__}
 
 
-INVISIBLE = "﻿​‌‍⁠"  # BOM and zero-width characters that clipboard pipes can add
+INVISIBLE = "\ufeff\u200b\u200c\u200d\u2060"  # BOM and zero-width characters that clipboard pipes can add
 
 
 def clean_key(api_key):

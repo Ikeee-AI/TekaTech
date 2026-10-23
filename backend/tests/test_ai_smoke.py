@@ -76,13 +76,13 @@ def test_missing_key_is_rejected():
 
 
 def test_invisible_characters_from_the_clipboard_are_stripped():
-    report = smoke.run_smoke(f"﻿{KEY}​\r\n", request=fake_request())
+    report = smoke.run_smoke(f"\ufeff{KEY}\u200b\r\n", request=fake_request())
     assert report["status"] == "passed"
 
 
 def test_other_non_ascii_characters_are_named_not_printed():
-    with pytest.raises(ValueError, match="U+00E9") as error:
-        smoke.run_smoke(f"{KEY}é", request=fake_request())
+    with pytest.raises(ValueError, match=r"U\+00E9") as error:
+        smoke.run_smoke(f"{KEY}\u00e9", request=fake_request())
     assert KEY not in str(error.value)
 
 
