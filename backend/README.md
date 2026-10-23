@@ -50,7 +50,8 @@ The Ollama probe calls `http://127.0.0.1:11434/api/generate` from backend code, 
 - Admin authorization uses Supabase `app_metadata.is_admin`, never client-writable `user_metadata`. Any logged-in user can create/edit gadgets, save/index specs and submit corrections. Only admins delete gadgets and review/resolve corrections.
 - RLS is enabled and direct browser table/RPC privileges are revoked, but the service-role backend bypasses it. FastAPI authorization is essential.
 - Embeddings use `text-embedding-3-small` / `cl100k_base`; chat uses `gpt-5-mini` / `o200k_base`. Input limits check both characters and tokens.
-- The prompt treats snippets as untrusted data and matches the frontend renderer's citation/bold/bullet rules. Keep those contracts when changing AI code.
+- The prompt treats snippets as untrusted data and matches the frontend renderer's citation/bold/bullet rules. Keep those contracts when changing AI code. The text and its version label (`PROMPT_VERSION`) live in `backend/prompts.py`; an evaluation report's `prompt_version` should carry the same label.
+- After the model answers, `backend/citations.py` removes `[n]` markers outside the snippets that were sent (a dead citation in the UI) and `POST /query` reports how many in `invalid_citations_removed`. History stores the cleaned answer. An evaluator should score the raw answer or count the removals, otherwise the valid-citation rate is 100% by construction.
 - Query history stores model output and token telemetry; history failures cannot fail an already-billed query.
 - `POST /query` returns **503** `{"detail": "<plain sentence>"}` for every AI-side failure, the same shape as spec indexing: provider timeout ("The AI took too long to answer. Please try again."), quota/auth/connection/5xx errors ("AI answers are temporarily unavailable. Spec browsing still works.") and an empty or malformed model answer ("The AI returned an answer we couldn't use. Please rephrase and try again."). Provider names, keys and quota details are logged, never returned. The OpenAI client times out after 45 s with one retry. No relevant specs is still a 200 with `model_used: "none"`.
 - `memory://` counters are single-process only. Use healthy shared Redis for multiple workers/replicas. Startup must fail if the configured shared store is unreachable; no silent fallback.
@@ -107,7 +108,7 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` | 201 | 401, 404 |
 | `/corrections` | GET | admin | query `status` | 200 list | 401, 403 |
 | `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}` | 200 | 400, 401, 403, 404 |
-| `/query` | POST | none | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 `{"answer", "sources", "model_used"}` | 422 (empty or over-limit question), 429, 503 (AI timeout, provider failure or unusable answer; see below) |
+| `/query` | POST | none | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 `{"answer", "sources", "model_used", "invalid_citations_removed"}` | 422 (empty or over-limit question), 429, 503 (AI timeout, provider failure or unusable answer; see below) |
 
 Every route with an `{id}`, `{gadget_id}`, `{spec_id}` or `{correction_id}` path parameter returns 422 for a malformed UUID.
 
