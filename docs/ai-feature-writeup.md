@@ -48,7 +48,7 @@ Only the **hand-written reference answers** (`prompts/eval/reference_answers.jso
 | Result | Status |
 | --- | --- |
 | Scorer validated on reference answers | Done (all 20 cases pass; this checks the scorer, not a model) |
-| Real OpenAI answers scored against the 20 cases | **Blocked**: needs the evaluator adapter from #56/#66 so answers come through the real pipeline; credit has since been restored |
+| Real OpenAI answers scored against the 20 cases | **Blocked**: needs the evaluator adapter from #56/#66 so answers come through the real pipeline; the team reports OpenAI access is available again |
 | Prompt revision from scored results | **Not started**: depends on the line above |
 
 ## Limitations
