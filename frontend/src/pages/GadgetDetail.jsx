@@ -7,6 +7,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { GadgetDetailSkeleton } from '../components/Skeleton'
 import SpecManager from '../components/SpecManager'
 import DeleteGadgetButton from '../components/DeleteGadgetButton'
+import AIComparisonPanel from '../components/AIComparisonPanel'
 import BackLink from '../components/ui/BackLink'
 import Button from '../components/ui/Button'
 import ErrorState from '../components/ui/ErrorState'
@@ -139,6 +140,14 @@ export default function GadgetDetail() {
           </div>
         </div>
       </article>
+      
+      <AIComparisonPanel
+        gadgetIds={[id]}
+        gadgetNames={[gadget.name]}
+        title={`Ask About ${gadget.name}`}
+        defaultQuestion=""
+        suggestions={['What chip does it use?', 'How long does the battery last?', 'Is it water resistant?']}
+      />
 
       <SpecManager gadgetId={id} onSpecsChange={setSpecs} />
     </div>

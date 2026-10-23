@@ -9,8 +9,14 @@ import Alert from './ui/Alert'
 const DEFAULT_QUESTION = 'Compare these gadgets and highlight the key trade-offs someone should know before buying.'
 const SUGGESTED_QUESTIONS = ['Which offers better value for the price?', 'Compare battery life', 'Compare camera quality']
 
-export default function AIComparisonPanel({ gadgetIds, gadgetNames }) {
-  const [question, setQuestion] = useState(DEFAULT_QUESTION)
+export default function AIComparisonPanel({
+  gadgetIds,
+  gadgetNames,
+  title = 'AI Trade-Off Comparison',
+  defaultQuestion = DEFAULT_QUESTION,
+  suggestions = SUGGESTED_QUESTIONS,
+}) {
+  const [question, setQuestion] = useState(defaultQuestion)
   const [missingSpecs, setMissingSpecs] = useState([])
   const [checkingSpecs, setCheckingSpecs] = useState(true)
   const {
@@ -74,7 +80,7 @@ export default function AIComparisonPanel({ gadgetIds, gadgetNames }) {
     <section aria-labelledby="ai-compare-title" className="mt-8 bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-xs">
       <div className="flex items-center gap-2 mb-1">
         <Sparkles size={18} className="text-sage-700" aria-hidden="true" />
-        <h2 id="ai-compare-title" className="text-lg font-bold text-slate-900">AI Trade-Off Comparison</h2>
+        <h2 id="ai-compare-title" className="text-lg font-bold text-slate-900">{title}</h2>
       </div>
       <p className="text-sm text-slate-600 mb-4">
         Grounded in the specs added for {gadgetNames.join(', ')} — this only uses real spec data, not general knowledge.
@@ -94,7 +100,7 @@ export default function AIComparisonPanel({ gadgetIds, gadgetNames }) {
               Suggested Questions
             </p>
             <div className="flex flex-wrap gap-2" role="group" aria-labelledby="suggested-questions-label">
-              {SUGGESTED_QUESTIONS.map((q) => (
+              {suggestions.map((q) => (
                 <button
                   key={q}
                   onClick={() => handleSuggestedClick(q)}
