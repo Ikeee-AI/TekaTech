@@ -1,0 +1,73 @@
+name: Ops - live AI smoke
+
+# Weekly bounded check that the OpenAI account, key and both app models still work:
+# one embedding and one tiny capped chat request (scripts/ai_smoke.py, a fraction of a cent).
+# Separate from CI on purpose: never a required check, never on PRs, so a provider outage
+# cannot block merges or deploys. A failure opens (or updates) one issue for the backend owner.
+
+on:
+  schedule:
+    - cron: '30 0 * * 5'  # Friday 08:30 Asia/Manila, a day before the Saturday sprint deadline
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ops-ai-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Live OpenAI smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: One embedding and one capped chat request
+        env:
+          # Dedicated low-budget key, never the production Render key.
+          OPENAI_API_KEY: ${{ secrets.OPENAI_SMOKE_API_KEY }}
+        run: |
+          if [[ -z "$OPENAI_API_KEY" ]]; then
+            echo "::warning::OPENAI_SMOKE_API_KEY is not set; live AI smoke skipped."
+            echo "OPENAI_SMOKE_API_KEY repository secret is not set; skipped." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python scripts/ai_smoke.py --report /tmp/ai-smoke.json
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "### Live AI smoke ($(date -u +%Y-%m-%dT%H:%MZ))"
+            echo '```json'
+            cat /tmp/ai-smoke.json 2>/dev/null || echo '{"status": "no report"}'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-smoke
+          path: /tmp/ai-smoke.json
+          retention-days: 30
+          if-no-files-found: ignore
+      - name: Open or update the provider issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Live AI smoke check failing"
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --label area:backend --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          body="The weekly OpenAI smoke check failed at $(date -u +%Y-%m-%dT%H:%MZ). Run (report in the summary and artifact): $RUN_URL
+
+          Check the recorded http_status/code first: 429 insufficient_quota means the prepaid credit ran out (the account has no auto-reload); 401 means the key was revoked or expired (keys expire 21 Dec 2026). Production uses a different key, so confirm impact on the live site before treating this as an incident."
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label area:backend --assignee s2302827-byte --body "$body"
+          fi

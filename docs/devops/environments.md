@@ -30,6 +30,7 @@ Owner: Ikeee-AI (DevOps). Prepared 16 October 2026 for Sprint 2 task S2-IK ("est
 | `VITE_API_BASE_URL` | frontend `.env` | dummy | `tekatech-web` | No; baked in at build time |
 | `RENDER_BACKEND_DEPLOY_HOOK`, `RENDER_FRONTEND_DEPLOY_HOOK` | — | repo secrets, main deploy job only | — | Yes |
 | `PRODUCTION_API_URL`, `PRODUCTION_FRONTEND_URL` | — | repo variables | — | No |
+| `OPENAI_SMOKE_API_KEY` | — | repo secret, used only by `ops-ai-smoke.yml` (weekly live check) | — | Yes; separate restricted key, shares the prepaid $10 balance |
 
 ## Gaps (honest status)
 
