@@ -67,3 +67,39 @@ The work ran from 22 Oct, about 18:00, to 23 Oct 00:41. This entry was written o
 - Send Manuel and Adrian the team message, and the dev key privately — Ikeee-AI — 23 Oct.
 - Follow up with Mika and Jopher on #55 and #57 — Ikeee-AI — 23 Oct.
 - Run `security-scan` on the Dependabot alerts — Ikeee-AI — 23 Oct.
+
+## 2026-10-23 13:30 Asia/Manila — On-time check against the internal Sprint 3 deadlines
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S3-IK (board coordination) · **Branch:** `tekatech/s3-ik-worklog`
+
+Deadlines are the ones posted on #62 and #54–#58 at Thu 22 Oct 00:17. Times come from GitHub timestamps converted to Manila time. "Late" means after the deadline, measured to the minute. This is an observation of GitHub only. Work that hasn't been pushed or posted can't be seen.
+
+**Done**
+- Compared each owner's issue comments, #72 standups and PR creation times with the deadlines — evidence: issues #54–#58 and #72, PRs #73–#84.
+
+| Deadline (Manila) | Adrian | Manuel | Mika | Jopher | Ikeee-AI |
+| --- | --- | --- | --- | --- | --- |
+| Plan on own issue, Thu 09:00 | Late: Thu 19:49 on #54 (he says so himself) | Late: Thu 21:12 on #56 | Missed: none on #55 | Missed: none on #57 | On time: plan and schedule posted Thu 00:24 on #62 |
+| Handoff, Thu 12:00 | Late: missed (acknowledged on #54); prompt status given on #56 Fri 08:14 | Late: error contract in the #56 plan, Thu 21:12 | Missed: no UI-state list to Jopher | — (receives) | — |
+| First PR, Thu 21:00 | On time: #74 Thu 19:46 | Late by 36 min: #75 Thu 21:36 | Missed | Missed | On time: #73 Thu 00:31 |
+| All PRs open, Fri 12:00 | On time: #80 08:52, #81 09:33, #82 09:46 | Slightly late: #83 12:05, #84 12:16 | Missed | Missed | On time: #76 Fri 00:52, #79 00:56 (#32 and #34 not started) |
+| Daily standup before 09:00 in #72 (Thu, Fri) | Missed both | Thu missed; Fri late (11:35) | Missed both | Missed both | Missed both |
+| Reviews requested of them | — | Approved #76 and #79 on Fri 11:38 / 11:40 | — | #75 waiting for review; Manuel pinged 11:30; no response by 13:30 | #75 not reviewed (Manuel asked for any reviewer on #56) |
+| Reviewed + merged, Fri 21:00 | Pending | Pending | Pending | Pending | Pending |
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Manuel's revised times on #56 (PR B by Fri 21:00, PR C by Sat 08:00) vs actual: he opened both by Fri 12:16 | His proposed slip wasn't needed | None needed — Manuel — closed |
+| #75 needs a review from Jopher (per the review table), but Jopher has shown no activity | #83, #84 and #77 depend on #75; the cost cap (#77) protects the $10 credit | Another reviewer needed — Ikeee-AI to decide — open |
+
+**Decisions** — None yet. Manuel's merge-order proposal on #56 (#74 → #81 → #80 → #82, then #73/#76/#79) is waiting for Ikeee-AI's answer.
+
+**Blockers / risks**
+- **Mika (#55) and Jopher (#57) have missed every milestone so far.** With the Sat 10:00 merge cutoff, their S3 rows are at risk of Not started — Ikeee-AI to follow up — today.
+- **Nobody posted standups on time, including Ikeee-AI.**
+
+**Plan alignment** — Pace so far: on track — Adrian (late start, PRs on time); slightly late — Manuel; no visible start — Mika and Jopher. None of them is Done yet (nothing merged).
+
+**Next** — Answer Manuel on #56 (merge order, #75 reviewer) and message Mika and Jopher — Ikeee-AI — today.
