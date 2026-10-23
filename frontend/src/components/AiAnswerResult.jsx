@@ -5,6 +5,15 @@ import Alert from './ui/Alert'
 import Button from './ui/Button'
 import { describeAiFailure, isMissingEvidence } from '../utils/aiAnswerState'
 
+/** "Source: example.com" for a spec sheet link, or plain "Source" if the URL is odd. */
+function sourceLabel(url) {
+  try {
+    return `Source: ${new URL(url).hostname.replace(/^www\./, '')}`
+  } catch {
+    return 'Source'
+  }
+}
+
 export function AnswerSkeleton({ lines = 3 }) {
   const widths = ['100%', '92%', '95%', '78%', '70%']
   return (
@@ -124,31 +133,41 @@ export default function AiAnswerResult({
                       key={i}
                       ref={(el) => (sourceRefs.current[i] = el)}
                       tabIndex={-1}
-                      className={`border rounded-lg px-3.5 py-3 transition-colors duration-500 ${
+                      aria-label={`Source ${i + 1}: ${s.gadget_name}`}
+                      className={`border rounded-lg px-4 py-3.5 transition-colors duration-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 ${
                         highlightedIndex === i ? 'border-sage-400 bg-sage-50' : 'border-slate-200 bg-slate-50'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-sage-800 min-w-0">
-                          <span className="text-xs bg-white border border-sage-200 rounded px-1.5" aria-label={`Source ${i + 1}`}>
+                      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 mb-2">
+                        <span className="flex items-start gap-2 min-w-0 text-[15px] font-semibold text-slate-900">
+                          <span
+                            className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 text-xs font-bold text-sage-900 bg-sage-100 border border-sage-300 rounded-md shrink-0"
+                            aria-hidden="true"
+                          >
                             {i + 1}
                           </span>
-                          <span className="truncate">{s.gadget_name}</span>
+                          <span className="break-words pt-0.5">{s.gadget_name}</span>
                         </span>
-                        <span className="text-xs text-slate-600 shrink-0">{Math.round(s.similarity * 100)}% match</span>
+                        {typeof s.similarity === 'number' && (
+                          <span className="text-xs font-medium text-slate-600 shrink-0 pt-1">
+                            Relevance {Math.round(s.similarity * 100)}%
+                          </span>
+                        )}
                       </div>
-                      <div className="h-1 bg-slate-200 rounded-full overflow-hidden mb-2" aria-hidden="true">
-                        <div className="h-full bg-sage-600 rounded-full" style={{ width: `${Math.round(s.similarity * 100)}%` }} />
-                      </div>
-                      <p className="text-sm text-slate-700 break-words">{s.content}</p>
+                      {typeof s.similarity === 'number' && (
+                        <div className="h-1 bg-slate-200 rounded-full overflow-hidden mb-2.5" aria-hidden="true">
+                          <div className="h-full bg-sage-600 rounded-full" style={{ width: `${Math.round(s.similarity * 100)}%` }} />
+                        </div>
+                      )}
+                      <p className="text-[15px] text-slate-800 leading-relaxed whitespace-pre-line break-words">{s.content}</p>
                       {s.source_url && (
                         <a
                           href={s.source_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-sm font-medium text-sage-700 hover:underline mt-1.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+                          className="inline-flex items-center gap-1 text-sm font-medium text-sage-700 hover:underline mt-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 break-all"
                         >
-                          <ExternalLink size={13} aria-hidden="true" /> Source
+                          <ExternalLink size={13} aria-hidden="true" className="shrink-0" /> {sourceLabel(s.source_url)}
                           <span className="sr-only">(opens in a new tab)</span>
                         </a>
                       )}
