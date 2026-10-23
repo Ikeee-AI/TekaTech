@@ -16,6 +16,7 @@ export default function AIComparisonPanel({
   title = 'AI Trade-Off Comparison',
   defaultQuestion = DEFAULT_QUESTION,
   suggestions = SUGGESTED_QUESTIONS,
+  buttonLabel = 'Generate Comparison',
 }) {
   const [question, setQuestion] = useState(defaultQuestion)
   const [missingSpecs, setMissingSpecs] = useState([])
@@ -135,7 +136,7 @@ export default function AIComparisonPanel({
               Plain-Language Answer
             </label>
             <Button variant="primary" icon={Sparkles} onClick={() => handleAsk()} disabled={!question.trim()}>
-              Generate Comparison
+              {buttonLabel}
             </Button>
           </div>
         </div>

@@ -148,6 +148,7 @@ export default function GadgetDetail() {
         title={`Ask About ${gadget.name}`}
         defaultQuestion=""
         suggestions={['What chip does it use?', 'How long does the battery last?', 'Is it water resistant?']}
+        buttonLabel="Ask"
       />
 
       <SpecManager gadgetId={id} onSpecsChange={setSpecs} />
