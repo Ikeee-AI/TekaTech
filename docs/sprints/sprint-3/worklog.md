@@ -183,3 +183,65 @@ Deadlines are the ones posted on #62 and #54–#58 at Thu 22 Oct 00:17. Times co
 **Next**
 - Ikeee-AI reviews #91, requesting the `GadgetForm` fix — today.
 - Check on Mika at 18:00 — Ikeee-AI.
+
+## 2026-10-23 19:00 Asia/Manila — Evening: merges, measurements, security scan, Mika's PRs, prompt-eval CI
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S3-IK (#58, #32, #31, #34, #59) · **Branches:** main, `tekatech/s3-ik-app-performance`, `-metrics`, `-certifi`, `-prompt-eval-ci`
+
+**Done**
+- **Merged through `pr-gate`** (approval on the head commit, three checks green; manual gate, not enforced protection):
+  - #83 → `8f274a7`
+  - #86 → `e4cd02b`
+  - #69 → `818e412`
+  - #70 → `61deaa2`
+  - #71 → `d05ddd9`. The owner asked for the approval to be posted from their account after reviewing; vite 8.3.4 fixes 3 Dependabot alerts.
+  - Each final main run deployed; deployed smoke passed on `61deaa2` and `d05ddd9`.
+- **Smoke job on main passed** — [run 39921993265](https://github.com/Ikeee-AI/TekaTech/actions/runs/39921993265): embedding 1.27 s, chat 1.41 s. #85 closed.
+- **Response times** (#92):
+  - Cache HIT medians: 0.230 s (`/gadgets`), 0.238 s and 0.217 s (`/stats/*`), n=45 each. Before (no cache, n=10): 0.385, 0.476 and 0.570 s.
+  - `/health` floor 0.268 s; 0/200 errors.
+  - Cold start: 52.56 s after 17 min idle (4 samples so far, 42.5–55.3 s).
+  - Raw samples are in `docs/evidence/latency-2026-10-23-61deaa2.tsv`.
+- **Sprint 3 interim pipeline metrics** (#94):
+  - PR 0.76 min (40 runs); main 2.70 min (12 runs).
+  - Success 51/52; 12 deploys; merge → live 2.70 min; 0 failed deploys.
+- **#59 decided:** `/query` stays public behind the $10 prepaid hard cap. Recorded on #59 and in `environments.md` (#94).
+- **Security scan:**
+  - Tracked files clean.
+  - `certifi` PYSEC-2026-4320 is a runtime dependency → #93 (179 tests pass; pip-audit clean).
+  - 3 vite alerts (1 high, 2 moderate; Windows dev server only) → #71, merged. GitHub still listed them as open at 18:45, waiting for a rescan.
+  - Full-history gitleaks 8.30.1 (checksum-verified) on 140 commits: no leaks.
+- **18 Oct gitleaks failure explained:** a false positive (`generic-api-key` on a Git SHA under `"api_commit"` in `sprint2-persistence.json`). Recorded in `incidents.md` (#94).
+- **#32 partial:** offline prompt evaluation in CI (#102). The first run passed in 9 s; the failure path was checked locally (exit 1).
+- **Carry-over notes posted:** #31 and #34 carried over to Sprint 4; #32 marked Partial.
+- **Reviews and coordination:**
+  - Ikeee-AI posted Request changes on #91 at 15:38, from the AI pre-review findings the owner accepted.
+  - Adrian asked to review #87, #92, #93 and #94.
+  - Merge-order plan for Mika's and Jopher's overlapping PRs posted on #95 and #91.
+- **Mika (S3-MI):** first Sprint 3 activity at 18:15–18:27, six PRs (#95–#100) from branches in this repo. Combined locally on main: clean, lint and build pass. #91 conflicts with #95, #96 and #97 in `AIAnswerPanel.jsx`, `AIComparisonPanel.jsx` and `SpecManager.jsx`.
+
+**Errors and fixes**
+| Error | Cause | Fix / status |
+| --- | --- | --- |
+| #84 `CONFLICTING` after #83 was merged | Stacked branch plus squash merge; `backend/routers/query.py` imports | Asked Manuel (two comments); watcher until 21:00 — open |
+| First "merge 71" was refused by the gate | No approval on the head commit | The owner asked for the approval to be posted; then merged — resolved |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #91 (Jopher) and #95–#97 (Mika) edit the same components | Whichever merges second conflicts | Plan on #95: Mika's display PRs first, then Jopher updates #91 — open |
+| #33 asked for a pipeline optimization; the measured gain this sprint is an application optimization (caching) | Pipeline optimization not shown | #31 carried over with the baseline ready — Ikeee-AI |
+
+**Decisions**
+- #59: keep `/query` public — Ikeee-AI.
+- Merge Mika's PRs before #91 — Ikeee-AI.
+- Carry #31 and #34 over to Sprint 4 — Ikeee-AI.
+- Wait for Mika rather than post a Not-started note — Ikeee-AI.
+
+**Blockers / risks**
+- Many PRs need review overnight: #87, #92–#95 and #96–#102 — Adrian, Jopher.
+- #84 waiting on Manuel.
+- #91 waiting on Jopher.
+
+**Plan alignment** — **Mika:** six PRs about 6 h 15 min after the Fri 12:00 deadline; before the Sat 10:00 cutoff; not merged yet. **S3-IK:** Partial — live AI path, smoke job, caching and its measurement merged and deployed; prompt-eval CI offline part in review; #31 and #34 carried over.
+
+**Next** — Sat 08:00–10:00 merge window in plan order; then the 15:00 status and the consultation packet — Ikeee-AI.
