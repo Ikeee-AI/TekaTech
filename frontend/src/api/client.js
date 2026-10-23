@@ -14,7 +14,7 @@ async function request(path, options = {}) {
   }
 
   // Lets the UI show "server is waking up" if this takes a cold-start's time.
-  const settle = trackRequest();
+  const settle = trackRequest(path);
   let res;
   try {
     res = await fetch(`${API_BASE}${path}`, { headers, ...options });

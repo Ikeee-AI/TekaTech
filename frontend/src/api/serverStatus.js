@@ -23,8 +23,20 @@ function setWaking(next) {
   listeners.forEach((fn) => fn())
 }
 
+// AI questions are slow even on a warm server (two provider calls, retries), and
+// the answer panel has its own "still working" note, so they never mean "waking".
+function isColdStartSignal(path) {
+  return !path.startsWith('/query')
+}
+
 /** Call when a request starts; call the returned function once it settles (success or error). */
-export function trackRequest() {
+export function trackRequest(path = '') {
+  if (!isColdStartSignal(path)) {
+    // Never shows the banner, but a reply still proves the server is awake.
+    return (gotResponse) => {
+      if (gotResponse) lastResponseAt = Date.now()
+    }
+  }
   pending += 1
   const coldLikely = Date.now() - lastResponseAt > IDLE_MS
   const timer = coldLikely ? setTimeout(() => setWaking(true), SLOW_MS) : null
