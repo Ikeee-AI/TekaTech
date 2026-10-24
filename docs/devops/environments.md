@@ -43,6 +43,23 @@ Owner: Ikeee-AI (DevOps). Prepared 16 October 2026 for Sprint 2 task S2-IK ("est
 | E5 | Branch protection unavailable (HTTP 403) | Required checks and reviews are not enforced | Recorded; manual `/pr-gate`; raise with instructor |
 | E6 | Production database (ap-south-1 Mumbai) and API (Render Singapore) are in different regions | Every API request pays a cross-region database round trip; affects Sprint 3–4 latency measurements | Known; measure before deciding (Manuel, Sprint 3). Not a Sprint 2 change |
 
+## Decision: `POST /query` stays public (#59, 23 October 2026)
+
+Decided by Ikeee-AI (product/cost owner). **Option 1: keep `/query` and `/comparisons` public without login.**
+
+Protection:
+- The per-IP rate limit (10/min).
+- Character and token caps on the question.
+- A **hard spending cap from the $10 prepaid OpenAI balance with auto-reload off**: requests stop at $0. See [the evidence](../evidence/openai-production-2026-10-22.md).
+
+Reasons:
+- Shoppers can ask without an account, which is the product promise in `frontend/README.md`.
+- The worst case is bounded at $10 and an AI outage, not an open-ended bill.
+
+Follow-ups:
+- #77 caps the cost of each answer (`max_completion_tokens`, `reasoning_effort`) — Manuel.
+- Revisit after Demo Day, or if the $5 alert email arrives early: options 2 (daily budget cap from `query_history` tokens) or 3 (login required).
+
 ## Proposal (not yet implemented)
 
 **Step 1 — Separate local/test data — done 16 October 2026 (#18).** Created a second Supabase project, `TekaTech-dev`, from `backend/sql/` using the ordered setup in `docs/database.md`. Point every developer's `.env` at it; production values stay only in Render. Seed it with Jopher's idempotent seed script (S2-JO). Check the current Supabase free-plan project limit and pause behavior before creating it. Until then, never run destructive checks locally.

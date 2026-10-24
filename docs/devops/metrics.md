@@ -6,7 +6,8 @@ Owner: the one DevOps Engineer. Record real GitHub Actions and Render deployment
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Sprint 1 initial baseline | 0.67 (1 run) | Not run | 100 (1/1 completed) | 0 | Not applicable (no merge) | 0 (no deploy attempts) | Not applicable | First PR CI passed with caches, parallel checks and SQL integration |
 | Sprint 2 (12–18 Oct; cut-off 18 Oct 15:41 Manila) | 0.68 (55 runs) | 2.17 (21 runs) | 100.0 (77/77 runs, run level; 1 first-attempt failure re-run, PE-4) | 21 | 2.27 (20 samples) | 0 (1 failed first attempt, no impact) | N/A (no production incident) | Metrics script; actionlint + gitleaks gates; main guard; scheduled ops; Dependabot; squash-only merges |
-| Sprint 3 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Sprint 3 (interim: 18 Oct 15:41 – 23 Oct 17:30 Manila) | 0.76 (40 runs) | 2.70 (12 runs) | 98.1 (51/52 runs; 5 cancelled excluded) | 12 | 2.70 (12 samples) | 0 | N/A (no production incident) | Caching on public reads (#73); weekly live AI smoke job (#79) + key fix (#86); OpenAI keys rotated with a $10 prepaid hard cap (#76); fork-PR labeler (#67) |
+| Sprint 3 final (cut-off Sat 24 Oct) | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
 | Sprint 4 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
 
 Measurement rules:
@@ -53,3 +54,31 @@ Definitions, so the two "about 2.2 minutes" values are not confused:
 **Persistence across redeploys (Sprint 2 gate):** [`docs/evidence/sprint2-persistence.json`](../evidence/sprint2-persistence.json) — at the cut-off both hosts served `b3c98e0` and the API returned the same 3 gadgets (created 8 Aug and 12 Oct) after the 21 deploys listed in the metrics JSON. Read-only GET requests.
 
 **Full-history secret scan:** gitleaks 8.30.1 runs on every PR and main run since #26; latest main run [39108438489](https://github.com/Ikeee-AI/TekaTech/actions/runs/39108438489): "38 commits scanned", "no leaks found".
+
+## Sprint 3 interim row (23 October 2026, 17:30 Asia/Manila)
+
+Source: `python scripts/pipeline_metrics.py --since 2026-10-18T07:41:25Z --until 2026-10-23T09:30:10Z`, workflow `ci.yml` only. The window starts at the Sprint 2 cut-off, so no run falls between the two rows. Raw output: [`docs/evidence/sprint3-metrics-interim.json`](../evidence/sprint3-metrics-interim.json). The final row will be computed at the Saturday cut-off.
+
+- **The one failure (51/52):** PR run [39108805358](https://github.com/Ikeee-AI/TekaTech/actions/runs/39108805358) on 18 Oct 15:44 (PR #53), in the gitleaks full-history step: "leaks found: 1".
+  - The branch was force-pushed 1 minute later, and the next run passed.
+  - The flagged commit `e6e7b7f` changed only docs and evidence files. Gitleaks printed no rule or file because the step runs without `-v`.
+  - Not recorded at the time. Checked on 23 Oct with a local gitleaks 8.30.1 run (checksum-verified): **false positive**, rule `generic-api-key`, a Git commit SHA under the JSON key `api_commit`. Details are in `docs/devops/incidents.md`.
+- **Cancelled runs (5, excluded from the rate):** all were main push runs superseded by back-to-back merges on 23 Oct (same concurrency group): `a0ef344`, `8fd96be`, `0a8337a`, `e4cd02b`, `818e412`. The final main state of each batch was tested and deployed.
+- **Main pipeline 2.70 min vs Sprint 2's 2.17 min.** Main runs now include the gitleaks history scan and actionlint (added late in Sprint 2) and the post-deploy smoke retries. The sample is 12 runs, so this is not yet a trend.
+- **Merge → live (2.70 min, 12 samples):** from each PR's `merged_at` until that run's deploy job finished, after `deployed_smoke.py` confirmed both hosts were on the exact commit.
+- **Recovery:** N/A. #85 (the first AI smoke-job run failing) was a secret-setup error in a scheduled check, not a production outage. Production served normally throughout.
+
+Deploy runs in the window:
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39921588722
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39921422881
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39917503414
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39917475677
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39908877286
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39905853931
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39905783818
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39121654321
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39120000799
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39117644394
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39117462945
+- https://github.com/Ikeee-AI/TekaTech/actions/runs/39117295509
+

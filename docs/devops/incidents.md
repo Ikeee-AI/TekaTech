@@ -46,3 +46,12 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
 - **Recovery:** re-ran the failed jobs once GitHub had linked the PR; guard passed, deploy and smoke succeeded. #63 closed as a false positive. Recovery time ≈ 5 min.
 - **Cause:** the guard assumed the commit→PR link exists the moment `main` changes; it is created asynchronously.
 - **Prevention:** [#64](https://github.com/Ikeee-AI/TekaTech/pull/64) retries the lookup up to 6×10 s before failing. Owner: Ikeee-AI.
+
+## 2026-10-18 gitleaks finding on PR #53 (false positive, recorded 23 Oct)
+
+- **What:** PR run [39108805358](https://github.com/Ikeee-AI/TekaTech/actions/runs/39108805358) at 15:44 Manila failed the full-history secret scan: "leaks found: 1". The branch was force-pushed at 15:45, and the next run passed. Nobody recorded it at the time; it was found while computing the Sprint 3 metrics.
+- **Check (23 Oct, 17:39 Manila, Ikeee-AI, AI-assisted):** ran gitleaks 8.30.1 locally (Windows build, SHA-256 checked against the release's checksum file) on the flagged commit `e6e7b7f` only, with `--redact`.
+- **Result:** rule `generic-api-key`, `docs/evidence/sprint2-persistence.json` line 4. The value is `b3c98e0e593771c977011cadffef24b8498cde48`, a commit in this repository (#36), stored under the key `"api_commit"`. The key name plus a 40-character hex value matched the generic rule. The force-push renamed the key to `"backend_commit"`, which is what main has today.
+- **Impact:** none. No credential was exposed, and nothing needs rotating.
+- **Lesson:** record every red secret-scan run, even when the next push passes, and check it before moving on. The CI step runs without `-v`, so the log only shows the count. A local `gitleaks git --redact --log-opts="<sha>~1..<sha>"` gives the rule and file without showing the value.
+

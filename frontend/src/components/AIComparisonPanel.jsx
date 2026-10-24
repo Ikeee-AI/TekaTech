@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
+import { validateAnswerResponse } from '../utils/aiAnswerState'
 import AiAnswerResult from './AiAnswerResult'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
-import { friendlyError } from '../utils/requestErrors'
 
 const DEFAULT_QUESTION = 'Compare these gadgets and highlight the key trade-offs someone should know before buying.'
 const SUGGESTED_QUESTIONS = ['Which offers better value for the price?', 'Compare battery life', 'Compare camera quality']
@@ -64,10 +64,11 @@ export default function AIComparisonPanel({
     setError(null)
     try {
       const data = await api.askQuestion({ question: q, gadget_ids: gadgetIds, plain_language: plainLanguage })
-      setResult(data)
+      // A reply without answer text or a valid source list is a failure, never an answer.
+      setResult(validateAnswerResponse(data))
       setSourcesOpen(false)
     } catch (err) {
-      setError(friendlyError(err))
+      setError(err)
     } finally {
       setLoading(false)
     }
