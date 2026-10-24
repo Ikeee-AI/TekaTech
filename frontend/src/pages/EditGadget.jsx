@@ -10,6 +10,7 @@ import BackLink from '../components/ui/BackLink'
 import Button from '../components/ui/Button'
 import ErrorState from '../components/ui/ErrorState'
 import { useAuth } from '../hooks/useAuth'
+import { friendlyError } from '../utils/requestErrors'
 
 function toFormValues(g) {
   return {
@@ -36,7 +37,7 @@ export default function EditGadget() {
     api
       .getGadget(id)
       .then((gadget) => setState({ status: 'ready', gadget }))
-      .catch((err) => setState({ status: 'error', error: err.message }))
+      .catch((err) => setState({ status: 'error', error: friendlyError(err) }))
   }, [id, attempt])
 
   async function handleSubmit(payload) {

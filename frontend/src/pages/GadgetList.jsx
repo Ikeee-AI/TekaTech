@@ -23,6 +23,7 @@ import { CatalogSkeleton } from '../components/Skeleton'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import AIAnswerPanel from '../components/AIAnswerPanel'
 import TrendingQuestions from '../components/TrendingQuestions'
+import { friendlyError } from '../utils/requestErrors'
 
 const SUGGESTED_QUESTIONS = [
   'Which gadget has the best battery life?',
@@ -88,7 +89,7 @@ export default function GadgetList() {
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
-    api.getGadgets().then(setGadgets).catch((err) => setError(err.message)).finally(() => setLoading(false))
+    api.getGadgets().then(setGadgets).catch((err) => setError(friendlyError(err))).finally(() => setLoading(false))
   }, [attempt])
 
   function retryLoad() {

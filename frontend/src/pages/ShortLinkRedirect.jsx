@@ -3,18 +3,38 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { LinkIcon } from 'lucide-react'
 import { api } from '../api/client'
 import EmptyState from '../components/EmptyState'
+import ErrorState from '../components/ui/ErrorState'
+import { friendlyError } from '../utils/requestErrors'
 
 export default function ShortLinkRedirect() {
   const { slug } = useParams()
   const navigate = useNavigate()
   const [notFound, setNotFound] = useState(false)
+  const [loadError, setLoadError] = useState(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     api
       .getComparisonBySlug(slug)
       .then((data) => navigate(`/compare?ids=${data.gadget_ids.join(',')}`, { replace: true }))
-      .catch(() => setNotFound(true))
-  }, [slug, navigate])
+      // Only a 404 means the link is gone; anything else (server down, 5xx) is worth retrying.
+      .catch((err) => (err.status === 404 ? setNotFound(true) : setLoadError(err)))
+  }, [slug, navigate, attempt])
+
+  function retry() {
+    setLoadError(null)
+    setAttempt((a) => a + 1)
+  }
+
+  if (loadError) {
+    return (
+      <ErrorState
+        title="Couldn't Open This Comparison"
+        message={friendlyError(loadError)}
+        onRetry={retry}
+      />
+    )
+  }
 
   if (notFound) {
     return (

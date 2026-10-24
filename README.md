@@ -70,6 +70,24 @@ Frontend: http://localhost:5173. Backend: http://127.0.0.1:8000. API reference: 
 
 Use the backend secret/service-role key only in `backend/.env`; the frontend uses the distinct publishable/anon key. `VITE_API_BASE_URL` is compiled into the frontend. Its browser origin must appear in backend `cors_origins`.
 
+### Sample data for TekaTech-dev
+
+Seed the dev project so the catalog, AI answers and reviews have something to work with. The script refuses to run unless `backend/.env` points at TekaTech-dev, and is safe to rerun.
+
+```powershell
+cd backend
+uv run python scripts/seed_dev.py                # 7 sample gadgets
+uv run python scripts/seed_dev.py --with-specs   # also loads and indexes the verified iPhone 15 / Galaxy S24 specs (small OpenAI cost)
+```
+
+Ask questions the specs can answer, for example "What chip does it use?" on the iPhone 15 page.
+
+To test the correction Review Queue you need an admin account on **TekaTech-dev only**. A teammate with the dev service-role key sets `app_metadata.is_admin` with the `update_user_by_id` call shown in `CLAUDE.md`; then sign out and back in.
+
+### Failure drill
+
+To see the app recover from request failures without a real outage, follow the steps and screenshots in [docs/pr-proof-s3](docs/pr-proof-s3/README.md): stop the backend mid-use, or start it with an invalid OpenAI key for that terminal only (`$env:OPENAI_API_KEY="sk-invalid"` before `uv run uvicorn main:app`). Every failure should show a clear message with **Try Again**, and keep what you typed.
+
 ## Database setup
 
 Schema and RPC SQL are now tracked under `backend/sql/`. Apply the ordered files manually in Supabase SQL Editor; nothing silently migrates production. For existing data, inspect compatibility first. See [database model and setup](docs/database.md).

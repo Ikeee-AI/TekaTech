@@ -8,6 +8,7 @@ import { timeAgo } from '../utils/timeAgo'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
 import { TextField, TextAreaField } from './ui/FormField'
+import { friendlyError } from '../utils/requestErrors'
 
 const MAX_SPEC_CHARS = 20_000 // mirrors MAX_RAW_TEXT_LENGTH in backend/routers/specs.py
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
@@ -57,7 +58,7 @@ function AddSpecForm({ gadgetId, onSaved, onCancel }) {
       toast.success(`${result.chunks_created} spec chunk${result.chunks_created === 1 ? '' : 's'} saved — AI indexing pending`)
       onSaved()
     } catch (err) {
-      setServerError(err.message || 'Specs could not be saved. Please try again.')
+      setServerError(friendlyError(err))
       setSubmitting(false)
     }
   }
@@ -143,7 +144,7 @@ function CorrectionForm({ spec, onDone }) {
       toast.success('Correction submitted for review')
       onDone()
     } catch (err) {
-      setServerError(err.message || 'The correction could not be sent. Please try again.')
+      setServerError(friendlyError(err))
       setSubmitting(false)
     }
   }
@@ -326,7 +327,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
         setState({ status: 'ready', specs: data })
         onSpecsChange?.(data)
       })
-      .catch((err) => setState({ status: 'error', specs: [], error: err.message }))
+      .catch((err) => setState({ status: 'error', specs: [], error: friendlyError(err) }))
   }, [gadgetId, onSpecsChange])
 
   useEffect(() => {

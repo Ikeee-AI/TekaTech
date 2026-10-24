@@ -2,6 +2,8 @@
 
 Usage, from backend/:
     uv run python scripts/seed_dev.py
+    uv run python scripts/seed_dev.py --with-specs   # also loads + indexes the verified
+                                                     # iPhone 15 / Galaxy S24 spec pack (OpenAI)
 
 The Supabase URL comes from backend/.env (or a SUPABASE_URL env override). Its host must be
 exactly DEV_PROJECT_REF.supabase.co, or the script exits with status 1 before any network call.
@@ -51,9 +53,9 @@ def check_target(url: str) -> str:
     sys.exit(1)
 
 
-def seed(supabase) -> tuple[list[str], list[str]]:
+def seed(supabase, gadgets=GADGETS) -> tuple[list[str], list[str]]:
     inserted, skipped = [], []
-    for gadget in GADGETS:
+    for gadget in gadgets:
         label = f"{gadget['brand']} {gadget['name']}"
         existing = (supabase.table("gadgets").select("id")
                     .eq("name", gadget["name"]).eq("brand", gadget["brand"]).execute())
@@ -63,6 +65,62 @@ def seed(supabase) -> tuple[list[str], list[str]]:
         supabase.table("gadgets").insert(gadget).execute()
         inserted.append(label)
     return inserted, skipped
+
+
+# Adrian's verified source pack (prompts/eval/sources.json) -> app gadgets.
+SOURCES_FILE = Path(__file__).resolve().parents[2] / "prompts" / "eval" / "sources.json"
+SPEC_GADGETS = {
+    "iphone-15": {"name": "iPhone 15", "brand": "Apple", "category": "Smartphone"},
+    "galaxy-s24-ph": {"name": "Galaxy S24", "brand": "Samsung", "category": "Smartphone"},
+}
+
+
+def seed_specs(supabase, embed, pack: dict) -> dict:
+    """Save each snippet as one spec chunk, then index pending chunks in one embedding call.
+
+    Indexing failures leave the saved text pending, like the app's own index route.
+    """
+    seed(supabase, SPEC_GADGETS.values())
+    counts = {"saved": 0, "skipped": 0, "indexed": 0, "index_failed": 0}
+    pending = []
+    for key, gadget in SPEC_GADGETS.items():
+        gadget_id = (supabase.table("gadgets").select("id")
+                     .eq("name", gadget["name"]).eq("brand", gadget["brand"])
+                     .execute()).data[0]["id"]
+        snippets = [s for s in pack["snippets"] if s["gadget"] == key]
+        for chunk_index, snippet in enumerate(snippets):
+            existing = (supabase.table("spec_documents").select("id, indexing_status")
+                        .eq("gadget_id", gadget_id).eq("content", snippet["text"]).execute())
+            if existing.data:
+                counts["skipped"] += 1
+                row = existing.data[0]
+            else:
+                row = supabase.table("spec_documents").insert({
+                    "gadget_id": gadget_id, "content": snippet["text"], "embedding": None,
+                    "indexing_status": "pending", "chunk_index": chunk_index,
+                    "source_url": pack["gadgets"][key]["source_url"],
+                    "verified_at": pack["gadgets"][key]["accessed"],  # when the fact was checked
+                }).execute().data[0]
+                counts["saved"] += 1
+            if row["indexing_status"] != "indexed":
+                pending.append((row["id"], snippet["text"]))
+
+    if not pending:
+        return counts
+    try:
+        vectors = embed([text for _, text in pending])
+        if len(vectors) != len(pending):
+            raise ValueError("Invalid embedding response")
+    except Exception as exc:
+        counts["index_failed"] = len(pending)
+        print(f"Indexing failed ({type(exc).__name__}); saved specs stay pending.", file=sys.stderr)
+        return counts
+    for (spec_id, text), vector in zip(pending, vectors):
+        supabase.table("spec_documents").update(
+            {"embedding": vector, "indexing_status": "indexed"}
+        ).eq("id", spec_id).eq("content", text).execute()
+        counts["indexed"] += 1
+    return counts
 
 
 if __name__ == "__main__":
@@ -76,3 +134,14 @@ if __name__ == "__main__":
         print(f"  + {label}")
     for label in skipped:
         print(f"  = {label} (already present)")
+
+    if "--with-specs" in sys.argv[1:]:
+        import json
+        from embeddings import embed_texts  # calls OpenAI; only needed for this option
+
+        pack = json.loads(SOURCES_FILE.read_text(encoding="utf-8"))
+        counts = seed_specs(supabase, embed_texts, pack)
+        print(f"Spec pack: {counts['saved']} saved, {counts['skipped']} already present, "
+              f"{counts['indexed']} indexed, {counts['index_failed']} left pending.")
+        if counts["index_failed"]:
+            sys.exit(1)

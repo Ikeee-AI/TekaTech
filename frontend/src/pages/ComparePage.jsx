@@ -5,7 +5,9 @@ import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import EmptyState from '../components/EmptyState'
+import ErrorState from '../components/ui/ErrorState'
 import AIComparisonPanel from '../components/AIComparisonPanel'
+import { friendlyError } from '../utils/requestErrors'
 
 function formatDate(date) {
   if (!date) return '—'
@@ -37,6 +39,12 @@ export default function ComparePage() {
   const [gadgets, setGadgets] = useState([])
   const [loading, setLoading] = useState(ids.length > 0)
   const [sharing, setSharing] = useState(false)
+  const [loadError, setLoadError] = useState(null)
+  const [attempt, setAttempt] = useState(0)
+  // The link belongs to one exact set of gadgets; changing the set makes it stale.
+  const idsKey = ids.join(',')
+  const [share, setShare] = useState(null)
+  const shareUrl = share?.key === idsKey ? share.url : null
 
   useEffect(() => {
     if (ids.length === 0) {
@@ -49,27 +57,42 @@ export default function ComparePage() {
     setLoading(true)
     Promise.all(
       ids.map((id) =>
-        api.getGadget(id).catch(() => {
-          toast.error('One gadget could not be loaded — it may have been deleted')
+        api.getGadget(id).catch((err) => {
+          // 404 (gadget deleted) or 422 (malformed id) means this gadget can't load; anything else should fail the whole load so it can be retried.
+          if (err.status !== 404 && err.status !== 422) throw err
+          toast.error('One gadget could not be loaded — it may have been deleted', { id: 'gadget-missing' })
           return null
         })
       )
     )
-      .then((results) => setGadgets(results.filter(Boolean)))
+      .then((results) => {
+        setLoadError(null)
+        setGadgets(results.filter(Boolean))
+      })
+      .catch((err) => setLoadError(err))
       .finally(() => setLoading(false))
-  }, [ids])
+  }, [ids, attempt])
 
   async function handleShare() {
-    setSharing(true)
+    let url = shareUrl
+    if (!url) {
+      setSharing(true)
+      try {
+        const result = await api.createComparisonLink(gadgets.map((g) => g.id))
+        url = `${window.location.origin}/c/${result.slug}`
+        setShare({ key: idsKey, url })
+      } catch (err) {
+        toast.error(friendlyError(err))
+        return
+      } finally {
+        setSharing(false)
+      }
+    }
     try {
-      const result = await api.createComparisonLink(gadgets.map((g) => g.id))
-      const url = `${window.location.origin}/c/${result.slug}`
       await navigator.clipboard.writeText(url)
       toast.success('Link copied to clipboard')
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setSharing(false)
+    } catch {
+      toast('Link created. Copy it from the box below.')
     }
   }
 
@@ -89,6 +112,19 @@ export default function ComparePage() {
           <div key={i} className="h-64 bg-gray-100 rounded-xl animate-pulse" />
         ))}
       </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <ErrorState
+        title="Couldn't Load This Comparison"
+        message={friendlyError(loadError)}
+        onRetry={() => {
+          setLoadError(null)
+          setAttempt((a) => a + 1)
+        }}
+      />
     )
   }
 
@@ -145,6 +181,20 @@ export default function ComparePage() {
         </button>
       </div>
       <p className="text-sm text-gray-500 mb-6">Side-by-side spec comparison.</p>
+      {shareUrl && (
+        <div className="flex items-center gap-2 -mt-3 mb-6">
+                    <label htmlFor="share-url" className="text-xs font-medium text-gray-600 shrink-0">
+            Share Link
+          </label>
+          <input
+            id="share-url"
+            readOnly
+            value={shareUrl}
+            onFocus={(e) => e.target.select()}
+            className="flex-1 min-w-0 text-sm text-gray-700 bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5"
+          />
+        </div>
+      )}
 
       {/* Desktop / tablet: table */}
       <div className="hidden sm:block overflow-x-auto">

@@ -7,10 +7,12 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { GadgetDetailSkeleton } from '../components/Skeleton'
 import SpecManager from '../components/SpecManager'
 import DeleteGadgetButton from '../components/DeleteGadgetButton'
+import AIComparisonPanel from '../components/AIComparisonPanel'
 import BackLink from '../components/ui/BackLink'
 import Button from '../components/ui/Button'
 import ErrorState from '../components/ui/ErrorState'
 import { timeAgo } from '../utils/timeAgo'
+import { friendlyError } from '../utils/requestErrors'
 
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
 
@@ -39,7 +41,7 @@ export default function GadgetDetail() {
     api
       .getGadget(id)
       .then((g) => setState({ status: 'ready', gadget: g }))
-      .catch((err) => setState({ status: 'error', error: err.message }))
+      .catch((err) => setState({ status: 'error', error: friendlyError(err) }))
   }, [id, attempt])
 
   if (state.status === 'loading') return <GadgetDetailSkeleton />
@@ -139,6 +141,15 @@ export default function GadgetDetail() {
           </div>
         </div>
       </article>
+      
+      <AIComparisonPanel
+        gadgetIds={[id]}
+        gadgetNames={[gadget.name]}
+        title={`Ask About ${gadget.name}`}
+        defaultQuestion=""
+        suggestions={['What chip does it use?', 'How long does the battery last?', 'Is it water resistant?']}
+        buttonLabel="Ask"
+      />
 
       <SpecManager gadgetId={id} onSpecsChange={setSpecs} />
     </div>
