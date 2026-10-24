@@ -36,3 +36,4 @@ Database check after step 10 (dev-guarded service client, read-only):
 
 Not shown: slow-network throttling (needs Chrome DevTools); the loading state is visible while answers generate.
 Known limit: the AI search cutoff (MATCH_THRESHOLD = 0.5, Manuel's area) rejects some valid questions such as "What is the screen size?" (0.45).
+Sprint 4 follow-up: an automated browser check for the failure drill (S3-JO acceptance: "integration checks exercising Manuel's failure drill through the browser workflow"). In this PR the drill was run by hand (screenshots 05–11: backend stopped, and backend started with an invalid OpenAI key); there is no automated check yet.
