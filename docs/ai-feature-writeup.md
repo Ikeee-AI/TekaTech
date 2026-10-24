@@ -54,14 +54,14 @@ The evaluator (`scripts/eval_runner.py`) scores **answers, not wording**. It che
 
 ## What has been measured so far
 
-Only the **hand-written reference answers** (`prompts/eval/reference_answers.json`) have been scored. They exist to prove the scorer accepts correct answers and the tests prove it rejects invented facts, citations outside the pack, uncited facts, wrong values, incomplete comparisons and leaked forbidden facts. They are not model output and must not be reported as model quality.
+Two kinds of answers have been scored, and they must not be confused. The **hand-written reference answers** (`prompts/eval/reference_answers.json`) exist to prove the scorer accepts correct answers, and the tests prove it rejects invented facts, citations outside the pack, uncited facts, wrong values, incomplete comparisons and leaked forbidden facts; they are not model output and are not a quality score. The **real `/query` answers** from the 25 October run are the first model measurement, in `docs/evidence/eval-s3-2026-10-25.md` (answers and runner report alongside it).
 
 | Result | Status |
 | --- | --- |
 | Scorer validated on reference answers | Done (all 20 cases pass; this checks the scorer, not a model) |
 | One live acceptance smoke check (production, 22 Oct 23:16): "What are the key specs of the Apple iPhone 15?" | 5/5 claims supported by the cited source, 3/3 citation references valid (all `[1]`). **This is an acceptance smoke check on one question, not an evaluation score**; evidence in `docs/evidence/openai-production-2026-10-22.md` |
-| Real OpenAI answers scored against the 20 cases | **Blocked**: OpenAI access is restored (see the evidence file), but the evaluator adapter (#84) is not merged yet and the 10 pack snippets must be seeded as one chunk each in TekaTech-dev |
-| Prompt revision from scored results | **Not started**: depends on the line above |
+| Real OpenAI answers scored against the 20 cases (25 Oct, prompt `v1`, `gpt-5-mini`, dev database) | **Done, targets not met.** Supported factual claims **5 / 13 (38.5%)** against a 90% target; valid citation references **15 / 15** (target met); abstention **0 / 7** and override resistance **1 / 2** as scored. No answer stated an invented fact. The 15 failures are 8 retrieval failures (nothing or only the wrong gadget's snippet retrieved; issue #88), 4 correct abstentions the scorer did not recognise (the app's canned "couldn't find any spec information" reply) and 3 abstentions that cited a snippet. Details and per-case causes: `docs/evidence/eval-s3-2026-10-25.md` |
+| Prompt revision from scored results | **Not justified by this run**: most failures happen before the prompt runs (retrieval), so a prompt v2 would not address them. The prompt stays at `v1` |
 
 ## Limitations
 
@@ -87,4 +87,4 @@ To score real answers, export them in the same shape (`{"provider": "...", "mode
 
 - **Prompt location and version label.** Done in #83: the prompt is in `backend/prompts.py` as `PROMPT_VERSION = "v1"`. The spec document calls its text "Revision 2"; the two labels need to be reconciled, and the label for a v2 is chosen after the first scored run.
 - **Invalid citations.** The backend strips out-of-range markers and reports `invalid_citations_removed`. The runner counts each removed marker as an invalid reference (#89), so "valid citation references" is not 100% by construction; this depends on the adapter (#84) writing that count into the answers file.
-- **Scored OpenAI report** (this issue, deliverable): blocked on the adapter above; this document's results table is updated from that run, with failures and denominators reported as they are.
+- **Scored OpenAI report** (this issue, deliverable): done for the first run (`docs/evidence/eval-s3-2026-10-25.md`), with failures and denominators reported as they are. Follow-ups, not done here: fix the retrieval threshold (#88) and rerun; decide whether the scorer should recognise the canned no-retrieval reply and whether an abstention may cite the snippet it is describing, then re-score the same answers file as a separate labelled analysis.
