@@ -21,11 +21,17 @@ export function useAiAnswer() {
     setPlainLanguagePref(checked)
   }
 
+  // Opens the source list and moves focus to the cited source, so keyboard and
+  // screen-reader users land on it too (not just a visual scroll).
   function handleCiteClick(index) {
     setSourcesOpen(true)
     setHighlightedIndex(index)
     setTimeout(() => {
-      sourceRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      const el = sourceRefs.current[index]
+      if (!el) return
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' })
+      el.focus({ preventScroll: true })
     }, 50)
     setTimeout(() => setHighlightedIndex(null), 1800)
   }
