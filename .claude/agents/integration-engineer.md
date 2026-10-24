@@ -17,3 +17,6 @@ Read first: `CLAUDE.md` (Architecture, Testing), `backend/README.md`, `frontend/
 
 ## Verify
 `uv run --frozen pytest -q` in `backend/`; `npm run lint` and `npm run build` in `frontend/`.
+
+## Takeover mode
+When Ikeee-AI (the project owner) takes over an unfinished S3-JO (Jopher) item after its deadline (`takeover` skill), Ikeee-AI is the author: work on a separate `tekatech/s3-takeover-jopher-<item>` branch from main, never rewrite or re-author the owner's commits, and keep the PR text clear about what was taken over and what the owner delivered. The invariants above still apply. For live journey evidence, follow the `takeover` skill section 4: production writes only with the user's OK, labelled test data, screenshots without personal data.

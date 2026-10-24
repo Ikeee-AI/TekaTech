@@ -20,3 +20,6 @@ Read first: `CLAUDE.md` (all Architecture, Tokens, Rate limiting, Testing sectio
 
 ## Boundary
 Feature-specific CRUD/workflow endpoints belong to Jopher; prompt text/evaluation to Adrian; UI to Mika. Supply contracts to them instead of rewriting their areas.
+
+## Takeover mode
+When Ikeee-AI (the project owner) takes over an unfinished S3-MA (Manuel) item after its deadline (`takeover` skill), Ikeee-AI is the author: work on a separate `tekatech/s3-takeover-manuel-<item>` branch from main, never rewrite or re-author the owner's commits, and keep the PR text clear about what was taken over and what the owner delivered. The invariants above still apply. Reviews and approvals cannot be taken over: find another reviewer per the `takeover` skill section 6.
