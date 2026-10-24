@@ -114,8 +114,14 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Check PostgreSQL client
+        # The Ubuntu runner image already ships psql/createdb; apt-get here cost 9–20 s per run (#31).
+        # Install only if a future image drops them.
+        run: |
+          if ! command -v psql >/dev/null || ! command -v createdb >/dev/null; then
+            sudo apt-get update && sudo apt-get install -y postgresql-client
+          fi
+          psql --version
       - name: Create Supabase-compatible test roles
         run: psql -v ON_ERROR_STOP=1 -f backend/tests/sql/ci_roles.sql
       - name: Assemble and apply tracked migrations twice
