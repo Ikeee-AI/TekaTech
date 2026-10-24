@@ -18,7 +18,7 @@ Step key: **8a** ask from a gadget page Â· **8b** visible, reusable share link Â
 | 08 | [08-8c-saved-link-server-down-retry.jpg](08-8c-saved-link-server-down-retry.jpg) | 8c | Saved link while server down: "Couldn't Open This Comparison" + Try Again (not "doesn't exist") |
 | 09 | [09-8d-compare-server-down-retry.jpg](09-8d-compare-server-down-retry.jpg) | 8d | Compare page while server down: "Couldn't Load This Comparison" + Try Again (not "pick 2 gadgets") |
 | 10 | [10-8d-compare-retry-recovers.jpg](10-8d-compare-retry-recovers.jpg) | 8d | Server back, Try Again: both phones load |
-| 11 | [11-9-ai-provider-error-safe.jpg](11-9-ai-provider-error-safe.jpg) | 9 | Backend started with an invalid OpenAI key (process env only): safe error + Try Again, question kept. Generic until #75 adds a 503 detail |
+| 11 | [11-9-ai-provider-error-safe.jpg](11-9-ai-provider-error-safe.jpg) | 9 | Backend started with an invalid OpenAI key (process env only): `POST /query` returns 503 and the panel shows "AI Answers Are Unavailable" (Mika's #95 failure state, using #75's 503 detail) + Try Again, question kept. Retaken 24 Oct after merging main |
 | 12 | [12-10-correction-typed.jpg](12-10-correction-typed.jpg) | 10 | Logged-in user types a correction on the Test spec |
 | 13 | [13-10-correction-submitted.jpg](13-10-correction-submitted.jpg) | 10 | "Correction submitted for review" |
 | 14 | [14-10-review-queue-two-pending.jpg](14-10-review-queue-two-pending.jpg) | 10 | Admin Review Queue: two pending corrections with current vs suggested text |
