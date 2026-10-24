@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from uuid import UUID
 import cache
-from schemas import GadgetCreate, GadgetUpdate, GadgetResponse
+from schemas import GadgetCreate, GadgetUpdate, GadgetResponse, normalize_category
 from supabase_client import supabase
 from auth import get_current_user, get_current_admin_user
 
@@ -14,6 +14,9 @@ GADGETS_TTL_SECONDS = 60
 
 @router.get("", response_model=list[GadgetResponse])
 def list_gadgets(response: Response, category: str | None = None, brand: str | None = None):
+    # Same spelling rule as saving (#78), so ?category=smartphone finds "Smartphone".
+    category = normalize_category(category) or None
+
     def load():
         query = supabase.table("gadgets").select("*")
         if category:
