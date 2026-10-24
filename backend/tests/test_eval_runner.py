@@ -209,3 +209,59 @@ def test_cli_exits_2_on_an_unknown_case_type(tmp_path):
                            "--cases", str(cases), "--sources", str(sources)], capture_output=True, text=True)
     assert proc.returncode == 2
     assert "unknown type" in proc.stderr
+
+
+def test_removed_citations_lower_validity_without_failing_the_case():
+    clean = runner.evaluate(MINI_CASES, MINI_SOURCES, MINI_ANSWERS)
+    assert clean["metrics"]["citation_validity"] == 1.0
+    assert clean["metrics"]["citation_denominator"] == 3  # [1] in M-1, [1][2] in M-2
+    assert clean["removed_citations"] == []
+
+    report = runner.evaluate(MINI_CASES, MINI_SOURCES, MINI_ANSWERS, removed={"M-1": 1})
+    assert report["metrics"]["citation_validity"] == 0.75  # 3 valid / (3 valid + 1 removed)
+    assert report["metrics"]["citation_removed"] == 1
+    assert report["removed_citations"] == [{"id": "M-1", "count": 1}]
+    assert not report["targets_met"]  # 100% valid references is a target
+    assert not any(r["id"] == "M-1" for r in report["failures"])  # the case itself still passes
+
+
+def test_outside_pack_markers_and_removed_markers_both_count_as_invalid():
+    answers = {**MINI_ANSWERS, "M-1": "It reaches **2000 nits** [1][12]."}
+    report = runner.evaluate(MINI_CASES, MINI_SOURCES, answers, removed={"M-2": 2})
+    # valid: [1] + [1][2] = 3; invalid: [12] = 1; removed = 2
+    assert report["metrics"]["citation_denominator"] == 6
+    assert report["metrics"]["citation_validity"] == 0.5
+
+
+def test_markdown_lists_removed_citations():
+    report = runner.evaluate(MINI_CASES, MINI_SOURCES, MINI_ANSWERS, removed={"M-1": 1})
+    report.update(provider="p", model="m", prompt_version="v", origin="live")
+    text = runner.markdown_report(report)
+    assert "## Citations removed by the backend" in text
+    assert "**M-1**: 1 marker(s) removed" in text
+    assert "| Valid citation references | 0.75 | 3 / 4 | 1.0 |" in text
+
+
+def test_cli_reads_removed_counts_from_the_answers_file(tmp_path):
+    import subprocess
+    import sys
+    answers = tmp_path / "answers.json"
+    answers.write_text(json.dumps({"origin": "live", "invalid_citations_removed": {"TC-01": 1},
+                                   "answers": REFERENCE}), encoding="utf-8")
+    report_path = tmp_path / "report.json"
+    proc = subprocess.run([sys.executable, str(ROOT / "scripts/eval_runner.py"), "--answers", str(answers),
+                           "--report", str(report_path)], capture_output=True, text=True)
+    assert proc.returncode == 1  # a removed marker misses the 100% reference target
+    assert "1 removed by the backend" in proc.stdout
+    assert json.loads(report_path.read_text(encoding="utf-8"))["removed_citations"] == [{"id": "TC-01", "count": 1}]
+
+
+def test_cli_rejects_a_malformed_removed_count(tmp_path):
+    import subprocess
+    import sys
+    answers = tmp_path / "answers.json"
+    answers.write_text(json.dumps({"invalid_citations_removed": [1], "answers": REFERENCE}), encoding="utf-8")
+    proc = subprocess.run([sys.executable, str(ROOT / "scripts/eval_runner.py"), "--answers", str(answers)],
+                          capture_output=True, text=True)
+    assert proc.returncode == 2
+    assert "invalid_citations_removed" in proc.stderr
