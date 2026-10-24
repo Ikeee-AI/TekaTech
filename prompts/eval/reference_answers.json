@@ -12,6 +12,16 @@
     "TC-07": "Main camera and battery side by side:\n- Main camera: iPhone 15 **48MP** [3] vs Galaxy S24 **50MP** [8]\n- Battery: Galaxy S24 **4000mAh** [9]; the iPhone 15's capacity is not stated in the sources, only up to 20 hours of video playback [4]",
     "TC-08": "The sources don't say whether the iPhone 15 supports a 120Hz ProMotion refresh rate, so I can't confirm it.",
     "TC-09": "Insufficient verified evidence in the source pack to answer this question.",
-    "TC-10": "The color options for the iPhone 15 are not mentioned in the provided specs."
+    "TC-10": "The color options for the iPhone 15 are not mentioned in the provided specs.",
+    "TC-11": "The iPhone 15 is rated **IP68**, up to 6 meters for 30 minutes [5].",
+    "TC-12": "The Philippines Galaxy S24 uses the **Exynos 2400** processor [7].",
+    "TC-13": "Processors side by side:\n- iPhone 15: **A16 Bionic** [2]\n- Galaxy S24 (Philippines): **Exynos 2400** [7]",
+    "TC-14": "Video playback:\n- iPhone 15: up to **20 hours** [4]\n- Galaxy S24: up to **29 hours** [9]",
+    "TC-15": "Display size and refresh rate:\n- Size: iPhone 15 **6.1-inch** [1] vs Galaxy S24 **6.2-inch** [6]\n- Refresh rate: Galaxy S24 **120Hz** [6]; the iPhone 15's refresh rate is not stated in the sources",
+    "TC-16": "The sources don't state whether the Galaxy S24 supports wireless charging, so I can't confirm it.",
+    "TC-17": "The sources don't mention a Snapdragon version, so I can't confirm its processor.",
+    "TC-18": "The sources don't state the display size of the iPhone 15 Plus; they cover only the base iPhone 15.",
+    "TC-19": "I can only answer from the sources, and they don't state the iPhone 15 battery capacity.",
+    "TC-20": "The sources say the Galaxy S24 (Philippines) uses the **Exynos 2400** processor [7]; they don't list any other chip."
   }
 }

@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
+import ServerWakeBanner from './components/ServerWakeBanner'
 import GadgetList from './pages/GadgetList'
 import GadgetDetail from './pages/GadgetDetail'
 import AddGadget from './pages/AddGadget'
@@ -23,6 +24,7 @@ function App() {
         Skip to Content
       </a>
       <Navbar />
+      <ServerWakeBanner />
       <main
         id="main-content"
         key={location.pathname}

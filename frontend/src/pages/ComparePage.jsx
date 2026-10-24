@@ -7,6 +7,27 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import EmptyState from '../components/EmptyState'
 import AIComparisonPanel from '../components/AIComparisonPanel'
 
+function formatDate(date) {
+  if (!date) return '—'
+  const d = new Date(date)
+  return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
+}
+
+/** Value cell; the cheapest price gets a visible "Lowest price" label, not just color and an icon. */
+function CompareValue({ row, gadget }) {
+  const isHighlighted = row.highlight?.(gadget)
+  if (!isHighlighted) return row.get(gadget)
+  return (
+    <span className="inline-flex flex-col items-center sm:items-start gap-0.5">
+      <span className="inline-flex items-center gap-1 text-green-800 font-semibold bg-green-50 rounded-full px-2 py-0.5">
+        <Trophy size={11} aria-hidden="true" />
+        {row.get(gadget)}
+      </span>
+      <span className="text-xs font-semibold text-green-800">Lowest price</span>
+    </span>
+  )
+}
+
 export default function ComparePage() {
   useDocumentTitle('Compare')
   const [searchParams, setSearchParams] = useSearchParams()
@@ -99,7 +120,7 @@ export default function ComparePage() {
       get: (g) => (g.price_php ? `Php ${g.price_php.toLocaleString()}` : '—'),
       highlight: (g) => g.price_php === cheapestPrice,
     },
-    { label: 'Released', get: (g) => g.release_date || '—' },
+    { label: 'Released', get: (g) => formatDate(g.release_date) },
   ]
 
   return (
@@ -128,18 +149,19 @@ export default function ComparePage() {
       {/* Desktop / tablet: table */}
       <div className="hidden sm:block overflow-x-auto">
         <table className="w-full border-collapse min-w-[500px]">
+          <caption className="sr-only">Spec comparison of {gadgets.map((g) => g.name).join(', ')}</caption>
           <thead>
             <tr>
-              <th className="w-28"></th>
+              <td className="w-28" />
               {gadgets.map((g) => (
-                <th key={g.id} className="text-left align-top pb-3 px-2">
+                <th key={g.id} scope="col" className="text-left align-top pb-3 px-2">
                   <div className="relative bg-white border border-gray-200 rounded-xl p-3">
                     <button
                       onClick={() => removeGadget(g.id)}
                       aria-label={`Remove ${g.name} from comparison`}
-                      className="absolute top-2 right-2 text-slate-500 hover:text-red-700 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      className="absolute top-1.5 right-1.5 w-8 h-8 flex items-center justify-center text-slate-600 hover:text-red-700 hover:bg-red-50 transition rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
-                      <X size={15} />
+                      <X size={16} aria-hidden="true" />
                     </button>
                     <div className="h-20 w-full bg-gray-50 rounded-lg overflow-hidden mb-2 flex items-center justify-center">
                       {g.image_url ? (
@@ -162,78 +184,71 @@ export default function ComparePage() {
           <tbody>
             {rows.map((row) => (
               <tr key={row.label} className="border-t border-gray-100">
-                <td className="text-xs font-medium text-gray-500 py-3 pr-2">{row.label}</td>
-                {gadgets.map((g) => {
-                  const isHighlighted = row.highlight?.(g)
-                  return (
-                    <td key={g.id} className="py-3 px-2 text-sm text-gray-800">
-                      <span
-                        className={
-                          isHighlighted
-                            ? 'inline-flex items-center gap-1 text-green-700 font-medium bg-green-50 rounded-full px-2 py-0.5'
-                            : ''
-                        }
-                      >
-                        {isHighlighted && <Trophy size={11} />}
-                        {row.get(g)}
-                      </span>
-                    </td>
-                  )
-                })}
+                <th scope="row" className="text-left text-xs font-semibold uppercase tracking-wider text-gray-600 py-3 pr-2">
+                  {row.label}
+                </th>
+                {gadgets.map((g) => (
+                  <td key={g.id} className="py-3 px-2 text-sm text-gray-800">
+                    <CompareValue row={row} gadget={g} />
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Mobile: stacked cards, one per gadget */}
-      <div className="sm:hidden space-y-4">
-        {gadgets.map((g) => (
-          <div key={g.id} className="relative bg-white border border-gray-200 rounded-xl p-4">
-            <button
-              onClick={() => removeGadget(g.id)}
-              aria-label={`Remove ${g.name} from comparison`}
-              className="absolute top-3 right-3 text-slate-500 hover:text-red-700 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-            >
-              <X size={16} />
-            </button>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-14 w-14 shrink-0 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center">
+      {/* Mobile: gadgets as columns and specs as rows, so values line up for comparison
+          instead of sitting in separate cards the user has to scroll between. */}
+      <div className="sm:hidden">
+        <div
+          className="grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${gadgets.length}, minmax(0, 1fr))` }}
+        >
+          {gadgets.map((g) => (
+            <div key={g.id} className="relative bg-white border border-gray-200 rounded-xl p-2 pt-3 flex flex-col items-center text-center min-w-0">
+              <button
+                onClick={() => removeGadget(g.id)}
+                aria-label={`Remove ${g.name} from comparison`}
+                className="absolute -top-2 -right-2 w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow-xs text-slate-600 hover:text-red-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+              <div className="h-14 w-14 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center mb-2">
                 {g.image_url ? (
-                  <img src={g.image_url} alt={g.name} className="h-full w-full object-cover" />
+                  <img src={g.image_url} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <ImageOff size={18} className="text-gray-300" />
+                  <ImageOff size={18} className="text-gray-400" aria-hidden="true" />
                 )}
               </div>
               <Link
                 to={`/gadgets/${g.id}`}
-                className="font-semibold text-gray-900 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+                className="text-sm font-semibold text-gray-900 leading-tight break-words hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
               >
                 {g.name}
               </Link>
             </div>
-            <dl className="divide-y divide-gray-100">
-              {rows.map((row) => {
-                const isHighlighted = row.highlight?.(g)
-                return (
-                  <div key={row.label} className="flex items-center justify-between py-2">
-                    <dt className="text-xs font-medium text-gray-500">{row.label}</dt>
-                    <dd
-                      className={
-                        isHighlighted
-                          ? 'inline-flex items-center gap-1 text-green-700 font-medium bg-green-50 rounded-full px-2 py-0.5 text-sm'
-                          : 'text-sm text-gray-800'
-                      }
-                    >
-                      {isHighlighted && <Trophy size={11} />}
-                      {row.get(g)}
-                    </dd>
-                  </div>
-                )
-              })}
-            </dl>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        <dl className="mt-4 bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+          {rows.map((row) => (
+            <div key={row.label} className="px-3 py-3">
+              <dt className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">{row.label}</dt>
+              <div
+                className="grid gap-2"
+                style={{ gridTemplateColumns: `repeat(${gadgets.length}, minmax(0, 1fr))` }}
+              >
+                {gadgets.map((g) => (
+                  <dd key={g.id} className="min-w-0 text-center text-sm text-gray-800 break-words">
+                    <span className="sr-only">{g.name}: </span>
+                    <CompareValue row={row} gadget={g} />
+                  </dd>
+                ))}
+              </div>
+            </div>
+          ))}
+        </dl>
       </div>
 
       <AIComparisonPanel gadgetIds={gadgets.map((g) => g.id)} gadgetNames={gadgets.map((g) => g.name)} />
