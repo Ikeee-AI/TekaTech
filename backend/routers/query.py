@@ -49,6 +49,14 @@ SIMULATION_MODES = ("timeout", "quota", "bad_output", "empty")
 MATCH_COUNT = 6
 MATCH_THRESHOLD = 0.5
 
+# gpt-5-mini bills hidden reasoning tokens as output ($2.00 per 1M against $0.25 per 1M for input),
+# and /query is public with a shared prepaid balance, so a question's cost is set by how long the
+# model thinks and writes. Measured on #77: about 87% of an uncapped answer's output was reasoning.
+# The cap is a ceiling, not a target: it sits well above a normal grounded answer, and reasoning
+# counts toward it, so lowering it much further risks cutting answers off before they start.
+ANSWER_MAX_COMPLETION_TOKENS = 1500
+ANSWER_REASONING_EFFORT = "low"
+
 # Characters are a cheap O(1) first pass; tokens are what actually get billed and
 # what the model's context is measured in. The char cap is deliberately loose so
 # it only rejects the absurd, with the token cap as the real limit.
@@ -281,6 +289,8 @@ def ask_question(request: Request, payload: QueryRequest):
                     "content": f"Spec snippets:\n{context}{scope_note}\n\nQuestion: {payload.question}",
                 },
             ],
+            max_completion_tokens=ANSWER_MAX_COMPLETION_TOKENS,
+            reasoning_effort=ANSWER_REASONING_EFFORT,
         )
     except OpenAIError as exc:
         raise _provider_failure(exc) from None
@@ -290,6 +300,14 @@ def ask_question(request: Request, payload: QueryRequest):
         answer = completion.choices[0].message.content
     except (AttributeError, IndexError, TypeError):
         raise _unusable_output("completion had no choices") from None
+    # A cut-off answer can end mid-sentence with its citations missing, so it is not shown. It
+    # reuses the "unusable" sentence, which the frontend already maps to its own screen. The
+    # tokens were already billed, so they are logged; no query_history row is written.
+    if getattr(completion.choices[0], "finish_reason", None) == "length":
+        raise _unusable_output(
+            f"answer hit max_completion_tokens={ANSWER_MAX_COMPLETION_TOKENS} "
+            f"(completion_tokens={_token_count(completion, 'completion_tokens')})"
+        )
     if not answer or not answer.strip():
         raise _unusable_output("completion content was empty")
 
