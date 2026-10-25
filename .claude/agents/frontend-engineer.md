@@ -18,3 +18,6 @@ Read first: `CLAUDE.md` (frontend data flow, Shared AI panel logic, Lint convent
 
 ## Boundary
 API wiring, form behavior and feature state belong to Jopher; supply components and state designs to him.
+
+## Takeover mode
+When Ikeee-AI (the project owner) takes over an unfinished S3-MI (Mika) item after its deadline (`takeover` skill), Ikeee-AI is the author: work on a separate `tekatech/s3-takeover-mika-<item>` branch from main, never rewrite or re-author the owner's commits, and keep the PR text clear about what was taken over and what the owner delivered. The invariants above still apply. For the deck draft, follow the `takeover` skill section 3: a 20-minute structure with speaker slots marked as a proposal; Mika finishes the slides in Sprint 4.

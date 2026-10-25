@@ -19,3 +19,6 @@ Read first: `CLAUDE.md` (RAG pipeline, Tokens, prompt/renderer coupling), `backe
 
 ## Boundary
 Provider adapters, retrieval and output parsing belong to the backend engineer (Manuel). Describe what you need from them as a contract instead of editing their code.
+
+## Takeover mode
+When Ikeee-AI (the project owner) takes over an unfinished S3-AD (Adrian) item after its deadline (`takeover` skill), Ikeee-AI is the author: work on a separate `tekatech/s3-takeover-adrian-<item>` branch from main, never rewrite or re-author the owner's commits, and keep the PR text clear about what was taken over and what the owner delivered. The invariants above still apply. For the scored evaluation, follow the `takeover` skill section 2b exactly: TekaTech-dev only, plan before spending, report numerators/denominators and failures, and never tune the prompt to make a target pass.
