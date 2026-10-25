@@ -312,7 +312,7 @@ Cutoff: Sun 25 Oct 12:00 PM Manila (04:00 UTC), the fallback agreed in the group
   - Secret guard on tracked files: passed.
   - Frontend `npm audit --omit=dev`: 0 vulnerabilities. Full `npm audit`: 1 high, `zod` 4.4.3.
   - Backend `pip-audit` on the frozen uv export: no known vulnerabilities.
-  - Full-history Gitleaks scan: not run; `gitleaks` is not installed.
+  - Full-history Gitleaks scan (19:22, with the owner's OK): Gitleaks 8.30.1 installed in the user folder `~/tools/gitleaks-8.30.1` (release zip checked against its published SHA-256). `gitleaks git --redact --log-opts="--all -m"` scanned 204 commits (5.34 MB) across all 11 remote branches, including merge-commit diffs: **no leaks found**. Of the 206 commits on those branches, the 2 not counted have no file changes, among them the empty initial commit `df1a450`. Report: `.local/gitleaks-all-m.json` (not committed, 0 findings).
 - Dependabot alert #27 (high, CVSS 7.5, GHSA-mrhx-c7xc-m3w5: "Zod can exhaust memory while validating oversized constrained collections", affects < 4.6.6). `zod` comes in only through `eslint-plugin-react-hooks@7.1.1`, a lint-time dev dependency, so it isn't in the production bundle.
 - **PR #115 opened:** lockfile-only update to `zod` 4.6.7 from a non-forced `npm audit fix`; `package.json` unchanged. Local `npm ci`, `npm run lint` (clean), `npm run build` and `npm audit` (0 vulnerabilities) passed. Reviewer: Manuel — https://github.com/Ikeee-AI/TekaTech/pull/115
 - **Dependabot PRs triaged:** #47 (4 GitHub Actions updates), #68 (6 backend updates) and #106 (14 frontend updates) are MERGEABLE, with the three required checks green and no approvals yet. Requested reviews: Manuel on #47 and #68, Mika on #106.
@@ -328,8 +328,8 @@ Cutoff: Sun 25 Oct 12:00 PM Manila (04:00 UTC), the fallback agreed in the group
 
 **Blockers / risks**
 - Alert #27 stays open on `main` until #115 is approved and merged — Manuel.
-- No full-history secret scan yet; Gitleaks needs installing (Sprint 4 history-scan evidence) — Ikeee-AI.
+- The history scan is a point-in-time result for `4667bc1` and the branches at 19:22. Rerun it before the Sprint 4 release tag — Ikeee-AI — Sat 31 Oct.
 
-**Plan alignment** — S3-IK security: Partial. The tracked-file and dependency checks are done; the full-history scan is carried over to Sprint 4.
+**Plan alignment** — S3-IK security: tracked-file, dependency and full-history secret checks done; the `zod` fix (#115) is waiting for review.
 
 **Next** — Merge #115 after Manuel's review, then confirm alert #27 closes; merge the Dependabot PRs once approved — Ikeee-AI — after review.
