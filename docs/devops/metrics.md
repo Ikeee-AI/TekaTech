@@ -7,7 +7,7 @@ Owner: the one DevOps Engineer. Record real GitHub Actions and Render deployment
 | Sprint 1 initial baseline | 0.67 (1 run) | Not run | 100 (1/1 completed) | 0 | Not applicable (no merge) | 0 (no deploy attempts) | Not applicable | First PR CI passed with caches, parallel checks and SQL integration |
 | Sprint 2 (12–18 Oct; cut-off 18 Oct 15:41 Manila) | 0.68 (55 runs) | 2.17 (21 runs) | 100.0 (77/77 runs, run level; 1 first-attempt failure re-run, PE-4) | 21 | 2.27 (20 samples) | 0 (1 failed first attempt, no impact) | N/A (no production incident) | Metrics script; actionlint + gitleaks gates; main guard; scheduled ops; Dependabot; squash-only merges |
 | Sprint 3 (interim: 18 Oct 15:41 – 23 Oct 17:30 Manila) | 0.76 (40 runs) | 2.70 (12 runs) | 98.1 (51/52 runs; 5 cancelled excluded) | 12 | 2.70 (12 samples) | 0 | N/A (no production incident) | Caching on public reads (#73); weekly live AI smoke job (#79) + key fix (#86); OpenAI keys rotated with a $10 prepaid hard cap (#76); fork-PR labeler (#67) |
-| Sprint 3 final (cut-off Sat 24 Oct) | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Sprint 3 final (18–25 Oct UTC; cut-off 25 Oct 19:45 Manila) | 0.71 (88 runs) | 2.75 (25 runs) | 99.1 (112/113 completed; 18 cancelled/skipped excluded) | 25 | 2.77 (25 samples) | 0 | N/A (no production incident) | Database job uses the runner's `psql` (#107, PR checks median 37 s → 27 s); offline prompt evaluation on prompt/eval PRs (#102); smoke-job key cleaning (#86) |
 | Sprint 4 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
 
 Measurement rules:
@@ -82,3 +82,7 @@ Deploy runs in the window:
 - https://github.com/Ikeee-AI/TekaTech/actions/runs/39117462945
 - https://github.com/Ikeee-AI/TekaTech/actions/runs/39117295509
 
+
+## Sprint 3 final: 25 October 2026
+
+Window: `2026-10-18` to `2026-10-25` UTC, workflow `ci.yml` only, cut-off 25 Oct 19:45 Manila. Command: `python scripts/pipeline_metrics.py --label "Sprint 3 final" --since 2026-10-18 --until 2026-10-25`. Full report with every run link: [sprint3-metrics-final.json](../evidence/sprint3-metrics-final.json). 25 production deploys, 0 failed, no CI failure on main. 18 cancelled or skipped runs are excluded from the success rate; most are back-to-back merges in the same concurrency group, where the last run deploys all of them. Latest deploy: [main run 40187481617](https://github.com/Ikeee-AI/TekaTech/actions/runs/40187481617) on `4667bc1`, verified with `deployed_smoke.py` at 19:12 Manila (both hosts on the commit, 4 gadgets, CORS passed). The window overlaps the interim row (18–23 Oct); the final row replaces it for Sprint 3 totals.
