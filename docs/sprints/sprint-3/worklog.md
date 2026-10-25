@@ -245,3 +245,61 @@ Deadlines are the ones posted on #62 and #54–#58 at Thu 22 Oct 00:17. Times co
 **Plan alignment** — **Mika:** six PRs about 6 h 15 min after the Fri 12:00 deadline; before the Sat 10:00 cutoff; not merged yet. **S3-IK:** Partial — live AI path, smoke job, caching and its measurement merged and deployed; prompt-eval CI offline part in review; #31 and #34 carried over.
 
 **Next** — Sat 08:00–10:00 merge window in plan order; then the 15:00 status and the consultation packet — Ikeee-AI.
+
+## 2026-10-25 19:03 Asia/Manila — Sunday 12:00 PM carry-over check and merge gate
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S3-IK (board coordination) · **Branch:** `tekatech/s3-ik-noon-check`
+
+Cutoff: Sun 25 Oct 12:00 PM Manila (04:00 UTC), the fallback agreed in the group chat. The items come from the `takeover` runbook (PR #108) and the plan comments on #89 and #90. Times are GitHub timestamps converted to Manila time and observed at 18:40. This is an observation of GitHub only.
+
+**Done**
+- Checked each carry-over item against the cutoff. Evidence: PRs #89, #90, #107, #110, #111 and #112, issue #57, standups on #72.
+
+| Owner | Item | Delivered (Manila) | Result |
+| --- | --- | --- | --- |
+| Adrian | Rebase #90 onto `main` | Force-pushed Sun 01:05 (`9102953`); base `main`; only his own commit, 3 files; MERGEABLE | On time |
+| Adrian | Scored OpenAI evaluation (20 cases) | #112 opened Sun 08:06 (report, answers, write-up row) | On time |
+| Mika | Presentation deck draft | #111 opened Sun 01:16; approved by Jopher 09:38 | On time |
+| Jopher | Live-site journey evidence on #57 | Posted Sat 23:24 (10 screenshots); admin rejection step by Ikeee-AI Sun 00:04 | On time |
+| Manuel | Re-approve #90 | Sun 07:26 on head `9102953` | On time |
+| Manuel | Review #107 | Approved Sun 07:26 on head `8081106` | On time |
+| Manuel | Re-approve #89 | Not given; Ikeee-AI approved `c7ae52c` and merged at Sun 01:03 | Not by Manuel (see conflicts) |
+
+- Additional work before the cutoff: Jopher opened #110 (fix for #78) Sun 01:16 and posted a standup at 09:56. Adrian posted a standup at 08:10. Manuel approved #108 and #110 around 07:30, then #112 at 12:51 (after the cutoff; #112 was not a noon item).
+- No takeover needed. The `takeover` skill was not run.
+- Ran `pr-gate` on the six approved open PRs. Branch protection is still unavailable on this repo, so this gate is manual, not enforced.
+
+| PR | Author | Approval on head by another member | Required checks on head | Single owner area | Secrets / account files | Gate |
+| --- | --- | --- | --- | --- | --- | --- |
+| #90 | Adrian | Manuel (`9102953`) | All 3 SUCCESS | Eval runner (S3-AD) | None found | PASS |
+| #107 | Ikeee-AI | Manuel (`8081106`) | All 3 SUCCESS | CI (S3-IK) | None found | PASS |
+| #108 | Ikeee-AI | Jopher, Manuel (`9fb26ae`) | All 3 SUCCESS | Agent/skill docs (S3-IK) | None found | PASS |
+| #110 | Jopher | Manuel (`76a1429`) | All 3 SUCCESS | Gadget workflow (S3-JO) | None found | PASS |
+| #111 | Mika | Jopher (`423a6c2`) | All 3 SUCCESS | Presentation (S3-MI) | None found | PASS |
+| #112 | Adrian | Manuel (`911aff5`) | All 3 SUCCESS | Evaluation evidence (S3-AD) | None found | PASS |
+
+- The six PRs change separate files, so merging one should not conflict with another.
+- **Merged (squash), on the owner's go-ahead, each pinned to its approved head with `--match-head-commit`:** #107 (`68d960e`), #90 (`dd3932c`), #110 (`79e69d5`), #111 (`20a6b4f`), #112 (`1b7d5af`), #108 (`4667bc1`). The main CI runs for `dd3932c`, `79e69d5`, `20a6b4f` and `1b7d5af` were cancelled because the merges were back to back (same concurrency group); `4667bc1` includes all six.
+- **Main pipeline:** run [40187481617](https://github.com/Ikeee-AI/TekaTech/actions/runs/40187481617) on `4667bc1`: main guard, backend tests, frontend lint and build, database migrations and the deploy all succeeded.
+- **Production:** `verify-deploy` passed at 19:12 on `4667bc1a46ef282af9e60fbeda9834a424796d76`, first attempt: both hosts serve the commit, `/gadgets` = 4, CORS passed. Evidence: `.local/deployed-smoke-4667bc1.json` (not committed).
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| First `deployed_smoke.py` run: `failed` after 12/12 attempts, "Both hosts must serve the expected commit" | The commit argument was mistyped (`4667bc1aaa`), not a deploy problem | Reran with the full SHA from `git rev-parse origin/main`; passed on attempt 1. Resolved |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Plan on #89: Manuel re-approves by Sun 12:00, then Ikeee-AI merges. Actual: Ikeee-AI approved the new head and merged it at Sun 01:03 | The approver and the merger were the same person. Manuel's approval was on the older head `473d1e4` | Recorded here; not reversed — Ikeee-AI — closed |
+| Runbook expected the deck at `docs/presentation/deck-draft.md` with the speaker split as a proposal; #111 puts it at `frontend/docs/presentation/deck-draft.md` with its own split (3/4/6/3/4 = 20 min) | None for the deadline; the location and split differ from the runbook | Team confirms the split in Sprint 4 (S4-MI) — Mika — open |
+| Runbook report path `docs/evidence/eval-live-2026-10-25.md`; #112 uses `docs/evidence/eval-s3-2026-10-25.md` | Naming only | Accepted — closed |
+
+**Decisions** — No takeover: every noon item was delivered on time — Ikeee-AI.
+
+**Blockers / risks**
+- Scored evaluation misses targets: supported claims 5/13, abstention 0/7, valid citation references 15/15, no invented facts. Mostly retrieval (#88) plus two scorer gaps. This becomes a Sprint 4 item — Adrian, Manuel (#88).
+- No Sunday standup from Mika or Manuel on #72 as of 18:40.
+
+**Plan alignment** — All Sprint 3 carry-over items were delivered by the Sun 12:00 PM cutoff. #90, #110, #111 and #112 are now merged, deployed and verified on production (`4667bc1`).
+
+**Next** — Sprint 4 planning: the evaluation misses (#88, scorer gaps) and the deck speaker split — Ikeee-AI — Mon 26 Oct.
