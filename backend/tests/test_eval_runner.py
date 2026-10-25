@@ -265,3 +265,32 @@ def test_cli_rejects_a_malformed_removed_count(tmp_path):
                           capture_output=True, text=True)
     assert proc.returncode == 2
     assert "invalid_citations_removed" in proc.stderr
+
+
+TC08 = {"id": "TC-08", "type": "missing", "should_abstain": True,
+        "query": "Does the iPhone 15 support a 120Hz ProMotion refresh rate?"}
+
+
+def test_abstention_may_echo_a_value_from_the_question():
+    answer = "The sources don't say whether the iPhone 15 supports a 120Hz ProMotion refresh rate."
+    assert runner.score_case(TC08, answer, set())["passed"]
+
+
+def test_abstention_that_still_states_a_spec_value_fails():
+    answer = "The sources don't state it, but the iPhone 15 runs at 60Hz."
+    scored = runner.score_case(TC08, answer, set())
+    assert not scored["passed"]
+    assert scored["problems"] == ["abstention answer states spec value(s) ['60hz']"]
+
+
+def test_abstention_spec_values_match_across_spacing_and_hyphens():
+    case = {"id": "A-1", "type": "missing", "should_abstain": True, "query": "Is it a 6.7-inch screen?"}
+    echoed = runner.score_case(case, "The sources don't say; I can't confirm a 6.7 inch screen.", set())
+    assert echoed["passed"]
+    other = runner.score_case(case, "Not stated, but it has 4900 mAh.", set())
+    assert other["problems"] == ["abstention answer states spec value(s) ['4900mah']"]
+
+
+def test_spec_value_check_applies_only_to_abstention_cases():
+    case = {"id": "F-1", "type": "factual", "query": "q", "expected_facts": ["2000 nits"], "expected_sources": [1]}
+    assert runner.score_case(case, "It reaches **2000 nits** [1] and has a 6.1-inch display.", {1})["passed"]

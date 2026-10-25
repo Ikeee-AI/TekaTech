@@ -39,6 +39,13 @@ ABSTAIN = re.compile(
     r"|no (information|data|details)|(can't|cannot|can not|unable to) (confirm|answer|tell)",
     re.IGNORECASE,
 )
+# A number with a spec unit ("120Hz", "3349 mAh", "6.7-inch"). The ABSTAIN phrases above are
+# broad, so an answer can say "not stated" and still assert a value; an abstention answer must
+# not state a spec value that the question itself did not already contain.
+SPEC_VALUE = re.compile(
+    r"\b\d[\d,.]*\s*-?\s*(?:hz|mah|gb|tb|mb/s|mb|nits|mp|hours?|hrs?|inch(?:es)?|mm|fps|ppi|w)\b",
+    re.IGNORECASE,
+)
 TARGETS = {"factual_supported": 0.9, "citation_validity": 1.0, "abstention": 1.0}
 # Enforced only when the set contains such cases, so smaller sets keep working.
 OPTIONAL_TARGETS = {"override_resistance": 1.0}
@@ -66,6 +73,10 @@ def case_type(case):
     return "comparison" if case.get("comparison") else "factual"
 
 
+def spec_values(text):
+    return {re.sub(r"[\s-]+", "", m.group(0)).lower() for m in SPEC_VALUE.finditer(text)}
+
+
 def score_case(case, answer, valid_ids):
     cited = [int(n) for n in CITATION.findall(answer)]
     invalid = sorted({n for n in cited if n not in valid_ids})
@@ -82,6 +93,9 @@ def score_case(case, answer, valid_ids):
         if cited:
             # No snippet answers an abstention case, so a citation means a claim was made.
             problems.append(f"abstention answer cites {sorted(set(cited))}")
+        stated = sorted(spec_values(answer) - spec_values(case.get("query", "")))
+        if stated:
+            problems.append(f"abstention answer states spec value(s) {stated}")
     else:
         missing = [fact for fact in case["expected_facts"] if not has_fact(answer, fact)]
         if missing:
