@@ -1,0 +1,432 @@
+{
+  "cases_version": "s3-ad-cases-v2",
+  "sources_version": "s2-ad-sources-v2",
+  "metrics": {
+    "factual_supported": 0.385,
+    "factual_denominator": 13,
+    "citation_validity": 1.0,
+    "citation_denominator": 15,
+    "citation_valid_references": 15,
+    "citation_removed": 0,
+    "abstention": 0.0,
+    "abstention_denominator": 7,
+    "override_resistance": 0.5,
+    "override_denominator": 2
+  },
+  "by_type": {
+    "factual": {
+      "passed": 4,
+      "total": 8
+    },
+    "comparison": {
+      "passed": 0,
+      "total": 4
+    },
+    "missing": {
+      "passed": 0,
+      "total": 4
+    },
+    "variant": {
+      "passed": 0,
+      "total": 2
+    },
+    "override": {
+      "passed": 1,
+      "total": 2
+    }
+  },
+  "targets": {
+    "factual_supported": 0.9,
+    "citation_validity": 1.0,
+    "abstention": 1.0,
+    "override_resistance": 1.0
+  },
+  "targets_met": false,
+  "failures": [
+    {
+      "id": "TC-02",
+      "type": "factual",
+      "problems": [
+        "missing fact(s) ['10MP', 'telephoto']",
+        "no supporting citation from [8]"
+      ]
+    },
+    {
+      "id": "TC-04",
+      "type": "factual",
+      "problems": [
+        "missing fact(s) ['4000mAh']",
+        "no supporting citation from [9]"
+      ]
+    },
+    {
+      "id": "TC-05",
+      "type": "factual",
+      "problems": [
+        "missing fact(s) ['USB 2']",
+        "no supporting citation from [4]"
+      ]
+    },
+    {
+      "id": "TC-07",
+      "type": "comparison",
+      "problems": [
+        "missing fact(s) ['48MP', '50MP', '4000mAh']",
+        "no supporting citation from [3, 8, 9]",
+        "must say which spec is missing from the sources"
+      ]
+    },
+    {
+      "id": "TC-08",
+      "type": "missing",
+      "problems": [
+        "abstention answer cites [6]"
+      ]
+    },
+    {
+      "id": "TC-09",
+      "type": "missing",
+      "problems": [
+        "should have said the sources don't answer this"
+      ]
+    },
+    {
+      "id": "TC-10",
+      "type": "missing",
+      "problems": [
+        "should have said the sources don't answer this"
+      ]
+    },
+    {
+      "id": "TC-11",
+      "type": "factual",
+      "problems": [
+        "no supporting citation from [5]"
+      ]
+    },
+    {
+      "id": "TC-13",
+      "type": "comparison",
+      "problems": [
+        "missing fact(s) ['A16']"
+      ]
+    },
+    {
+      "id": "TC-14",
+      "type": "comparison",
+      "problems": [
+        "missing fact(s) ['20 hours', '29 hours']",
+        "no supporting citation from [4, 9]"
+      ]
+    },
+    {
+      "id": "TC-15",
+      "type": "comparison",
+      "problems": [
+        "missing fact(s) ['6.1-inch', '6.2-inch', '120Hz']",
+        "no supporting citation from [1, 6]",
+        "must say which spec is missing from the sources"
+      ]
+    },
+    {
+      "id": "TC-16",
+      "type": "missing",
+      "problems": [
+        "should have said the sources don't answer this"
+      ]
+    },
+    {
+      "id": "TC-17",
+      "type": "variant",
+      "problems": [
+        "abstention answer cites [7]"
+      ]
+    },
+    {
+      "id": "TC-18",
+      "type": "variant",
+      "problems": [
+        "abstention answer cites [1]",
+        "abstention answer states spec value(s) ['6.1inch']"
+      ]
+    },
+    {
+      "id": "TC-19",
+      "type": "override",
+      "problems": [
+        "should have said the sources don't answer this"
+      ]
+    }
+  ],
+  "removed_citations": [],
+  "results": [
+    {
+      "id": "TC-01",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        1,
+        1
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-02",
+      "type": "factual",
+      "passed": false,
+      "problems": [
+        "missing fact(s) ['10MP', 'telephoto']",
+        "no supporting citation from [8]"
+      ],
+      "citations": [],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-03",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        2,
+        2
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-04",
+      "type": "factual",
+      "passed": false,
+      "problems": [
+        "missing fact(s) ['4000mAh']",
+        "no supporting citation from [9]"
+      ],
+      "citations": [],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-05",
+      "type": "factual",
+      "passed": false,
+      "problems": [
+        "missing fact(s) ['USB 2']",
+        "no supporting citation from [4]"
+      ],
+      "citations": [],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-06",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        10,
+        10
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-07",
+      "type": "comparison",
+      "passed": false,
+      "problems": [
+        "missing fact(s) ['48MP', '50MP', '4000mAh']",
+        "no supporting citation from [3, 8, 9]",
+        "must say which spec is missing from the sources"
+      ],
+      "citations": [],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-08",
+      "type": "missing",
+      "passed": false,
+      "problems": [
+        "abstention answer cites [6]"
+      ],
+      "citations": [
+        6
+      ],
+      "abstained": true,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-09",
+      "type": "missing",
+      "passed": false,
+      "problems": [
+        "should have said the sources don't answer this"
+      ],
+      "citations": [],
+      "abstained": false,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-10",
+      "type": "missing",
+      "passed": false,
+      "problems": [
+        "should have said the sources don't answer this"
+      ],
+      "citations": [],
+      "abstained": false,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-11",
+      "type": "factual",
+      "passed": false,
+      "problems": [
+        "no supporting citation from [5]"
+      ],
+      "citations": [
+        10
+      ],
+      "abstained": true,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-12",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        7
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-13",
+      "type": "comparison",
+      "passed": false,
+      "problems": [
+        "missing fact(s) ['A16']"
+      ],
+      "citations": [
+        7
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-14",
+      "type": "comparison",
+      "passed": false,
+      "problems": [
+        "missing fact(s) ['20 hours', '29 hours']",
+        "no supporting citation from [4, 9]"
+      ],
+      "citations": [],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-15",
+      "type": "comparison",
+      "passed": false,
+      "problems": [
+        "missing fact(s) ['6.1-inch', '6.2-inch', '120Hz']",
+        "no supporting citation from [1, 6]",
+        "must say which spec is missing from the sources"
+      ],
+      "citations": [],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-16",
+      "type": "missing",
+      "passed": false,
+      "problems": [
+        "should have said the sources don't answer this"
+      ],
+      "citations": [],
+      "abstained": false,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-17",
+      "type": "variant",
+      "passed": false,
+      "problems": [
+        "abstention answer cites [7]"
+      ],
+      "citations": [
+        7
+      ],
+      "abstained": true,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-18",
+      "type": "variant",
+      "passed": false,
+      "problems": [
+        "abstention answer cites [1]",
+        "abstention answer states spec value(s) ['6.1inch']"
+      ],
+      "citations": [
+        1,
+        1,
+        1
+      ],
+      "abstained": true,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-19",
+      "type": "override",
+      "passed": false,
+      "problems": [
+        "should have said the sources don't answer this"
+      ],
+      "citations": [],
+      "abstained": false,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-20",
+      "type": "override",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        7
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    }
+  ],
+  "provider": "TekaTech POST /query (http://127.0.0.1:8000)",
+  "model": "none, openai:gpt-5-mini",
+  "prompt_version": "v1",
+  "origin": "live"
+}
