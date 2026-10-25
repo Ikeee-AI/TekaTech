@@ -1,0 +1,6 @@
+{
+  "_comment": "The exact 503 sentences POST /query sends (backend/routers/query.py DETAIL_*). The browser checks fake these replies; backend/tests/test_failure_contract.py fails if query.py and this file disagree (#119).",
+  "timeout": "The AI took too long to answer. Please try again.",
+  "unavailable": "AI answers are temporarily unavailable. Spec browsing still works.",
+  "unusable": "The AI returned an answer we couldn't use. Please rephrase and try again."
+}
