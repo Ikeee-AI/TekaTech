@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
 import ServerWakeBanner from './components/ServerWakeBanner'
 import RouteErrorBoundary from './components/RouteErrorBoundary'
+import { useRouteFocus } from './hooks/useRouteFocus'
 import GadgetList from './pages/GadgetList'
 import NotFound from './pages/NotFound'
 
@@ -26,6 +27,7 @@ function PageLoading() {
 
 function App() {
   const location = useLocation()
+  useRouteFocus(location.pathname, 'main-content')
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -40,7 +42,9 @@ function App() {
       <main
         id="main-content"
         key={location.pathname}
-        className={`${location.pathname === '/' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 sm:px-6 py-8 animate-fade-in`}
+        // Focus target for the skip link and for useRouteFocus; not in the tab order.
+        tabIndex={-1}
+        className={`${location.pathname === '/' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 sm:px-6 py-8 animate-fade-in outline-none`}
       >
         <RouteErrorBoundary>
           <Suspense fallback={<PageLoading />}>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ShieldCheck, Check, X } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -21,6 +21,9 @@ export default function AdminCorrections() {
   const [loadError, setLoadError] = useState(null)
   // Approved corrections whose spec couldn't be re-indexed automatically.
   const [indexNotices, setIndexNotices] = useState([])
+  // Focus moves here once a card is approved or rejected and leaves the list,
+  // instead of being lost with the removed card's buttons.
+  const headingRef = useRef(null)
 
   function load() {
     setLoading(true)
@@ -66,6 +69,7 @@ export default function AdminCorrections() {
       if (action === 'approve') await reindexApprovedSpec(correction)
       else toast.success('Correction rejected')
       setCorrections((prev) => prev.filter((c) => c.id !== id))
+      headingRef.current?.focus()
     } catch (err) {
       toast.error(friendlyError(err))
     } finally {
@@ -100,7 +104,11 @@ export default function AdminCorrections() {
     <div>
       <BackLink to="/">Back to Catalog</BackLink>
 
-      <h1 className="font-display text-2xl font-medium text-gray-900 tracking-tight mb-1 flex items-center gap-2">
+      <h1
+        ref={headingRef}
+        tabIndex={-1}
+        className="font-display text-2xl font-medium text-gray-900 tracking-tight mb-1 flex items-center gap-2"
+      >
         <ShieldCheck size={22} className="text-sage-700" /> Review Corrections
       </h1>
       <p className="text-sm text-gray-600 mb-6">Community-submitted spec corrections awaiting approval.</p>
@@ -157,10 +165,10 @@ export default function AdminCorrections() {
                   disabled={resolvingId !== null}
                   onClick={() => resolve(c, 'approve')}
                 >
-                  Approve
+                  Approve<span className="sr-only"> correction for {c.spec_documents?.gadgets?.name ?? 'this spec'}</span>
                 </Button>
                 <Button variant="danger" size="sm" icon={X} disabled={resolvingId !== null} onClick={() => resolve(c, 'reject')}>
-                  Reject
+                  Reject<span className="sr-only"> correction for {c.spec_documents?.gadgets?.name ?? 'this spec'}</span>
                 </Button>
               </div>
             </article>
