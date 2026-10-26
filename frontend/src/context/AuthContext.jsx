@@ -17,9 +17,19 @@ export function AuthProvider({ children }) {
     return () => listener.subscription.unsubscribe()
   }, [])
 
+  // Returns Supabase's { user, session }. With email confirmation on, an address that is
+  // already registered comes back as a user with an empty `identities` array and no email
+  // is sent; Login.jsx checks for that. emailRedirectTo keeps the confirmation link on the
+  // origin the user signed up from instead of the dashboard Site URL (the origin must be
+  // in the project's Redirect URLs allow list, otherwise Supabase falls back to Site URL).
   async function signUp(email, password) {
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    })
     if (error) throw error
+    return data
   }
 
   async function signIn(email, password) {
@@ -31,8 +41,26 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
   }
 
+  // Supabase answers the same way whether or not the address has an account, so the
+  // page can show one neutral confirmation without revealing who is registered.
+  async function requestPasswordReset(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) throw error
+  }
+
+  // Needs a session: the recovery session supabase-js creates from the email link
+  // (it parses the URL before getSession() resolves), or an ordinary signed-in one.
+  async function updatePassword(password) {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, signUp, signIn, signOut, requestPasswordReset, updatePassword }}
+    >
       {children}
     </AuthContext.Provider>
   )

@@ -10,6 +10,8 @@ import ComparePage from './pages/ComparePage'
 import AdminCorrections from './pages/AdminCorrections'
 import ShortLinkRedirect from './pages/ShortLinkRedirect'
 import Login from './pages/Login'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -60,6 +62,8 @@ function App() {
           />
           <Route path="/c/:slug" element={<ShortLinkRedirect />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
