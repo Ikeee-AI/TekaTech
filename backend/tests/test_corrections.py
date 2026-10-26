@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 from uuid import uuid4
 
+import pytest
+
 
 def test_submit_correction_spec_not_found(client, fake_supabase):
     fake_supabase.set_response("spec_documents", "select", [])
@@ -38,29 +40,190 @@ def test_resolve_correction_invalid_action(client, fake_supabase):
     assert resp.status_code == 400
 
 
+def _pending(correction_id, spec_id=None, content="x", status="pending"):
+    return {
+        "id": correction_id,
+        "spec_document_id": spec_id or str(uuid4()),
+        "suggested_content": content,
+        "status": status,
+    }
+
+
 def test_resolve_correction_approve(client, fake_supabase):
     correction_id = str(uuid4())
     spec_id = str(uuid4())
-    fake_supabase.set_response(
-        "spec_corrections",
-        "select",
-        [{"id": correction_id, "spec_document_id": spec_id, "suggested_content": "corrected text"}],
-    )
+    row = _pending(correction_id, spec_id, "corrected text")
+    fake_supabase.set_response("spec_corrections", "select", [row])
+    fake_supabase.set_response("spec_corrections", "update", [{**row, "status": "approved"}])
     resp = client.patch(f"/corrections/{correction_id}", json={"action": "approve"})
     assert resp.status_code == 200
     assert resp.json()["status"] == "approved"
+    # The status guard is part of the UPDATE itself, not only the earlier read.
+    assert ("spec_corrections", "status", "pending") in fake_supabase.filters
+    review = next(p for t, op, p in fake_supabase.writes if t == "spec_corrections" and op == "update")
+    assert review["status"] == "approved"
+    # Timezone-aware UTC timestamp (datetime.now(timezone.utc), not utcnow()).
+    assert review["reviewed_at"].endswith("+00:00")
+    spec_update = next(p for t, op, p in fake_supabase.writes if t == "spec_documents" and op == "update")
+    assert spec_update["content"] == "corrected text"
+    assert ("spec_documents", "id", spec_id) in fake_supabase.filters
 
 
 def test_resolve_correction_reject(client, fake_supabase):
     correction_id = str(uuid4())
-    fake_supabase.set_response(
-        "spec_corrections",
-        "select",
-        [{"id": correction_id, "spec_document_id": str(uuid4()), "suggested_content": "x"}],
-    )
+    row = _pending(correction_id)
+    fake_supabase.set_response("spec_corrections", "select", [row])
+    fake_supabase.set_response("spec_corrections", "update", [{**row, "status": "rejected"}])
     resp = client.patch(f"/corrections/{correction_id}", json={"action": "reject"})
     assert resp.status_code == 200
     assert resp.json()["status"] == "rejected"
+    # Rejecting never touches the spec text.
+    assert not [w for w in fake_supabase.writes if w[0] == "spec_documents"]
+
+
+@pytest.mark.parametrize("already", ["approved", "rejected"])
+@pytest.mark.parametrize("action", ["approve", "reject"])
+def test_resolve_already_resolved_correction_is_409(client, fake_supabase, already, action):
+    correction_id = str(uuid4())
+    fake_supabase.set_response("spec_corrections", "select", [_pending(correction_id, status=already)])
+    resp = client.patch(f"/corrections/{correction_id}", json={"action": action})
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == f"Correction was already {already}"
+    # Nothing is written: neither the review nor the spec text.
+    assert fake_supabase.writes == []
+
+
+def test_resolve_correction_lost_race_is_409_and_spec_untouched(client, fake_supabase, monkeypatch):
+    """Two admins approve at once: both reads see 'pending', but only one conditional
+    UPDATE matches. The loser gets 409 and must not overwrite the spec text."""
+    correction_id = str(uuid4())
+    reads = iter([[_pending(correction_id)], [_pending(correction_id, status="approved")]])
+
+    import conftest
+
+    real_execute = conftest.FakeQuery.execute
+
+    def execute(self):
+        if self._table == "spec_corrections" and self._operation == "select":
+            fake_supabase.set_response("spec_corrections", "select", next(reads))
+        return real_execute(self)
+
+    monkeypatch.setattr(conftest.FakeQuery, "execute", execute)
+    fake_supabase.set_response("spec_corrections", "update", [])  # the other admin won
+
+    resp = client.patch(f"/corrections/{correction_id}", json={"action": "approve"})
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "Correction was already approved"
+    assert not [w for w in fake_supabase.writes if w[0] == "spec_documents"]
+
+
+def test_resolve_correction_update_matching_nothing_while_pending_is_503(client, fake_supabase):
+    correction_id = str(uuid4())
+    fake_supabase.set_response("spec_corrections", "select", [_pending(correction_id)])
+    fake_supabase.set_response("spec_corrections", "update", [])
+    resp = client.patch(f"/corrections/{correction_id}", json={"action": "approve"})
+    assert resp.status_code == 503
+    assert not [w for w in fake_supabase.writes if w[0] == "spec_documents"]
+
+
+# --- POST /specs/{id}/corrections input limits ------------------------------
+
+
+def _spec_exists(fake_supabase, spec_id):
+    fake_supabase.set_response("spec_documents", "select", [{"id": spec_id}])
+    fake_supabase.set_response(
+        "spec_corrections", "insert", [{"id": str(uuid4()), "spec_document_id": spec_id, "status": "pending"}]
+    )
+
+
+@pytest.mark.parametrize("text", ["", "   ", "\n\t "])
+def test_submit_correction_rejects_blank_text(client, fake_supabase, text):
+    spec_id = str(uuid4())
+    _spec_exists(fake_supabase, spec_id)
+    resp = client.post(f"/specs/{spec_id}/corrections", json={"suggested_content": text})
+    assert resp.status_code == 422
+    assert resp.json()["detail"][0]["msg"] == "Write the corrected spec text."
+    assert fake_supabase.writes == []
+
+
+def test_submit_correction_stores_stripped_text(client, fake_supabase):
+    spec_id = str(uuid4())
+    _spec_exists(fake_supabase, spec_id)
+    resp = client.post(f"/specs/{spec_id}/corrections", json={"suggested_content": "  Battery: 5000 mAh \n"})
+    assert resp.status_code == 201
+    assert fake_supabase.writes[-1][2]["suggested_content"] == "Battery: 5000 mAh"
+
+
+def test_submit_correction_rejects_over_char_limit(client, fake_supabase):
+    from routers.corrections import MAX_CORRECTION_CHARS
+
+    spec_id = str(uuid4())
+    _spec_exists(fake_supabase, spec_id)
+    resp = client.post(
+        f"/specs/{spec_id}/corrections", json={"suggested_content": "a " * (MAX_CORRECTION_CHARS // 2 + 1)}
+    )
+    assert resp.status_code == 422
+    assert "the limit is 20000" in resp.json()["detail"][0]["msg"]
+    assert fake_supabase.writes == []
+
+
+def test_submit_correction_at_char_limit_is_accepted(client, fake_supabase):
+    from routers.corrections import MAX_CORRECTION_CHARS, MAX_CORRECTION_TOKENS
+    from tokens import count_embedding_tokens
+
+    text = "battery " * (MAX_CORRECTION_CHARS // 8)
+    text = text[:MAX_CORRECTION_CHARS]
+    assert count_embedding_tokens(text) <= MAX_CORRECTION_TOKENS  # repeated words tokenize cheaply
+    spec_id = str(uuid4())
+    _spec_exists(fake_supabase, spec_id)
+    resp = client.post(f"/specs/{spec_id}/corrections", json={"suggested_content": text})
+    assert resp.status_code == 201
+
+
+def test_submit_correction_rejects_over_token_limit(client, fake_supabase):
+    """Under the char cap but over the embedding-token cap (the same 6000 that
+    index_spec enforces), so an approved correction can always be indexed."""
+    from routers.corrections import MAX_CORRECTION_CHARS, MAX_CORRECTION_TOKENS
+    from tokens import count_embedding_tokens
+
+    text = "".join(chr(0x4E00 + (i * 37) % 2000) for i in range(MAX_CORRECTION_CHARS - 10))
+    assert len(text) <= MAX_CORRECTION_CHARS
+    assert count_embedding_tokens(text) > MAX_CORRECTION_TOKENS
+    spec_id = str(uuid4())
+    _spec_exists(fake_supabase, spec_id)
+    resp = client.post(f"/specs/{spec_id}/corrections", json={"suggested_content": text})
+    assert resp.status_code == 422
+    assert f"the limit is {MAX_CORRECTION_TOKENS}" in resp.json()["detail"][0]["msg"]
+    assert fake_supabase.writes == []
+
+
+def test_correction_token_cap_matches_index_limit():
+    from routers.corrections import MAX_CORRECTION_TOKENS
+    from routers.specs import MAX_RAW_TEXT_TOKENS
+
+    assert MAX_CORRECTION_TOKENS <= MAX_RAW_TEXT_TOKENS
+
+
+def test_submit_correction_rate_limited_after_20_per_hour(client, fake_supabase):
+    spec_id = str(uuid4())
+    _spec_exists(fake_supabase, spec_id)
+    for _ in range(20):
+        resp = client.post(f"/specs/{spec_id}/corrections", json={"suggested_content": "fixed"})
+        assert resp.status_code == 201
+    resp = client.post(f"/specs/{spec_id}/corrections", json={"suggested_content": "fixed"})
+    assert resp.status_code == 429
+
+
+def test_submit_correction_requires_login(client, fake_supabase):
+    from main import app
+
+    _as_anonymous(app)
+    try:
+        resp = client.post(f"/specs/{uuid4()}/corrections", json={"suggested_content": "fixed"})
+        assert resp.status_code == 401
+        assert fake_supabase.writes == []
+    finally:
+        _restore_admin(app)
 
 
 def _override_non_admin(client_fixture_app):
