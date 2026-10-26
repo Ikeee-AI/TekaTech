@@ -94,9 +94,54 @@ describe('AnswerText bullets', () => {
     expect([...container.querySelectorAll('li')].map((li) => li.textContent)).toEqual(['One', 'Two'])
   })
 
-  it('still makes a list when one non-bullet line introduces the bullets', () => {
+  it('keeps one lead-in line as a paragraph above the list', () => {
     const { container } = render(<AnswerText text={'Key differences:\n- Battery\n- Screen'} />)
-    expect(container.querySelectorAll('li')).toHaveLength(3)
+    expect([...container.querySelectorAll('li')].map((li) => li.textContent)).toEqual(['Battery', 'Screen'])
+    const paragraphs = [...container.querySelectorAll('p')]
+    expect(paragraphs.map((p) => p.textContent)).toEqual(['Key differences:'])
+    // The lead-in comes before the list in document order, not inside it.
+    expect(paragraphs[0].closest('ul')).toBeNull()
+    expect(paragraphs[0].compareDocumentPosition(container.querySelector('ul')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('renders bold and citations inside the lead-in line', () => {
+    const { container } = render(
+      <AnswerText text={'The **Pixel 9** wins [1]:\n- Battery [1]\n- Price [2]'} sources={SOURCES} />,
+    )
+    const intro = container.querySelector('p')
+    expect(intro?.querySelector('strong')?.textContent).toBe('Pixel 9')
+    expect(intro?.querySelector('button')).toBeTruthy()
+    expect(container.querySelectorAll('li button')).toHaveLength(2)
+  })
+
+  it('ignores blank lines between the lead-in and the bullets', () => {
+    const { container } = render(<AnswerText text={'Intro:\n\n- One\n   \n- Two\n'} />)
+    expect(container.querySelector('p')?.textContent).toBe('Intro:')
+    expect([...container.querySelectorAll('li')].map((li) => li.textContent)).toEqual(['One', 'Two'])
+  })
+
+  it('accepts indented bullets and mixed "-" / "•" markers', () => {
+    const { container } = render(<AnswerText text={'  - One\n• Two'} />)
+    expect([...container.querySelectorAll('li')].map((li) => li.textContent)).toEqual(['One', 'Two'])
+  })
+
+  it('does not treat a hyphen without a following space as a bullet', () => {
+    const { container } = render(<AnswerText text={'-5 °C rated\n- One\n- Two'} />)
+    // "-5 °C" is the lead-in paragraph, not a third list item.
+    expect(container.querySelector('p')?.textContent).toBe('-5 °C rated')
+    expect(container.querySelectorAll('li')).toHaveLength(2)
+  })
+
+  it('falls back to paragraphs when a non-bullet line follows the bullets', () => {
+    const { container } = render(<AnswerText text={'- Battery\n- Screen\nSummary.'} />)
+    expect(container.querySelector('ul')).toBeNull()
+    expect([...container.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['- Battery', '- Screen', 'Summary.'])
+  })
+
+  it('treats a lead-in plus a single bullet as paragraphs', () => {
+    const { container } = render(<AnswerText text={'Intro:\n- Only one'} />)
+    expect(container.querySelector('ul')).toBeNull()
+    expect(container.querySelectorAll('p')).toHaveLength(2)
   })
 
   it('falls back to paragraphs when two or more lines are not bullets', () => {
