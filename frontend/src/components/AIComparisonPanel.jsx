@@ -3,6 +3,7 @@ import { Sparkles } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
 import { validateAnswerResponse } from '../utils/aiAnswerState'
+import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import AiAnswerResult from './AiAnswerResult'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
@@ -122,9 +123,14 @@ export default function AIComparisonPanel({
               id="ai-question"
               rows={2}
               value={question}
+              maxLength={MAX_QUESTION_CHARS}
+              aria-describedby="ai-question-count"
               onChange={(e) => setQuestion(e.target.value)}
               className="w-full bg-white text-slate-900 border border-slate-300 hover:border-slate-400 rounded-lg px-3 py-2.5 text-[15px] focus:border-sage-600 focus:ring-2 focus:ring-sage-200 outline-none transition resize-y"
             />
+            <p id="ai-question-count" className="mt-1 text-right text-xs text-slate-500 tabular-nums">
+              {question.length}/{MAX_QUESTION_CHARS}
+            </p>
           </div>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <label className="flex items-center gap-2 min-h-9 text-sm font-medium text-slate-700 cursor-pointer select-none rounded focus-within:ring-2 focus-within:ring-sage-400 px-1 -mx-1">

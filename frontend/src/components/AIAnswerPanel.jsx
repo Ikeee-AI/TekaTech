@@ -3,6 +3,7 @@ import { Sparkles, X } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
 import { validateAnswerResponse } from '../utils/aiAnswerState'
+import { questionTooLongError } from '../utils/questionLimits'
 import AiAnswerResult from './AiAnswerResult'
 
 export default function AIAnswerPanel({ question, onClose }) {
@@ -25,6 +26,14 @@ export default function AIAnswerPanel({ question, onClose }) {
   } = useAiAnswer()
 
   async function ask() {
+    // The question comes from the URL (?ask=), which can be longer than the capped search
+    // box, so check it here instead of spending a request the backend would reject.
+    const tooLong = questionTooLongError(question)
+    if (tooLong) {
+      setResult(null)
+      setError(tooLong)
+      return
+    }
     setLoading(true)
     setError(null)
     try {

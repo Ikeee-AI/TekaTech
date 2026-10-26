@@ -19,6 +19,8 @@ JAPANESE = (
     "ています画面表示"
 )
 KANA_PAIR = "この"
+# A rare CJK character that o200k_base splits into two tokens.
+TWO_TOKEN_CHAR = "龘"
 
 
 def test_chars_are_a_poor_proxy_for_tokens():
@@ -33,8 +35,8 @@ def test_chars_are_a_poor_proxy_for_tokens():
 
 def test_question_over_token_budget_is_rejected(client, fake_supabase):
     """A question can sit under the char cap while blowing the token budget."""
-    question = KANA_PAIR * 200  # 400 chars, under MAX_QUESTION_CHARS (500)
-    assert len(question) < 500
+    question = TWO_TOKEN_CHAR * 100  # 100 chars, under MAX_QUESTION_CHARS (150)
+    assert len(question) < 150
     assert count_chat_tokens(question) > 160  # over MAX_QUESTION_TOKENS
     resp = client.post("/query", json={"question": question})
     assert resp.status_code == 422
