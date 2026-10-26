@@ -48,6 +48,8 @@ SIMULATION_MODES = ("timeout", "quota", "bad_output", "empty")
 
 MATCH_COUNT = 6
 MATCH_THRESHOLD = 0.5
+# Cosine similarity is never below -1, so this keeps every chunk in scope and lets the ranking decide (#88).
+SCOPED_MATCH_THRESHOLD = -1.0
 
 # gpt-5-mini bills hidden reasoning tokens as output ($2.00 per 1M against $0.25 per 1M for input),
 # and /query is public with a shared prepaid balance, so a question's cost is set by how long the
@@ -218,10 +220,15 @@ def ask_question(request: Request, payload: QueryRequest):
         raise _unusable_output("embedding response had no vector") from None
 
     # 2. Retrieve the most relevant spec chunks via the SQL function in schema.sql
+    # When the caller names gadgets (the gadget page and the compare page always do) the nearest
+    # chunks of those gadgets are returned whatever their score: on the 20 evaluation questions the
+    # right snippet was rank 1 or 2 every time but under 0.5 in 8 of them (#88), and a whole-spec
+    # chunk scores lower for any one fact. The prompt already says "not stated" when a snippet does
+    # not answer. Questions with no gadget scope (the catalog's ask box) keep the cutoff, so unrelated text is not sent.
     rpc_params = {
         "query_embedding": query_embedding,
         "match_count": MATCH_COUNT,
-        "match_threshold": MATCH_THRESHOLD,
+        "match_threshold": SCOPED_MATCH_THRESHOLD if payload.gadget_ids else MATCH_THRESHOLD,
     }
     if payload.gadget_ids:
         rpc_params["match_gadget_ids"] = [str(i) for i in payload.gadget_ids]

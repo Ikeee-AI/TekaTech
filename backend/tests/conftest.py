@@ -67,6 +67,7 @@ class FakeSupabase:
         self.responses = {}
         self.writes = []
         self.filters = []
+        self.rpc_calls = []
 
     def set_response(self, table, operation, data):
         """Configure what .execute() should return for a given table + operation.
@@ -77,6 +78,7 @@ class FakeSupabase:
         return FakeQuery(self, name)
 
     def rpc(self, *a, **k):
+        self.rpc_calls.append((a, k))
         return FakeQuery(self, "_rpc")
 
 

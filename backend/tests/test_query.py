@@ -11,6 +11,9 @@ from routers.query import (
     DETAIL_TIMEOUT,
     DETAIL_UNAVAILABLE,
     DETAIL_UNUSABLE,
+    MATCH_COUNT,
+    MATCH_THRESHOLD,
+    SCOPED_MATCH_THRESHOLD,
 )
 
 
@@ -507,3 +510,65 @@ def test_finished_answer_is_not_treated_as_cut_off(client, fake_supabase):
 
     assert resp.status_code == 200
     assert resp.json()["answer"] == "Short answer [1]."
+
+
+# --- #88: gadget-scoped questions are ranked, not cut off at MATCH_THRESHOLD ---
+
+def _retrieval_params(fake_supabase):
+    assert len(fake_supabase.rpc_calls) == 1
+    name, params = fake_supabase.rpc_calls[0][0]
+    assert name == "match_spec_documents"
+    return params
+
+
+def _ask(client, fake_supabase, body):
+    _set_matching_spec(fake_supabase)
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response()
+        return client.post("/query", json=body)
+
+
+def test_scoped_question_keeps_the_nearest_chunks_whatever_their_score(client, fake_supabase):
+    gadget = "22222222-2222-2222-2222-222222222222"
+    resp = _ask(client, fake_supabase, {"question": "What is the battery?", "gadget_ids": [gadget]})
+
+    assert resp.status_code == 200
+    params = _retrieval_params(fake_supabase)
+    assert params["match_threshold"] == SCOPED_MATCH_THRESHOLD == -1.0
+    assert params["match_gadget_ids"] == [gadget]
+    assert params["match_count"] == MATCH_COUNT
+
+
+def test_comparison_scope_is_ranked_too(client, fake_supabase):
+    ids = ["22222222-2222-2222-2222-222222222222", "33333333-3333-3333-3333-333333333333"]
+    resp = _ask(client, fake_supabase, {"question": "Which has the better chip?", "gadget_ids": ids})
+
+    assert resp.status_code == 200
+    params = _retrieval_params(fake_supabase)
+    assert params["match_threshold"] == SCOPED_MATCH_THRESHOLD
+    assert params["match_gadget_ids"] == ids
+
+
+def test_unscoped_question_keeps_the_cutoff(client, fake_supabase):
+    resp = _ask(client, fake_supabase, {"question": "What is the battery?"})
+
+    assert resp.status_code == 200
+    params = _retrieval_params(fake_supabase)
+    assert params["match_threshold"] == MATCH_THRESHOLD == 0.5
+    assert "match_gadget_ids" not in params
+
+
+def test_scoped_gadget_with_no_indexed_specs_still_gets_the_safe_answer(client, fake_supabase):
+    fake_supabase.set_response("_rpc", None, [])
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        resp = client.post(
+            "/query",
+            json={"question": "What is the battery?", "gadget_ids": ["22222222-2222-2222-2222-222222222222"]},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["sources"] == []
+    assert resp.json()["model_used"] == "none"
+    mock_client.chat.completions.create.assert_not_called()  # nothing to ground on, so no paid call
