@@ -40,15 +40,48 @@ function mobileLinkClass({ isActive }) {
   }`
 }
 
+// How long typing must pause before the text is written to ?q=.
+const SEARCH_SYNC_DELAY_MS = 250
+
 // The catalog's search lives in the URL (?q= filters, ?ask= opens the AI answer),
 // so this bar can drive the catalog from any page.
+//
+// While typing, local state is the source of truth and the URL follows (debounced,
+// and immediately on Enter or blur). Binding the input straight to ?q= dropped
+// letters on fast typing, because each keystroke waited for a navigation to re-render.
+// `synced` is the value the URL has or is about to have: a URL change that differs
+// from it came from outside (back/forward, "Clear filters") and replaces the text;
+// one that matches it is our own write arriving late and must not clobber newer typing.
 function SearchBar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const inputRef = useRef(null)
   const onCatalog = location.pathname === '/'
-  const query = onCatalog ? (searchParams.get('q') ?? '') : ''
+  const urlQuery = onCatalog ? (searchParams.get('q') ?? '') : ''
+  const [query, setText] = useState(urlQuery)
+  const [synced, setSynced] = useState(urlQuery)
+  const [seenUrlQuery, setSeenUrlQuery] = useState(urlQuery)
+
+  if (seenUrlQuery !== urlQuery) {
+    setSeenUrlQuery(urlQuery)
+    if (urlQuery !== synced) {
+      setText(urlQuery)
+      setSynced(urlQuery)
+    }
+  }
+
+  useEffect(() => {
+    if (query === synced) return undefined
+    const timer = window.setTimeout(() => {
+      setSynced(query)
+      const params = new URLSearchParams(onCatalog ? searchParams : undefined)
+      if (query) params.set('q', query)
+      else params.delete('q')
+      navigate({ pathname: '/', search: params.toString() }, { replace: onCatalog })
+    }, SEARCH_SYNC_DELAY_MS)
+    return () => window.clearTimeout(timer)
+  }, [query, synced, onCatalog, searchParams, navigate])
 
   useEffect(() => {
     function handleKey(e) {
@@ -68,8 +101,11 @@ function SearchBar() {
     navigate({ pathname: '/', search: params.toString() }, { replace: onCatalog })
   }
 
-  function setQuery(value) {
-    goToCatalog((params) => (value ? params.set('q', value) : params.delete('q')))
+  // Writes pending text to the URL now instead of waiting for the debounce.
+  function flushQuery() {
+    if (query === synced) return
+    setSynced(query)
+    goToCatalog((params) => (query ? params.set('q', query) : params.delete('q')))
   }
 
   function ask() {
@@ -77,6 +113,8 @@ function SearchBar() {
     if (!question) return
     // The typed text becomes the question, not a name filter: keeping it as
     // ?q= would filter the catalog by the whole sentence and match nothing.
+    setText('')
+    setSynced('')
     goToCatalog((params) => {
       params.delete('q')
       params.set('ask', question)
@@ -96,7 +134,8 @@ function SearchBar() {
         placeholder="Search gadgets, or ask a question and press Enter"
         maxLength={MAX_QUESTION_CHARS}
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={flushQuery}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault()
@@ -107,6 +146,10 @@ function SearchBar() {
       />
       {query.trim() ? (
         <button
+          type="button"
+          // Keeps focus in the input, so a click doesn't first blur-flush ?q= and
+          // then navigate a second time for the question.
+          onMouseDown={(e) => e.preventDefault()}
           onClick={ask}
           aria-label="Ask the AI"
           title="Ask the AI"
