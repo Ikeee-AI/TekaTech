@@ -9,6 +9,7 @@ import Button from './ui/Button'
 import Alert from './ui/Alert'
 import { TextField, TextAreaField } from './ui/FormField'
 import { friendlyError } from '../utils/requestErrors'
+import { notifyCorrectionsChanged } from '../utils/correctionNotices'
 
 const MAX_SPEC_CHARS = 20_000 // mirrors MAX_RAW_TEXT_LENGTH in backend/routers/specs.py
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
@@ -141,7 +142,17 @@ function CorrectionForm({ spec, onDone }) {
     setServerError(null)
     try {
       await api.submitCorrection(spec.id, { suggested_content: text })
-      toast.success('Correction submitted for review')
+      toast.success(
+        <span>
+          Suggestion sent — you&apos;ll see the decision in{' '}
+          <Link to="/my-suggestions" className="font-semibold text-sage-700 underline">
+            My Suggestions
+          </Link>
+          .
+        </span>,
+        { duration: 6000 },
+      )
+      notifyCorrectionsChanged()
       onDone()
     } catch (err) {
       setServerError(friendlyError(err))

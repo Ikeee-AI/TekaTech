@@ -73,4 +73,4 @@ src/
 
 ## Auth
 
-Login/signup goes straight to Supabase (`AuthContext.jsx`) — the backend never sees a password, only the resulting JWT (as a Bearer token, attached automatically by `api/client.js`). Routes that mutate data (`/add`, edit, `/corrections`) are wrapped in `ProtectedRoute`; browsing and asking AI questions never require an account.
+Login/signup goes straight to Supabase (`AuthContext.jsx`) — the backend never sees a password, only the resulting JWT (as a Bearer token, attached automatically by `api/client.js`). Routes that mutate data (`/add`, edit, `/corrections`) and the signed-in user's `/my-suggestions` page are wrapped in `ProtectedRoute`; browsing and asking AI questions never require an account.
