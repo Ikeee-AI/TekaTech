@@ -1,6 +1,8 @@
 from unittest.mock import patch
 from uuid import uuid4
 
+import pytest
+
 
 def test_list_specs_empty(client, fake_supabase):
     fake_supabase.set_response("spec_documents", "select", [])
@@ -222,3 +224,51 @@ def test_ingest_spec_for_missing_gadget_writes_no_spec_rows(client, fake_supabas
     resp = client.post(f"/gadgets/{uuid4()}/specs", json={"raw_text": "Display: 6.2 inch"})
     assert resp.status_code == 404
     assert fake_supabase.writes == []
+
+
+# --- source_url: optional, http(s) only, at most 2000 characters ---------------
+
+
+def _ingest_with_source(client, fake_supabase, source_url):
+    gadget_id = str(uuid4())
+    fake_supabase.set_response("gadgets", "select", [{"id": gadget_id}])
+    fake_supabase.set_response(
+        "spec_documents", "insert", [{"id": str(uuid4()), "gadget_id": gadget_id, "content": "c", "chunk_index": 0}]
+    )
+    body = {"raw_text": "Display: 6.2 inch"}
+    if source_url is not ...:
+        body["source_url"] = source_url
+    return client.post(f"/gadgets/{gadget_id}/specs", json=body)
+
+
+@pytest.mark.parametrize(
+    "source_url",
+    [
+        "javascript:alert(1)",
+        "data:text/html,<script>alert(1)</script>",
+        "ftp://example.com/spec.txt",
+        "file:///etc/passwd",
+        "example.com/spec",
+        "https://",
+        "https://exa mple.com/spec",
+        "https://example.com/" + "a" * 2000,
+    ],
+)
+def test_ingest_spec_rejects_bad_source_url(client, fake_supabase, source_url):
+    resp = _ingest_with_source(client, fake_supabase, source_url)
+    assert resp.status_code == 422
+    assert fake_supabase.writes == []
+
+
+@pytest.mark.parametrize("source_url", ["https://www.gsmarena.com/samsung_galaxy_s24-12773.php", "HTTP://Example.com"])
+def test_ingest_spec_accepts_http_source_url(client, fake_supabase, source_url):
+    resp = _ingest_with_source(client, fake_supabase, f"  {source_url} ")
+    assert resp.status_code == 201
+    assert fake_supabase.writes[-1][2][0]["source_url"] == source_url
+
+
+@pytest.mark.parametrize("source_url", [..., None, "", "   "])
+def test_ingest_spec_source_url_stays_optional(client, fake_supabase, source_url):
+    resp = _ingest_with_source(client, fake_supabase, source_url)
+    assert resp.status_code == 201
+    assert fake_supabase.writes[-1][2][0]["source_url"] is None

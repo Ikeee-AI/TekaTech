@@ -1,8 +1,12 @@
+import math
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -21,6 +25,26 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="TekaTech API", lifespan=lifespan)
+
+def _json_safe(value):
+    """Replace NaN / Infinity floats with their string form, recursively."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return str(value)
+    if isinstance(value, list):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    return value
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    # Same 422 body as FastAPI's default handler, made JSON-safe. Python's JSON
+    # parser accepts the bare tokens NaN and Infinity, each error echoes its
+    # `input`, and the response encoder refuses non-finite floats, so the default
+    # handler turns a body like {"price_php": NaN} into a 500 instead of a 422.
+    return JSONResponse(status_code=422, content={"detail": _json_safe(jsonable_encoder(exc.errors()))})
+
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

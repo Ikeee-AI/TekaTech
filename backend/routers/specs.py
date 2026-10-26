@@ -10,6 +10,7 @@ import cache
 from auth import get_current_user
 from embeddings import chunk_text, embed_texts
 from rate_limit import limiter
+from schemas import clean_http_url
 from supabase_client import supabase
 from tokens import count_embedding_tokens
 
@@ -25,7 +26,11 @@ MAX_RAW_TEXT_TOKENS = 6_000
 
 class SpecIngestRequest(BaseModel):
     raw_text: str = Field(min_length=1, max_length=MAX_RAW_TEXT_LENGTH)
+    # Optional; blank becomes None. Shown as a clickable link on spec and source
+    # cards, so only full http(s) URLs up to MAX_URL_CHARS are accepted.
     source_url: Optional[str] = None
+
+    _clean_source_url = field_validator("source_url")(clean_http_url)
 
     @field_validator("raw_text")
     @classmethod
