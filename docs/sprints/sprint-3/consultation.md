@@ -1,6 +1,6 @@
 # Consultation 3 packet — Sprint 3 (19–25 October 2026)
 
-**Consultation: date and time not yet confirmed (missing)**. **Status cut-off: Sunday 25 October, 19:45 Manila.** Metrics, PR states and production checks below are as of then; refresh them before the consultation. The team deadline was Saturday 24 October, 3:00 PM; the carry-over cutoff was Sunday 25 October, 12:00 PM. Work finished after the deadline is reported with its actual time.
+**Consultation: Monday 26 October 2026 (confirmed by Ikeee-AI on 25 Oct); time to confirm.** **Status cut-off: Sunday 25 October, 19:45 Manila.** Metrics, PR states and production checks below are as of then; refresh them before the consultation. The team deadline was Saturday 24 October, 3:00 PM; the carry-over cutoff was Sunday 25 October, 12:00 PM. Work finished after the deadline is reported with its actual time.
 
 Format: 15 minutes, all five members.
 
@@ -113,9 +113,9 @@ Every member explains their own code and one alternative they considered, includ
 - **Ikeee-AI:** that #89 was approved and merged by the same person.
 
 ## Still to collect
-- [ ] Confirm the Consultation 3 date and time with the instructor
-- [ ] Sprint 3 retro comment from each member on #116
-- [ ] Mika: S3-MI status comment on #55
-- [ ] Status update and close/carry-over decision on #54–#58
+- [x] Consultation 3 date: Mon 26 Oct (time still to confirm)
+- [ ] Sprint 3 retro comment from each member on #116 (as of 25 Oct 23:00: Jopher, Mika, Ikeee-AI posted; Adrian and Manuel missing)
+- [x] Mika: S3-MI status comment on #55 (25 Oct 22:35)
+- [x] #54–#58 closed with final status, label `outcome:partial`; leftover work in #88, #66, #118–#120, #122–#125, #34, #32, #31
 - [ ] Ikeee-AI's own standups were not posted on #72 this sprint; say so if asked
 - [ ] Refresh metrics and `verify-deploy` on the consultation day
