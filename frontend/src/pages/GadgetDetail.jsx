@@ -145,6 +145,7 @@ export default function GadgetDetail() {
       <AIComparisonPanel
         gadgetIds={[id]}
         gadgetNames={[gadget.name]}
+        category={gadget.category}
         title={`Ask About ${gadget.name}`}
         defaultQuestion=""
         suggestions={['What chip does it use?', 'How long does the battery last?', 'Is it water resistant?']}
