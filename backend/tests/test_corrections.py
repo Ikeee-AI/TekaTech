@@ -284,3 +284,27 @@ def test_pending_count_requires_login(client, fake_supabase):
         assert resp.status_code == 401
     finally:
         _restore_admin(app)
+
+# --- badge routes when the database call fails -----------------------------
+
+
+def _broken_table(name):
+    raise ConnectionError("Server disconnected")
+
+
+def test_my_corrections_db_failure_is_503(client, fake_supabase, monkeypatch):
+    monkeypatch.setattr(fake_supabase, "table", _broken_table)
+
+    resp = client.get("/corrections/mine")
+
+    assert resp.status_code == 503
+    assert resp.json()["detail"] == "Couldn't load your suggestions right now."
+
+
+def test_pending_count_db_failure_is_503(client, fake_supabase, monkeypatch):
+    monkeypatch.setattr(fake_supabase, "table", _broken_table)
+
+    resp = client.get("/corrections/pending-count")
+
+    assert resp.status_code == 503
+    assert resp.json()["detail"] == "Couldn't count pending corrections right now."

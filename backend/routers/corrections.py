@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from uuid import UUID
 
@@ -6,6 +7,8 @@ from pydantic import BaseModel
 
 from supabase_client import supabase
 from auth import get_current_user, get_current_admin_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["corrections"])
 
@@ -63,17 +66,23 @@ def list_my_corrections(user=Depends(get_current_user)):
     is the only thing keeping one user's suggestions private from another.
     reviewed_by (the reviewing admin's id) is not selected.
     """
-    result = (
-        supabase.table("spec_corrections")
-        .select(
-            "id, spec_document_id, submitted_by, suggested_content, status, created_at, reviewed_at, "
-            "spec_documents(content, gadget_id, gadgets(id, name, brand))"
+    try:
+        result = (
+            supabase.table("spec_corrections")
+            .select(
+                "id, spec_document_id, submitted_by, suggested_content, status, created_at, reviewed_at, "
+                "spec_documents(content, gadget_id, gadgets(id, name, brand))"
+            )
+            .eq("submitted_by", user.id)
+            .order("created_at", desc=True)
+            .limit(MY_CORRECTIONS_LIMIT)
+            .execute()
         )
-        .eq("submitted_by", user.id)
-        .order("created_at", desc=True)
-        .limit(MY_CORRECTIONS_LIMIT)
-        .execute()
-    )
+    except Exception as exc:
+        # The navbar badge calls this on every page change; a dropped database
+        # connection must be a clean 503 (with CORS headers), not a bare 500.
+        logger.warning("Listing own corrections failed: %s", type(exc).__name__, exc_info=True)
+        raise HTTPException(status_code=503, detail="Couldn't load your suggestions right now.") from None
 
     items = []
     for row in result.data or []:
@@ -114,13 +123,17 @@ def pending_corrections_count(user=Depends(get_current_admin_user)):
     count="exact" + limit(0) pattern scripts/sprint1_check.py uses against the
     real project), so the badge never downloads the queue itself.
     """
-    result = (
-        supabase.table("spec_corrections")
-        .select("id", count="exact")
-        .eq("status", "pending")
-        .limit(0)
-        .execute()
-    )
+    try:
+        result = (
+            supabase.table("spec_corrections")
+            .select("id", count="exact")
+            .eq("status", "pending")
+            .limit(0)
+            .execute()
+        )
+    except Exception as exc:
+        logger.warning("Counting pending corrections failed: %s", type(exc).__name__, exc_info=True)
+        raise HTTPException(status_code=503, detail="Couldn't count pending corrections right now.") from None
     if result.count is None:
         raise HTTPException(status_code=503, detail="Couldn't count pending corrections right now.")
     return {"count": result.count}
