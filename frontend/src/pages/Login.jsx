@@ -14,7 +14,12 @@ export default function Login() {
   const { signIn, signUp } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = location.state?.from?.pathname || '/'
+  // Return to the exact page that sent the user here, query string and hash
+  // included (e.g. /compare?ids=…), not just its path.
+  const fromLocation = location.state?.from
+  const from = fromLocation?.pathname
+    ? { pathname: fromLocation.pathname, search: fromLocation.search ?? '', hash: fromLocation.hash ?? '' }
+    : '/'
 
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')

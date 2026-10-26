@@ -330,15 +330,19 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   const [indexingId, setIndexingId] = useState(null)
   const [indexErrors, setIndexErrors] = useState({})
 
-  const loadSpecs = useCallback(() => {
-    setState((s) => ({ ...s, status: 'loading' }))
+  // `background` refreshes without the loading skeleton, so the list (and any
+  // open correction form) stays on screen; a failed background refresh keeps it.
+  const loadSpecs = useCallback(({ background = false } = {}) => {
+    if (!background) setState((s) => ({ ...s, status: 'loading' }))
     api
       .getSpecs(gadgetId)
       .then((data) => {
         setState({ status: 'ready', specs: data })
         onSpecsChange?.(data)
       })
-      .catch((err) => setState({ status: 'error', specs: [], error: friendlyError(err) }))
+      .catch((err) => {
+        if (!background) setState({ status: 'error', specs: [], error: friendlyError(err) })
+      })
   }, [gadgetId, onSpecsChange])
 
   useEffect(() => {
@@ -352,7 +356,12 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
     try {
       await api.indexSpec(gid, specId)
       toast.success('Spec ready for AI questions')
-      loadSpecs()
+      // Show the new status straight away, then confirm it from the server quietly.
+      setState((s) => ({
+        ...s,
+        specs: s.specs.map((sp) => (sp.id === specId ? { ...sp, indexing_status: 'indexed' } : sp)),
+      }))
+      loadSpecs({ background: true })
     } catch (err) {
       // Kept on the card (not just a toast) so the failure stays visible until retried.
       const message = indexFailureMessage(err)
@@ -411,7 +420,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
           tone="error"
           title="Couldn't Load Specs"
           action={
-            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={loadSpecs}>
+            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => loadSpecs()}>
               Try Again
             </Button>
           }

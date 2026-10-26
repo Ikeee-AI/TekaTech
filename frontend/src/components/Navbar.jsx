@@ -74,7 +74,12 @@ function SearchBar() {
   function ask() {
     const question = query.trim()
     if (!question) return
-    goToCatalog((params) => params.set('ask', question))
+    // The typed text becomes the question, not a name filter: keeping it as
+    // ?q= would filter the catalog by the whole sentence and match nothing.
+    goToCatalog((params) => {
+      params.delete('q')
+      params.set('ask', question)
+    })
   }
 
   return (

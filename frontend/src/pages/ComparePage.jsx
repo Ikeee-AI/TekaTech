@@ -9,6 +9,23 @@ import ErrorState from '../components/ui/ErrorState'
 import AIComparisonPanel from '../components/AIComparisonPanel'
 import { friendlyError } from '../utils/requestErrors'
 
+// Matches the backend's MAX_COMPARISON_GADGETS (routers/comparisons.py).
+const MAX_COMPARE_GADGETS = 5
+
+/** Unique ids from ?ids=, in order, capped. A repeated id would render twice under one React key. */
+function parseIds(raw) {
+  const unique = [...new Set((raw || '').split(',').map((id) => id.trim()).filter(Boolean))]
+  return unique.slice(0, MAX_COMPARE_GADGETS)
+}
+
+/** The single cheapest price, or null when fewer than 2 gadgets have a price or the lowest is tied. */
+function strictlyLowestPrice(gadgets) {
+  const prices = gadgets.map((g) => g.price_php).filter((p) => p != null)
+  if (prices.length < 2) return null
+  const lowest = Math.min(...prices)
+  return prices.filter((p) => p === lowest).length === 1 ? lowest : null
+}
+
 function formatDate(date) {
   if (!date) return '—'
   const d = new Date(date)
@@ -34,7 +51,7 @@ export default function ComparePage() {
   useDocumentTitle('Compare')
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const ids = useMemo(() => (searchParams.get('ids') || '').split(',').filter(Boolean), [searchParams])
+  const ids = useMemo(() => parseIds(searchParams.get('ids')), [searchParams])
 
   const [gadgets, setGadgets] = useState([])
   const [loading, setLoading] = useState(ids.length > 0)
@@ -146,15 +163,15 @@ export default function ComparePage() {
     )
   }
 
-  const cheapestPrice = Math.min(...gadgets.filter((g) => g.price_php).map((g) => g.price_php))
+  const cheapestPrice = strictlyLowestPrice(gadgets)
 
   const rows = [
     { label: 'Brand', get: (g) => g.brand },
     { label: 'Category', get: (g) => g.category },
     {
       label: 'Price',
-      get: (g) => (g.price_php ? `Php ${g.price_php.toLocaleString()}` : '—'),
-      highlight: (g) => g.price_php === cheapestPrice,
+      get: (g) => (g.price_php != null ? `Php ${g.price_php.toLocaleString()}` : '—'),
+      highlight: (g) => cheapestPrice != null && g.price_php === cheapestPrice,
     },
     { label: 'Released', get: (g) => formatDate(g.release_date) },
   ]
