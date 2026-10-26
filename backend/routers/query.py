@@ -12,6 +12,7 @@ import answer_cache
 from auth import get_optional_user
 from citations import strip_invalid_citations
 from config import settings
+from keyword_search import build_keyword_query
 from prompts import PROMPT_VERSION, build_system_prompt
 from rate_limit import limiter
 from routers.comparisons import MAX_COMPARISON_GADGETS
@@ -52,8 +53,22 @@ NO_MATCHES_ANSWER = (
 SIMULATION_HEADER = "x-simulate-failure"
 SIMULATION_MODES = ("timeout", "quota", "bad_output", "empty")
 
+# Admin-only evaluation aid: skip the answer-cache READ for this request (the fresh answer is still
+# stored). Ignored for anonymous and non-admin callers, like the failure drill header.
+CACHE_BYPASS_HEADER = "x-bypass-answer-cache"
+CACHE_BYPASS_VALUES = ("1", "true", "yes")
+
 MATCH_COUNT = 6
-MATCH_THRESHOLD = 0.5
+# Cosine similarity floor for match_spec_documents, chosen from measurements on the verified eval
+# pack (docs/evidence/retrieval-threshold-2026-10-27.md, issue #88). text-embedding-3-small scores
+# are low in absolute terms: relevant query/chunk pairs measured 0.26-0.64 (median 0.47), while
+# off-topic questions peaked at 0.22. The old 0.5 kept only 13 of 39 relevant pairs (13 of 23
+# answerable questions found their evidence); 0.25 keeps all 39 and still returns nothing for the
+# off-topic questions. MATCH_COUNT, not the threshold, bounds how much context reaches the prompt.
+MATCH_THRESHOLD = 0.25
+# Keyword fallback (keyword_search.py, sql/keyword_match_spec_documents.sql): only when the
+# vector search returned nothing. Fewer chunks than MATCH_COUNT, since word matches are coarser.
+KEYWORD_MATCH_COUNT = 4
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 ANSWER_MODEL = "gpt-5-mini"
@@ -141,6 +156,9 @@ class QueryResponse(BaseModel):
     cached: bool = False
     # How it matched: the same normalized question, or a very similar question embedding.
     cache_match: Optional[Literal["exact", "similar"]] = None
+    # How the sources were found: vector similarity, the keyword fallback (only tried when the
+    # vector search found nothing), or neither (no sources; the "no relevant specs" answer).
+    retrieval: Literal["vector", "keyword", "none"] = "none"
 
 
 def _token_count(response, field: str) -> int | None:
@@ -206,6 +224,62 @@ def _simulated_failure(mode: str) -> "QueryResponse":
         error = _unusable_output("simulated")
     error.headers = {"X-Simulated-Failure": mode}
     raise error
+
+
+def _admin_bypasses_cache(request: Request) -> bool:
+    """True only when an admin sends X-Bypass-Answer-Cache: 1, so an evaluation run measures fresh answers.
+
+    Same gating as the failure drill: the caller is looked up only when the header is present, and a
+    non-admin or anonymous caller is ignored silently. Unlike the drill it needs no setting, because
+    it changes no response contract: the request runs the full pipeline it would run on a cache miss.
+    """
+    value = request.headers.get(CACHE_BYPASS_HEADER)
+    if not value or value.strip().lower() not in CACHE_BYPASS_VALUES:
+        return False
+    user = get_optional_user(request.headers.get("authorization"))
+    if not user or not (user.app_metadata or {}).get("is_admin"):
+        return False
+    logger.info("Answer-cache read bypassed by admin %s", getattr(user, "id", "?"))
+    return True
+
+
+# Logged once per process: until sql/keyword_match_spec_documents.sql is applied, every
+# no-match question would otherwise repeat the same warning.
+_keyword_rpc_failure_logged = False
+
+
+def _keyword_matches(question: str, query_embedding, gadget_ids) -> list[dict]:
+    """The keyword fallback's chunks, or [] when it finds nothing or cannot run.
+
+    Never raises: the RPC is applied to production by hand, so a missing function (or any other
+    database error here) must leave the answer exactly as it was before the fallback existed,
+    the "no relevant specs" 200, not a 503.
+    """
+    global _keyword_rpc_failure_logged
+    keywords = build_keyword_query(question)
+    if not keywords:
+        return []
+    params = {
+        "query_embedding": query_embedding,
+        "search_query": keywords.search_query,
+        "unit_patterns": keywords.unit_patterns,
+        "match_count": KEYWORD_MATCH_COUNT,
+    }
+    if gadget_ids:
+        params["match_gadget_ids"] = [str(i) for i in gadget_ids]
+    try:
+        return supabase.rpc("keyword_match_spec_documents", params).execute().data or []
+    except Exception as exc:
+        if not _keyword_rpc_failure_logged:
+            _keyword_rpc_failure_logged = True
+            logger.warning(
+                "Keyword fallback unavailable (%s); answering without it. Apply "
+                "sql/keyword_match_spec_documents.sql to enable it. Further failures log at debug level.",
+                type(exc).__name__, exc_info=True,
+            )
+        else:
+            logger.debug("Keyword fallback unavailable (%s)", type(exc).__name__)
+        return []
 
 
 def _record_query(*, question, answer, cited_gadget_ids, embedding_tokens, prompt_tokens, completion_tokens) -> None:
@@ -287,11 +361,13 @@ def ask_question(request: Request, payload: QueryRequest):
     # 0. The same question in the same scope (gadgets, plain-language flag, prompt version,
     #    models) is answered from answer_cache without any OpenAI call. The generation is
     #    read first, so an answer built from specs that change mid-request is not stored.
+    #    An admin's X-Bypass-Answer-Cache skips both lookups; the fresh answer is still stored.
+    bypass_cache = _admin_bypasses_cache(request)
     cache_scope = answer_cache.scope_key(
         payload.gadget_ids, payload.plain_language, PROMPT_VERSION, EMBEDDING_MODEL, ANSWER_MODEL
     )
     cache_generation = answer_cache.current_generation()
-    cached = answer_cache.lookup_exact(cache_scope, payload.question)
+    cached = None if bypass_cache else answer_cache.lookup_exact(cache_scope, payload.question)
     if cached:
         return _serve_cached(payload.question, cached, "exact", embedding_tokens=0)
 
@@ -312,7 +388,7 @@ def ask_question(request: Request, payload: QueryRequest):
 
     # 1b. A reworded question that is very close to a cached one in the same scope reuses that
     #     answer: the embedding is already paid for, but the chat call (most of the cost) is not.
-    cached = answer_cache.lookup_similar(cache_scope, query_embedding)
+    cached = None if bypass_cache else answer_cache.lookup_similar(cache_scope, query_embedding)
     if cached:
         return _serve_cached(
             payload.question, cached, "similar",
@@ -333,10 +409,17 @@ def ask_question(request: Request, payload: QueryRequest):
     except Exception as exc:
         raise _lookup_failure("match_spec_documents", exc) from None
 
+    # 2b. Nothing above the threshold: try a keyword match in the same scope (issue #88). Its
+    #     chunks are numbered and cited exactly like vector chunks. It never fails the request.
+    retrieval = "vector"
+    if not matches:
+        matches = _keyword_matches(payload.question, query_embedding, payload.gadget_ids)
+        retrieval = "keyword" if matches else "none"
+
     if not matches:
         # Cached too: every spec write through the API invalidates the answers it could
         # affect, so this cannot outlive specs being added that would change it.
-        response = QueryResponse(answer=NO_MATCHES_ANSWER, sources=[], model_used="none")
+        response = QueryResponse(answer=NO_MATCHES_ANSWER, sources=[], model_used="none", retrieval="none")
         answer_cache.store(
             cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
         )
@@ -462,6 +545,7 @@ def ask_question(request: Request, payload: QueryRequest):
         sources=sources,
         model_used=MODEL_USED,
         invalid_citations_removed=invalid_citations_removed,
+        retrieval=retrieval,
     )
     # 7. Only a complete, validated answer reaches this line: errors, 503s and cut-off answers
     #    raised above, so they are never cached.

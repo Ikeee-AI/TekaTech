@@ -51,8 +51,20 @@ Run these in Supabase SQL Editor as the project postgres owner:
 2. `backend/sql/save_specs_before_indexing.sql`
 3. `backend/sql/add_query_history_token_columns.sql`
 4. `backend/sql/match_spec_documents.sql`
-5. `backend/sql/increment_comparison_view_count.sql`
-6. `backend/sql/api_access.sql` (last, to restrict RPC/table grants)
+5. `backend/sql/keyword_match_spec_documents.sql` (keyword fallback for `/query`, issue #88; revokes browser access to its own function)
+6. `backend/sql/increment_comparison_view_count.sql`
+7. `backend/sql/api_access.sql` (last, to restrict RPC/table grants)
+
+### Adding the keyword fallback to an existing project
+
+Projects set up before 27 October 2026 need only step 5. Paste `backend/sql/keyword_match_spec_documents.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It creates one function (`create or replace`, safe to re-run), revokes it from `public`/`anon`/`authenticated`, grants it to `service_role`, and reloads the PostgREST schema cache. It changes no table, index or data. Check it with:
+
+```sql
+select has_function_privilege('anon', 'public.keyword_match_spec_documents(vector,text,text[],integer,uuid[])', 'EXECUTE') as anon_can_run,  -- expect false
+       has_function_privilege('service_role', 'public.keyword_match_spec_documents(vector,text,text[],integer,uuid[])', 'EXECUTE') as backend_can_run;  -- expect true
+```
+
+The backend works before this step. Until the function exists, a question with no vector match logs one warning ("Keyword fallback unavailable") and returns the usual "no relevant specs" answer. Applying it needs no deploy or restart.
 
 Generate a single pasteable setup file in PowerShell from the repository root:
 
@@ -67,6 +79,6 @@ Pending chunks have no embedding and cannot participate in vector retrieval. Ind
 
 ## Verification
 
-The CI database job applies the ordered setup twice to a fresh pgvector/Postgres database. `schema_acceptance.sql` checks retrieval scope, pending exclusion, correction invalidation, view counters, telemetry, RLS/grants and cascades with rolled-back fixtures. Additional scratch checks reproduce and reconcile the legacy RPC and cover vector in either schema. Live read-only verification now passes against the actual Supabase project; scratch fixture SQL remains CI-only.
+The CI database job applies the ordered setup twice to a fresh pgvector/Postgres database. `schema_acceptance.sql` checks retrieval scope (vector and keyword), pending exclusion, keyword unit patterns, correction invalidation, view counters, telemetry, RLS/grants and cascades with rolled-back fixtures. Additional scratch checks reproduce and reconcile the legacy RPC and cover vector in either schema. Live read-only verification now passes against the actual Supabase project; scratch fixture SQL remains CI-only.
 
 Run `backend/scripts/sprint1_check.py` after connecting/resuming Supabase to verify actual table columns and the match RPC. `/gadgets` must return real database data through the backend before the live walking skeleton is accepted.
