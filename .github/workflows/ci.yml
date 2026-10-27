@@ -26,7 +26,7 @@ jobs:
       SUPABASE_KEY: test-dummy-key
       RATE_LIMIT_STORAGE_URI: memory://
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # full history for the gitleaks scan
       - uses: astral-sh/setup-uv@v7
@@ -74,8 +74,8 @@ jobs:
       VITE_SUPABASE_ANON_KEY: test-publishable-key
       VITE_API_BASE_URL: https://example.invalid
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -85,7 +85,7 @@ jobs:
       - name: Unit tests (Vitest, no network)
         run: npm test
       - run: npm run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: frontend-ci-build
           path: frontend/dist
@@ -112,8 +112,8 @@ jobs:
       PGPASSWORD: postgres
       PGDATABASE: tekatech_ci
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Check PostgreSQL client
@@ -214,8 +214,8 @@ jobs:
       API_URL: ${{ vars.PRODUCTION_API_URL }}
       FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Trigger Render deployments
@@ -233,7 +233,7 @@ jobs:
         run: python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" --commit "${{ github.sha }}" --attempts 30 --delay 10 --report /tmp/deployed-smoke.json
       - name: Save deployment verification evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: deployed-smoke-${{ github.sha }}
           path: /tmp/deployed-smoke.json
