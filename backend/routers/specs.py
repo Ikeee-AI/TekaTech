@@ -134,3 +134,5 @@ def delete_spec(gadget_id: UUID, spec_id: UUID, user=Depends(get_current_admin_u
     if not result.data:
         raise HTTPException(status_code=404, detail="Spec not found")
     cache.invalidate("stats")
+    # Saved AI answers may cite the deleted chunk.
+    answer_cache.invalidate_gadget(gadget_id)
