@@ -38,10 +38,10 @@ jobs:
       API_URL: ${{ vars.PRODUCTION_API_URL }}
       FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Verify the target is a checked commit on main
@@ -80,7 +80,7 @@ jobs:
             echo '```json'; cat /tmp/rollback-smoke.json 2>/dev/null || echo '{"status": "no report"}'; echo '```'
             echo "**Next:** open a reviewed revert PR so main matches production, and record detection/recovery times in docs/devops/incidents.md."
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: rollback-smoke-${{ inputs.sha }}
