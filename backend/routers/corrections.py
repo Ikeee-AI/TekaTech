@@ -69,8 +69,16 @@ def resolve_correction(correction_id: UUID, payload: CorrectionResolve, user=Dep
     ).eq("id", str(correction_id)).execute()
 
     if payload.action == "approve":
+        # The old embedding describes the old text. Clear it and mark the spec pending, so
+        # retrieval skips it (match_spec_documents only returns 'indexed' rows) until
+        # POST .../index embeds the corrected text. Keeping 'indexed' made that call a no-op.
         supabase.table("spec_documents").update(
-            {"content": correction["suggested_content"], "verified_at": now}
+            {
+                "content": correction["suggested_content"],
+                "verified_at": now,
+                "indexing_status": "pending",
+                "embedding": None,
+            }
         ).eq("id", correction["spec_document_id"]).execute()
 
     return {"id": correction_id, "status": new_status}
