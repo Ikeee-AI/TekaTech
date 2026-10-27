@@ -178,6 +178,16 @@ def test_spec_indexing_invalidates(client, fake_supabase, openai_mock):
     assert _ask(client, gadget_ids=[GADGET_A]).json()["cached"] is False
 
 
+def test_spec_delete_invalidates_answers_about_that_gadget(client, fake_supabase, openai_mock):
+    _set_specs(fake_supabase)
+    _ask(client, gadget_ids=[GADGET_A])
+    spec_id = str(uuid4())
+    fake_supabase.set_response("spec_documents", "delete", [{"id": spec_id, "gadget_id": GADGET_A}])
+    assert client.delete(f"/gadgets/{GADGET_A}/specs/{spec_id}").status_code == 204
+
+    assert _ask(client, gadget_ids=[GADGET_A]).json()["cached"] is False
+
+
 def test_approved_correction_invalidates_everything(client, fake_supabase, openai_mock):
     _set_specs(fake_supabase)
     _ask(client, gadget_ids=[GADGET_A])
