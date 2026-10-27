@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from uuid import UUID
+import answer_cache
 import cache
 from schemas import GadgetCreate, GadgetUpdate, GadgetResponse, normalize_category
 from supabase_client import supabase
@@ -55,6 +56,8 @@ def update_gadget(gadget_id: UUID, gadget: GadgetUpdate, user=Depends(get_curren
         raise HTTPException(status_code=400, detail="No fields to update")
     result = supabase.table("gadgets").update(payload).eq("id", str(gadget_id)).execute()
     cache.invalidate("gadgets", "stats")
+    # Saved AI answers name the gadget in their sources (answer_cache.py).
+    answer_cache.invalidate_gadget(gadget_id)
     if not result.data:
         raise HTTPException(status_code=404, detail="Gadget not found")
     return result.data[0]
@@ -63,5 +66,7 @@ def update_gadget(gadget_id: UUID, gadget: GadgetUpdate, user=Depends(get_curren
 def delete_gadget(gadget_id: UUID, user=Depends(get_current_admin_user)):
     result = supabase.table("gadgets").delete().eq("id", str(gadget_id)).execute()
     cache.invalidate("gadgets", "stats")
+    # Its spec rows are deleted with it (on delete cascade), so answers citing them go too.
+    answer_cache.invalidate_gadget(gadget_id)
     if not result.data:
         raise HTTPException(status_code=404, detail="Gadget not found")

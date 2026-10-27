@@ -104,12 +104,16 @@ def reset_rate_limiter():
 @pytest.fixture(autouse=True)
 def reset_response_cache():
     """cache.py is module-level too: without clearing it, a GET in one test
-    would be served to the next test instead of that test's fake response."""
+    would be served to the next test instead of that test's fake response.
+    answer_cache.py likewise, or one test's /query answer would answer the next."""
+    import answer_cache
     import cache
 
     cache.clear()
+    answer_cache.clear()
     yield
     cache.clear()
+    answer_cache.clear()
 
 
 @pytest.fixture

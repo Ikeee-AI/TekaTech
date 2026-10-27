@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+import answer_cache
 from supabase_client import supabase
 from auth import get_current_user, get_current_admin_user
 
@@ -172,5 +173,8 @@ def resolve_correction(correction_id: UUID, payload: CorrectionResolve, user=Dep
         supabase.table("spec_documents").update(
             {"content": correction["suggested_content"], "verified_at": now}
         ).eq("id", correction["spec_document_id"]).execute()
+        # Spec text changed. The correction row doesn't carry the gadget id, and approvals
+        # are rare, so drop every saved AI answer rather than look it up (answer_cache.py).
+        answer_cache.invalidate_all()
 
     return {"id": correction_id, "status": new_status}
