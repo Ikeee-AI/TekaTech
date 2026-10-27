@@ -50,6 +50,9 @@ export const api = {
   indexSpec: (gadgetId, specId) => request(`/gadgets/${gadgetId}/specs/${specId}/index`, { method: "POST" }),
   submitCorrection: (specId, data) => request(`/specs/${specId}/corrections`, { method: "POST", body: JSON.stringify(data) }),
   getCorrections: (status = "pending") => request(`/corrections?status=${status}`),
+  // The caller's own suggestions; the backend scopes this to the session user.
+  getMyCorrections: () => request(`/corrections/mine`),
+  getPendingCorrectionCount: () => request(`/corrections/pending-count`),
   resolveCorrection: (id, action) => request(`/corrections/${id}`, { method: "PATCH", body: JSON.stringify({ action }) }),
   createComparisonLink: (gadgetIds) => request(`/comparisons`, { method: "POST", body: JSON.stringify({ gadget_ids: gadgetIds }) }),
   getComparisonBySlug: (slug) => request(`/comparisons/${slug}`),

@@ -8,6 +8,7 @@ import AddGadget from './pages/AddGadget'
 import EditGadget from './pages/EditGadget'
 import ComparePage from './pages/ComparePage'
 import AdminCorrections from './pages/AdminCorrections'
+import MySuggestions from './pages/MySuggestions'
 import ShortLinkRedirect from './pages/ShortLinkRedirect'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
@@ -55,6 +56,14 @@ function App() {
             element={
               <ProtectedRoute adminOnly>
                 <AdminCorrections />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-suggestions"
+            element={
+              <ProtectedRoute>
+                <MySuggestions />
               </ProtectedRoute>
             }
           />
