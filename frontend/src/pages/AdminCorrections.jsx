@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ShieldCheck, Check, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
@@ -7,6 +8,7 @@ import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
 import BackLink from '../components/ui/BackLink'
 import Button from '../components/ui/Button'
+import Alert from '../components/ui/Alert'
 import { friendlyError } from '../utils/requestErrors'
 import { notifyCorrectionsChanged } from '../utils/correctionNotices'
 
@@ -16,6 +18,8 @@ export default function AdminCorrections() {
   const [loading, setLoading] = useState(true)
   const [resolvingId, setResolvingId] = useState(null)
   const [loadError, setLoadError] = useState(null)
+  // Approved corrections whose spec couldn't be re-indexed automatically.
+  const [indexNotices, setIndexNotices] = useState([])
 
   function load() {
     setLoading(true)
@@ -32,18 +36,44 @@ export default function AdminCorrections() {
     load()
   }, [])
 
-  async function resolve(id, action) {
+  // Approving rewrites the spec text, and the database then clears its embedding
+  // (back to pending), so it drops out of AI answers until it is indexed again.
+  // Re-index straight away; if that fails the approved text is still saved.
+  async function reindexApprovedSpec(correction) {
+    const specId = correction.spec_document_id
+    const gadgetId = correction.spec_documents?.gadget_id
+    const gadgetName = correction.spec_documents?.gadgets?.name ?? 'this gadget'
+    if (!specId || !gadgetId) {
+      setIndexNotices((prev) => [...prev, { id: correction.id, gadgetId: null, gadgetName }])
+      return
+    }
+    try {
+      await api.indexSpec(gadgetId, specId)
+      toast.success('Correction approved, applied and re-indexed for AI answers')
+    } catch {
+      setIndexNotices((prev) => [...prev, { id: correction.id, gadgetId, gadgetName }])
+    }
+  }
+
+  async function resolve(correction, action) {
+    const id = correction.id
     setResolvingId(id)
     try {
       await api.resolveCorrection(id, action)
-      toast.success(action === 'approve' ? 'Correction approved and applied' : 'Correction rejected')
-      setCorrections((prev) => prev.filter((c) => c.id !== id))
       notifyCorrectionsChanged() // refresh the Review Queue badge
+      // The card stays (Approve spinner showing) until re-indexing finishes.
+      if (action === 'approve') await reindexApprovedSpec(correction)
+      else toast.success('Correction rejected')
+      setCorrections((prev) => prev.filter((c) => c.id !== id))
     } catch (err) {
       toast.error(friendlyError(err))
     } finally {
       setResolvingId(null)
     }
+  }
+
+  function dismissNotice(id) {
+    setIndexNotices((prev) => prev.filter((n) => n.id !== id))
   }
 
   if (loading) {
@@ -73,6 +103,33 @@ export default function AdminCorrections() {
         <ShieldCheck size={22} className="text-sage-700" /> Review Corrections
       </h1>
       <p className="text-sm text-gray-600 mb-6">Community-submitted spec corrections awaiting approval.</p>
+
+      {indexNotices.length > 0 && (
+        <div className="space-y-2 mb-6">
+          {indexNotices.map((n) => (
+            <Alert
+              key={n.id}
+              tone="warning"
+              title="Correction approved — spec saved but pending indexing"
+              action={
+                <div className="flex flex-wrap gap-2">
+                  {n.gadgetId && (
+                    <Button as={Link} to={`/gadgets/${n.gadgetId}`} variant="secondary" size="sm">
+                      Open {n.gadgetName}
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="sm" onClick={() => dismissNotice(n.id)}>
+                    Dismiss
+                  </Button>
+                </div>
+              }
+            >
+              Spec for {n.gadgetName} updated — re-index it on the gadget page so AI answers use it. Until then, AI
+              answers leave this spec out.
+            </Alert>
+          ))}
+        </div>
+      )}
 
       {corrections.length === 0 ? (
         <EmptyState
@@ -108,11 +165,11 @@ export default function AdminCorrections() {
                   icon={Check}
                   loading={resolvingId === c.id}
                   disabled={resolvingId !== null}
-                  onClick={() => resolve(c.id, 'approve')}
+                  onClick={() => resolve(c, 'approve')}
                 >
                   Approve
                 </Button>
-                <Button variant="danger" size="sm" icon={X} disabled={resolvingId !== null} onClick={() => resolve(c.id, 'reject')}>
+                <Button variant="danger" size="sm" icon={X} disabled={resolvingId !== null} onClick={() => resolve(c, 'reject')}>
                   Reject
                 </Button>
               </div>

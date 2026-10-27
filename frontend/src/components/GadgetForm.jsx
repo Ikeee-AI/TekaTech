@@ -40,14 +40,6 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
   }
   const blur = (field) => () => setTouched((t) => ({ ...t, [field]: true }))
 
-  // PATCH ignores blank fields, so clearing an optional value on edit keeps the old one.
-  function clearedHint(field, hint) {
-    if (isEdit && initialValues[field] !== '' && form[field] === '') {
-      return 'Leaving this blank keeps the current value — clearing isn’t supported yet.'
-    }
-    return hint
-  }
-
   async function handleSubmit(e) {
     e.preventDefault()
     setSubmitted(true)
@@ -59,7 +51,8 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
     setSubmitting(true)
     setServerError(null)
     try {
-      await onSubmit(toGadgetPayload(form))
+      // On edit, emptied optional fields go out as null so the saved value is cleared.
+      await onSubmit(toGadgetPayload(form, isEdit ? initialValues : null))
     } catch (err) {
       setServerError(friendlyError(err))
       setSubmitting(false)
@@ -93,14 +86,13 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
           {...fieldProps('release_date')}
           optional
           type="date"
-          hint={clearedHint('release_date')}
         />
         <TextField
           {...fieldProps('price_php')}
           optional
           inputMode="decimal"
           placeholder="e.g. 24999"
-          hint={clearedHint('price_php', 'Numbers only, no commas.')}
+          hint="Numbers only, no commas."
         />
       </div>
 
@@ -110,7 +102,7 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
         type="url"
         inputMode="url"
         placeholder="https://…"
-        hint={clearedHint('image_url', 'Paste a link to a product photo. File upload comes later.')}
+        hint="Paste a link to a product photo. File upload comes later."
       />
 
       {serverError && (

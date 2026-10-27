@@ -55,9 +55,16 @@ export function validateGadget(form) {
   return errors
 }
 
-/** Turns form strings into the API payload; blank optional fields are left out. */
-export function toGadgetPayload(form) {
-  return {
+const OPTIONAL_FIELDS = ['release_date', 'price_php', 'image_url']
+
+/**
+ * Turns form strings into the API payload; blank optional fields are left out.
+ * On edit, pass the form's starting values: an optional field the user emptied
+ * is sent as an explicit `null`, which tells PATCH to clear it. Fields that were
+ * already blank stay left out (unchanged).
+ */
+export function toGadgetPayload(form, initialValues = null) {
+  const payload = {
     name: form.name.trim(),
     brand: form.brand.trim(),
     category: form.category.trim(),
@@ -65,4 +72,11 @@ export function toGadgetPayload(form) {
     price_php: form.price_php !== '' && form.price_php != null ? Number(form.price_php) : undefined,
     image_url: form.image_url.trim() || undefined,
   }
+  if (initialValues) {
+    for (const field of OPTIONAL_FIELDS) {
+      const hadValue = String(initialValues[field] ?? '').trim() !== ''
+      if (payload[field] === undefined && hadValue) payload[field] = null
+    }
+  }
+  return payload
 }
