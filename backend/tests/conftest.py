@@ -42,6 +42,7 @@ class FakeQuery:
 
     def delete(self, *a, **k):
         self._operation = "delete"
+        self._client.writes.append((self._table, "delete", None))
         return self
 
     def eq(self, *a, **k):
