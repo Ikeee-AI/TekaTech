@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 
 import answer_cache
 import cache
-from auth import get_current_user
+from auth import get_current_admin_user, get_current_user
 from embeddings import chunk_text, embed_texts
 from rate_limit import limiter
 from supabase_client import supabase
@@ -121,3 +121,16 @@ def index_spec(request: Request, gadget_id: UUID, spec_id: UUID, user=Depends(ge
     # The chunk is now retrievable, so answers about this gadget may change.
     answer_cache.invalidate_gadget(gadget_id)
     return {"id": spec_id, "indexing_status": "indexed"}
+
+
+@router.delete("/{spec_id}", status_code=204)
+def delete_spec(gadget_id: UUID, spec_id: UUID, user=Depends(get_current_admin_user)):
+    """Admin-only, like gadget delete (#125). Removes one spec card: its text and its
+    embedding live in the same `spec_documents` row, and pending corrections on it go
+    too (`on delete cascade`). Scoped to the gadget in the URL, so a mismatched pair
+    is a 404 rather than deleting another gadget's spec."""
+    result = (supabase.table("spec_documents").delete()
+              .eq("id", str(spec_id)).eq("gadget_id", str(gadget_id)).execute())
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Spec not found")
+    cache.invalidate("stats")
