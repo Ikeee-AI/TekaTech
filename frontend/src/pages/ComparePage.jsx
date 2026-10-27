@@ -32,6 +32,20 @@ function formatDate(date) {
   return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
+/**
+ * Gadget photo for the compare cards. If the image URL is missing or fails to load
+ * (e.g. an external shop link that blocks hot-linking), shows the same "no photo"
+ * icon as the catalog and detail pages instead of a broken image with alt text (#120).
+ */
+function GadgetThumb({ src, alt, iconClassName }) {
+  // Remembers which URL failed, so a different gadget's image still gets its chance.
+  const [failedSrc, setFailedSrc] = useState(null)
+  if (!src || failedSrc === src) {
+    return <ImageOff size={18} className={iconClassName} aria-hidden="true" />
+  }
+  return <img src={src} alt={alt} className="h-full w-full object-cover" onError={() => setFailedSrc(src)} />
+}
+
 /** Value cell; the cheapest price gets a visible "Lowest price" label, not just color and an icon. */
 function CompareValue({ row, gadget }) {
   const isHighlighted = row.highlight?.(gadget)
@@ -231,11 +245,7 @@ export default function ComparePage() {
                       <X size={16} aria-hidden="true" />
                     </button>
                     <div className="h-20 w-full bg-gray-50 rounded-lg overflow-hidden mb-2 flex items-center justify-center">
-                      {g.image_url ? (
-                        <img src={g.image_url} alt={g.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <ImageOff size={18} className="text-gray-300" />
-                      )}
+                      <GadgetThumb src={g.image_url} alt={g.name} iconClassName="text-gray-300" />
                     </div>
                     <Link
                       to={`/gadgets/${g.id}`}
@@ -282,11 +292,7 @@ export default function ComparePage() {
                 <X size={16} aria-hidden="true" />
               </button>
               <div className="h-14 w-14 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center mb-2">
-                {g.image_url ? (
-                  <img src={g.image_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <ImageOff size={18} className="text-gray-400" aria-hidden="true" />
-                )}
+                <GadgetThumb src={g.image_url} alt="" iconClassName="text-gray-400" />
               </div>
               <Link
                 to={`/gadgets/${g.id}`}

@@ -222,3 +222,63 @@ def test_ingest_spec_for_missing_gadget_writes_no_spec_rows(client, fake_supabas
     resp = client.post(f"/gadgets/{uuid4()}/specs", json={"raw_text": "Display: 6.2 inch"})
     assert resp.status_code == 404
     assert fake_supabase.writes == []
+
+
+# --- #125: DELETE /gadgets/{gadget_id}/specs/{spec_id} (admin only) ---
+
+def _as_user(app_metadata):
+    """Swap the fixture's admin for another caller; returns a restore function."""
+    from types import SimpleNamespace
+    from main import app
+    from auth import get_current_user
+    previous = app.dependency_overrides.get(get_current_user)
+    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
+        id="someone", email="user@example.com", app_metadata=app_metadata
+    )
+    return lambda: app.dependency_overrides.__setitem__(get_current_user, previous)
+
+
+def test_delete_spec_admin_removes_that_one_row(client, fake_supabase):
+    gadget_id, spec_id = str(uuid4()), str(uuid4())
+    fake_supabase.set_response("spec_documents", "delete", [{"id": spec_id, "gadget_id": gadget_id}])
+    resp = client.delete(f"/gadgets/{gadget_id}/specs/{spec_id}")
+    assert resp.status_code == 204
+    assert ("spec_documents", "delete", None) in fake_supabase.writes
+    # Scoped to both the spec and its gadget, so one card is deleted, never another gadget's.
+    assert ("spec_documents", "id", spec_id) in fake_supabase.filters
+    assert ("spec_documents", "gadget_id", gadget_id) in fake_supabase.filters
+
+
+def test_delete_spec_unknown_returns_404(client, fake_supabase):
+    fake_supabase.set_response("spec_documents", "delete", [])
+    resp = client.delete(f"/gadgets/{uuid4()}/specs/{uuid4()}")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Spec not found"
+
+
+def test_delete_spec_non_admin_gets_403_and_deletes_nothing(client, fake_supabase):
+    restore = _as_user({})
+    try:
+        resp = client.delete(f"/gadgets/{uuid4()}/specs/{uuid4()}")
+        assert resp.status_code == 403
+        assert fake_supabase.writes == []
+    finally:
+        restore()
+
+
+def test_delete_spec_requires_login(client, fake_supabase):
+    from main import app
+    from auth import get_current_user
+    previous = app.dependency_overrides.pop(get_current_user)
+    try:
+        resp = client.delete(f"/gadgets/{uuid4()}/specs/{uuid4()}")
+        assert resp.status_code == 401
+        assert fake_supabase.writes == []
+    finally:
+        app.dependency_overrides[get_current_user] = previous
+
+
+def test_delete_spec_malformed_id_returns_422(client, fake_supabase):
+    resp = client.delete(f"/gadgets/{uuid4()}/specs/not-a-uuid")
+    assert resp.status_code == 422
+    assert fake_supabase.writes == []
