@@ -14,4 +14,10 @@ export default defineConfig({
       })
     },
   }],
+  // Vitest (`npm test`). jsdom supplies window/localStorage for the browser-only
+  // utils and the AnswerText render tests; tests never call the real API.
+  test: {
+    environment: 'jsdom',
+    include: ['src/**/*.test.{js,jsx}'],
+  },
 })

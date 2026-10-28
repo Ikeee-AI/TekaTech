@@ -1,0 +1,114 @@
+// AnswerText renders exactly three things from the model: [n] citations, **bold** and
+// "- " bullets. These tests pin that contract, because the prompt in
+// backend/prompts.py promises the model nothing more. If one of these fails after a
+// change, the prompt and this component have drifted apart.
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import AnswerText from './AnswerText'
+
+afterEach(cleanup)
+
+const SOURCES = [
+  { gadget_name: 'Pixel 9', content: 'Battery: 4700 mAh' },
+  { gadget_name: 'iPhone 16', content: 'Battery: 3561 mAh' },
+]
+
+describe('AnswerText paragraphs', () => {
+  it('renders one paragraph per non-blank line', () => {
+    const { container } = render(<AnswerText text={'First line.\n\n   \nSecond line.'} />)
+    const paragraphs = container.querySelectorAll('p')
+    expect([...paragraphs].map((p) => p.textContent)).toEqual(['First line.', 'Second line.'])
+    expect(container.querySelector('ul')).toBeNull()
+  })
+
+  it('renders **bold** as <strong> without the asterisks', () => {
+    const { container } = render(<AnswerText text="The **Pixel 9** lasts longer." />)
+    const strong = container.querySelector('strong')
+    expect(strong?.textContent).toBe('Pixel 9')
+    expect(container.textContent).toBe('The Pixel 9 lasts longer.')
+  })
+
+  it('leaves an unclosed ** as literal text', () => {
+    const { container } = render(<AnswerText text="Battery is **big" />)
+    expect(container.querySelector('strong')).toBeNull()
+    expect(container.textContent).toBe('Battery is **big')
+  })
+
+  it('does not render unsupported markup such as headings', () => {
+    const { container } = render(<AnswerText text="## Battery" />)
+    expect(container.querySelector('h2')).toBeNull()
+    expect(container.textContent).toBe('## Battery')
+  })
+})
+
+describe('AnswerText citations', () => {
+  it('turns [n] into a button named after its source and reports a zero-based index', () => {
+    const onCiteClick = vi.fn()
+    render(<AnswerText text="Pixel has 4700 mAh [1] and iPhone 3561 mAh [2]." sources={SOURCES} onCiteClick={onCiteClick} />)
+
+    const second = screen.getByRole('button', { name: 'Source 2: iPhone 16. Show this source' })
+    expect(second.textContent).toBe('2')
+    fireEvent.click(second)
+    expect(onCiteClick).toHaveBeenCalledWith(1)
+    expect(screen.getAllByRole('button')).toHaveLength(2)
+  })
+
+  it('keeps a citation with no matching source as plain text', () => {
+    const { container } = render(<AnswerText text="Unknown claim [3]." sources={SOURCES} />)
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(container.textContent).toBe('Unknown claim [3].')
+  })
+
+  it('still renders a generic citation button when no source list is passed', () => {
+    render(<AnswerText text="Claim [1]." />)
+    expect(screen.getByRole('button', { name: 'Source 1. Show this source' })).toBeTruthy()
+  })
+
+  it('does not throw when clicked without an onCiteClick handler', () => {
+    render(<AnswerText text="Claim [1]." sources={SOURCES} />)
+    expect(() => fireEvent.click(screen.getByRole('button'))).not.toThrow()
+  })
+
+  it('does not parse grouped [1,2] citations, which the prompt forbids', () => {
+    const { container } = render(<AnswerText text="Both [1,2]." sources={SOURCES} />)
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(container.textContent).toBe('Both [1,2].')
+  })
+
+  it('renders a citation on the same line as bold text', () => {
+    render(<AnswerText text="**Pixel 9** wins [1]." sources={SOURCES} />)
+    expect(screen.getByRole('button', { name: /Pixel 9/ })).toBeTruthy()
+  })
+})
+
+describe('AnswerText bullets', () => {
+  it('renders two or more "- " lines as a list with the markers removed', () => {
+    const { container } = render(<AnswerText text={'- Battery 4700 mAh [1]\n- Screen 6.3 in'} sources={SOURCES} />)
+    const items = [...container.querySelectorAll('ul > li')]
+    expect(items.map((li) => li.textContent)).toEqual(['Battery 4700 mAh 1', 'Screen 6.3 in'])
+    expect(container.querySelector('p')).toBeNull()
+  })
+
+  it('accepts "•" bullets as well as "-"', () => {
+    const { container } = render(<AnswerText text={'• One\n• Two'} />)
+    expect([...container.querySelectorAll('li')].map((li) => li.textContent)).toEqual(['One', 'Two'])
+  })
+
+  it('still makes a list when one non-bullet line introduces the bullets', () => {
+    const { container } = render(<AnswerText text={'Key differences:\n- Battery\n- Screen'} />)
+    expect(container.querySelectorAll('li')).toHaveLength(3)
+  })
+
+  it('falls back to paragraphs when two or more lines are not bullets', () => {
+    const { container } = render(<AnswerText text={'Intro.\n- Battery\n- Screen\nSummary.'} />)
+    expect(container.querySelector('ul')).toBeNull()
+    expect(container.querySelectorAll('p')).toHaveLength(4)
+    expect(container.textContent).toContain('- Battery')
+  })
+
+  it('treats a single bullet line as a paragraph, not a list', () => {
+    const { container } = render(<AnswerText text="- Only one point" />)
+    expect(container.querySelector('ul')).toBeNull()
+    expect(container.querySelector('p')?.textContent).toBe('- Only one point')
+  })
+})
