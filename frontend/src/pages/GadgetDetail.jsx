@@ -19,7 +19,8 @@ const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
 function formatRelease(date) {
   const d = new Date(date)
   if (Number.isNaN(d.getTime())) return date
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+  // release_date is a plain date read as midnight UTC; format in UTC so it doesn't shift a day.
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
 }
 
 export default function GadgetDetail() {

@@ -44,7 +44,9 @@ function formatRelease(date) {
   if (!date) return null
   const d = new Date(date)
   if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+  // release_date is a plain date ('2025-03-12'), read as midnight UTC: format in UTC so it
+  // doesn't show a day early west of UTC. Same as ComparePage (#98).
+  return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric', timeZone: 'UTC' })
 }
 
 function countBy(list, key) {
