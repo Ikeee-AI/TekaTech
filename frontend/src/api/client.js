@@ -45,7 +45,7 @@ export const api = {
   deleteGadget: (id) => request(`/gadgets/${id}`, { method: "DELETE" }),
   getSpecs: (gadgetId) => request(`/gadgets/${gadgetId}/specs`),
   ingestSpecs: (gadgetId, data) => request(`/gadgets/${gadgetId}/specs`, { method: "POST", body: JSON.stringify(data) }),
-  // The backend has no spec DELETE route yet, so nothing calls this until it does.
+  // Admin-only (#127); used by DeleteSpecButton.
   deleteSpec: (gadgetId, specId) => request(`/gadgets/${gadgetId}/specs/${specId}`, { method: "DELETE" }),
   indexSpec: (gadgetId, specId) => request(`/gadgets/${gadgetId}/specs/${specId}/index`, { method: "POST" }),
   submitCorrection: (specId, data) => request(`/specs/${specId}/corrections`, { method: "POST", body: JSON.stringify(data) }),
