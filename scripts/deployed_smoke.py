@@ -1,5 +1,6 @@
 """Check public deployed version, frontend shell, database path and CORS. No AI calls."""
 import argparse
+from urllib.error import HTTPError
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -15,6 +16,27 @@ def fetch(url, origin=None):
         return response.read().decode("utf-8"), dict(response.headers.items())
 
 
+def check_readiness(api_url, request=fetch):
+    """Deep health: /health/ready answers 200 only after a database round trip.
+
+    Releases older than the endpoint answer 404; report "skipped" rather than
+    failing, so a rollback rehearsal to such a release still passes. A 503 (or
+    any other answer than database "ok") fails the smoke.
+    """
+    try:
+        body, _ = request(f"{api_url}/health/ready")
+    except HTTPError as exc:
+        if exc.code == 404:
+            return {"readiness": "skipped"}
+        if exc.code == 503:
+            raise ValueError("Backend readiness failed: database not reachable from the API") from None
+        raise
+    payload = json.loads(body)
+    if payload.get("status") != "ok" or payload.get("database") != "ok":
+        raise ValueError("Backend readiness failed: database not reachable from the API")
+    return {"readiness": "passed", "database_latency_ms": payload.get("latency_ms")}
+
+
 def check_deployment(api_url, frontend_url, commit, request=fetch):
     api_url, frontend_url = api_url.rstrip("/"), frontend_url.rstrip("/")
     for url in (api_url, frontend_url):
@@ -24,6 +46,7 @@ def check_deployment(api_url, frontend_url, commit, request=fetch):
     health, _ = request(f"{api_url}/health")
     if json.loads(health).get("status") != "ok":
         raise ValueError("Backend liveness failed")
+    readiness = check_readiness(api_url, request)
     backend_version, _ = request(f"{api_url}/version")
     frontend_version, _ = request(f"{frontend_url}/version.json")
     if json.loads(backend_version).get("commit") != commit or json.loads(frontend_version).get("commit") != commit:
@@ -38,7 +61,7 @@ def check_deployment(api_url, frontend_url, commit, request=fetch):
     html, _ = request(frontend_url)
     if 'id="root"' not in html:
         raise ValueError("Frontend React shell missing")
-    return {"commit": commit, "gadget_count": len(rows), "cors": "passed"}
+    return {"commit": commit, "gadget_count": len(rows), "cors": "passed", **readiness}
 
 
 def main():
