@@ -237,7 +237,7 @@ function Navbar() {
           <Link
             to="/add"
             aria-label="Add gadget"
-            className={`flex items-center gap-2 bg-sage-700 text-white text-[15px] font-bold px-3 sm:px-5 py-2.5 rounded-lg shadow-md shadow-sage-700/25 ring-2 ring-sage-400/50 hover:bg-sage-800 hover:shadow-lg active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
+            className={`flex items-center gap-2 bg-sage-700 text-white text-[15px] font-bold px-3 sm:px-5 py-2.5 min-h-10 rounded-lg shadow-md shadow-sage-700/25 ring-2 ring-sage-400/50 hover:bg-sage-800 hover:shadow-lg active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
           >
             <Plus size={18} strokeWidth={2.5} /> <span className="hidden sm:inline">Add Gadget</span>
           </Link>

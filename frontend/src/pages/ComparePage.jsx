@@ -238,7 +238,8 @@ export default function ComparePage() {
                     <button
                       onClick={() => removeGadget(g.id)}
                       aria-label={`Remove ${g.name} from comparison`}
-                      className="absolute top-1.5 right-1.5 w-8 h-8 flex items-center justify-center text-slate-600 hover:text-red-700 hover:bg-red-50 transition rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      // 32px visible, 40px to touch, like the mobile card's remove button.
+                      className="absolute top-1.5 right-1.5 w-8 h-8 before:absolute before:-inset-1 before:content-[''] flex items-center justify-center text-slate-600 hover:text-red-700 hover:bg-red-50 transition rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
                       <X size={16} aria-hidden="true" />
                     </button>

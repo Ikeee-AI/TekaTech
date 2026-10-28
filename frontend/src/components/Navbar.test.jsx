@@ -62,7 +62,8 @@ describe('Navbar search', () => {
     act(() => vi.advanceTimersByTime(250))
     expect(currentUrl()).toBe('/?q=best+camera%3F')
     expect(input().value).toBe('best camera?')
-  })
+    // 12 renders with fake timers: 5 s timed out on slower laptops (Mika's review on #139).
+  }, 15000)
 
   it('writes ?q= at once when the input loses focus', () => {
     renderNavbar()
