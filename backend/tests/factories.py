@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 
@@ -11,8 +11,8 @@ def sample_gadget(**overrides):
         "release_date": "2024-01-17",
         "price_php": 45990.0,
         "image_url": None,
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     base.update(overrides)
     return base

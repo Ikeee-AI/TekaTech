@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, ExternalLink, RefreshCw, Copy, Check, CheckCircle2 } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { ChevronDown, ChevronUp, ExternalLink, RefreshCw, Copy, Check, CheckCircle2, FileText, LogIn, Zap } from 'lucide-react'
 import AnswerText from './AnswerText'
+import FollowUpQuestions from './FollowUpQuestions'
+import { useAuth } from '../hooks/useAuth'
 import Alert from './ui/Alert'
 import Button from './ui/Button'
-import { describeAiFailure, isMissingEvidence } from '../utils/aiAnswerState'
+import { citedSourceCount, describeAiFailure, isMissingEvidence } from '../utils/aiAnswerState'
 
 /** "Source: example.com" for a spec sheet link, or plain "Source" if the URL is odd. */
 function sourceLabel(url) {
@@ -69,6 +72,60 @@ function FailureNotice({ error, onRetry }) {
   )
 }
 
+const linkClass =
+  'inline-flex items-center gap-1 font-semibold text-amber-900 underline underline-offset-2 hover:text-amber-950 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400'
+
+function scrollToSpecs() {
+  const heading = document.getElementById('specs-title')
+  if (!heading) return
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  heading.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+}
+
+/** The No-Evidence state, with a next step: rephrase, or add specs to the gadgets in
+ * scope (specTargets: [{ id, name }]). On that gadget's own page the link scrolls to its
+ * Specifications section instead of reloading the page. */
+function NoEvidenceNotice({ specTargets }) {
+  const { user } = useAuth() ?? {}
+  const { pathname } = useLocation()
+  const targets = specTargets ?? []
+  return (
+    <Alert tone="warning" title="No Evidence Found">
+      <p>TekaTech has no saved specs that answer this, so there is no grounded answer to show.</p>
+      <p className="mt-1.5">
+        Tip: rephrase using a spec term, like &ldquo;battery capacity&rdquo; or &ldquo;screen size&rdquo;.
+      </p>
+      {targets.length === 0 ? (
+        <p className="mt-1.5">Or add specs to the gadget you are asking about, from its page.</p>
+      ) : user ? (
+        <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+          {targets.map((t) =>
+            pathname === `/gadgets/${t.id}` ? (
+              <li key={t.id}>
+                <button type="button" onClick={scrollToSpecs} className={linkClass}>
+                  <FileText size={14} aria-hidden="true" /> Add or index specs for {t.name}
+                </button>
+              </li>
+            ) : (
+              <li key={t.id}>
+                <Link to={`/gadgets/${t.id}`} className={linkClass}>
+                  <FileText size={14} aria-hidden="true" /> Add or index specs for {t.name}
+                </Link>
+              </li>
+            ),
+          )}
+        </ul>
+      ) : (
+        <p className="mt-1.5">
+          <Link to="/login" className={linkClass}>
+            <LogIn size={14} aria-hidden="true" /> Log in to add specs
+          </Link>
+        </p>
+      )}
+    </Alert>
+  )
+}
+
 /** Shared loading / error / answer / sources / footer block for both
  * AIAnswerPanel and AIComparisonPanel — the two panels only differ in their
  * header and question-input UI above this. The wrapper is an aria-live region
@@ -88,8 +145,13 @@ export default function AiAnswerResult({
   handleCopy,
   copied,
   skeletonLines = 3,
+  followUps = [],
+  onFollowUp,
+  specTargets,
 }) {
   const missingEvidence = result ? isMissingEvidence(result) : false
+  // Only cited sources count as grounding; with none cited there is no green check (#124 owns that label).
+  const citedCount = result && !missingEvidence ? citedSourceCount(result) : 0
   return (
     <div aria-live="polite" aria-busy={loading || undefined}>
       {loading && <LoadingNotice skeletonLines={skeletonLines} />}
@@ -99,16 +161,23 @@ export default function AiAnswerResult({
       {result && !loading && !error && (
         <div className="space-y-4 mt-3">
           {missingEvidence ? (
-            <Alert tone="warning" title="No Evidence Found">
-              <p>TekaTech has no saved specs that answer this, so there is no grounded answer to show.</p>
-              <p className="mt-1.5">Try rephrasing the question, or add specs to the gadget you are asking about.</p>
-            </Alert>
+            <NoEvidenceNotice specTargets={specTargets} />
           ) : (
             <>
-              <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
-                <CheckCircle2 size={14} aria-hidden="true" />
-                Answer based on {result.sources.length} cited spec{result.sources.length === 1 ? '' : 's'}
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                {citedCount > 0 && (
+                  <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                    <CheckCircle2 size={14} aria-hidden="true" />
+                    Answer based on {citedCount} cited spec{citedCount === 1 ? '' : 's'}
+                  </p>
+                )}
+                {result.cached === true && (
+                  <p className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
+                    <Zap size={12} aria-hidden="true" />
+                    Instant answer (saved)
+                  </p>
+                )}
+              </div>
               <div className="text-[15px] text-slate-800 leading-relaxed">
                 <AnswerText text={result.answer} sources={result.sources} onCiteClick={handleCiteClick} />
               </div>
@@ -177,6 +246,8 @@ export default function AiAnswerResult({
               )}
             </div>
           )}
+
+          <FollowUpQuestions questions={followUps} onSelect={onFollowUp} disabled={loading} />
 
           <div className="flex items-center justify-between flex-wrap gap-3 pt-3 border-t border-slate-200">
             <label className="flex items-center gap-2 min-h-9 text-sm font-medium text-slate-700 cursor-pointer select-none rounded focus-within:ring-2 focus-within:ring-sage-400 px-1 -mx-1">

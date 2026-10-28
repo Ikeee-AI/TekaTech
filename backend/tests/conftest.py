@@ -25,9 +25,13 @@ class FakeQuery:
         self._client = fake_client
         self._table = table_name
         self._operation = None
+        self._count = None
 
     def select(self, *a, **k):
         self._operation = self._operation or "select"
+        # select(..., count="exact") asks PostgREST for a row count; the fake
+        # answers it with the length of the configured response.
+        self._count = k.get("count")
         return self
 
     def insert(self, *a, **k):
@@ -42,6 +46,7 @@ class FakeQuery:
 
     def delete(self, *a, **k):
         self._operation = "delete"
+        self._client.writes.append((self._table, "delete", None))
         return self
 
     def eq(self, *a, **k):
@@ -52,14 +57,17 @@ class FakeQuery:
         return self
 
     def order(self, *a, **k):
+        self._client.orders.append((self._table, *a, k))
         return self
 
     def limit(self, *a, **k):
+        self._client.limits.append((self._table, *a))
         return self
 
     def execute(self):
         data = self._client.responses.get((self._table, self._operation), [])
-        return SimpleNamespace(data=data)
+        count = len(data) if self._count else None
+        return SimpleNamespace(data=data, count=count)
 
 
 class FakeSupabase:
@@ -67,6 +75,8 @@ class FakeSupabase:
         self.responses = {}
         self.writes = []
         self.filters = []
+        self.orders = []
+        self.limits = []
         self.rpc_calls = []
 
     def set_response(self, table, operation, data):
@@ -77,9 +87,12 @@ class FakeSupabase:
     def table(self, name):
         return FakeQuery(self, name)
 
-    def rpc(self, *a, **k):
-        self.rpc_calls.append((a, k))
-        return FakeQuery(self, "_rpc")
+    def rpc(self, name=None, params=None, *a, **k):
+        """Every RPC answers from "_rpc" unless "_rpc:<function name>" was configured for it.
+        Calls are recorded in rpc_calls as (name, params)."""
+        self.rpc_calls.append((name, params))
+        specific = f"_rpc:{name}"
+        return FakeQuery(self, specific if (specific, None) in self.responses else "_rpc")
 
 
 @pytest.fixture(autouse=True)
@@ -97,12 +110,16 @@ def reset_rate_limiter():
 @pytest.fixture(autouse=True)
 def reset_response_cache():
     """cache.py is module-level too: without clearing it, a GET in one test
-    would be served to the next test instead of that test's fake response."""
+    would be served to the next test instead of that test's fake response.
+    answer_cache.py likewise, or one test's /query answer would answer the next."""
+    import answer_cache
     import cache
 
     cache.clear()
+    answer_cache.clear()
     yield
     cache.clear()
+    answer_cache.clear()
 
 
 @pytest.fixture

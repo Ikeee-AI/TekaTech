@@ -1,18 +1,50 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, X, Sparkles, ImageOff, Trophy, Share2 } from 'lucide-react'
+import { X, Sparkles, ImageOff, Trophy, Share2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
+import BackLink from '../components/ui/BackLink'
 import AIComparisonPanel from '../components/AIComparisonPanel'
 import { friendlyError } from '../utils/requestErrors'
+
+// Matches the backend's MAX_COMPARISON_GADGETS (routers/comparisons.py).
+const MAX_COMPARE_GADGETS = 5
+
+/** Unique ids from ?ids=, in order, capped. A repeated id would render twice under one React key. */
+function parseIds(raw) {
+  const unique = [...new Set((raw || '').split(',').map((id) => id.trim()).filter(Boolean))]
+  return unique.slice(0, MAX_COMPARE_GADGETS)
+}
+
+/** The single cheapest price, or null when fewer than 2 gadgets have a price or the lowest is tied. */
+function strictlyLowestPrice(gadgets) {
+  const prices = gadgets.map((g) => g.price_php).filter((p) => p != null)
+  if (prices.length < 2) return null
+  const lowest = Math.min(...prices)
+  return prices.filter((p) => p === lowest).length === 1 ? lowest : null
+}
 
 function formatDate(date) {
   if (!date) return '—'
   const d = new Date(date)
   return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
+}
+
+/**
+ * Gadget photo for the compare cards. If the image URL is missing or fails to load
+ * (e.g. an external shop link that blocks hot-linking), shows the same "no photo"
+ * icon as the catalog and detail pages instead of a broken image with alt text (#120).
+ */
+function GadgetThumb({ src, alt, iconClassName }) {
+  // Remembers which URL failed, so a different gadget's image still gets its chance.
+  const [failedSrc, setFailedSrc] = useState(null)
+  if (!src || failedSrc === src) {
+    return <ImageOff size={18} className={iconClassName} aria-hidden="true" />
+  }
+  return <img src={src} alt={alt} className="h-full w-full object-cover" onError={() => setFailedSrc(src)} />
 }
 
 /** Value cell; the cheapest price gets a visible "Lowest price" label, not just color and an icon. */
@@ -34,7 +66,7 @@ export default function ComparePage() {
   useDocumentTitle('Compare')
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const ids = useMemo(() => (searchParams.get('ids') || '').split(',').filter(Boolean), [searchParams])
+  const ids = useMemo(() => parseIds(searchParams.get('ids')), [searchParams])
 
   const [gadgets, setGadgets] = useState([])
   const [loading, setLoading] = useState(ids.length > 0)
@@ -107,7 +139,7 @@ export default function ComparePage() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4" role="status" aria-label="Loading comparison">
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-64 bg-gray-100 rounded-xl animate-pulse" />
         ))}
@@ -137,7 +169,7 @@ export default function ComparePage() {
         action={
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-sage-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-1.5 bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-sage-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 focus-visible:ring-offset-2"
           >
             Back to Catalog
           </Link>
@@ -146,36 +178,33 @@ export default function ComparePage() {
     )
   }
 
-  const cheapestPrice = Math.min(...gadgets.filter((g) => g.price_php).map((g) => g.price_php))
+  const cheapestPrice = strictlyLowestPrice(gadgets)
 
   const rows = [
     { label: 'Brand', get: (g) => g.brand },
     { label: 'Category', get: (g) => g.category },
     {
       label: 'Price',
-      get: (g) => (g.price_php ? `Php ${g.price_php.toLocaleString()}` : '—'),
-      highlight: (g) => g.price_php === cheapestPrice,
+      get: (g) => (g.price_php != null ? `Php ${g.price_php.toLocaleString()}` : '—'),
+      highlight: (g) => cheapestPrice != null && g.price_php === cheapestPrice,
     },
     { label: 'Released', get: (g) => formatDate(g.release_date) },
   ]
 
   return (
     <div>
-      <Link
-        to="/"
-        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4 transition rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
-      >
-        <ArrowLeft size={15} /> Back to Catalog
-      </Link>
+      <BackLink to="/">Back to Catalog</BackLink>
 
       <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
         <h1 className="font-display text-xl sm:text-2xl font-medium text-gray-900 tracking-tight">
           Comparing {gadgets.length} Gadgets
         </h1>
         <button
+          type="button"
           onClick={handleShare}
           disabled={sharing}
-          className="flex items-center gap-1.5 text-xs font-medium text-sage-700 border border-sage-200 rounded-md px-3 py-1.5 hover:bg-sage-50 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+          aria-busy={sharing || undefined}
+          className="flex items-center gap-1.5 text-xs font-medium text-sage-700 border border-sage-200 rounded-md px-3 py-1.5 min-h-10 sm:min-h-9 hover:bg-sage-50 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
         >
           <Share2 size={13} /> {sharing ? 'Creating Link…' : 'Share'}
         </button>
@@ -209,20 +238,17 @@ export default function ComparePage() {
                     <button
                       onClick={() => removeGadget(g.id)}
                       aria-label={`Remove ${g.name} from comparison`}
-                      className="absolute top-1.5 right-1.5 w-8 h-8 flex items-center justify-center text-slate-600 hover:text-red-700 hover:bg-red-50 transition rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      // 32px visible, 40px to touch, like the mobile card's remove button.
+                      className="absolute top-1.5 right-1.5 w-8 h-8 before:absolute before:-inset-1 before:content-[''] flex items-center justify-center text-slate-600 hover:text-red-700 hover:bg-red-50 transition rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
                       <X size={16} aria-hidden="true" />
                     </button>
                     <div className="h-20 w-full bg-gray-50 rounded-lg overflow-hidden mb-2 flex items-center justify-center">
-                      {g.image_url ? (
-                        <img src={g.image_url} alt={g.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <ImageOff size={18} className="text-gray-300" />
-                      )}
+                      <GadgetThumb src={g.image_url} alt="" iconClassName="text-gray-300" />
                     </div>
                     <Link
                       to={`/gadgets/${g.id}`}
-                      className="font-semibold text-sm text-gray-900 hover:underline block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+                      className="font-semibold text-sm text-gray-900 hover:underline block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
                     >
                       {g.name}
                     </Link>
@@ -260,20 +286,17 @@ export default function ComparePage() {
               <button
                 onClick={() => removeGadget(g.id)}
                 aria-label={`Remove ${g.name} from comparison`}
-                className="absolute -top-2 -right-2 w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow-xs text-slate-600 hover:text-red-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                // 32px visible, 40px to touch: the ::before widens the hit area.
+                className="absolute -top-2 -right-2 w-8 h-8 before:absolute before:-inset-1 before:content-[''] flex items-center justify-center bg-white border border-gray-200 rounded-full shadow-xs text-slate-600 hover:text-red-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
               >
                 <X size={16} aria-hidden="true" />
               </button>
               <div className="h-14 w-14 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center mb-2">
-                {g.image_url ? (
-                  <img src={g.image_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <ImageOff size={18} className="text-gray-400" aria-hidden="true" />
-                )}
+                <GadgetThumb src={g.image_url} alt="" iconClassName="text-gray-400" />
               </div>
               <Link
                 to={`/gadgets/${g.id}`}
-                className="text-sm font-semibold text-gray-900 leading-tight break-words hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+                className="text-sm font-semibold text-gray-900 leading-tight break-words hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
               >
                 {g.name}
               </Link>
@@ -283,25 +306,30 @@ export default function ComparePage() {
 
         <dl className="mt-4 bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
           {rows.map((row) => (
-            <div key={row.label} className="px-3 py-3">
-              <dt className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">{row.label}</dt>
-              <div
-                className="grid gap-2"
-                style={{ gridTemplateColumns: `repeat(${gadgets.length}, minmax(0, 1fr))` }}
-              >
-                {gadgets.map((g) => (
-                  <dd key={g.id} className="min-w-0 text-center text-sm text-gray-800 break-words">
-                    <span className="sr-only">{g.name}: </span>
-                    <CompareValue row={row} gadget={g} />
-                  </dd>
-                ))}
-              </div>
+            // dt and dd must be direct children of this wrapper for a valid <dl>,
+            // so the label spans the whole grid row instead of sitting outside it.
+            <div
+              key={row.label}
+              className="px-3 py-3 grid gap-x-2 gap-y-1.5"
+              style={{ gridTemplateColumns: `repeat(${gadgets.length}, minmax(0, 1fr))` }}
+            >
+              <dt className="col-span-full text-xs font-semibold uppercase tracking-wider text-gray-600">{row.label}</dt>
+              {gadgets.map((g) => (
+                <dd key={g.id} className="min-w-0 text-center text-sm text-gray-800 break-words">
+                  <span className="sr-only">{g.name}: </span>
+                  <CompareValue row={row} gadget={g} />
+                </dd>
+              ))}
             </div>
           ))}
         </dl>
       </div>
 
-      <AIComparisonPanel gadgetIds={gadgets.map((g) => g.id)} gadgetNames={gadgets.map((g) => g.name)} />
+      <AIComparisonPanel
+        gadgetIds={gadgets.map((g) => g.id)}
+        gadgetNames={gadgets.map((g) => g.name)}
+        category={gadgets.map((g) => g.category)}
+      />
     </div>
   )
 }

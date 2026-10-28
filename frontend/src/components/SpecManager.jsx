@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save, Loader2, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -6,12 +6,26 @@ import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { timeAgo } from '../utils/timeAgo'
 import Button from './ui/Button'
+import DeleteSpecButton from './DeleteSpecButton'
 import Alert from './ui/Alert'
 import { TextField, TextAreaField } from './ui/FormField'
 import { friendlyError } from '../utils/requestErrors'
+import { notifyCorrectionsChanged } from '../utils/correctionNotices'
 
 const MAX_SPEC_CHARS = 20_000 // mirrors MAX_RAW_TEXT_LENGTH in backend/routers/specs.py
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
+
+// The button that opens a form is hidden while the form is open; when the form closes
+// (cancel, save or submit) focus goes back to that button instead of being lost.
+function useFocusOnClose(open) {
+  const ref = useRef(null)
+  const wasOpen = useRef(open)
+  useEffect(() => {
+    if (wasOpen.current && !open) ref.current?.focus()
+    wasOpen.current = open
+  }, [open])
+  return ref
+}
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
@@ -77,6 +91,7 @@ function AddSpecForm({ gadgetId, onSaved, onCancel }) {
         id="raw-text"
         label="Raw Spec Text"
         required
+        autoFocus
         rows={7}
         value={rawText}
         onChange={(v) => {
@@ -141,7 +156,17 @@ function CorrectionForm({ spec, onDone }) {
     setServerError(null)
     try {
       await api.submitCorrection(spec.id, { suggested_content: text })
-      toast.success('Correction submitted for review')
+      toast.success(
+        <span>
+          Suggestion sent — you&apos;ll see the decision in{' '}
+          <Link to="/my-suggestions" className="font-semibold text-sage-700 underline">
+            My Suggestions
+          </Link>
+          .
+        </span>,
+        { duration: 6000 },
+      )
+      notifyCorrectionsChanged()
       onDone()
     } catch (err) {
       setServerError(friendlyError(err))
@@ -155,6 +180,7 @@ function CorrectionForm({ spec, onDone }) {
         id={id}
         label="Suggested Correction"
         required
+        autoFocus
         rows={3}
         value={text}
         onChange={setText}
@@ -238,8 +264,9 @@ function AiReadiness({ specs }) {
   )
 }
 
-function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex }) {
+function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDeleted }) {
   const [correcting, setCorrecting] = useState(false)
+  const suggestButtonRef = useFocusOnClose(correcting)
   const indexed = spec.indexing_status === 'indexed'
   const isIndexing = indexingId === spec.id
   const indexState = indexed ? 'indexed' : isIndexing ? 'indexing' : indexError ? 'failed' : 'pending'
@@ -263,9 +290,10 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex }) {
               {isIndexing ? 'Indexing…' : indexError ? 'Retry Indexing' : 'Index for AI'}
             </Button>
           )}
-          <span className="text-xs text-slate-500 bg-slate-100 rounded px-1.5 py-0.5" aria-label={`Chunk ${spec.chunk_index}`}>
-            #{spec.chunk_index}
+          <span className="text-xs text-slate-600 bg-slate-100 rounded px-1.5 py-0.5">
+            <span className="sr-only">Chunk </span>#{spec.chunk_index}
           </span>
+          <DeleteSpecButton gadgetId={gadgetId} spec={spec} onDeleted={onDeleted} />
         </div>
       </div>
 
@@ -289,7 +317,7 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex }) {
               href={spec.source_url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-sm font-medium text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+              className="inline-flex items-center gap-1 min-h-10 sm:min-h-0 text-sm font-medium text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
             >
               <ExternalLink size={13} aria-hidden="true" /> Source
               <span className="sr-only">(opens in a new tab)</span>
@@ -301,7 +329,7 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex }) {
           {outdated && <span className="text-sm text-amber-800 font-semibold">May Be Outdated</span>}
         </div>
         {user && !correcting && (
-          <Button variant="ghost" size="sm" icon={Flag} onClick={() => setCorrecting(true)}>
+          <Button ref={suggestButtonRef} variant="ghost" size="sm" icon={Flag} onClick={() => setCorrecting(true)}>
             Suggest Correction
           </Button>
         )}
@@ -316,18 +344,23 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   const { user } = useAuth()
   const [state, setState] = useState({ status: 'loading', specs: [] })
   const [showForm, setShowForm] = useState(false)
+  const addButtonRef = useFocusOnClose(showForm)
   const [indexingId, setIndexingId] = useState(null)
   const [indexErrors, setIndexErrors] = useState({})
 
-  const loadSpecs = useCallback(() => {
-    setState((s) => ({ ...s, status: 'loading' }))
+  // `background` refreshes without the loading skeleton, so the list (and any
+  // open correction form) stays on screen; a failed background refresh keeps it.
+  const loadSpecs = useCallback(({ background = false } = {}) => {
+    if (!background) setState((s) => ({ ...s, status: 'loading' }))
     api
       .getSpecs(gadgetId)
       .then((data) => {
         setState({ status: 'ready', specs: data })
         onSpecsChange?.(data)
       })
-      .catch((err) => setState({ status: 'error', specs: [], error: friendlyError(err) }))
+      .catch((err) => {
+        if (!background) setState({ status: 'error', specs: [], error: friendlyError(err) })
+      })
   }, [gadgetId, onSpecsChange])
 
   useEffect(() => {
@@ -341,7 +374,12 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
     try {
       await api.indexSpec(gid, specId)
       toast.success('Spec ready for AI questions')
-      loadSpecs()
+      // Show the new status straight away, then confirm it from the server quietly.
+      setState((s) => ({
+        ...s,
+        specs: s.specs.map((sp) => (sp.id === specId ? { ...sp, indexing_status: 'indexed' } : sp)),
+      }))
+      loadSpecs({ background: true })
     } catch (err) {
       // Kept on the card (not just a toast) so the failure stays visible until retried.
       const message = indexFailureMessage(err)
@@ -362,7 +400,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
         </h2>
         {user ? (
           !showForm && (
-            <Button variant="outline" icon={Plus} onClick={() => setShowForm(true)}>
+            <Button ref={addButtonRef} variant="outline" icon={Plus} onClick={() => setShowForm(true)}>
               Add Specs
             </Button>
           )
@@ -400,7 +438,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
           tone="error"
           title="Couldn't Load Specs"
           action={
-            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={loadSpecs}>
+            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => loadSpecs()}>
               Try Again
             </Button>
           }
@@ -422,7 +460,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
       {status === 'ready' && specs.length > 0 && (
         <ul className="space-y-3">
           {specs.map((spec) => (
-            <SpecCard key={spec.id} spec={spec} user={user} gadgetId={gadgetId} indexingId={indexingId} indexError={indexErrors[spec.id]} onIndex={handleIndex} />
+            <SpecCard key={spec.id} spec={spec} user={user} gadgetId={gadgetId} indexingId={indexingId} indexError={indexErrors[spec.id]} onIndex={handleIndex} onDeleted={loadSpecs} />
           ))}
         </ul>
       )}

@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -16,6 +17,13 @@ class Settings(BaseSettings):
     # then only a logged-in admin sending the X-Simulate-Failure header can trigger it. Never set
     # this on the production service: render.yaml deliberately leaves it out (a test checks).
     failure_simulation_enabled: bool = False
+
+    # Rate-limit key behind a reverse proxy (see rate_limit.client_ip_key). Off by default, so local
+    # and test runs key on the socket peer exactly as before. Only turn it on where a proxy you trust
+    # appends the connecting address to X-Forwarded-For; trusted_proxy_hops is how many such proxies
+    # append an entry (1 = use the rightmost entry). Left-hand entries are client-supplied and ignored.
+    trust_proxy_headers: bool = False
+    trusted_proxy_hops: int = Field(default=1, ge=1, le=5)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -46,3 +46,7 @@ python scripts/eval_runner.py --answers answers.json --model gpt-5-mini --prompt
 - An unknown case `type` stops the run (exit 2) instead of being dropped from the report.
 - An abstention answer fails if it states a numeric spec value (a number with a unit such as `60Hz`, `4900 mAh` or `6.7-inch`) that the question did not already contain, even when it also says "not stated". Repeating a value from the question (`120Hz` in "Does it support 120Hz?") is fine. This closes the case where the broad "not stated" phrases passed an answer that still asserted a fact; it is a check for leaked values, not a full fact check.
 - Exit code is still 1 when a target is missed.
+
+## Fresh answers and the answer cache
+
+`POST /query` reuses cached answers for repeated questions (`"cached": true` in the reply). A changed `PROMPT_VERSION` or model already gets a fresh cache. To re-score an **unchanged** prompt with fresh answers, restart the local API before running `scripts/eval_adapter.py` (the cache is in-process). A logged-in admin can also send `X-Bypass-Answer-Cache: 1`. It skips the cache read for that request and is ignored for everyone else. See "Collecting real answers for evaluation" in `backend/README.md`. Each reply's `retrieval` field (`vector`, `keyword` or `none`) shows how its sources were found. The retrieval threshold changed from 0.5 to 0.25 on 27 Oct 2026 ([measurement](../docs/evidence/retrieval-threshold-2026-10-27.md)), so abstention cases now usually receive nearby snippets and rely on the prompt to decline. Re-run the 20 cases after that change.

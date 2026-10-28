@@ -22,6 +22,12 @@ The schema and RPC are tracked under `sql/`. Apply SQL manually in Supabase SQL 
 
 Saving `POST /gadgets/{id}/specs` stores chunked text with NULL embeddings and pending status, without an AI call. `POST /gadgets/{id}/specs/{spec_id}/index` indexes one saved chunk later. Provider failure returns 503 and preserves the saved text; a content-match update protects against stale vectors. Database corrections invalidate the old embedding. Pending rows remain readable but cannot be retrieved by vector similarity.
 
+**Manual SQL step for the keyword fallback (#88):** run `sql/keyword_match_spec_documents.sql` once in the Supabase SQL Editor (DEV first, then live). See [Adding the keyword fallback to an existing project](../docs/database.md#adding-the-keyword-fallback-to-an-existing-project). Until then `/query` works as before, minus the fallback.
+
+### Retrieval
+
+`POST /query` embeds the question and calls `match_spec_documents` with `MATCH_THRESHOLD = 0.25` and `MATCH_COUNT = 6` (`routers/query.py`). The threshold was measured on the verified eval pack in [retrieval-threshold-2026-10-27.md](../docs/evidence/retrieval-threshold-2026-10-27.md). The earlier 0.5 dropped relevant chunks for 10 of 23 answerable questions. If nothing passes the threshold, the keyword fallback (`keyword_search.py` + `keyword_match_spec_documents`) runs. It searches the same scope and indexed chunks only. Content words are OR-ed, a small synonym map is applied (chip/processor/SoC/CPU, battery/mAh, screen/display, camera/MP, storage/GB, weight/grams, charging/W), and fixed regexes match numbers with units such as `4000mAh`. Its chunks are numbered and cited exactly like vector chunks, and their `similarity` is the real cosine score. A database error in the fallback, including the function not being applied yet, never fails the request: it logs once and returns the "no relevant specs" answer.
+
 ## Tests
 
 ```powershell
@@ -135,6 +141,7 @@ python scripts/eval_runner.py --answers .local/answers.json --markdown .local/re
 - **Prerequisite:** every pack snippet saved and indexed as its **own** spec chunk (one `POST /gadgets/{id}/specs` per snippet) in the target database, preferably `TekaTech-dev`. The pre-check stops with a message if a snippet is missing or if a chunk holds several snippets (one citation would then credit all of them; `--allow-merged-chunks` accepts that coarser credit).
 - **Output** records `origin: "live"`, the model, the `prompt_version` (read from `backend/prompts.py`), `invalid_citations_removed` per case and any `errors`. A failed question has no answer, so the runner scores it as a failure.
 - **Invalid citations:** the backend strips markers that point outside the retrieved snippets, so the answers file only shows the ones that survived. The runner must also count `invalid_citations_removed`, otherwise the valid-citation rate is 100% by construction (tracked in #66).
+- **Answer cache:** a repeated question in the same scope is answered from the in-process answer cache (`cached: true`), which would replay an earlier answer instead of measuring a fresh one. The cache scope includes `PROMPT_VERSION` and both model names, so a prompt or model change already starts from an empty cache. To re-run an unchanged prompt and get fresh answers, either restart the local server (the cache lives in the process), or send `X-Bypass-Answer-Cache: 1` with an **admin** bearer token. That header skips the cache read, both exact and similar matches. The fresh answer is still stored, so later ordinary requests reuse it. The header is ignored for anonymous and non-admin callers, and only then is the caller looked up. `scripts/eval_adapter.py` sends no auth today, so it does not send this header; use the restart for adapter runs.
 
 ## API reference
 
@@ -145,22 +152,26 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/health` | GET | none | none | 200 `{"status": "ok"}` | — |
 | `/version` | GET | none | none | 200 `{"commit": "..."}` | — |
 | `/gadgets` | GET | none | query: `category`, `brand` | 200 list | — |
-| `/gadgets` | POST | logged-in | `GadgetCreate` | 201 `GadgetResponse` | 401, 422 |
+| `/gadgets` | POST | logged-in | `GadgetCreate` (limits below) | 201 `GadgetResponse` | 401, 422, 503 (database write failed) |
 | `/gadgets/{id}` | GET | none | path `id` | 200 `GadgetResponse` | 404 |
-| `/gadgets/{id}` | PATCH | logged-in | `GadgetUpdate` | 200 `GadgetResponse` | 400, 401, 404, 422 |
+| `/gadgets/{id}` | PATCH | logged-in | `GadgetUpdate`: only sent fields change; explicit `null` clears `release_date`, `price_php`, `image_url` | 200 `GadgetResponse` | 400 (no fields), 401, 404, 422 (incl. `null` name/brand/category), 503 |
 | `/gadgets/{id}` | DELETE | admin | path `id` | 204 | 401, 403, 404 |
 | `/gadgets/{id}/specs` | GET | none | path `id` | 200 list | — |
-| `/gadgets/{id}/specs` | POST | logged-in | `{"raw_text": "...", "source_url": "..."}` | 201 `{"gadget_id", "chunks_created", "indexing_status"}` | 400, 401, 404, 422, 429 |
+| `/gadgets/{id}/specs` | POST | logged-in | `{"raw_text": "...", "source_url": "..."}` (`source_url` optional, http(s), max 2000 chars) | 201 `{"gadget_id", "chunks_created", "indexing_status"}` | 400, 401, 404, 422, 429 |
 | `/gadgets/{id}/specs/{spec_id}/index` | POST | logged-in | path ids | 200 `{"id", "indexing_status"}` | 401, 404, 409, 422, 429, 503 |
-| `/comparisons` | POST | none | `{"gadget_ids": [...]}` (2–5 ids) | 201 | 400 (fewer than 2), 422, 429 |
-| `/comparisons/{slug}` | GET | none | path `slug` | 200 `{"slug", "gadget_ids"}` | 404 |
+| `/comparisons` | POST | none | `{"gadget_ids": [...]}` (at most 5 sent; duplicates removed, then at least 2 must remain) | 201 | 404 (a gadget doesn't exist), 422 (fewer than 2 different, more than 5, malformed id), 429, 503 |
+| `/comparisons/{slug}` | GET | none | path `slug` | 200 `{"slug", "gadget_ids"}` (view count is best-effort and never fails the request) | 404 |
 | `/stats/spec-coverage` | GET | none | none | 200 `{"covered": N, "total": N}` | — |
-| `/stats/trending-questions` | GET | none | query: `limit` | 200 list | — |
-| `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` | 201 | 401, 404 |
+| `/stats/trending-questions` | GET | none | query: `limit` (1–10, default 5) | 200 list; each `question` at most 150 chars | 422 (limit out of range) |
+| `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` (stripped; 1–20,000 chars and at most 6,000 embedding tokens, same as spec ingestion) | 201 | 401, 404, 422, 429 (20/hour) |
 | `/corrections` | GET | admin | query `status` | 200 list | 401, 403 |
-| `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}` | 200 | 400, 401, 403, 404 |
-| `/query` | POST | none | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 `{"answer", "sources", "model_used", "invalid_citations_removed"}` | 422 (empty or over-limit question), 429, 503 (AI timeout, provider failure or unusable answer; see below) |
+| `/corrections/mine` | GET | logged-in | none (always the session user; no user-id parameter) | 200 list, newest first, max 50: `{"id", "status", "suggested_content", "created_at", "reviewed_at", "spec_id", "spec_excerpt", "gadget": {"id", "name", "brand"} \| null}` | 401 |
+| `/corrections/pending-count` | GET | admin | none | 200 `{"count": N}` | 401, 403, 503 |
+| `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}`; only `pending` corrections can be resolved | 200 | 400, 401, 403, 404, 409 (`"Correction was already approved"` / `rejected`), 503 |
+| `/query` | POST | none (optional admin headers: `X-Simulate-Failure`, `X-Bypass-Answer-Cache`) | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 `{"answer", "sources", "model_used", "invalid_citations_removed", "cached", "cache_match", "retrieval"}`; `retrieval` is `"vector"`, `"keyword"` or `"none"` | 422 (empty or over-limit question), 429, 503 (AI timeout, provider failure or unusable answer; see below) |
 
 Every route with an `{id}`, `{gadget_id}`, `{spec_id}` or `{correction_id}` path parameter returns 422 for a malformed UUID.
 
-Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route. Rate-limited routes (`/query`, spec ingestion/indexing, comparison creation) return 429 once the limit is exceeded.
+Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route, with `detail` as FastAPI's list of `{"loc", "msg", "type", "input"}`; the custom checks use plain-sentence `msg` values the UI can show directly. A bare `NaN`/`Infinity` in a JSON body is still a 422 (`main.py` makes the echoed `input` JSON-safe). Rate-limited routes (`/query`, spec ingestion/indexing, comparison creation, correction submission) return 429 once the limit is exceeded.
+
+Gadget input limits (`schemas.py`, same numbers as `frontend/src/utils/gadgetValidation.js`): `name` 1–120, `brand` 1–80, `category` 1–60 characters after trimming; `price_php` 0–10,000,000 and finite; `release_date` year 1970–2100; `image_url` a full http(s) link up to 2000 characters (blank is treated as no image). Responses are not re-validated against these limits, so older rows still load.

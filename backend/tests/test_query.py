@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 from unittest.mock import patch
+from uuid import uuid4
 
 import httpx
 import openai
@@ -8,6 +9,7 @@ import pytest
 from routers.query import (
     ANSWER_MAX_COMPLETION_TOKENS,
     ANSWER_REASONING_EFFORT,
+    DETAIL_LOOKUP_FAILED,
     DETAIL_TIMEOUT,
     DETAIL_UNAVAILABLE,
     DETAIL_UNUSABLE,
@@ -230,8 +232,25 @@ def test_ask_question_rejects_empty_question(client, fake_supabase):
 
 
 def test_ask_question_rejects_overlong_question(client, fake_supabase):
-    resp = client.post("/query", json={"question": "x" * 501})
+    with patch("routers.query.client") as mock_client:
+        resp = client.post("/query", json={"question": "x" * 151})
     assert resp.status_code == 422
+    # The plain sentence the frontend shows, without pydantic's "Value error, " prefix.
+    assert resp.json()["detail"][0]["msg"] == "Question is too long: 151 characters; the limit is 150."
+    mock_client.embeddings.create.assert_not_called()
+
+
+def test_ask_question_accepts_question_at_the_char_limit(client, fake_supabase):
+    from routers.query import MAX_QUESTION_CHARS
+
+    assert MAX_QUESTION_CHARS == 150
+    fake_supabase.set_response("_rpc", None, [])
+    question = ("How long does the battery last? " * 5)[:150]  # ordinary text, exactly 150 chars
+    assert len(question) == 150
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        resp = client.post("/query", json={"question": question})
+    assert resp.status_code == 200
 
 
 def test_ask_question_rate_limited_after_10_per_minute(client, fake_supabase):
@@ -516,7 +535,7 @@ def test_finished_answer_is_not_treated_as_cut_off(client, fake_supabase):
 
 def _retrieval_params(fake_supabase):
     assert len(fake_supabase.rpc_calls) == 1
-    name, params = fake_supabase.rpc_calls[0][0]
+    name, params = fake_supabase.rpc_calls[0]
     assert name == "match_spec_documents"
     return params
 
@@ -555,7 +574,7 @@ def test_unscoped_question_keeps_the_cutoff(client, fake_supabase):
 
     assert resp.status_code == 200
     params = _retrieval_params(fake_supabase)
-    assert params["match_threshold"] == MATCH_THRESHOLD == 0.5
+    assert params["match_threshold"] == MATCH_THRESHOLD == 0.25  # #145's cutoff
     assert "match_gadget_ids" not in params
 
 
@@ -572,3 +591,122 @@ def test_scoped_gadget_with_no_indexed_specs_still_gets_the_safe_answer(client, 
     assert resp.json()["sources"] == []
     assert resp.json()["model_used"] == "none"
     mock_client.chat.completions.create.assert_not_called()  # nothing to ground on, so no paid call
+
+
+# --- request limits from the S4 audit: gadget_ids cap, blank questions, database failures ---
+
+def test_gadget_ids_are_capped_like_saved_comparisons(client, fake_supabase):
+    from routers.comparisons import MAX_COMPARISON_GADGETS
+
+    ids = [str(uuid4()) for _ in range(MAX_COMPARISON_GADGETS + 1)]
+    with patch("routers.query.client") as mock_client:
+        resp = client.post("/query", json={"question": "Which is faster?", "gadget_ids": ids})
+    assert resp.status_code == 422
+    mock_client.embeddings.create.assert_not_called()
+
+
+def test_gadget_ids_at_the_cap_are_accepted(client, fake_supabase):
+    from routers.comparisons import MAX_COMPARISON_GADGETS
+
+    fake_supabase.set_response("_rpc", None, [])
+    ids = [str(uuid4()) for _ in range(MAX_COMPARISON_GADGETS)]
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        resp = client.post("/query", json={"question": "Which is faster?", "gadget_ids": ids})
+    assert resp.status_code == 200
+
+
+def test_empty_gadget_ids_list_is_rejected(client, fake_supabase):
+    with patch("routers.query.client") as mock_client:
+        resp = client.post("/query", json={"question": "Which is faster?", "gadget_ids": []})
+    assert resp.status_code == 422
+    assert "omit it to search all gadgets" in resp.json()["detail"][0]["msg"]
+    mock_client.embeddings.create.assert_not_called()
+
+
+def test_duplicate_gadget_ids_are_sent_and_named_once(client, fake_supabase):
+    gadget_id = "11111111-1111-1111-1111-111111111111"
+    _set_matching_spec(fake_supabase, gadget_id)
+    with patch("routers.query.client") as mock_client, \
+            patch.object(fake_supabase, "rpc", wraps=fake_supabase.rpc) as rpc_spy:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response()
+        resp = client.post("/query", json={"question": "Battery?", "gadget_ids": [gadget_id] * 3})
+
+    assert resp.status_code == 200
+    assert rpc_spy.call_args.args[1]["match_gadget_ids"] == [gadget_id]
+    assert "Gadgets in this comparison: Gadget X." in _sent_messages(mock_client)[1]["content"]
+
+
+def test_unknown_gadget_ids_are_left_out_of_the_note(client, fake_supabase):
+    known = "11111111-1111-1111-1111-111111111111"
+    _set_matching_spec(fake_supabase, known)  # the gadgets lookup only knows this one
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response()
+        resp = client.post("/query", json={"question": "Battery?", "gadget_ids": [known, str(uuid4())]})
+
+    assert resp.status_code == 200
+    user_msg = _sent_messages(mock_client)[1]["content"]
+    assert "Gadgets in this comparison: Gadget X." in user_msg
+    assert "Unknown gadget" not in user_msg
+    assert "No spec snippets were found" not in user_msg
+
+
+@pytest.mark.parametrize("question", ["   ", "\n\t ", ""])
+def test_blank_question_is_rejected_before_any_openai_call(client, fake_supabase, question):
+    with patch("routers.query.client") as mock_client:
+        resp = client.post("/query", json={"question": question})
+    assert resp.status_code == 422
+    assert resp.json()["detail"][0]["msg"] == "Question is empty. Type a question first."
+    mock_client.embeddings.create.assert_not_called()
+
+
+def test_question_is_stripped_before_the_char_cap_and_embedding(client, fake_supabase):
+    fake_supabase.set_response("_rpc", None, [])
+    question = "x" * 150
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        resp = client.post("/query", json={"question": f"   {question}   "})
+    assert resp.status_code == 200
+    assert mock_client.embeddings.create.call_args.kwargs["input"] == [question]
+
+
+def test_retrieval_failure_returns_safe_503_and_is_not_cached(client, fake_supabase):
+    def broken_rpc(*a, **k):
+        raise Exception("connection refused to db.internal:5432 password=hunter2")
+
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        with patch.object(fake_supabase, "rpc", side_effect=broken_rpc):
+            resp = client.post("/query", json={"question": "Battery?"})
+        assert resp.status_code == 503
+        assert resp.json() == {"detail": DETAIL_LOOKUP_FAILED}
+        assert "hunter2" not in resp.text
+        mock_client.chat.completions.create.assert_not_called()
+        assert fake_supabase.writes == []
+
+        # Nothing was stored, so the next ask runs the full pipeline again.
+        fake_supabase.set_response("_rpc", None, [])
+        resp = client.post("/query", json={"question": "Battery?"})
+    assert resp.status_code == 200
+    assert resp.json()["cached"] is False
+    assert mock_client.embeddings.create.call_count == 2
+
+
+def test_gadget_lookup_failure_returns_safe_503(client, fake_supabase):
+    _set_matching_spec(fake_supabase)
+    original_table = fake_supabase.table
+
+    def failing(name):
+        if name == "gadgets":
+            raise Exception("relation gadgets is unavailable")
+        return original_table(name)
+
+    with patch("routers.query.client") as mock_client, patch.object(fake_supabase, "table", side_effect=failing):
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        resp = client.post("/query", json={"question": "Battery?"})
+
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": DETAIL_LOOKUP_FAILED}
+    mock_client.chat.completions.create.assert_not_called()

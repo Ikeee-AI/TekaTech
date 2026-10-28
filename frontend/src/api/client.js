@@ -17,7 +17,9 @@ async function request(path, options = {}) {
   const settle = trackRequest(path);
   let res;
   try {
-    res = await fetch(`${API_BASE}${path}`, { headers, ...options });
+    // Options first, then the merged headers: spreading options last would let
+    // a caller's own `headers` object replace these and drop Authorization.
+    res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   } catch (err) {
     settle(false);
     throw err;
@@ -45,11 +47,14 @@ export const api = {
   deleteGadget: (id) => request(`/gadgets/${id}`, { method: "DELETE" }),
   getSpecs: (gadgetId) => request(`/gadgets/${gadgetId}/specs`),
   ingestSpecs: (gadgetId, data) => request(`/gadgets/${gadgetId}/specs`, { method: "POST", body: JSON.stringify(data) }),
-  // The backend has no spec DELETE route yet, so nothing calls this until it does.
+  // Admin-only (#127); used by DeleteSpecButton.
   deleteSpec: (gadgetId, specId) => request(`/gadgets/${gadgetId}/specs/${specId}`, { method: "DELETE" }),
   indexSpec: (gadgetId, specId) => request(`/gadgets/${gadgetId}/specs/${specId}/index`, { method: "POST" }),
   submitCorrection: (specId, data) => request(`/specs/${specId}/corrections`, { method: "POST", body: JSON.stringify(data) }),
   getCorrections: (status = "pending") => request(`/corrections?status=${status}`),
+  // The caller's own suggestions; the backend scopes this to the session user.
+  getMyCorrections: () => request(`/corrections/mine`),
+  getPendingCorrectionCount: () => request(`/corrections/pending-count`),
   resolveCorrection: (id, action) => request(`/corrections/${id}`, { method: "PATCH", body: JSON.stringify({ action }) }),
   createComparisonLink: (gadgetIds) => request(`/comparisons`, { method: "POST", body: JSON.stringify({ gadget_ids: gadgetIds }) }),
   getComparisonBySlug: (slug) => request(`/comparisons/${slug}`),
