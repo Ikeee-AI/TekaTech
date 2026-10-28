@@ -158,6 +158,8 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/stats/trending-questions` | GET | none | query: `limit` | 200 list | — |
 | `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` | 201 | 401, 404 |
 | `/corrections` | GET | admin | query `status` | 200 list | 401, 403 |
+| `/corrections/mine` | GET | logged-in | none (always the session user; no user-id parameter) | 200 list, newest first, max 50: `{"id", "status", "suggested_content", "created_at", "reviewed_at", "spec_id", "spec_excerpt", "gadget": {"id", "name", "brand"} \| null}` | 401 |
+| `/corrections/pending-count` | GET | admin | none | 200 `{"count": N}` | 401, 403, 503 |
 | `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}` | 200 | 400, 401, 403, 404 |
 | `/query` | POST | none | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 `{"answer", "sources", "model_used", "invalid_citations_removed"}` | 422 (empty or over-limit question), 429, 503 (AI timeout, provider failure or unusable answer; see below) |
 

@@ -8,6 +8,7 @@ import ErrorState from '../components/ui/ErrorState'
 import BackLink from '../components/ui/BackLink'
 import Button from '../components/ui/Button'
 import { friendlyError } from '../utils/requestErrors'
+import { notifyCorrectionsChanged } from '../utils/correctionNotices'
 
 export default function AdminCorrections() {
   useDocumentTitle('Review Corrections')
@@ -37,6 +38,7 @@ export default function AdminCorrections() {
       await api.resolveCorrection(id, action)
       toast.success(action === 'approve' ? 'Correction approved and applied' : 'Correction rejected')
       setCorrections((prev) => prev.filter((c) => c.id !== id))
+      notifyCorrectionsChanged() // refresh the Review Queue badge
     } catch (err) {
       toast.error(friendlyError(err))
     } finally {

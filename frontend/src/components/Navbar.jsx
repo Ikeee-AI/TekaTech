@@ -1,12 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, LogIn, LogOut, Menu, X, Search, Sparkles, CornerDownLeft, User } from 'lucide-react'
+import { Plus, LogIn, LogOut, Menu, X, Search, Sparkles, CornerDownLeft, User, Inbox } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
+import { useCorrectionBadges } from '../hooks/useCorrectionBadges'
 import logo from '../assets/logo.webp'
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400'
+
+// Small count bubble. The number is visible; srLabel says what it counts.
+function CountBadge({ count, srLabel, className = '' }) {
+  if (!count) return null
+  return (
+    <span
+      className={`inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-700 text-white text-xs font-bold leading-none ${className}`}
+    >
+      {count > 99 ? '99+' : count}
+      <span className="sr-only"> {srLabel}</span>
+    </span>
+  )
+}
+
+function decisionsLabel(count) {
+  return count === 1 ? 'new decision' : 'new decisions'
+}
 
 function navLinkClass({ isActive }) {
   return `px-3.5 py-2 rounded-lg text-[15px] transition-colors ${focusRing} ${
@@ -105,6 +123,11 @@ function Navbar() {
   const location = useLocation()
   const { user, signOut } = useAuth()
   const isAdmin = user?.app_metadata?.is_admin
+  const { unseenDecisions, pendingCount } = useCorrectionBadges(user, location.pathname)
+  const mySuggestionsLabel = unseenDecisions
+    ? `My suggestions, ${unseenDecisions} ${decisionsLabel(unseenDecisions)}`
+    : 'My suggestions'
+  const menuUpdates = unseenDecisions + pendingCount
   const [menuOpen, setMenuOpen] = useState(false)
   const [lastPath, setLastPath] = useState(location.pathname)
 
@@ -141,6 +164,7 @@ function Navbar() {
       {isAdmin && (
         <NavLink to="/corrections" className={className}>
           Review Queue
+          <CountBadge count={pendingCount} srLabel="pending" className="ml-1.5 align-text-bottom" />
         </NavLink>
       )}
     </>
@@ -178,6 +202,23 @@ function Navbar() {
                   Signed in as <strong className="text-slate-900 font-semibold">{user.email}</strong>
                 </span>
               </div>
+              <NavLink
+                to="/my-suggestions"
+                aria-label={mySuggestionsLabel}
+                title={mySuggestionsLabel}
+                className={({ isActive }) =>
+                  `relative p-2 rounded-lg transition ${focusRing} ${
+                    isActive ? 'bg-sage-50 text-sage-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                  }`
+                }
+              >
+                <Inbox size={18} aria-hidden="true" />
+                <CountBadge
+                  count={unseenDecisions}
+                  srLabel={decisionsLabel(unseenDecisions)}
+                  className="absolute -top-1 -right-1"
+                />
+              </NavLink>
               <span
                 className="w-9 h-9 rounded-full bg-sage-700 text-white flex items-center justify-center shrink-0"
                 title={user.email}
@@ -205,12 +246,17 @@ function Navbar() {
 
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-label={
+              menuOpen ? 'Close menu' : menuUpdates ? `Open menu, ${menuUpdates} new ${menuUpdates === 1 ? 'update' : 'updates'}` : 'Open menu'
+            }
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            className={`lg:hidden p-2 -mr-2 text-slate-600 hover:text-slate-900 rounded-lg transition ${focusRing}`}
+            className={`relative lg:hidden p-2 -mr-2 text-slate-600 hover:text-slate-900 rounded-lg transition ${focusRing}`}
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            {!menuOpen && menuUpdates > 0 && (
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-700 ring-2 ring-white" aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>
@@ -221,6 +267,16 @@ function Navbar() {
             {renderLinks(mobileLinkClass)}
           </nav>
           <div className="border-t border-slate-200 mt-2 pt-2">
+            {user && (
+              <NavLink to="/my-suggestions" className={mobileLinkClass}>
+                My Suggestions
+                <CountBadge
+                  count={unseenDecisions}
+                  srLabel={decisionsLabel(unseenDecisions)}
+                  className="ml-1.5 align-text-bottom"
+                />
+              </NavLink>
+            )}
             {user ? (
               <div className="flex items-center justify-between gap-2 px-3">
                 <span className="text-sm text-slate-500 truncate">Signed in as {user.email}</span>

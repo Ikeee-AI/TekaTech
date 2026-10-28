@@ -1,18 +1,27 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
 import ServerWakeBanner from './components/ServerWakeBanner'
 import GadgetList from './pages/GadgetList'
-import GadgetDetail from './pages/GadgetDetail'
-import AddGadget from './pages/AddGadget'
-import EditGadget from './pages/EditGadget'
-import ComparePage from './pages/ComparePage'
-import AdminCorrections from './pages/AdminCorrections'
-import ShortLinkRedirect from './pages/ShortLinkRedirect'
-import Login from './pages/Login'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
 import NotFound from './pages/NotFound'
+
+// The catalog (landing page) and the 404 page stay in the main bundle; every other
+// route is fetched on first visit, which keeps the initial download small.
+const GadgetDetail = lazy(() => import('./pages/GadgetDetail'))
+const AddGadget = lazy(() => import('./pages/AddGadget'))
+const EditGadget = lazy(() => import('./pages/EditGadget'))
+const ComparePage = lazy(() => import('./pages/ComparePage'))
+const AdminCorrections = lazy(() => import('./pages/AdminCorrections'))
+const MySuggestions = lazy(() => import('./pages/MySuggestions'))
+const ShortLinkRedirect = lazy(() => import('./pages/ShortLinkRedirect'))
+const Login = lazy(() => import('./pages/Login'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+
+function PageLoading() {
+  return <p role="status" className="text-slate-600 animate-pulse">Loading page…</p>
+}
 
 function App() {
   const location = useLocation()
@@ -32,40 +41,50 @@ function App() {
         key={location.pathname}
         className={`${location.pathname === '/' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 sm:px-6 py-8 animate-fade-in`}
       >
-        <Routes>
-          <Route path="/" element={<GadgetList />} />
-          <Route path="/gadgets/:id" element={<GadgetDetail />} />
-          <Route
-            path="/gadgets/:id/edit"
-            element={
-              <ProtectedRoute>
-                <EditGadget />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/add"
-            element={
-              <ProtectedRoute>
-                <AddGadget />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/compare" element={<ComparePage />} />
-          <Route
-            path="/corrections"
-            element={
-              <ProtectedRoute adminOnly>
-                <AdminCorrections />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/c/:slug" element={<ShortLinkRedirect />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Suspense fallback={<PageLoading />}>
+          <Routes>
+            <Route path="/" element={<GadgetList />} />
+            <Route path="/gadgets/:id" element={<GadgetDetail />} />
+            <Route
+              path="/gadgets/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EditGadget />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/add"
+              element={
+                <ProtectedRoute>
+                  <AddGadget />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/compare" element={<ComparePage />} />
+            <Route
+              path="/corrections"
+              element={
+                <ProtectedRoute adminOnly>
+                  <AdminCorrections />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-suggestions"
+              element={
+                <ProtectedRoute>
+                  <MySuggestions />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/c/:slug" element={<ShortLinkRedirect />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </main>
     </div>
   )

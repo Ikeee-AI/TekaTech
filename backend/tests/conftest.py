@@ -25,9 +25,13 @@ class FakeQuery:
         self._client = fake_client
         self._table = table_name
         self._operation = None
+        self._count = None
 
     def select(self, *a, **k):
         self._operation = self._operation or "select"
+        # select(..., count="exact") asks PostgREST for a row count; the fake
+        # answers it with the length of the configured response.
+        self._count = k.get("count")
         return self
 
     def insert(self, *a, **k):
@@ -53,14 +57,17 @@ class FakeQuery:
         return self
 
     def order(self, *a, **k):
+        self._client.orders.append((self._table, *a, k))
         return self
 
     def limit(self, *a, **k):
+        self._client.limits.append((self._table, *a))
         return self
 
     def execute(self):
         data = self._client.responses.get((self._table, self._operation), [])
-        return SimpleNamespace(data=data)
+        count = len(data) if self._count else None
+        return SimpleNamespace(data=data, count=count)
 
 
 class FakeSupabase:
@@ -68,6 +75,8 @@ class FakeSupabase:
         self.responses = {}
         self.writes = []
         self.filters = []
+        self.orders = []
+        self.limits = []
 
     def set_response(self, table, operation, data):
         """Configure what .execute() should return for a given table + operation.
