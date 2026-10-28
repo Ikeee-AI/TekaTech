@@ -191,10 +191,11 @@ def test_spec_delete_invalidates_answers_about_that_gadget(client, fake_supabase
 def test_approved_correction_invalidates_everything(client, fake_supabase, openai_mock):
     _set_specs(fake_supabase)
     _ask(client, gadget_ids=[GADGET_A])
-    fake_supabase.set_response(
-        "spec_corrections", "select",
-        [{"id": str(uuid4()), "spec_document_id": str(uuid4()), "suggested_content": "Battery: 4500 mAh"}],
-    )
+    row = {"id": str(uuid4()), "spec_document_id": str(uuid4()), "suggested_content": "Battery: 4500 mAh",
+           "status": "pending"}
+    fake_supabase.set_response("spec_corrections", "select", [row])
+    # The conditional update (... where status = 'pending') matched the row.
+    fake_supabase.set_response("spec_corrections", "update", [{**row, "status": "approved"}])
     assert client.patch(f"/corrections/{uuid4()}", json={"action": "approve"}).status_code == 200
     assert _ask(client, gadget_ids=[GADGET_A]).json()["cached"] is False
 
@@ -202,11 +203,10 @@ def test_approved_correction_invalidates_everything(client, fake_supabase, opena
 def test_rejected_correction_keeps_the_cache(client, fake_supabase, openai_mock):
     _set_specs(fake_supabase)
     _ask(client, gadget_ids=[GADGET_A])
-    fake_supabase.set_response(
-        "spec_corrections", "select",
-        [{"id": str(uuid4()), "spec_document_id": str(uuid4()), "suggested_content": "x"}],
-    )
-    client.patch(f"/corrections/{uuid4()}", json={"action": "reject"})
+    row = {"id": str(uuid4()), "spec_document_id": str(uuid4()), "suggested_content": "x", "status": "pending"}
+    fake_supabase.set_response("spec_corrections", "select", [row])
+    fake_supabase.set_response("spec_corrections", "update", [{**row, "status": "rejected"}])
+    assert client.patch(f"/corrections/{uuid4()}", json={"action": "reject"}).status_code == 200
     assert _ask(client, gadget_ids=[GADGET_A]).json()["cache_match"] == "exact"
 
 

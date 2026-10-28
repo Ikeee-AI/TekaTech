@@ -6,3 +6,25 @@ def test_health_check(client):
 def test_deployed_version_reports_host_commit(client, monkeypatch):
     monkeypatch.setenv("RENDER_GIT_COMMIT", "abc123")
     assert client.get("/version").json() == {"commit": "abc123"}
+
+
+def test_nan_literal_in_body_is_422_not_500(client, fake_supabase):
+    """Python's JSON parser accepts bare NaN; the 422 that echoes it must still encode."""
+    resp = client.post(
+        "/query",
+        content='{"question": NaN}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert resp.status_code == 422
+    assert resp.json()["detail"][0]["input"] == "nan"
+    # Validation failed before any database or model call.
+    assert fake_supabase.writes == []
+
+
+def test_validation_errors_keep_fastapis_shape(client, fake_supabase):
+    resp = client.post("/gadgets", json={"brand": "Samsung", "category": "Phone"})
+    assert resp.status_code == 422
+    error = resp.json()["detail"][0]
+    assert error["loc"] == ["body", "name"]
+    assert error["type"] == "missing"
+    assert "msg" in error
