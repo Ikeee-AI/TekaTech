@@ -24,6 +24,14 @@ services:
         sync: false
       - key: RATE_LIMIT_STORAGE_URI
         value: memory://
+      # Rate-limit per visitor, not per Render proxy: key on the X-Forwarded-For entry
+      # Render's proxy appends (rightmost). Client-supplied entries are ignored.
+      # Off until the hop count is confirmed from real traffic (Manuel's review on #136);
+      # steps: docs/deploy-runbook.md "Rate-limit buckets behind the proxy".
+      - key: TRUST_PROXY_HEADERS
+        value: 'false'
+      - key: TRUSTED_PROXY_HOPS
+        value: '1'
   - type: web
     name: tekatech-web
     runtime: static

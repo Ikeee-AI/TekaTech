@@ -325,7 +325,11 @@ export default function ComparePage() {
         </dl>
       </div>
 
-      <AIComparisonPanel gadgetIds={gadgets.map((g) => g.id)} gadgetNames={gadgets.map((g) => g.name)} />
+      <AIComparisonPanel
+        gadgetIds={gadgets.map((g) => g.id)}
+        gadgetNames={gadgets.map((g) => g.name)}
+        category={gadgets.map((g) => g.category)}
+      />
     </div>
   )
 }

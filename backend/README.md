@@ -145,24 +145,26 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/health` | GET | none | none | 200 `{"status": "ok"}` | — |
 | `/version` | GET | none | none | 200 `{"commit": "..."}` | — |
 | `/gadgets` | GET | none | query: `category`, `brand` | 200 list | — |
-| `/gadgets` | POST | logged-in | `GadgetCreate` | 201 `GadgetResponse` | 401, 422 |
+| `/gadgets` | POST | logged-in | `GadgetCreate` (limits below) | 201 `GadgetResponse` | 401, 422, 503 (database write failed) |
 | `/gadgets/{id}` | GET | none | path `id` | 200 `GadgetResponse` | 404 |
-| `/gadgets/{id}` | PATCH | logged-in | `GadgetUpdate` | 200 `GadgetResponse` | 400, 401, 404, 422 |
+| `/gadgets/{id}` | PATCH | logged-in | `GadgetUpdate`: only sent fields change; explicit `null` clears `release_date`, `price_php`, `image_url` | 200 `GadgetResponse` | 400 (no fields), 401, 404, 422 (incl. `null` name/brand/category), 503 |
 | `/gadgets/{id}` | DELETE | admin | path `id` | 204 | 401, 403, 404 |
 | `/gadgets/{id}/specs` | GET | none | path `id` | 200 list | — |
-| `/gadgets/{id}/specs` | POST | logged-in | `{"raw_text": "...", "source_url": "..."}` | 201 `{"gadget_id", "chunks_created", "indexing_status"}` | 400, 401, 404, 422, 429 |
+| `/gadgets/{id}/specs` | POST | logged-in | `{"raw_text": "...", "source_url": "..."}` (`source_url` optional, http(s), max 2000 chars) | 201 `{"gadget_id", "chunks_created", "indexing_status"}` | 400, 401, 404, 422, 429 |
 | `/gadgets/{id}/specs/{spec_id}/index` | POST | logged-in | path ids | 200 `{"id", "indexing_status"}` | 401, 404, 409, 422, 429, 503 |
-| `/comparisons` | POST | none | `{"gadget_ids": [...]}` (2–5 ids) | 201 | 400 (fewer than 2), 422, 429 |
-| `/comparisons/{slug}` | GET | none | path `slug` | 200 `{"slug", "gadget_ids"}` | 404 |
+| `/comparisons` | POST | none | `{"gadget_ids": [...]}` (at most 5 sent; duplicates removed, then at least 2 must remain) | 201 | 404 (a gadget doesn't exist), 422 (fewer than 2 different, more than 5, malformed id), 429, 503 |
+| `/comparisons/{slug}` | GET | none | path `slug` | 200 `{"slug", "gadget_ids"}` (view count is best-effort and never fails the request) | 404 |
 | `/stats/spec-coverage` | GET | none | none | 200 `{"covered": N, "total": N}` | — |
-| `/stats/trending-questions` | GET | none | query: `limit` | 200 list | — |
-| `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` | 201 | 401, 404 |
+| `/stats/trending-questions` | GET | none | query: `limit` (1–10, default 5) | 200 list; each `question` at most 150 chars | 422 (limit out of range) |
+| `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` (stripped; 1–20,000 chars and at most 6,000 embedding tokens, same as spec ingestion) | 201 | 401, 404, 422, 429 (20/hour) |
 | `/corrections` | GET | admin | query `status` | 200 list | 401, 403 |
 | `/corrections/mine` | GET | logged-in | none (always the session user; no user-id parameter) | 200 list, newest first, max 50: `{"id", "status", "suggested_content", "created_at", "reviewed_at", "spec_id", "spec_excerpt", "gadget": {"id", "name", "brand"} \| null}` | 401 |
 | `/corrections/pending-count` | GET | admin | none | 200 `{"count": N}` | 401, 403, 503 |
-| `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}` | 200 | 400, 401, 403, 404 |
+| `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}`; only `pending` corrections can be resolved | 200 | 400, 401, 403, 404, 409 (`"Correction was already approved"` / `rejected`), 503 |
 | `/query` | POST | none | `{"question": "...", "gadget_ids": [...], "plain_language": false}` | 200 `{"answer", "sources", "model_used", "invalid_citations_removed"}` | 422 (empty or over-limit question), 429, 503 (AI timeout, provider failure or unusable answer; see below) |
 
 Every route with an `{id}`, `{gadget_id}`, `{spec_id}` or `{correction_id}` path parameter returns 422 for a malformed UUID.
 
-Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route. Rate-limited routes (`/query`, spec ingestion/indexing, comparison creation) return 429 once the limit is exceeded.
+Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route, with `detail` as FastAPI's list of `{"loc", "msg", "type", "input"}`; the custom checks use plain-sentence `msg` values the UI can show directly. A bare `NaN`/`Infinity` in a JSON body is still a 422 (`main.py` makes the echoed `input` JSON-safe). Rate-limited routes (`/query`, spec ingestion/indexing, comparison creation, correction submission) return 429 once the limit is exceeded.
+
+Gadget input limits (`schemas.py`, same numbers as `frontend/src/utils/gadgetValidation.js`): `name` 1–120, `brand` 1–80, `category` 1–60 characters after trimming; `price_php` 0–10,000,000 and finite; `release_date` year 1970–2100; `image_url` a full http(s) link up to 2000 characters (blank is treated as no image). Responses are not re-validated against these limits, so older rows still load.
