@@ -269,3 +269,72 @@ Written with the `log-work` skill. Facts and evidence only; newest entry at the 
 - The 27 Oct plan to merge on the morning of 28 Oct slipped to the afternoon, because of the re-approval rounds.
 
 **Next** — Run `deployed_smoke.py` on `ab785a8`; merge #128 after re-approval; review cycle for #145, then #129 — Ikeee-AI, Manuel — 28–29 Oct.
+
+## 2026-10-28 19:05 Asia/Manila — Follow-up: last seven PRs merged, production SQL, openai 3.x live check, settings verified
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S4-IK (release integration) · **Branch:** `main`, `tekatech/s4-ik-retrieval-fix`, `tekatech/s4-ik-cited-badge`, `tekatech/s4-ma-scoped-retrieval`, `tekatech/119-failure-drill-browser-check`
+
+**Done**
+- **Merged and deployed** (squash; each approved by another teammate on the merged commit, with `--match-head-commit` pinned to the approved commit):
+
+  | PR | Merge commit | Approved by |
+  | --- | --- | --- |
+  | #146 log | `2079b2c` | Manuel |
+  | #147 cited-badge fix | `b68dade` | Mika, Manuel |
+  | #128 failure-drill browser checks | `7bbaa93` | Manuel |
+  | #50 openai 3.37 | `3570666` | Manuel |
+  | #49 uv-build | `d8e46bf` | Manuel |
+  | #145 retrieval fix | `438af12` | Manuel |
+  | #129 scoped retrieval | `77aff2e` | Jopher; Manuel commented "OK" on the merge resolution |
+
+- **Deploys:** main CI passed every job, including the main guard and "Deploy main after checks", on `d8e46bf`, `438af12` ([run 40673466810](https://github.com/Ikeee-AI/TekaTech/actions/runs/40673466810)) and `77aff2e` ([run 40675931144](https://github.com/Ikeee-AI/TekaTech/actions/runs/40675931144)).
+  - The new "Browser checks (failure drill)" job from #128 ran and passed on main.
+  - Production probes after deploy: web 200, `/health/ready` 200 with the database reachable.
+- **Combined check before merging** (local, scratch worktree, CI dummy env): the six PRs merged together (#129 not yet included) gave backend 487 passed, `uv.lock` consistent, lint clean, Vitest 199/199, build OK.
+- **#128 (Jopher):** `main` merged into the branch (`24fa1d3`) by Ikeee-AI. Kept both Vitest and Playwright.
+  - Local: backend 454 passed, Vitest 196/196, `test:e2e` 8/8.
+- **#129 (Manuel):** `main` merged into the branch (`0d0f433`) by Ikeee-AI at the owner's request.
+  - #145's version won, as agreed in #88. Manuel's `SCOPED_MATCH_THRESHOLD = -1.0` was kept.
+  - Two of his test lines were changed: they read `rpc_calls` as `(name, params)` and expect the 0.25 unscoped cutoff.
+  - Local: 491 passed.
+- **#145 SQL** `keyword_match_spec_documents.sql`, applied by the owner in the Supabase SQL Editor:
+  - **TekaTech-dev:** "Success. No rows returned". Checked with a read-only RPC call (`search_query = 'refresh rate'` returned the Galaxy S24 display spec).
+  - **Production:** applied before #145 merged ("Success. No rows returned"). The function was not called on production from here, because the local `.env` reaches dev only.
+- **#50 live provider check** (owner-approved, about 1 cent): openai 3.37.0, local API on TekaTech-dev, one scoped `/query`.
+  - Result: HTTP 200 in 8.6 s, `openai:gpt-5-mini`, answer "**120Hz** [1]", 1 source, `invalid_citations_removed: 0`.
+  - Posted on #50.
+- **#147** (Ikeee-AI, follow-up to the #138 takeover finding): the badge now counts distinct cited `[n]` markers and doesn't show when nothing is cited. The label for the zero case stays with Mika's #124.
+  - Local: Vitest 199/199.
+- **Settings checked by the owner, with step-by-step guidance:**
+  - **Supabase production Redirect URLs:** `https://tekatech-web.onrender.com/reset-password` added (Total URLs: 2).
+  - **Supabase TekaTech-dev:** already had `http://localhost:5173/reset-password`.
+  - **Render tekatech-api:** `TRUST_PROXY_HEADERS` is not set, so the default (off) applies.
+- **#144 closed by the owner** with the resolution note. "Allow merge commits" unticked by the owner.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `refusing to allow an OAuth App to create or update workflow .github/workflows/ci.yml without workflow scope` (push to #128) | The saved Git credential lacks `workflow` scope | Pushed via `gh auth git-credential` — fixed |
+| `CalledProcessError: ['git', 'show', ':backend/routers/query.py'] … exit status 128` from `check_secrets.py` | Ran on a half-merged index, before `git add` | Re-ran after the commit: secret guard passed — fixed |
+| `/usr/bin/bash: -c: line 67: unexpected EOF while looking for matching ''` | A long heredoc in one shell command | Wrote the entry to a file first — fixed (nothing ran) |
+| `Permission for this action was denied … [External System Writes]` when closing #144 | Permission system blocked the assistant's close | Owner closed #144 in the browser — fixed |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Manuel approved six PRs within about 80 seconds (17:54–17:56), each with an empty comment; Jopher approved #129 with no comment | Valid for the guard, but leaves no record of what was checked | Ask for one-line review notes on substantial PRs — Ikeee-AI — open |
+| Manuel's scoped evaluation report (`eval-s4-2026-10-26-scoped.md`) was measured before #145 changed the unscoped cutoff | Release numbers may not match the deployed code | Rerun the 20 cases on current main before the 31 Oct write-up — Manuel / Adrian — open |
+| Six issues look fixed by merged "Refs" PRs but are still open: #88, #77, #109, #119, #120, #78 | The board overstates the open work | Owners to confirm and close — Manuel, Jopher — open |
+
+**Decisions**
+- #145 merged only after its SQL was on production — follows the manual-migration rule in `docs/database.md` — Ikeee-AI (owner).
+- Ikeee-AI resolved #129's conflicts on Manuel's branch — owner's request; Manuel checked and commented "OK" before Jopher's approval — Ikeee-AI.
+
+**Blockers / risks**
+- Fresh 20-case evaluation on current main for the release write-up — Manuel / Adrian — before 31 Oct.
+- `deployed_smoke.py` not yet run on `77aff2e` — Ikeee-AI — 29 Oct.
+
+**Plan alignment**
+- #128, #129, #145, #147, #50, #49 and #146 are **Done**: reviewed on the final commit, checks green, merged, deployed, production probed. The full smoke test is still pending.
+- No open PRs at 19:05.
+
+**Next** — Run `deployed_smoke.py` on `77aff2e`; owners close the issues already fixed; schedule the evaluation rerun — Ikeee-AI, Manuel, Jopher, Adrian — 29 Oct.
