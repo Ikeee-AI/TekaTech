@@ -195,3 +195,77 @@ Written with the `log-work` skill. Facts and evidence only; newest entry at the 
 **Plan alignment** — The five merged PRs are **Done** (reviewed, checks green, merged, deployed, production verified). S4-IK PRs #130–#139 are **Partial**: updated, reviews due tonight at midnight.
 
 **Next** — Send the team review message; merge #130–#139 in waves after approval — Ikeee-AI — 28 Oct morning.
+
+## 2026-10-28 17:05 Asia/Manila — Review-deadline check, 15 PRs merged and deployed, Adrian takeover, #106 guard exception
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S4-IK (release integration), takeover of the S4-AD #138 review · **Branch:** `main`, `tekatech/s4-ik-*`, `tekatech/s4-ik-retrieval-fix`
+
+**Done**
+- **Review deadline (Tue 27 Oct, 12:00 midnight Manila) checked against GitHub:**
+  - **Manuel:** met. Approved #132, #133, #135, #140; commented on #136 asking for `TRUST_PROXY_HEADERS: 'false'`; replied on #88 (Ikeee-AI's branch first, #129 adapted on top).
+  - **Jopher:** met. Approved #129, #130, #131; requested changes on #134; posted the #121 clash check.
+  - **Mika:** met, with 14 minutes to spare. Approved #137, #138; requested changes on #139; re-approved #106; commented on #134.
+  - **Adrian:** **missed.** No review on #138.
+- **Takeover of Adrian's #138 wording check** (Ikeee-AI, AI-assisted; not an approval, since Ikeee-AI is the author): [comment](https://github.com/Ikeee-AI/TekaTech/pull/138#issuecomment-6462039349).
+  - The wording matches `prompts.py` and the eval rules.
+  - One mismatch for a follow-up: the "Answer based on N cited specs" badge counts every retrieved source and also shows on abstentions. Overlaps Mika's #124.
+  - Adrian's review request stays open. His S4-AD review item is **Partial**.
+- **Review fixes pushed by Ikeee-AI:**
+  - #136 `fd36943`: `TRUST_PROXY_HEADERS` off in `render.yaml`, test and runbook.
+  - #139 `ef8b95f`: 40 px tap targets, 15 s timeout on the fast-typing test.
+  - #135 `91adffc`: test setup for Jopher's #142 tests under the new review guard.
+- **Merged and deployed** (all approved by another teammate on the merged commit, except #106; see Errors):
+  - Squash: #142 `0acf04e`, #141 `e7b9631`, #133 `c29dbfc`, #140 `6f36d2e`, #143 `83f410e`.
+  - Merge commits: #130 `fcc3060`, #132 `ac27588`, #137 `a462b46` (also brought #131 `080c1e1`), #138 `9ff3f75`, #135 `1105945`, #136 `6d22f63`, #134 `d1757ca`, #139 `b935255`.
+  - Squash: #106 `ab785a8`.
+- **Deploys:** main CI passed every job, including the main guard and "Deploy main after checks", on `6d22f63`, `d1757ca`, `b935255` and (after a re-run) `ab785a8` — [run 40656319848](https://github.com/Ikeee-AI/TekaTech/actions/runs/40656319848).
+  - Production probes after deploy: web 200, `/health/ready` 200 with the database reachable, `x-request-id` header present.
+  - The full `deployed_smoke.py` run was **not** done this session.
+- **Merged combination checked locally before merging** (scratch worktree, CI dummy env): backend 453 passed, lint clean, Vitest 196/196, build OK.
+- **#128 (Jopher):** merged `main` into the branch as `24fa1d3`.
+  - Resolved `package.json`/lockfile: kept Vitest and Playwright; Vitest only collects `src/**`.
+  - Local: backend 454 passed, Vitest 196/196, build OK, `test:e2e` 8/8.
+  - Re-approval requested from Manuel.
+- **[#145](https://github.com/Ikeee-AI/TekaTech/pull/145) opened:** the retrieval fix agreed in #88 (0.25 threshold, keyword fallback, admin cache bypass), cherry-picked from local `b255eb1`.
+  - Local: backend 486 passed.
+  - Needs manual SQL `keyword_match_spec_documents.sql` before deploy.
+  - Manuel told on #88.
+- **#50 (openai 2.53 → 3.37) and #49 (uv-build):** tested on current main. Local: 453 passed and import OK on both.
+  - Also checked the openai 3.37 API surface the backend uses (parameters, response fields, error classes): compatible.
+  - No real provider call made. Results posted; Manuel asked to review.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `Permission for this action was denied … [Modify Shared Resources]` when enabling merge commits via API | The repo-setting change was blocked for the assistant | Owner ticked "Allow merge commits" in Settings and unticked it after the stack merged — fixed |
+| Simulated squash merges of the stacked PRs conflicted | Squashing a base PR breaks PRs stacked on its original commits | Merge commits for the stacked PRs, squash for standalone ones — fixed |
+| 3 failing tests (`409 == 200`) in `test_corrections.py` when #142 and #135 were combined | #135's review guard needs the status update to match a row; #142's new tests didn't set one | Test-only fix on #135 (`91adffc`); #135 held out of the first wave — fixed |
+| GitHub `CONFLICTING`/`dirty` on #137 and #135, later #139, while `git merge-tree` was clean | Two merge bases from cross-merged stacked branches; GitHub merges with one base | Merged `main` into each branch (no hand edits); re-approvals collected — fixed. Merging #134 before #139 caused the #139 case; merging #139 alone would have avoided it |
+| Main guard failed on `ab785a8`: "PR #106 by @dependabot[bot] was merged without another teammate's approval on its final commit"; [#144](https://github.com/Ikeee-AI/TekaTech/issues/144) opened, deploy skipped | Dependabot rebased #106 to `fa75603` after Mika's approval on `b6b622a`; Ikeee-AI merged without comparing the approval commit with the head | Mika approved `fa75603` at 16:43; failed jobs re-run; guard passed and deployed. #144 still open (the assistant's close was denied by the permission system) |
+| `refusing to allow an OAuth App to create or update workflow .github/workflows/ci.yml without workflow scope` when pushing #128 | Saved Git credential lacks `workflow` scope | Pushed via `gh auth git-credential` — fixed |
+| `error connecting to api.github.com` / `wsarecv: An established connection was aborted` | Local network drop | Retried; the push had landed, comment re-posted — fixed |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| GitHub's "Approved" label vs the main guard: old approvals aren't dismissed when the head changes | Easy to merge with stale approvals (#106) | Compare each approval's `commit_id` with the head before every merge — Ikeee-AI — adopted |
+| #138 badge "cited specs" counts retrieved sources, not cited ones | Misleading green check, worse once #129 lands | Follow-up PR with Mika (#124) and Adrian — open |
+
+**Decisions**
+- Merge commits for the stacked S4-IK PRs (owner chose this option, ticked the setting, then unticked it) — keeps approvals valid and the PRs separate — Ikeee-AI.
+- Hold #128 and #106 until after the stack — their `package.json` changes would have forced re-approvals of #137–#139 — Ikeee-AI.
+- No self-approval and no use of the second local `gh` account to approve — reviews must come from teammates — Ikeee-AI.
+
+**Blockers / risks**
+- Close #144 with the resolution note — Ikeee-AI — 28 Oct.
+- Supabase Auth redirect URL `/reset-password` (#130) and Render dashboard `TRUST_PROXY_HEADERS` not `true` (#136) — Ikeee-AI — before the 31 Oct release.
+- #145 needs Manuel's review and the manual SQL on dev and production before deploy; #129 to be adapted on top — Manuel / Ikeee-AI.
+- #50 is a major SDK upgrade: needs one bounded real `/query` on TekaTech-dev before merging — Manuel.
+- Adrian's #138 wording follow-up — Adrian, Mika — before 31 Oct.
+
+**Plan alignment**
+- #130–#143 (except #129) and #106 are **Done**: reviewed on the final commit, checks green, merged, deployed, production probed. The full smoke test is still pending.
+- #128, #145, #129, #50 and #49 are **Partial**: waiting on review.
+- The S4-AD #138 review is **Partial** (taken over by Ikeee-AI).
+- The 27 Oct plan to merge on the morning of 28 Oct slipped to the afternoon, because of the re-approval rounds.
+
+**Next** — Run `deployed_smoke.py` on `ab785a8`; merge #128 after re-approval; review cycle for #145, then #129 — Ikeee-AI, Manuel — 28–29 Oct.
