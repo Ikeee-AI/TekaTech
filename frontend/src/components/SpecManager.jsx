@@ -6,6 +6,7 @@ import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { timeAgo } from '../utils/timeAgo'
 import Button from './ui/Button'
+import DeleteSpecButton from './DeleteSpecButton'
 import Alert from './ui/Alert'
 import { TextField, TextAreaField } from './ui/FormField'
 import { friendlyError } from '../utils/requestErrors'
@@ -238,7 +239,7 @@ function AiReadiness({ specs }) {
   )
 }
 
-function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex }) {
+function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDeleted }) {
   const [correcting, setCorrecting] = useState(false)
   const indexed = spec.indexing_status === 'indexed'
   const isIndexing = indexingId === spec.id
@@ -266,6 +267,7 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex }) {
           <span className="text-xs text-slate-500 bg-slate-100 rounded px-1.5 py-0.5" aria-label={`Chunk ${spec.chunk_index}`}>
             #{spec.chunk_index}
           </span>
+          <DeleteSpecButton gadgetId={gadgetId} spec={spec} onDeleted={onDeleted} />
         </div>
       </div>
 
@@ -422,7 +424,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
       {status === 'ready' && specs.length > 0 && (
         <ul className="space-y-3">
           {specs.map((spec) => (
-            <SpecCard key={spec.id} spec={spec} user={user} gadgetId={gadgetId} indexingId={indexingId} indexError={indexErrors[spec.id]} onIndex={handleIndex} />
+            <SpecCard key={spec.id} spec={spec} user={user} gadgetId={gadgetId} indexingId={indexingId} indexError={indexErrors[spec.id]} onIndex={handleIndex} onDeleted={loadSpecs} />
           ))}
         </ul>
       )}
