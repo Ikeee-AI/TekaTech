@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   MalformedAnswerError,
+  citedSourceCount,
   describeAiFailure,
   isMissingEvidence,
   validateAnswerResponse,
@@ -48,6 +49,19 @@ describe('isMissingEvidence', () => {
   it('is true only when no sources came back', () => {
     expect(isMissingEvidence({ sources: [] })).toBe(true)
     expect(isMissingEvidence({ sources: [{}] })).toBe(false)
+  })
+})
+
+describe('citedSourceCount', () => {
+  const three = [{}, {}, {}]
+  it('counts distinct cited sources, not every retrieved one', () => {
+    expect(citedSourceCount({ answer: 'It has **120Hz** [1] and 8GB RAM [1][3].', sources: three })).toBe(2)
+  })
+  it('is 0 when the answer declines and cites nothing', () => {
+    expect(citedSourceCount({ answer: "The specs don't say what the battery life is.", sources: three })).toBe(0)
+  })
+  it('ignores markers with no matching source', () => {
+    expect(citedSourceCount({ answer: 'See [0] and [4].', sources: three })).toBe(0)
   })
 })
 

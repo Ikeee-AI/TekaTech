@@ -6,7 +6,7 @@ import FollowUpQuestions from './FollowUpQuestions'
 import { useAuth } from '../hooks/useAuth'
 import Alert from './ui/Alert'
 import Button from './ui/Button'
-import { describeAiFailure, isMissingEvidence } from '../utils/aiAnswerState'
+import { citedSourceCount, describeAiFailure, isMissingEvidence } from '../utils/aiAnswerState'
 
 /** "Source: example.com" for a spec sheet link, or plain "Source" if the URL is odd. */
 function sourceLabel(url) {
@@ -150,6 +150,8 @@ export default function AiAnswerResult({
   specTargets,
 }) {
   const missingEvidence = result ? isMissingEvidence(result) : false
+  // Only cited sources count as grounding; with none cited there is no green check (#124 owns that label).
+  const citedCount = result && !missingEvidence ? citedSourceCount(result) : 0
   return (
     <div aria-live="polite" aria-busy={loading || undefined}>
       {loading && <LoadingNotice skeletonLines={skeletonLines} />}
@@ -163,10 +165,12 @@ export default function AiAnswerResult({
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-2">
-                <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
-                  <CheckCircle2 size={14} aria-hidden="true" />
-                  Answer based on {result.sources.length} cited spec{result.sources.length === 1 ? '' : 's'}
-                </p>
+                {citedCount > 0 && (
+                  <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                    <CheckCircle2 size={14} aria-hidden="true" />
+                    Answer based on {citedCount} cited spec{citedCount === 1 ? '' : 's'}
+                  </p>
+                )}
                 {result.cached === true && (
                   <p className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
                     <Zap size={12} aria-hidden="true" />

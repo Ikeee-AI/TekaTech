@@ -31,6 +31,21 @@ export function isMissingEvidence(result) {
   return result.sources.length === 0
 }
 
+/**
+ * How many of the returned sources the answer actually cites. `sources` holds every
+ * retrieved chunk, cited or not, so its length overstates the grounding; an answer
+ * that declines ("the specs don't say") cites none. Counts distinct [n] markers that
+ * point at a real source, the same ones AnswerText turns into buttons.
+ */
+export function citedSourceCount(result) {
+  const cited = new Set()
+  for (const match of result.answer.matchAll(/\[(\d+)\]/g)) {
+    const n = Number(match[1])
+    if (n >= 1 && n <= result.sources.length) cited.add(n)
+  }
+  return cited.size
+}
+
 const FAILURES = {
   timeout: {
     title: 'The AI Timed Out',
