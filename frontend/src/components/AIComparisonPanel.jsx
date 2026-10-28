@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Sparkles } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { MessageSquarePlus, Sparkles } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
 import { validateAnswerResponse } from '../utils/aiAnswerState'
@@ -28,6 +28,7 @@ export default function AIComparisonPanel({
   const [askedQuestion, setAskedQuestion] = useState('')
   const [missingSpecs, setMissingSpecs] = useState([])
   const [checkingSpecs, setCheckingSpecs] = useState(true)
+  const questionRef = useRef(null)
   const {
     plainLanguage,
     togglePlainLanguage,
@@ -44,6 +45,7 @@ export default function AIComparisonPanel({
     sourceRefs,
     handleCiteClick,
     handleCopy,
+    resetAnswer,
   } = useAiAnswer()
 
   useEffect(() => {
@@ -56,7 +58,8 @@ export default function AIComparisonPanel({
       gadgetIds.map((id, i) =>
         api
           .getSpecs(id)
-          .then((specs) => ({ name: gadgetNames[i], count: specs.length }))
+          // Only indexed specs reach the AI; pending ones have no embedding yet.
+          .then((specs) => ({ name: gadgetNames[i], count: specs.filter((s) => s.indexing_status === 'indexed').length }))
           .catch(() => ({ name: gadgetNames[i], count: 0 }))
       )
     )
@@ -88,6 +91,12 @@ export default function AIComparisonPanel({
     }
   }
 
+  // Back to the question box, keeping the last question there to edit.
+  function handleAskAnother() {
+    resetAnswer()
+    requestAnimationFrame(() => questionRef.current?.focus())
+  }
+
   function handleSuggestedClick(q) {
     setQuestion(q)
     handleAsk(q)
@@ -114,7 +123,8 @@ export default function AIComparisonPanel({
       {!checkingSpecs && missingSpecs.length > 0 && (
         <Alert tone="warning" className="mb-4">
           <strong className="font-semibold">{missingSpecs.join(', ')}</strong> {missingSpecs.length === 1 ? 'has' : 'have'} no
-          specs added yet — the AI won&apos;t be able to say anything grounded about {missingSpecs.length === 1 ? 'it' : 'them'}.
+          indexed specs yet — the AI won&apos;t be able to say anything grounded about {missingSpecs.length === 1 ? 'it' : 'them'}.
+          Add specs and index them on the gadget page.
         </Alert>
       )}
 
@@ -142,6 +152,7 @@ export default function AIComparisonPanel({
             </label>
             <textarea
               id="ai-question"
+              ref={questionRef}
               rows={2}
               value={question}
               maxLength={MAX_QUESTION_CHARS}
@@ -189,6 +200,14 @@ export default function AIComparisonPanel({
         onFollowUp={handleFollowUp}
         specTargets={specTargets}
       />
+
+      {result && !loading && (
+        <div className="mt-4 flex justify-end">
+          <Button variant="outline" size="sm" icon={MessageSquarePlus} onClick={handleAskAnother}>
+            Ask Another Question
+          </Button>
+        </div>
+      )}
     </section>
   )
 }

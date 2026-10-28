@@ -24,6 +24,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import AIAnswerPanel from '../components/AIAnswerPanel'
 import TrendingQuestions from '../components/TrendingQuestions'
 import { friendlyError } from '../utils/requestErrors'
+import { gadgetDisplayName } from '../utils/gadgetName'
 
 const SUGGESTED_QUESTIONS = [
   'Which gadget has the best battery life?',
@@ -53,6 +54,14 @@ function countBy(list, key) {
   const counts = new Map()
   for (const item of list) counts.set(item[key], (counts.get(item[key]) ?? 0) + 1)
   return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+}
+
+// Gadgets without a price sort last in both directions, not first as Php 0.
+function comparePrices(a, b, direction) {
+  const aMissing = a.price_php == null
+  const bMissing = b.price_php == null
+  if (aMissing || bMissing) return aMissing === bMissing ? 0 : aMissing ? 1 : -1
+  return (a.price_php - b.price_php) * direction
 }
 
 function toggleInSet(set, value) {
@@ -136,8 +145,8 @@ export default function GadgetList() {
       if (priceFilterActive && (g.price_php == null || g.price_php > maxPrice)) return false
       return g.name.toLowerCase().includes(q) || g.brand.toLowerCase().includes(q)
     })
-    if (sortBy === 'price-low') list = [...list].sort((a, b) => (a.price_php ?? 0) - (b.price_php ?? 0))
-    else if (sortBy === 'price-high') list = [...list].sort((a, b) => (b.price_php ?? 0) - (a.price_php ?? 0))
+    if (sortBy === 'price-low') list = [...list].sort((a, b) => comparePrices(a, b, 1))
+    else if (sortBy === 'price-high') list = [...list].sort((a, b) => comparePrices(a, b, -1))
     else if (sortBy === 'newest') list = [...list].sort((a, b) => (b.release_date ?? '').localeCompare(a.release_date ?? ''))
     else list = [...list].sort((a, b) => a.name.localeCompare(b.name))
     return list
@@ -209,7 +218,7 @@ export default function GadgetList() {
       <div className="max-w-2xl mx-auto">
         <ErrorState
           title="Couldn't Load the Catalog"
-          message={`${error}. Check your connection, then try again.`}
+          message={error}
           onRetry={retryLoad}
         />
       </div>
@@ -437,7 +446,7 @@ export default function GadgetList() {
                     gadget={g}
                     selected={selected.has(g.id)}
                     onToggle={() => toggleSelect(g.id)}
-                    onAsk={() => ask(`What are the key specs of the ${g.brand} ${g.name}?`)}
+                    onAsk={() => ask(`What are the key specs of the ${gadgetDisplayName(g)}?`)}
                     onDeleted={handleDeleted}
                   />
                 ))}

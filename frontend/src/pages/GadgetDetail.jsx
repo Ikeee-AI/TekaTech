@@ -42,13 +42,17 @@ export default function GadgetDetail() {
     api
       .getGadget(id)
       .then((g) => setState({ status: 'ready', gadget: g }))
-      .catch((err) => setState({ status: 'error', error: friendlyError(err) }))
+      // A malformed id (/gadgets/abc) is a 422 from the UUID check: it can never
+      // load, so it's "not found" too, not a retryable error showing raw validation text.
+      .catch((err) =>
+        setState({ status: 'error', error: friendlyError(err), notFound: err.status === 404 || err.status === 422 }),
+      )
   }, [id, attempt])
 
   if (state.status === 'loading') return <GadgetDetailSkeleton />
 
   if (state.status === 'error') {
-    const notFound = /not found/i.test(state.error)
+    const notFound = state.notFound || /not found/i.test(state.error)
     return (
       <div className="max-w-3xl mx-auto">
         <BackLink to="/">Back to Catalog</BackLink>

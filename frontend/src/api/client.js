@@ -17,7 +17,9 @@ async function request(path, options = {}) {
   const settle = trackRequest(path);
   let res;
   try {
-    res = await fetch(`${API_BASE}${path}`, { headers, ...options });
+    // Options first, then the merged headers: spreading options last would let
+    // a caller's own `headers` object replace these and drop Authorization.
+    res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   } catch (err) {
     settle(false);
     throw err;
