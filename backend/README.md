@@ -97,7 +97,7 @@ A safe way to show the `POST /query` error responses (timeout, quota, unusable o
 
 Three gates must all be open, otherwise the header is ignored and the request behaves normally (a non-admin learns nothing about the feature):
 
-1. `failure_simulation_enabled=true` in `backend/.env`, then restart the server. It defaults to false and is deliberately **not** in `render.yaml`; a test fails if it ever is. Never set it on the production service.
+1. `failure_simulation_enabled=true` in `backend/.env`, then restart the server. It defaults to false and is deliberately **not** in `render.yaml`; a test fails if it ever is. On the production service it is set only during the supervised drill below, never left on.
 2. The request carries `X-Simulate-Failure: timeout | quota | bad_output | empty` (case-insensitive).
 3. The caller is a logged-in **admin** (`app_metadata.is_admin`). Use the `TekaTech-dev` test admin and its session `access_token`; never paste a token into chat, an issue or a commit.
 
@@ -126,6 +126,18 @@ curl.exe -i -X POST http://127.0.0.1:8000/query -H "Content-Type: application/js
 The simulated responses come from the same code as real failures, so the drill shows the real contract. They still count against the 10-per-minute limit, never call OpenAI, and write nothing to `query_history`. The browser UI does not send the header; to watch the messages in the UI, run the frontend against the local backend while logged in as the admin and add the header with a header-injecting browser extension (not tested here).
 
 **Check it stays off:** with the setting unset, repeat the request above. The response must be a normal answer, with no `X-Simulated-Failure` header. The Render service's environment list should not contain the variable.
+
+### Supervised production drill (#118)
+
+For the course's "controlled model failure" evidence, the drill may run on production in one supervised, time-boxed window (about 15 minutes), agreed by the team in advance. The DevOps Engineer owns the Render change; the person running the requests uses a **production** admin account whose token stays on their own machine.
+
+1. Render → `tekatech-api` → Environment: add `FAILURE_SIMULATION_ENABLED=true` and save (the service restarts). Dashboard only; never `render.yaml`.
+2. Once `/health/ready` returns 200, send the four modes plus the controls (a non-admin caller and an anonymous caller each get a normal answer). Save the response bodies, without the token.
+3. Remove the variable and save (the service restarts again).
+4. Repeat one admin request with the header: it must be a normal answer with no `X-Simulated-Failure`. Confirm the variable is gone from the Environment list.
+5. Record the start time, end time and evidence on #118 and in the sprint log.
+
+If step 3 or 4 fails, remove the variable before anything else; while it is on, admins (and only admins) can trigger simulated failures.
 
 ## Collecting real answers for evaluation
 
