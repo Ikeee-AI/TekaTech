@@ -25,6 +25,29 @@ begin
   if n != 0 then raise exception 'Empty scope must retrieve nothing'; end if;
   select count(*) into n from match_spec_documents(v, 0, 0.5);
   if n != 0 then raise exception 'Zero match count must retrieve nothing'; end if;
+  -- Keyword fallback (#88): same scope rules as vector retrieval, plus unit patterns.
+  select count(*) into n from pg_proc where pronamespace = 'public'::regnamespace and proname = 'keyword_match_spec_documents';
+  if n != 1 then raise exception 'Exactly one keyword retrieval RPC must exist'; end if;
+  select count(*) into n from keyword_match_spec_documents(v, 'battery');
+  if n != 2 then raise exception 'Keyword retrieval must return indexed chunks only'; end if;
+  select count(*) into n from keyword_match_spec_documents(v, 'chip or battery', '{}', 6, array[gadget_a]);
+  if n != 1 then raise exception 'Scoped keyword retrieval must exclude other gadgets'; end if;
+  select count(*) into n from keyword_match_spec_documents(v, 'capital or france');
+  if n != 0 then raise exception 'Keyword retrieval must not return unrelated chunks'; end if;
+  select count(*) into n from keyword_match_spec_documents(v, '');
+  if n != 0 then raise exception 'An empty keyword query must retrieve nothing'; end if;
+  select count(*) into n from keyword_match_spec_documents(v, 'battery', '{}', 0);
+  if n != 0 then raise exception 'Zero keyword match count must retrieve nothing'; end if;
+  insert into spec_documents(gadget_id, content, embedding, indexing_status)
+    values (gadget_b, 'Big 4000mAh cell; 5G radio', v, 'indexed');
+  select count(*) into n from keyword_match_spec_documents(v, '', array['[0-9]\s*mah\y']);
+  if n != 1 then raise exception 'A unit pattern must match a number written with its unit'; end if;
+  select count(*) into n from keyword_match_spec_documents(v, '', array['[0-9]{2,}\s*(g|grams?)\y']);
+  if n != 0 then raise exception 'The weight pattern must not read 5G as grams'; end if;
+  if (select similarity from keyword_match_spec_documents(v, 'battery', '{}', 1)) is distinct from 1 then
+    raise exception 'Keyword results must report the real cosine similarity';
+  end if;
+  delete from spec_documents where content = 'Big 4000mAh cell; 5G radio';
   update spec_documents set content = 'Corrected battery A' where id = spec_a;
   if not exists (select 1 from spec_documents where id = spec_a and embedding is null and indexing_status = 'pending') then
     raise exception 'A correction must invalidate the previous vector';
@@ -50,6 +73,13 @@ begin
   if not has_function_privilege('service_role', 'public.match_spec_documents(vector,integer,double precision,uuid[])', 'EXECUTE') then
     raise exception 'Backend role requires retrieval access';
   end if;
+  if has_function_privilege('anon', 'public.keyword_match_spec_documents(vector,text,text[],integer,uuid[])', 'EXECUTE') or
+     has_function_privilege('authenticated', 'public.keyword_match_spec_documents(vector,text,text[],integer,uuid[])', 'EXECUTE') then
+    raise exception 'Browser roles must not invoke the keyword retrieval RPC';
+  end if;
+  if not has_function_privilege('service_role', 'public.keyword_match_spec_documents(vector,text,text[],integer,uuid[])', 'EXECUTE') then
+    raise exception 'Backend role requires keyword retrieval access';
+  end if;
   select count(*) into n from pg_class where oid in (
     'public.gadgets'::regclass, 'public.spec_documents'::regclass,
     'public.spec_corrections'::regclass, 'public.comparison_links'::regclass, 'public.query_history'::regclass
@@ -67,6 +97,9 @@ set local role service_role;
 select id from public.gadgets limit 1;
 select * from public.match_spec_documents(
   ('[' || '1,' || repeat('0,', 1534) || '0]')::vector, 0, 0.5
+);
+select * from public.keyword_match_spec_documents(
+  ('[' || '1,' || repeat('0,', 1534) || '0]')::vector, 'battery', '{}', 0
 );
 reset role;
 rollback;

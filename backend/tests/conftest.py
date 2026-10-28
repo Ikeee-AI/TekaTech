@@ -77,6 +77,7 @@ class FakeSupabase:
         self.filters = []
         self.orders = []
         self.limits = []
+        self.rpc_calls = []
 
     def set_response(self, table, operation, data):
         """Configure what .execute() should return for a given table + operation.
@@ -86,8 +87,12 @@ class FakeSupabase:
     def table(self, name):
         return FakeQuery(self, name)
 
-    def rpc(self, *a, **k):
-        return FakeQuery(self, "_rpc")
+    def rpc(self, name=None, params=None, *a, **k):
+        """Every RPC answers from "_rpc" unless "_rpc:<function name>" was configured for it.
+        Calls are recorded in rpc_calls as (name, params)."""
+        self.rpc_calls.append((name, params))
+        specific = f"_rpc:{name}"
+        return FakeQuery(self, specific if (specific, None) in self.responses else "_rpc")
 
 
 @pytest.fixture(autouse=True)
