@@ -91,6 +91,34 @@ jobs:
           path: frontend/dist
           retention-days: 7
 
+  browser:
+    # #119: ask + compare journeys against each failure-drill mode, on a faked API
+    # (frontend/e2e/README.md). Builds with fake *.e2e.test addresses, so it never
+    # reaches Supabase, OpenAI, dev or production and needs no secrets.
+    name: Browser checks (failure drill)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: browser-checks-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 7
+
   database:
     name: Database migrations
     runs-on: ubuntu-latest
