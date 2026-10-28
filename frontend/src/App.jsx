@@ -3,6 +3,8 @@ import { Routes, Route, useLocation } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
 import ServerWakeBanner from './components/ServerWakeBanner'
+import RouteErrorBoundary from './components/RouteErrorBoundary'
+import { useRouteFocus } from './hooks/useRouteFocus'
 import GadgetList from './pages/GadgetList'
 import NotFound from './pages/NotFound'
 
@@ -25,6 +27,7 @@ function PageLoading() {
 
 function App() {
   const location = useLocation()
+  useRouteFocus(location.pathname, 'main-content')
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -39,52 +42,56 @@ function App() {
       <main
         id="main-content"
         key={location.pathname}
-        className={`${location.pathname === '/' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 sm:px-6 py-8 animate-fade-in`}
+        // Focus target for the skip link and for useRouteFocus; not in the tab order.
+        tabIndex={-1}
+        className={`${location.pathname === '/' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 sm:px-6 py-8 animate-fade-in outline-none`}
       >
-        <Suspense fallback={<PageLoading />}>
-          <Routes>
-            <Route path="/" element={<GadgetList />} />
-            <Route path="/gadgets/:id" element={<GadgetDetail />} />
-            <Route
-              path="/gadgets/:id/edit"
-              element={
-                <ProtectedRoute>
-                  <EditGadget />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/add"
-              element={
-                <ProtectedRoute>
-                  <AddGadget />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/compare" element={<ComparePage />} />
-            <Route
-              path="/corrections"
-              element={
-                <ProtectedRoute adminOnly>
-                  <AdminCorrections />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/my-suggestions"
-              element={
-                <ProtectedRoute>
-                  <MySuggestions />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/c/:slug" element={<ShortLinkRedirect />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+        <RouteErrorBoundary>
+          <Suspense fallback={<PageLoading />}>
+            <Routes>
+              <Route path="/" element={<GadgetList />} />
+              <Route path="/gadgets/:id" element={<GadgetDetail />} />
+              <Route
+                path="/gadgets/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <EditGadget />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/add"
+                element={
+                  <ProtectedRoute>
+                    <AddGadget />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/compare" element={<ComparePage />} />
+              <Route
+                path="/corrections"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminCorrections />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-suggestions"
+                element={
+                  <ProtectedRoute>
+                    <MySuggestions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/c/:slug" element={<ShortLinkRedirect />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </RouteErrorBoundary>
       </main>
     </div>
   )

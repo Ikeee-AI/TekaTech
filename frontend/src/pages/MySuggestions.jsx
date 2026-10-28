@@ -125,7 +125,7 @@ export default function MySuggestions() {
           title="No Suggestions Yet"
           description="You haven't suggested any corrections yet. Open a gadget and choose Suggest Correction on one of its specs."
           action={
-            <Link to="/" className="text-sm font-semibold text-sage-700 hover:underline">
+            <Link to="/" className="inline-flex items-center min-h-10 text-sm font-semibold text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600">
               Browse the catalog
             </Link>
           }
@@ -147,7 +147,7 @@ export default function MySuggestions() {
                   {item.gadget ? (
                     <Link
                       to={`/gadgets/${item.gadget.id}`}
-                      className="text-sm font-semibold text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+                      className="inline-flex items-center min-h-10 sm:min-h-0 text-sm font-semibold text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
                     >
                       {item.gadget.name}
                       {item.gadget.brand ? ` · ${item.gadget.brand}` : ''}
@@ -166,16 +166,16 @@ export default function MySuggestions() {
                 </p>
 
                 <div className="mt-3 grid sm:grid-cols-2 gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-medium text-gray-500 mb-1">Your suggestion</p>
-                    <p className="text-sm text-gray-900 bg-sage-50 rounded-md p-2 whitespace-pre-line">
+                    <p className="text-sm text-gray-900 bg-sage-50 rounded-md p-2 whitespace-pre-line break-words">
                       {item.suggested_content}
                     </p>
                   </div>
                   {item.spec_excerpt && (
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs font-medium text-gray-500 mb-1">Spec text now</p>
-                      <p className="text-sm text-gray-600 bg-gray-50 rounded-md p-2 whitespace-pre-line">
+                      <p className="text-sm text-gray-600 bg-gray-50 rounded-md p-2 whitespace-pre-line break-words">
                         {item.spec_excerpt}
                       </p>
                     </div>

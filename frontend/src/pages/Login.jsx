@@ -11,7 +11,7 @@ import BackLink from '../components/ui/BackLink'
 import { authErrorMessage, MIN_PASSWORD_LENGTH } from '../utils/authErrors'
 
 const LINK_CLASS =
-  'text-sm font-medium text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400'
+  'text-sm font-medium text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
 
 export default function Login() {
   useDocumentTitle('Log In')
@@ -118,7 +118,7 @@ export default function Login() {
             />
             {mode === 'login' && (
               <p className="text-right mt-1.5">
-                <Link to="/forgot-password" state={{ email }} className={`${LINK_CLASS} inline-block py-1`}>
+                <Link to="/forgot-password" state={{ email }} className={`${LINK_CLASS} inline-flex items-center min-h-10`}>
                   Forgot password?
                 </Link>
               </p>
@@ -163,7 +163,7 @@ export default function Login() {
           type="button"
           onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
           disabled={submitting}
-          className={`w-full text-center mt-4 py-1 disabled:opacity-50 disabled:cursor-not-allowed ${LINK_CLASS}`}
+          className={`w-full text-center mt-4 min-h-10 disabled:opacity-50 disabled:cursor-not-allowed ${LINK_CLASS}`}
         >
           {mode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Log In'}
         </button>

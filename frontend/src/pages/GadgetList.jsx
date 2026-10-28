@@ -35,7 +35,9 @@ const SUGGESTED_QUESTIONS = [
 const PAGE_SIZE = 6
 const HISTOGRAM_BINS = 11
 
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400'
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
+// Widens a small icon button's touch area to about 40px without changing its look.
+const hitArea = "relative before:absolute before:-inset-2.5 before:content-['']"
 
 function formatPrice(value) {
   return `Php ${Math.round(value).toLocaleString()}`
@@ -250,20 +252,34 @@ export default function GadgetList() {
         <aside aria-label="Filters" className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs flex flex-col gap-6">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              {/* Below lg the heading holds a disclosure button; from lg the filters are always
+                  shown, so a plain heading avoids announcing a toggle that does nothing. */}
+              <h2 className="lg:hidden text-xl font-semibold text-slate-900 tracking-tight">
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen((o) => !o)}
+                  aria-expanded={filtersOpen}
+                  aria-controls="catalog-filters"
+                  className={`flex items-center gap-1.5 min-h-10 rounded ${focusRing}`}
+                >
+                  <SlidersHorizontal size={18} className="text-sage-700" />
+                  Filters
+                  {hasFilters && (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-emerald-600" aria-hidden="true" />
+                      <span className="sr-only">(active)</span>
+                    </>
+                  )}
+                  <ChevronDown size={16} className={`text-slate-500 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </h2>
+              <h2 className="hidden lg:flex items-center gap-1.5 text-xl font-semibold text-slate-900 tracking-tight">
+                <SlidersHorizontal size={18} className="text-sage-700" /> Filters
+              </h2>
               <button
-                onClick={() => setFiltersOpen((o) => !o)}
-                aria-expanded={filtersOpen}
-                aria-controls="catalog-filters"
-                className={`flex items-center gap-1.5 rounded lg:pointer-events-none ${focusRing}`}
-              >
-                <SlidersHorizontal size={18} className="text-sage-700" />
-                <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Filters</h2>
-                {hasFilters && <span className="lg:hidden w-2 h-2 rounded-full bg-emerald-600" aria-label="Filters active" />}
-                <ChevronDown size={16} className={`lg:hidden text-slate-500 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
-              </button>
-              <button
+                type="button"
                 onClick={clearFilters}
-                className={`font-mono text-xs font-medium text-slate-500 hover:text-sage-700 transition-colors flex items-center gap-1 rounded ${focusRing}`}
+                className={`font-mono text-xs font-medium text-slate-600 hover:text-sage-700 transition-colors flex items-center gap-1 min-h-10 lg:min-h-0 px-1 rounded ${focusRing}`}
               >
                 Reset <RotateCcw size={12} />
               </button>
@@ -288,7 +304,9 @@ export default function GadgetList() {
               {priceStats && priceStats.max > priceStats.min && (
                 <div className="flex flex-col gap-2 bg-slate-100 p-3.5 rounded-lg border border-slate-200">
                   <div className="flex justify-between items-center font-mono text-xs">
-                    <span className="text-slate-500 font-medium">Max Price</span>
+                    <label htmlFor="price-range" className="text-slate-600 font-medium">
+                      Max Price
+                    </label>
                     <span className="text-sage-700 font-bold">{formatPrice(priceLimit)}</span>
                   </div>
                   <svg className="w-full h-8 text-sage-700" viewBox={`0 0 ${HISTOGRAM_BINS * 10} 28`} aria-hidden="true">
@@ -310,12 +328,10 @@ export default function GadgetList() {
                       )
                     })}
                   </svg>
-                  <label htmlFor="price-range" className="sr-only">
-                    Maximum price
-                  </label>
                   <input
                     id="price-range"
                     type="range"
+                    aria-valuetext={formatPrice(priceLimit)}
                     min={priceStats.min}
                     max={priceStats.max}
                     step={Math.max(1, Math.round((priceStats.max - priceStats.min) / 100))}
@@ -323,7 +339,7 @@ export default function GadgetList() {
                     onChange={(e) => updateFilter(setMaxPrice)(Number(e.target.value))}
                     className="w-full accent-sage-700"
                   />
-                  <div className="flex justify-between font-mono text-[11px] text-slate-500">
+                  <div className="flex justify-between font-mono text-[11px] text-slate-600">
                     <span>{formatPrice(priceStats.min)}</span>
                     <span>{formatPrice(priceStats.max)}</span>
                   </div>
@@ -335,6 +351,10 @@ export default function GadgetList() {
 
         {/* Catalog */}
         <section className="min-w-0 flex flex-col gap-8">
+          {/* Announces the result count when filters change; silent when none are set. */}
+          <p role="status" className="sr-only">
+            {hasFilters ? `${filtered.length} ${filtered.length === 1 ? 'gadget matches' : 'gadgets match'} your filters` : ''}
+          </p>
           <div className="flex flex-col gap-3 bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -354,14 +374,14 @@ export default function GadgetList() {
                     id="sort-select"
                     value={sortBy}
                     onChange={(e) => updateFilter(setSortBy)(e.target.value)}
-                    className="bg-slate-100 text-slate-900 font-mono text-sm font-medium py-1.5 pl-3 pr-8 rounded-lg appearance-none cursor-pointer border border-slate-200 focus:outline-none focus:ring-1 focus:ring-sage-400"
+                    className="bg-slate-100 text-slate-900 font-mono text-sm font-medium py-1.5 pl-3 pr-8 min-h-10 sm:min-h-0 rounded-lg appearance-none cursor-pointer border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sage-600"
                   >
                     <option value="name">Name (A → Z)</option>
                     <option value="newest">Release Date (Newest)</option>
                     <option value="price-low">Price (Low → High)</option>
                     <option value="price-high">Price (High → Low)</option>
                   </select>
-                  <ChevronDown size={14} className="pointer-events-none absolute right-2 top-2 text-slate-500" />
+                  <ChevronDown size={14} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" />
                 </div>
               </div>
             </div>
@@ -394,7 +414,7 @@ export default function GadgetList() {
                 )}
                 <button
                   onClick={clearFilters}
-                  className={`font-mono text-xs text-slate-500 hover:text-red-600 ml-1 transition-colors underline rounded ${focusRing}`}
+                  className={`font-mono text-xs text-slate-600 hover:text-red-600 ml-1 px-1 min-h-10 sm:min-h-0 transition-colors underline rounded ${focusRing}`}
                 >
                   Clear All Filters
                 </button>
@@ -412,7 +432,7 @@ export default function GadgetList() {
                   <button
                     key={q}
                     onClick={() => ask(q)}
-                    className={`flex items-center gap-1 text-sm font-medium text-sage-700 bg-sage-50 hover:bg-sage-200 border border-sage-200 rounded-full px-2.5 py-1 transition active:scale-95 ${focusRing}`}
+                    className={`flex items-center gap-1 text-sm font-medium text-sage-700 bg-sage-50 hover:bg-sage-200 border border-sage-200 rounded-full px-2.5 py-1 min-h-10 sm:min-h-8 transition active:scale-95 ${focusRing}`}
                   >
                     <Sparkles size={11} /> {q}
                   </button>
@@ -458,7 +478,7 @@ export default function GadgetList() {
                   {filtered.length === 1 ? '' : 's'}
                 </span>
                 {pageCount > 1 && (
-                  <nav className="flex items-center gap-1.5" aria-label="Pagination">
+                  <nav className="flex flex-wrap justify-center items-center gap-1.5" aria-label="Pagination">
                     <PageButton disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
                       Prev
                     </PageButton>
@@ -522,7 +542,7 @@ function CheckboxGroup({ title, items, selected, onToggle, prominent = false }) 
                 className={`font-mono text-xs px-1.5 py-0.5 rounded ${
                   checked
                     ? 'bg-white text-emerald-800 border border-emerald-200 font-semibold'
-                    : 'bg-slate-100 text-slate-500'
+                    : 'bg-slate-100 text-slate-600'
                 }`}
               >
                 {count}
@@ -542,7 +562,7 @@ function FilterPill({ label, onRemove }) {
       <button
         onClick={onRemove}
         aria-label={`Remove filter ${label}`}
-        className={`text-slate-500 hover:text-slate-800 flex items-center rounded ${focusRing}`}
+        className={`text-slate-600 hover:text-slate-800 flex items-center p-1 -m-1 rounded ${hitArea} ${focusRing}`}
       >
         <X size={12} />
       </button>
@@ -556,7 +576,7 @@ function PageButton({ children, active = false, disabled = false, onClick }) {
       onClick={onClick}
       disabled={disabled}
       aria-current={active ? 'page' : undefined}
-      className={`px-3 py-1.5 rounded font-mono text-xs transition-colors ${focusRing} ${
+      className={`px-3 py-1.5 min-h-10 min-w-10 sm:min-h-0 sm:min-w-0 rounded font-mono text-xs transition-colors ${focusRing} ${
         active
           ? 'bg-sage-700 text-white font-semibold shadow-xs'
           : 'bg-slate-100 border border-slate-200 text-slate-700 font-medium hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-100'
@@ -570,7 +590,7 @@ function PageButton({ children, active = false, disabled = false, onClick }) {
 function SpecCell({ label, value, sub }) {
   return (
     <div className="flex flex-col min-w-0">
-      <span className="font-mono text-[11px] text-slate-500 uppercase tracking-wider font-medium">{label}</span>
+      <span className="font-mono text-[11px] text-slate-600 uppercase tracking-wider font-medium">{label}</span>
       <span className="font-mono text-sm text-slate-900 font-semibold truncate">{value}</span>
       {sub && <span className="font-mono text-[11px] text-slate-600 truncate">{sub}</span>}
     </div>
@@ -634,7 +654,7 @@ function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted }) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-5 mt-5 border-t border-slate-200">
-        <label className="flex items-center gap-2 min-h-9 cursor-pointer select-none rounded-md focus-within:ring-2 focus-within:ring-sage-400 px-1 -mx-1">
+        <label className="flex items-center gap-2 min-h-9 cursor-pointer select-none rounded-md focus-within:ring-2 focus-within:ring-sage-600 px-1 -mx-1">
           <input
             type="checkbox"
             checked={selected}
@@ -682,7 +702,7 @@ function CompareTray({ gadgets, onRemove, onClear, onCompare }) {
                   <button
                     onClick={() => onRemove(g.id)}
                     aria-label={`Remove ${g.name} from comparison`}
-                    className={`text-slate-500 hover:text-red-700 ml-0.5 transition-colors rounded ${focusRing}`}
+                    className={`text-slate-600 hover:text-red-700 ml-0.5 p-1 -m-1 transition-colors rounded ${hitArea} ${focusRing}`}
                   >
                     <X size={12} />
                   </button>
@@ -694,7 +714,7 @@ function CompareTray({ gadgets, onRemove, onClear, onCompare }) {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onClear}
-            className={`font-mono text-xs text-slate-500 hover:text-red-600 px-1 py-1 transition-colors font-medium rounded ${focusRing}`}
+            className={`font-mono text-xs text-slate-500 hover:text-red-600 px-1 py-1 min-h-10 sm:min-h-0 transition-colors font-medium rounded ${focusRing}`}
           >
             Clear ({gadgets.length})
           </button>

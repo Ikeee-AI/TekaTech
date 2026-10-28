@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save, Loader2, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -14,6 +14,18 @@ import { notifyCorrectionsChanged } from '../utils/correctionNotices'
 
 const MAX_SPEC_CHARS = 20_000 // mirrors MAX_RAW_TEXT_LENGTH in backend/routers/specs.py
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
+
+// The button that opens a form is hidden while the form is open; when the form closes
+// (cancel, save or submit) focus goes back to that button instead of being lost.
+function useFocusOnClose(open) {
+  const ref = useRef(null)
+  const wasOpen = useRef(open)
+  useEffect(() => {
+    if (wasOpen.current && !open) ref.current?.focus()
+    wasOpen.current = open
+  }, [open])
+  return ref
+}
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
@@ -79,6 +91,7 @@ function AddSpecForm({ gadgetId, onSaved, onCancel }) {
         id="raw-text"
         label="Raw Spec Text"
         required
+        autoFocus
         rows={7}
         value={rawText}
         onChange={(v) => {
@@ -167,6 +180,7 @@ function CorrectionForm({ spec, onDone }) {
         id={id}
         label="Suggested Correction"
         required
+        autoFocus
         rows={3}
         value={text}
         onChange={setText}
@@ -252,6 +266,7 @@ function AiReadiness({ specs }) {
 
 function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDeleted }) {
   const [correcting, setCorrecting] = useState(false)
+  const suggestButtonRef = useFocusOnClose(correcting)
   const indexed = spec.indexing_status === 'indexed'
   const isIndexing = indexingId === spec.id
   const indexState = indexed ? 'indexed' : isIndexing ? 'indexing' : indexError ? 'failed' : 'pending'
@@ -275,8 +290,8 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDel
               {isIndexing ? 'Indexing…' : indexError ? 'Retry Indexing' : 'Index for AI'}
             </Button>
           )}
-          <span className="text-xs text-slate-500 bg-slate-100 rounded px-1.5 py-0.5" aria-label={`Chunk ${spec.chunk_index}`}>
-            #{spec.chunk_index}
+          <span className="text-xs text-slate-600 bg-slate-100 rounded px-1.5 py-0.5">
+            <span className="sr-only">Chunk </span>#{spec.chunk_index}
           </span>
           <DeleteSpecButton gadgetId={gadgetId} spec={spec} onDeleted={onDeleted} />
         </div>
@@ -302,7 +317,7 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDel
               href={spec.source_url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-sm font-medium text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+              className="inline-flex items-center gap-1 min-h-10 sm:min-h-0 text-sm font-medium text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
             >
               <ExternalLink size={13} aria-hidden="true" /> Source
               <span className="sr-only">(opens in a new tab)</span>
@@ -314,7 +329,7 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDel
           {outdated && <span className="text-sm text-amber-800 font-semibold">May Be Outdated</span>}
         </div>
         {user && !correcting && (
-          <Button variant="ghost" size="sm" icon={Flag} onClick={() => setCorrecting(true)}>
+          <Button ref={suggestButtonRef} variant="ghost" size="sm" icon={Flag} onClick={() => setCorrecting(true)}>
             Suggest Correction
           </Button>
         )}
@@ -329,6 +344,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   const { user } = useAuth()
   const [state, setState] = useState({ status: 'loading', specs: [] })
   const [showForm, setShowForm] = useState(false)
+  const addButtonRef = useFocusOnClose(showForm)
   const [indexingId, setIndexingId] = useState(null)
   const [indexErrors, setIndexErrors] = useState({})
 
@@ -384,7 +400,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
         </h2>
         {user ? (
           !showForm && (
-            <Button variant="outline" icon={Plus} onClick={() => setShowForm(true)}>
+            <Button ref={addButtonRef} variant="outline" icon={Plus} onClick={() => setShowForm(true)}>
               Add Specs
             </Button>
           )
