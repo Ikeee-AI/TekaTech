@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-
 import { Plus, LogIn, LogOut, Menu, X, Search, Sparkles, CornerDownLeft, User } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
+import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import logo from '../assets/logo.webp'
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400'
@@ -70,6 +71,7 @@ function SearchBar() {
         ref={inputRef}
         type="text"
         placeholder="Search gadgets, or ask a question and press Enter"
+        maxLength={MAX_QUESTION_CHARS}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => {
