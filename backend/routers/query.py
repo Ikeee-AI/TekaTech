@@ -66,6 +66,8 @@ MATCH_COUNT = 6
 # answerable questions found their evidence); 0.25 keeps all 39 and still returns nothing for the
 # off-topic questions. MATCH_COUNT, not the threshold, bounds how much context reaches the prompt.
 MATCH_THRESHOLD = 0.25
+# Cosine similarity is never below -1, so this keeps every chunk in scope and lets the ranking decide (#88).
+SCOPED_MATCH_THRESHOLD = -1.0
 # Keyword fallback (keyword_search.py, sql/keyword_match_spec_documents.sql): only when the
 # vector search returned nothing. Fewer chunks than MATCH_COUNT, since word matches are coarser.
 KEYWORD_MATCH_COUNT = 4
@@ -396,10 +398,15 @@ def ask_question(request: Request, payload: QueryRequest):
         )
 
     # 2. Retrieve the most relevant spec chunks via the SQL function in schema.sql
+    # When the caller names gadgets (the gadget page and the compare page always do) the nearest
+    # chunks of those gadgets are returned whatever their score: on the 20 evaluation questions the
+    # right snippet was rank 1 or 2 every time but under 0.5 in 8 of them (#88), and a whole-spec
+    # chunk scores lower for any one fact. The prompt already says "not stated" when a snippet does
+    # not answer. Questions with no gadget scope (the catalog's ask box) keep the cutoff, so unrelated text is not sent.
     rpc_params = {
         "query_embedding": query_embedding,
         "match_count": MATCH_COUNT,
-        "match_threshold": MATCH_THRESHOLD,
+        "match_threshold": SCOPED_MATCH_THRESHOLD if payload.gadget_ids else MATCH_THRESHOLD,
     }
     if payload.gadget_ids:
         rpc_params["match_gadget_ids"] = [str(i) for i in payload.gadget_ids]
