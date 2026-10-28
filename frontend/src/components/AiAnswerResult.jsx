@@ -207,7 +207,7 @@ export default function AiAnswerResult({
                 className="inline-flex items-center gap-1 min-h-9 text-sm font-semibold text-slate-700 hover:text-sage-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 rounded"
               >
                 {sourcesOpen ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
-                {result.sources.length} Source{result.sources.length === 1 ? '' : 's'} Cited
+                {result.sources.length} Source{result.sources.length === 1 ? '' : 's'} Retrieved
               </button>
               {sourcesOpen && (
                 <ol id="answer-sources" className="mt-2 space-y-2 animate-fade-in">
