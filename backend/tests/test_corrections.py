@@ -238,6 +238,8 @@ def test_approve_resets_spec_to_pending_and_clears_old_embedding(client, fake_su
         "spec_corrections", "select",
         [{"id": correction_id, "spec_document_id": spec_id, "suggested_content": "corrected text"}],
     )
+    # The guarded status update (... where status = 'pending') matched the row.
+    fake_supabase.set_response("spec_corrections", "update", [{"id": correction_id}])
     resp = client.patch(f"/corrections/{correction_id}", json={"action": "approve"})
     assert resp.status_code == 200
 
@@ -255,6 +257,8 @@ def test_reject_leaves_spec_untouched(client, fake_supabase):
         "spec_corrections", "select",
         [{"id": correction_id, "spec_document_id": str(uuid4()), "suggested_content": "x"}],
     )
+    # The guarded status update (... where status = 'pending') matched the row.
+    fake_supabase.set_response("spec_corrections", "update", [{"id": correction_id}])
     resp = client.patch(f"/corrections/{correction_id}", json={"action": "reject"})
     assert resp.status_code == 200
     assert _spec_updates(fake_supabase) == []
@@ -268,6 +272,8 @@ def test_index_after_approve_embeds_the_corrected_text(client, fake_supabase):
         "spec_corrections", "select",
         [{"id": correction_id, "spec_document_id": spec_id, "suggested_content": "corrected text"}],
     )
+    # The guarded status update (... where status = 'pending') matched the row.
+    fake_supabase.set_response("spec_corrections", "update", [{"id": correction_id}])
     assert client.patch(f"/corrections/{correction_id}", json={"action": "approve"}).status_code == 200
 
     # The stored row is now whatever approve wrote.
