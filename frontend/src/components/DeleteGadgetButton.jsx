@@ -51,7 +51,7 @@ export default function DeleteGadgetButton({ gadget, onDeleted, size = 'md', ico
         aria-label={iconOnly ? `Delete ${gadget.name}` : undefined}
         title={iconOnly ? `Delete ${gadget.name}` : undefined}
         aria-haspopup="dialog"
-        className={iconOnly ? `!px-2.5 ${className}` : className}
+        className={iconOnly ? `!px-2.5 min-w-10 ${className}` : className}
       >
         {!iconOnly && 'Delete'}
       </Button>

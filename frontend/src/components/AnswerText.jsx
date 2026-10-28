@@ -1,5 +1,5 @@
 // Renders exactly three things from the model's answer: [n] citations, **bold** and
-// "- " bullets. The prompt in backend/routers/query.py promises only these, so change
+// "- " bullets. The prompt in backend/prompts.py promises only these, so change
 // both together or neither.
 
 function Citation({ number, source, onCiteClick }) {
@@ -40,20 +40,38 @@ function renderInline(text, sources, onCiteClick) {
   })
 }
 
+const BULLET = /^[-•]\s/
+
+// Splits the answer into an optional lead-in line plus bullet items, or returns null
+// when it should render as plain paragraphs. The rule the prompt promises: two or more
+// bullets become a list only when at most one non-bullet line precedes them and no
+// non-bullet line follows. Anything else stays paragraphs, so a stray "- " is shown
+// as written rather than guessed at.
+function splitBulletList(lines) {
+  const intro = lines.length > 0 && !BULLET.test(lines[0].trim()) ? lines[0] : null
+  const items = intro === null ? lines : lines.slice(1)
+  if (items.length < 2 || !items.every((l) => BULLET.test(l.trim()))) return null
+  return { intro, items: items.map((l) => l.trim().replace(/^[-•]\s*/, '')) }
+}
+
 export default function AnswerText({ text, sources, onCiteClick }) {
   const lines = text.split('\n').filter((l) => l.trim() !== '')
-  const bulletLines = lines.filter((l) => /^[-•]\s/.test(l.trim()))
-  const isMostlyBullets = bulletLines.length >= 2 && bulletLines.length >= lines.length - 1
+  const list = splitBulletList(lines)
 
-  if (isMostlyBullets) {
+  if (list) {
     return (
-      <ul className="space-y-2 list-disc pl-5 marker:text-sage-600">
-        {lines.map((line, i) => (
-          <li key={i} className="text-[15px] text-slate-800 leading-7">
-            {renderInline(line.trim().replace(/^[-•]\s*/, ''), sources, onCiteClick)}
-          </li>
-        ))}
-      </ul>
+      <div className="space-y-2.5">
+        {list.intro !== null && (
+          <p className="text-[15px] text-slate-800 leading-7">{renderInline(list.intro, sources, onCiteClick)}</p>
+        )}
+        <ul className="space-y-2 list-disc pl-5 marker:text-sage-600">
+          {list.items.map((item, i) => (
+            <li key={i} className="text-[15px] text-slate-800 leading-7">
+              {renderInline(item, sources, onCiteClick)}
+            </li>
+          ))}
+        </ul>
+      </div>
     )
   }
 

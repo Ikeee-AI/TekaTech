@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
+import { useAuth } from '../hooks/useAuth'
 import { deleteErrorMessage } from '../utils/deleteErrors'
 import Button from './ui/Button'
 import ConfirmDialog from './ui/ConfirmDialog'
@@ -12,15 +13,18 @@ function preview(text, max = 140) {
 }
 
 /**
- * Delete control for one spec chunk. NOT RENDERED YET: the backend has no
- * DELETE /gadgets/{gadget_id}/specs/{spec_id} route. Once it exists, render
- * <DeleteSpecButton gadgetId={gadgetId} spec={spec} onDeleted={loadSpecs} />
- * in SpecCard (SpecManager.jsx), gated on the same permission the route uses.
+ * Delete control for one spec chunk (#125). Only rendered for admins: the backend's
+ * DELETE /gadgets/{gadget_id}/specs/{spec_id} (#127) requires app_metadata.is_admin,
+ * like gadget delete. The request runs from the confirmation dialog, which stays
+ * open with the reason if it fails.
  */
 export default function DeleteSpecButton({ gadgetId, spec, onDeleted }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const { user } = useAuth()
+
+  if (!user?.app_metadata?.is_admin) return null
 
   function close() {
     setOpen(false)

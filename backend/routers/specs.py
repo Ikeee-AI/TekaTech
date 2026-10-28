@@ -5,10 +5,12 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
+import answer_cache
 import cache
 from auth import get_current_admin_user, get_current_user
 from embeddings import chunk_text, embed_texts
 from rate_limit import limiter
+from schemas import clean_http_url
 from supabase_client import supabase
 from tokens import count_embedding_tokens
 
@@ -24,7 +26,11 @@ MAX_RAW_TEXT_TOKENS = 6_000
 
 class SpecIngestRequest(BaseModel):
     raw_text: str = Field(min_length=1, max_length=MAX_RAW_TEXT_LENGTH)
+    # Optional; blank becomes None. Shown as a clickable link on spec and source
+    # cards, so only full http(s) URLs up to MAX_URL_CHARS are accepted.
     source_url: Optional[str] = None
+
+    _clean_source_url = field_validator("source_url")(clean_http_url)
 
     @field_validator("raw_text")
     @classmethod
@@ -74,6 +80,8 @@ def ingest_spec_text(request: Request, gadget_id: UUID, payload: SpecIngestReque
     result = supabase.table("spec_documents").insert(rows).execute()
     # Spec coverage counts gadgets that have spec rows.
     cache.invalidate("stats")
+    # Saved AI answers that searched this gadget's specs (see answer_cache.py).
+    answer_cache.invalidate_gadget(gadget_id)
     return {"gadget_id": gadget_id, "chunks_created": len(result.data), "indexing_status": "pending"}
 
 
@@ -115,6 +123,8 @@ def index_spec(request: Request, gadget_id: UUID, spec_id: UUID, user=Depends(ge
                .eq("content", spec["content"]).execute())
     if not updated.data:
         raise HTTPException(status_code=409, detail="Spec changed during indexing. Please retry.")
+    # The chunk is now retrievable, so answers about this gadget may change.
+    answer_cache.invalidate_gadget(gadget_id)
     return {"id": spec_id, "indexing_status": "indexed"}
 
 
@@ -129,3 +139,5 @@ def delete_spec(gadget_id: UUID, spec_id: UUID, user=Depends(get_current_admin_u
     if not result.data:
         raise HTTPException(status_code=404, detail="Spec not found")
     cache.invalidate("stats")
+    # Saved AI answers may cite the deleted chunk.
+    answer_cache.invalidate_gadget(gadget_id)

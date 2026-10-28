@@ -36,6 +36,16 @@ export function useAiAnswer() {
     setTimeout(() => setHighlightedIndex(null), 1800)
   }
 
+  // Clears the previous answer (and any error) so the caller can show its
+  // question input again for a follow-up question.
+  function resetAnswer() {
+    setResult(null)
+    setError(null)
+    setSourcesOpen(false)
+    setHighlightedIndex(null)
+    setCopied(false)
+  }
+
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(result.answer)
@@ -64,5 +74,6 @@ export function useAiAnswer() {
     sourceRefs,
     handleCiteClick,
     handleCopy,
+    resetAnswer,
   }
 }

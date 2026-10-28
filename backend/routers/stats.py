@@ -1,6 +1,6 @@
 from collections import Counter
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Query, Response
 
 import cache
 from supabase_client import supabase
@@ -35,8 +35,23 @@ def _load_spec_coverage():
     return {"covered": covered, "total": total}
 
 
+# Bounded because the route is public and `limit` is part of the cache key: an
+# unbounded value would let callers fill the stats cache with one entry per number.
+TRENDING_DEFAULT = 5
+TRENDING_MAX = 10
+# Same cap /query puts on new questions (MAX_QUESTION_CHARS in routers/query.py).
+# Rows saved before that cap can be longer; they are shortened for display here.
+TRENDING_QUESTION_MAX_CHARS = 150
+
+
+def _shorten(question: str) -> str:
+    if len(question) <= TRENDING_QUESTION_MAX_CHARS:
+        return question
+    return question[: TRENDING_QUESTION_MAX_CHARS - 1].rstrip() + "…"
+
+
 @router.get("/trending-questions")
-def trending_questions(response: Response, limit: int = 5):
+def trending_questions(response: Response, limit: int = Query(TRENDING_DEFAULT, ge=1, le=TRENDING_MAX)):
     data, hit = cache.get_or_load(
         "stats", ("trending-questions", limit), STATS_TTL_SECONDS, lambda: _load_trending(limit)
     )
@@ -66,4 +81,4 @@ def _load_trending(limit: int):
             seen_original[key] = h["query_text"].strip()
 
     ranked = sorted(normalized_counts.items(), key=lambda x: x[1], reverse=True)[:limit]
-    return [{"question": seen_original[key], "count": count} for key, count in ranked]
+    return [{"question": _shorten(seen_original[key]), "count": count} for key, count in ranked]

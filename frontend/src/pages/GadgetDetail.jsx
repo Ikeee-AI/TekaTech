@@ -19,7 +19,8 @@ const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
 function formatRelease(date) {
   const d = new Date(date)
   if (Number.isNaN(d.getTime())) return date
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+  // release_date is a plain date read as midnight UTC; format in UTC so it doesn't shift a day.
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
 }
 
 export default function GadgetDetail() {
@@ -41,13 +42,17 @@ export default function GadgetDetail() {
     api
       .getGadget(id)
       .then((g) => setState({ status: 'ready', gadget: g }))
-      .catch((err) => setState({ status: 'error', error: friendlyError(err) }))
+      // A malformed id (/gadgets/abc) is a 422 from the UUID check: it can never
+      // load, so it's "not found" too, not a retryable error showing raw validation text.
+      .catch((err) =>
+        setState({ status: 'error', error: friendlyError(err), notFound: err.status === 404 || err.status === 422 }),
+      )
   }, [id, attempt])
 
   if (state.status === 'loading') return <GadgetDetailSkeleton />
 
   if (state.status === 'error') {
-    const notFound = /not found/i.test(state.error)
+    const notFound = state.notFound || /not found/i.test(state.error)
     return (
       <div className="max-w-3xl mx-auto">
         <BackLink to="/">Back to Catalog</BackLink>
@@ -145,6 +150,7 @@ export default function GadgetDetail() {
       <AIComparisonPanel
         gadgetIds={[id]}
         gadgetNames={[gadget.name]}
+        category={gadget.category}
         title={`Ask About ${gadget.name}`}
         defaultQuestion=""
         suggestions={['What chip does it use?', 'How long does the battery last?', 'Is it water resistant?']}
