@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -224,6 +225,66 @@ def test_submit_correction_requires_login(client, fake_supabase):
         assert fake_supabase.writes == []
     finally:
         _restore_admin(app)
+
+
+def _spec_updates(fake_supabase):
+    return [data for table, op, data in fake_supabase.writes if table == "spec_documents" and op == "update"]
+
+
+def test_approve_resets_spec_to_pending_and_clears_old_embedding(client, fake_supabase):
+    """The old vector describes the old text: approve must not leave it marked indexed."""
+    correction_id, spec_id = str(uuid4()), str(uuid4())
+    fake_supabase.set_response(
+        "spec_corrections", "select",
+        [{"id": correction_id, "spec_document_id": spec_id, "suggested_content": "corrected text"}],
+    )
+    resp = client.patch(f"/corrections/{correction_id}", json={"action": "approve"})
+    assert resp.status_code == 200
+
+    [update] = _spec_updates(fake_supabase)
+    assert update["content"] == "corrected text"
+    assert update["indexing_status"] == "pending"
+    assert update["embedding"] is None
+    assert update["verified_at"]
+    assert ("spec_documents", "id", spec_id) in fake_supabase.filters
+
+
+def test_reject_leaves_spec_untouched(client, fake_supabase):
+    correction_id = str(uuid4())
+    fake_supabase.set_response(
+        "spec_corrections", "select",
+        [{"id": correction_id, "spec_document_id": str(uuid4()), "suggested_content": "x"}],
+    )
+    resp = client.patch(f"/corrections/{correction_id}", json={"action": "reject"})
+    assert resp.status_code == 200
+    assert _spec_updates(fake_supabase) == []
+
+
+def test_index_after_approve_embeds_the_corrected_text(client, fake_supabase):
+    """Approve then index: the index call must reach the provider with the new text,
+    not return early because the row still says 'indexed'."""
+    correction_id, spec_id, gadget_id = str(uuid4()), str(uuid4()), str(uuid4())
+    fake_supabase.set_response(
+        "spec_corrections", "select",
+        [{"id": correction_id, "spec_document_id": spec_id, "suggested_content": "corrected text"}],
+    )
+    assert client.patch(f"/corrections/{correction_id}", json={"action": "approve"}).status_code == 200
+
+    # The stored row is now whatever approve wrote.
+    [approved] = _spec_updates(fake_supabase)
+    fake_supabase.set_response(
+        "spec_documents", "select",
+        [{"id": spec_id, "content": approved["content"], "indexing_status": approved["indexing_status"]}],
+    )
+    fake_supabase.set_response("spec_documents", "update", [{"id": spec_id}])
+
+    with patch("routers.specs.embed_texts", return_value=[[0.1] * 1536]) as embed:
+        resp = client.post(f"/gadgets/{gadget_id}/specs/{spec_id}/index")
+
+    assert resp.status_code == 200
+    assert resp.json()["indexing_status"] == "indexed"
+    embed.assert_called_once_with(["corrected text"])
+    assert _spec_updates(fake_supabase)[-1]["indexing_status"] == "indexed"
 
 
 def _override_non_admin(client_fixture_app):
