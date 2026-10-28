@@ -31,7 +31,9 @@ export function AnswerSkeleton({ lines = 3 }) {
 const SLOW_ANSWER_MS = 10_000
 
 /** Loading state. Mounted only while a request runs, so the "still working" note
- * resets on every new question. The backend gives up after 45 seconds. */
+ * resets on every new question. The backend allows 45 s per AI call
+ * (PROVIDER_TIMEOUT_SECONDS, with one retry) and a cold start adds about 42–55 s,
+ * so the note promises no fixed time. */
 function LoadingNotice({ skeletonLines }) {
   const [slow, setSlow] = useState(false)
   useEffect(() => {
@@ -42,7 +44,7 @@ function LoadingNotice({ skeletonLines }) {
     <div className="mt-3 space-y-3">
       <p className="text-sm font-medium text-slate-600">
         {slow
-          ? 'Still working — some answers take up to 45 seconds…'
+          ? 'Still working — some answers take a minute or more…'
           : 'Searching the spec sheets and writing an answer…'}
       </p>
       <AnswerSkeleton lines={skeletonLines} />
