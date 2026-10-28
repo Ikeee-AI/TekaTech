@@ -64,10 +64,10 @@ def test_ipv6_clients_share_their_64(trust_proxy):
     assert client_ip_key(_request("10.0.0.1", "::ffff:198.51.100.7")) == "198.51.100.7"
 
 
-def test_render_yaml_trusts_one_proxy_hop_for_the_api_only():
+def test_render_yaml_keeps_proxy_trust_off_until_verified():
     render_yaml = (Path(__file__).resolve().parents[2] / "render.yaml").read_text(encoding="utf-8")
     api_block, web_block = render_yaml.split("name: tekatech-web")
-    assert "key: TRUST_PROXY_HEADERS\n        value: 'true'" in api_block
+    assert "key: TRUST_PROXY_HEADERS\n        value: 'false'" in api_block
     assert "key: TRUSTED_PROXY_HOPS\n        value: '1'" in api_block
     assert "TRUST" not in web_block
 

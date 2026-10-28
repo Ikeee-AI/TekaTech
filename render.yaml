@@ -26,9 +26,10 @@ services:
         value: memory://
       # Rate-limit per visitor, not per Render proxy: key on the X-Forwarded-For entry
       # Render's proxy appends (rightmost). Client-supplied entries are ignored.
-      # Verification steps: docs/deploy-runbook.md "Rate-limit buckets behind the proxy".
+      # Off until the hop count is confirmed from real traffic (Manuel's review on #136);
+      # steps: docs/deploy-runbook.md "Rate-limit buckets behind the proxy".
       - key: TRUST_PROXY_HEADERS
-        value: 'true'
+        value: 'false'
       - key: TRUSTED_PROXY_HOPS
         value: '1'
   - type: web
