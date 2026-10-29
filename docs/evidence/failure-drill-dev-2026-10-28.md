@@ -11,7 +11,7 @@ Run by Manuel Mirasol (S4-MA). A local backend at `main` `77aff2e`, connected to
 | admin | on | `TIMEOUT` | 503 | same as `timeout` (case-insensitive) |
 | admin | on | `nonsense` | 422 | lists the valid modes |
 | non-admin | on | `timeout` | 200 | normal answer, no `X-Simulated-Failure` header |
-| anonymous | on | `timeout` | 200 | normal answer, no `X-Simulated-Failure` header |
+| anonymous | on | `timeout` | 200 | normal answer, no `X-Simulated-Failure` header (0.4 s: served from the answer cache; the simulation check runs before the cache lookup, so it is still a valid control) |
 | admin | **off** | `timeout` | 200 | normal answer, no `X-Simulated-Failure` header |
 
 The simulated cases never call OpenAI. The three normal answers cost well under one cent.
