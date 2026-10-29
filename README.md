@@ -2,6 +2,8 @@
 
 An AI subject project that helps shoppers understand and compare gadget specifications. The app stores sourced specs, retrieves relevant chunks with pgvector, and generates answers with clickable citations. Specs can be saved before AI indexing, so provider outages do not prevent catalog work.
 
+**Using the app:** [quick-start guide](docs/quick-start.md) · **Running it locally:** [Run locally](#run-locally)
+
 ## Team and responsibilities
 
 The project owner, **Ikeee-AI**, is the **one DevOps Engineer**. Every other team member is a Developer with the specialty below. Full ownership boundaries, the Sprint 2–5 work packages and the review table are in [docs/sprints-2-to-5.md](docs/sprints-2-to-5.md). This five-person roster replaces the two-member Sprint 1 roster.
@@ -46,29 +48,54 @@ All data and AI calls go through FastAPI. The browser talks to Supabase for auth
 
 ## Run locally
 
-Prerequisites: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js 22+, and an active configured Supabase project.
+Checked from a fresh clone on Windows 10 on 29 Oct 2026 ([evidence](docs/evidence/fresh-checkout-2026-10-29.md)). First setup takes about 5 minutes, most of it `npm ci`.
 
-In one PowerShell terminal:
+**Prerequisites**
+- Git and Node.js 22+ (Node 24 also works).
+- [uv](https://docs.astral.sh/uv/getting-started/installation/). On Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`, then open a new terminal.
+- Python 3.12+. You don't have to install it yourself: `uv sync` finds or downloads a matching Python, even if the system one is older (the check machine had 3.11).
+- The **TekaTech-dev** values for both `.env` files, from Ikeee-AI. Never put production keys in a local `.env`.
+
+**1. Clone**
+
+```powershell
+git clone https://github.com/Ikeee-AI/TekaTech.git
+cd TekaTech
+```
+
+**2. Backend** (first terminal):
 
 ```powershell
 cd backend
-Copy-Item .env.example .env   # first setup only; fill in your own keys
+Copy-Item .env.example .env   # first setup only; then fill in the TekaTech-dev values
 uv sync --frozen
 uv run uvicorn main:app --reload
 ```
 
-In a second terminal:
+`backend/.env` needs `openai_api_key`, `supabase_url`, `supabase_key` (the `sb_secret_` service-role key) and `cors_origins`. Leave `failure_simulation_enabled` unset unless you are running the failure drill.
+
+**3. Frontend** (second terminal):
 
 ```powershell
 cd frontend
-Copy-Item .env.example .env   # first setup only; use the publishable key
+Copy-Item .env.example .env   # first setup only; use the sb_publishable_ key, never the secret one
 npm ci
 npm run dev -- --port 5173 --strictPort
 ```
 
-Frontend: http://localhost:5173. Backend: http://127.0.0.1:8000. API reference: http://127.0.0.1:8000/docs. `/health` checks process liveness; `/gadgets` is the database-backed walking-skeleton endpoint. An empty list is valid for a new database.
+**4. Check it works**
+- http://127.0.0.1:8000/health/ready → `{"status":"ok","database":"ok",…}`, which means the backend reached Supabase.
+- http://localhost:5173 → the catalog. On TekaTech-dev you should see the seeded gadgets; an empty catalog is normal for a new database (seed it below).
+- Open **iPhone 15** and click the suggested question **"What chip does it use?"**. A cited answer ("A16 Bionic [1]") proves the OpenAI key and retrieval work. It costs well under one cent.
+- API reference: http://127.0.0.1:8000/docs.
 
-Use the backend secret/service-role key only in `backend/.env`; the frontend uses the distinct publishable/anon key. `VITE_API_BASE_URL` is compiled into the frontend. Its browser origin must appear in backend `cors_origins`.
+The first visit to each page can show "Loading page…" for a few seconds while Vite compiles it; later visits are instant.
+
+**If something fails**
+- *CORS error in the browser console:* the frontend's address (e.g. `http://localhost:5173`) must be in backend `cors_origins`. `--strictPort` stops Vite from silently moving to another port.
+- *Changed `frontend/.env` but nothing changed:* `VITE_*` values are compiled in. Restart `npm run dev`.
+- *`/health/ready` fails, or DNS / Cloudflare 521 errors:* the Supabase project may be paused. Resume it and wait a few minutes.
+- *`uv` is not recognized:* open a new terminal after installing it.
 
 ### Sample data for TekaTech-dev
 
@@ -94,22 +121,31 @@ Schema and RPC SQL are now tracked under `backend/sql/`. Apply the ordered files
 
 ## Checks
 
+The same checks CI runs on every PR. None of them call Supabase or OpenAI.
+
 ```powershell
 cd backend
+python ../scripts/check_secrets.py   # fails on committed .env files or key-shaped strings
 uv run --frozen pytest
-# Optional live check: reads database; --ai makes ONE small billed request.
-uv run python scripts/sprint1_check.py --ai --api-base http://127.0.0.1:8000 --output ../.local/sprint1-live-check.json
-# Temporary local provider probe; Ollama and the named model must already be running/installed.
-uv run python scripts/sprint1_check.py --ai --ai-provider ollama --ai-model qwen3:8b --output ../.local/sprint1-local-llm-check.json
 ```
 
 ```powershell
 cd frontend
 npm run lint
+npm test                             # Vitest unit tests
 npm run build
+npx playwright install chromium      # first time only
+npm run test:e2e                     # failure-drill browser checks on a faked API (frontend/e2e/README.md)
 ```
 
-Normal CI uses fake Supabase and mocked OpenAI. Its separate database job applies SQL to scratch PostgreSQL/pgvector and rolls test fixture writes back.
+Optional live check against your configured database (`--ai` makes ONE small billed request):
+
+```powershell
+cd backend
+uv run python scripts/sprint1_check.py --ai --api-base http://127.0.0.1:8000 --output ../.local/sprint1-live-check.json
+```
+
+CI's separate database job applies the SQL to scratch PostgreSQL/pgvector and rolls test fixture writes back. The Sprint 1 Ollama probe is kept only as historical evidence; see `backend/README.md`.
 
 ## Branch and review strategy
 
