@@ -21,13 +21,14 @@ The free server sleeps when nobody uses it, so the **first** request after a qui
    - **Answer based on N cited specs** tells you how many saved specs back the answer.
    - **No supporting source cited** means nothing in the answer is backed by a saved spec, so treat it as unverified.
    - **No Evidence Found** means TekaTech has no specs that answer the question. It doesn't guess.
+   - **N Sources Retrieved** (under the answer) lists every snippet the AI was given; the cited count above is what the answer actually uses.
 4. Optional: tick **Plain-Language Answer** for simpler wording. Use **Copy** to copy the answer, or a **follow-up question** to keep going.
 
 You can also type a question in the top search bar and press **Enter** to ask across the whole catalog.
 
 ### Compare gadgets
-1. In the catalog, click **Compare** on 2 or 3 gadgets. They collect in the **Compare** tray at the bottom.
-2. Click the tray's compare button to open the side-by-side table.
+1. In the catalog, tick **Compare** on 2 or 3 gadgets. They collect in the **Compare** tray at the bottom.
+2. Click **Compare Now (N)** in the tray to open the side-by-side table.
 3. Under **AI Trade-Off Comparison**, ask a question (for example "Which one has the better battery?") and press **Generate Comparison**.
 4. Click **Share** to create a short link (`…/c/…`). It's copied to your clipboard, and anyone can open it without an account.
 
