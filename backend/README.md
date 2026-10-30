@@ -162,6 +162,7 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | Endpoint | Method | Auth | Payload | Success | Errors |
 |----------|--------|------|---------|---------|--------|
 | `/health` | GET | none | none | 200 `{"status": "ok"}` | — |
+| `/health/ready` | GET | none | none | 200 `{"status": "ok", "database": "ok", "latency_ms": N}`; `Cache-Control: no-store` | 503 `{"status": "error", "database": "error", "latency_ms": N}` (the database failed or took over 5 s; never any error text), 429 (30/minute) |
 | `/version` | GET | none | none | 200 `{"commit": "..."}` | — |
 | `/gadgets` | GET | none | query: `category`, `brand` | 200 list | — |
 | `/gadgets` | POST | logged-in | `GadgetCreate` (limits below) | 201 `GadgetResponse` | 401, 422, 503 (database write failed) |
@@ -171,6 +172,7 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/gadgets/{id}/specs` | GET | none | path `id` | 200 list | — |
 | `/gadgets/{id}/specs` | POST | logged-in | `{"raw_text": "...", "source_url": "..."}` (`source_url` optional, http(s), max 2000 chars) | 201 `{"gadget_id", "chunks_created", "indexing_status"}` | 400, 401, 404, 422, 429 |
 | `/gadgets/{id}/specs/{spec_id}/index` | POST | logged-in | path ids | 200 `{"id", "indexing_status"}` | 401, 404, 409, 422, 429, 503 |
+| `/gadgets/{id}/specs/{spec_id}` | DELETE | admin | path ids | 204; its corrections are deleted with it (`on delete cascade`), and saved AI answers about the gadget are dropped from the answer cache | 401, 403, 404 (no such spec, or the spec belongs to another gadget) |
 | `/comparisons` | POST | none | `{"gadget_ids": [...]}` (at most 5 sent; duplicates removed, then at least 2 must remain) | 201 | 404 (a gadget doesn't exist), 422 (fewer than 2 different, more than 5, malformed id), 429, 503 |
 | `/comparisons/{slug}` | GET | none | path `slug` | 200 `{"slug", "gadget_ids"}` (view count is best-effort and never fails the request) | 404 |
 | `/stats/spec-coverage` | GET | none | none | 200 `{"covered": N, "total": N}` | — |
@@ -184,6 +186,12 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 
 Every route with an `{id}`, `{gadget_id}`, `{spec_id}` or `{correction_id}` path parameter returns 422 for a malformed UUID.
 
-Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route, with `detail` as FastAPI's list of `{"loc", "msg", "type", "input"}`; the custom checks use plain-sentence `msg` values the UI can show directly. A bare `NaN`/`Infinity` in a JSON body is still a 422 (`main.py` makes the echoed `input` JSON-safe). Rate-limited routes (`/query`, spec ingestion/indexing, comparison creation, correction submission) return 429 once the limit is exceeded.
+Shared error format: `{"detail": "<message>"}`. Validation failures return 422 from Pydantic before reaching the route, with `detail` as FastAPI's list of `{"loc", "msg", "type", "input"}`; the custom checks use plain-sentence `msg` values the UI can show directly. A bare `NaN`/`Infinity` in a JSON body is still a 422 (`main.py` makes the echoed `input` JSON-safe). A route that fails unexpectedly (for example a database call with no handling of its own, such as listing gadgets or saving spec text) returns **500** `{"detail": "Internal server error", "request_id": "..."}`: no exception text, and the id matches the log line.
+
+**Rate limits** (per client address; a 429 body is `{"error": "Rate limit exceeded: 10 per 1 minute"}`, which uses `error`, not `detail`): `/query` 10/minute; spec ingestion, spec indexing, comparison creation and correction submission 20/hour each; `/health/ready` 30/minute. Counters are per process unless `RATE_LIMIT_STORAGE_URI` points at a shared store (see Architecture notes).
+
+**Response headers.** Every response carries `X-Request-ID`: a caller-supplied value is reused when it is 1 to 64 characters of letters, digits, `_` or `-`, otherwise a new id is generated. Quote it when reporting a problem. `GET /gadgets`, `GET /gadgets/{id}` and the `/stats/*` routes add `X-Cache: HIT` or `MISS` (server-side cache, 60 seconds; a gadget write clears the gadget cache and a spec write clears the stats cache), and `/stats/*` also sends `Cache-Control: public, max-age=60`. `/query` adds `X-Simulated-Failure` only during a failure drill.
+
+**Dropped database connections.** Reads (and deletes) are retried once when Supabase drops an idle connection (#133); writes are never retried, so a save cannot be applied twice.
 
 Gadget input limits (`schemas.py`, same numbers as `frontend/src/utils/gadgetValidation.js`): `name` 1–120, `brand` 1–80, `category` 1–60 characters after trimming; `price_php` 0–10,000,000 and finite; `release_date` year 1970–2100; `image_url` a full http(s) link up to 2000 characters (blank is treated as no image). Responses are not re-validated against these limits, so older rows still load.
