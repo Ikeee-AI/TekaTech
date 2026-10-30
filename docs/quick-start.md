@@ -50,7 +50,7 @@ The AI panel always tells you what happened and keeps the question you typed:
 
 ### Add specs, then index them for the AI
 1. On a gadget's page, click **Add Specs**.
-2. Paste the spec text. Separate distinct facts with a blank line, since each block becomes its own searchable snippet. Add the **Source URL** you copied it from, then **Save Specs**.
+2. Paste the spec text. Separate facts with blank lines; short blocks are grouped into snippets of about 300 tokens, so a short spec sheet may become a single card. Add the **Source URL** you copied it from, then **Save Specs**.
 3. New specs show **Pending AI Indexing**. They're saved and readable straight away, but the AI can't use them yet.
 4. Click **Index for AI** on each one. When the badge says **Ready for AI**, answers can cite it. If indexing fails, your text is still saved; try again later.
 
