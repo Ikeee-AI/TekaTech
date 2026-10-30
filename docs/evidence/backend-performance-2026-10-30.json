@@ -1,0 +1,620 @@
+{
+ "api": "https://tekatech-api.onrender.com",
+ "date_utc": "2026-10-30T05:01:25Z",
+ "method": "urllib, one request at a time, new connection each, from the owner's laptop in Manila",
+ "rows": [
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.326,
+   "phase": "first request"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.124,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "MISS",
+   "seconds": 1.005,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "MISS",
+   "seconds": 0.525,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "MISS",
+   "seconds": 0.427,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.115,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.118,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.13,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.122,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.135,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.124,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.117,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.142,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.129,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.116,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.124,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.118,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.125,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.103,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.126,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.109,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.099,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.144,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.096,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.117,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.125,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.123,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.118,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.117,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.144,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.098,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.108,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.112,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.119,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.118,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.107,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.122,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.121,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.098,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.115,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.121,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.106,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.112,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.12,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.098,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.111,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.104,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.119,
+   "phase": "sample"
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.112,
+   "phase": "sample"
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample"
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample"
+  }
+ ],
+ "summary": {
+  "/health": {
+   "n": 20,
+   "errors": 0,
+   "median_all": 0.115,
+   "min": 0.096,
+   "max": 0.125,
+   "hit_n": 0,
+   "hit_median": null,
+   "miss_n": 0,
+   "miss_median": null
+  },
+  "/gadgets": {
+   "n": 20,
+   "errors": 0,
+   "median_all": 0.115,
+   "min": 0.104,
+   "max": 1.005,
+   "hit_n": 19,
+   "hit_median": 0.114,
+   "miss_n": 1,
+   "miss_median": 1.005
+  },
+  "/stats/spec-coverage": {
+   "n": 20,
+   "errors": 0,
+   "median_all": 0.116,
+   "min": 0.098,
+   "max": 0.525,
+   "hit_n": 19,
+   "hit_median": 0.116,
+   "miss_n": 1,
+   "miss_median": 0.525
+  },
+  "/stats/trending-questions": {
+   "n": 20,
+   "errors": 0,
+   "median_all": 0.116,
+   "min": 0.108,
+   "max": 0.427,
+   "hit_n": 19,
+   "hit_median": 0.116,
+   "miss_n": 1,
+   "miss_median": 0.427
+  }
+ }
+}
