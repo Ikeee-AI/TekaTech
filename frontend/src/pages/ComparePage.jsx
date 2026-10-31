@@ -227,7 +227,9 @@ export default function ComparePage() {
 
       {/* Desktop / tablet: table */}
       <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full border-collapse min-w-[500px]">
+        {/* table-fixed: gadget columns share the width equally instead of the longest name
+            widening its column (#156). The label column keeps its w-28. */}
+        <table className="w-full table-fixed border-collapse min-w-[500px]">
           <caption className="sr-only">Spec comparison of {gadgets.map((g) => g.name).join(', ')}</caption>
           <thead>
             <tr>
@@ -248,7 +250,7 @@ export default function ComparePage() {
                     </div>
                     <Link
                       to={`/gadgets/${g.id}`}
-                      className="font-semibold text-sm text-gray-900 hover:underline block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+                      className="font-semibold text-sm text-gray-900 hover:underline block break-words rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
                     >
                       {g.name}
                     </Link>
