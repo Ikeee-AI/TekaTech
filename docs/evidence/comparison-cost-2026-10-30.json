@@ -1,0 +1,136 @@
+{
+ "target": "local backend on TekaTech-dev",
+ "date": "2026-10-30",
+ "prices_usd_per_token": {
+  "input": 2.5e-07,
+  "output": 2e-06,
+  "embedding": 2e-08
+ },
+ "rows": [
+  {
+   "mode": "single",
+   "question": "What is the battery of the iPhone 15?",
+   "gadgets": 1,
+   "embedding_tokens": 10,
+   "prompt_tokens": 597,
+   "completion_tokens": 207,
+   "cost_usd": 0.000563,
+   "seconds_since_previous_answer": null
+  },
+  {
+   "mode": "single",
+   "question": "What is the display of the iPhone 15?",
+   "gadgets": 1,
+   "embedding_tokens": 10,
+   "prompt_tokens": 597,
+   "completion_tokens": 132,
+   "cost_usd": 0.000413,
+   "seconds_since_previous_answer": 3.6
+  },
+  {
+   "mode": "single",
+   "question": "What is the main camera of the iPhone 15?",
+   "gadgets": 1,
+   "embedding_tokens": 11,
+   "prompt_tokens": 598,
+   "completion_tokens": 124,
+   "cost_usd": 0.000398,
+   "seconds_since_previous_answer": 4.6
+  },
+  {
+   "mode": "single",
+   "question": "What is the charging of the iPhone 15?",
+   "gadgets": 1,
+   "embedding_tokens": 10,
+   "prompt_tokens": 597,
+   "completion_tokens": 402,
+   "cost_usd": 0.000953,
+   "seconds_since_previous_answer": 4.8
+  },
+  {
+   "mode": "single",
+   "question": "What is the processor of the iPhone 15?",
+   "gadgets": 1,
+   "embedding_tokens": 10,
+   "prompt_tokens": 597,
+   "completion_tokens": 104,
+   "cost_usd": 0.000357,
+   "seconds_since_previous_answer": 2.6
+  },
+  {
+   "mode": "comparison",
+   "question": "Compare the battery of the iPhone 15 and Galaxy S24.",
+   "gadgets": 2,
+   "embedding_tokens": 13,
+   "prompt_tokens": 618,
+   "completion_tokens": 465,
+   "cost_usd": 0.001085,
+   "seconds_since_previous_answer": null
+  },
+  {
+   "mode": "comparison",
+   "question": "Compare the display of the iPhone 15 and Galaxy S24.",
+   "gadgets": 2,
+   "embedding_tokens": 13,
+   "prompt_tokens": 633,
+   "completion_tokens": 425,
+   "cost_usd": 0.001009,
+   "seconds_since_previous_answer": 5.9
+  },
+  {
+   "mode": "comparison",
+   "question": "Compare the main camera of the iPhone 15 and Galaxy S24.",
+   "gadgets": 2,
+   "embedding_tokens": 14,
+   "prompt_tokens": 636,
+   "completion_tokens": 403,
+   "cost_usd": 0.000965,
+   "seconds_since_previous_answer": 6.9
+  },
+  {
+   "mode": "comparison",
+   "question": "Compare the charging of the iPhone 15 and Galaxy S24.",
+   "gadgets": 2,
+   "embedding_tokens": 13,
+   "prompt_tokens": 618,
+   "completion_tokens": 348,
+   "cost_usd": 0.000851,
+   "seconds_since_previous_answer": 6.1
+  },
+  {
+   "mode": "comparison",
+   "question": "Compare the processor of the iPhone 15 and Galaxy S24.",
+   "gadgets": 2,
+   "embedding_tokens": 13,
+   "prompt_tokens": 633,
+   "completion_tokens": 272,
+   "cost_usd": 0.000703,
+   "seconds_since_previous_answer": 5.3
+  }
+ ],
+ "summary": {
+  "single": {
+   "n": 5,
+   "prompt_avg": 597.2,
+   "completion_avg": 193.8,
+   "cost_avg_usd": 0.000537,
+   "cost_total_usd": 0.002684,
+   "gap_avg_s": 3.9
+  },
+  "comparison": {
+   "n": 5,
+   "prompt_avg": 627.6,
+   "completion_avg": 382.6,
+   "cost_avg_usd": 0.000923,
+   "cost_total_usd": 0.004613,
+   "gap_avg_s": 6.0
+  },
+  "worst_case": {
+   "prompt_tokens": 3703,
+   "completion_tokens": 1500,
+   "cost_usd": 0.003929,
+   "answers_per_10_usd": 2545
+  },
+  "typical_comparison_answers_per_10_usd": 10834
+ }
+}
