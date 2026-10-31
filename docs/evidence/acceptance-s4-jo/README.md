@@ -2,11 +2,11 @@
 
 Owner: Jopher (`s2100932`, AI-assisted: yes). Work package S4-JO in [sprints-2-to-5.md](../../sprints-2-to-5.md): *"A fresh test user completes all applicable core journeys on the release candidate; permissions and refresh persistence hold; no unresolved critical/high-priority workflow defects."*
 
-**Status: 18 of 20 journeys pass; 0 fail.** Rows 19–20 are still open (⬜), and depend on Ikeee-AI (Supabase redirect URL, next production deploy). Nothing is claimed without a result.
+**Status: 19 of 20 journeys pass; 0 fail.** Row 20 is still open (⬜): it needs the next production deploy. Nothing is claimed without a result.
 
 ## Where it was run
 - **Code:** local `main` at `f1e6151` (29 Oct; includes #128–#149). This is the release candidate until the tag.
-- **Data:** TekaTech-dev (`efdgguybkampozuvqjrz`) through a local backend and frontend. Never production, by team rule; the production read-only check is at the end.
+- **Data:** TekaTech-dev (`efdgguybkampozuvqjrz`) through a local backend and frontend, by team rule. Two rows were assigned to production by Ikeee-AI (#169): row 19 (password reset on Jopher's own test account) and row 20 (read-only).
 - **AI calls:** a few small `gpt-5-mini` / embedding calls on dev, each well under one cent.
 
 ## Results
@@ -31,24 +31,24 @@ Owner: Jopher (`s2100932`, AI-assisted: yes). Work package S4-JO in [sprints-2-t
 | 16 | **Non-admin limits**: Review Queue, `/corrections`, delete buttons | new user | ✅ Pass, 30 Oct. No Review Queue link; typing `/corrections` redirects to the catalog (`ProtectedRoute adminOnly`); no Delete Gadget button or bin icons. Backend side: row 9 and the #131 tests (non-admin gets 403) | [16](16-non-admin-redirected.jpg) |
 | 17 | **Suggest a correction** as the new user → admin **Rejects** → new user sees it | new user + admin | ✅ Pass, 30 Oct. Pending → admin `PATCH /corrections/…` 200 → **Rejected** + "New decision" badge; spec text unchanged and still indexed | [17a](17a-pending.jpg), [17b](17b-rejected.jpg) |
 | 18 | **Admin clean-up**: Delete Spec, then Delete Gadget | admin | ✅ Pass, 30 Oct. Both ask to confirm and say what goes; `DELETE` spec 204, `DELETE` gadget 204; gadget now 404; catalog back to 13 | [18a](18a-delete-spec-confirm.png), [18b](18b-delete-gadget-confirm.png) |
-| 19 | **Forgot password** email arrives and the link opens Reset Password | new user | ⬜ Optional: depends on the Supabase redirect URL set by Ikeee-AI (#130) | |
+| 19 | **Forgot password** email arrives and the link opens Reset Password | test user, **production** | ✅ Pass, 31 Oct, on `tekatech-web.onrender.com` (`5aa4635`). Forgot password → "Check Your Email" → Supabase "Reset your password" email → the link opened **Set a New Password** for that account → Update Password signed the user in on `tekatech-web.onrender.com` (the app goes to the catalog after the update), so the link used the production redirect URL, not localhost. Email addresses are covered in the screenshots | [19a](19a-prod-reset-email-sent.png), [19b](19b-prod-reset-email.jpg), [19c](19c-prod-set-new-password.jpg), [19d](19d-prod-signed-in-after-reset.jpg) |
 | 20 | **Data survives redeployment**: production gadget count and one gadget unchanged before/after a deploy (read-only) | — | ⬜ Read-only; with Ikeee-AI at the next deploy | |
 
 ## Defects found
 
 | # | Defect | Severity | Status |
 |---|---|---|---|
-| D1 | Compare page (desktop): gadget columns have uneven widths; the longest name takes the widest column | Low (looks) | [#156](https://github.com/Ikeee-AI/TekaTech/issues/156), Mika |
+| D1 | Compare page (desktop): gadget columns have uneven widths; the longest name takes the widest column | Low (looks) | ✅ Fixed by Mika in #163 (closes #156); included in `5aa4635`, which production serves |
 | D2 | Catalog compare tray stops at 3 gadgets ("You can compare up to 3 gadgets at a time"), but the compare page and backend accept 5 (`MAX_COMPARE_GADGETS = 5`) | Low (inconsistent limit) | ⬜ Open: a layout choice for Jopher and Mika. Manuel (#158): cost is not a reason, since a comparison sends at most 6 chunks however many gadgets there are, and the backend allows 5 on purpose. The compare page lays out 5 evenly after #163 |
-| D3 | Answer panel said "N Sources Cited" for all retrieved chunks, contradicting the cited count | Low (wording) | Fixed in #150 (approved), waiting for merge |
+| D3 | Answer panel said "N Sources Cited" for all retrieved chunks, contradicting the cited count | Low (wording) | ✅ Fixed in #150 (now "Sources Retrieved"); included in `5aa4635` |
 | D4 | The approve route didn't reset the embedding or the `pending` status in app code. Found with mocked tests, which don't run database triggers | Low (defence in depth). *Corrected 30 Oct:* first listed as High, but the DB trigger `invalidate_changed_spec_embedding` (`backend/sql/save_specs_before_indexing.sql`, since Sprint 1) already does this wherever that SQL is applied, so real data was very likely never affected | Code now does it too in #142; approve → re-index verified on dev (row 10) |
 | D5 | PATCH gadget ignored `null`, so clearing a field did nothing | Medium | Fixed by Ikeee-AI (#135); confirmed by a real user in row 13 |
-| D6 | The Add Specs hint says "Separate distinct facts with blank lines — each becomes its own searchable chunk", but `chunk_text()` (`backend/embeddings.py`) packs short paragraphs into one chunk on purpose. Two short blocks became 1 card in row 14 | Low (misleading hint) | ⬜ Agreed fix: **change the hint, not the chunker** (Manuel, #158; packing into ~300-token chunks is deliberate). Suggested hint: "Separate facts with blank lines. Short blocks are grouped into chunks of about 300 tokens." The quick-start guide is corrected in #155; the in-app hint in `SpecManager.jsx` is Mika's |
+| D6 | The Add Specs hint says "Separate distinct facts with blank lines — each becomes its own searchable chunk", but `chunk_text()` (`backend/embeddings.py`) packs short paragraphs into one chunk on purpose. Two short blocks became 1 card in row 14 | Low (misleading hint) | ✅ Fixed by changing the hint, not the chunker (Manuel, #158; packing into ~300-token chunks is deliberate): the quick-start guide in #155, the in-app hint by Mika in #165. Both included in `5aa4635` |
 
-**No open critical or high defects.** The open ones (D1, D2, D6) are low: looks and wording.
+**No open critical or high defects.** The only open one is D2, low: a layout choice.
 
 ## Clean-up
-All test data from rows 12–18 was deleted in row 18. The dev catalog is back to 13 gadgets, and the "Test" spec from row 10 was restored to its original text. The new test user account remains on dev, as a non-admin.
+All test data from rows 12–18 was deleted in row 18. The dev catalog is back to 13 gadgets, and the "Test" spec from row 10 was restored to its original text. The new test user account remains on dev, as a non-admin. Row 19 used a non-admin test account on production (created by mistake on 30 Oct, during the dev rows); nothing else was written there. Ikeee-AI was asked in #168 to delete it.
 
 ## Notes for the demo
 - Dev has leftover test gadgets ("121", "Test", "Ewdewe", "CRUD Check Phone"). Production is what the demo uses.
