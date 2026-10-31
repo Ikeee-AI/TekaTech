@@ -1,0 +1,31 @@
+Logged-out / bad-token permission check, 2026-10-29T13:54:50Z, local main f1e6151 -> TekaTech-dev
+POST   /gadgets                                         none  401
+POST   /gadgets                                         bad   401
+PATCH  /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe    none  401
+PATCH  /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe    bad   401
+DELETE /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe    none  401
+DELETE /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe    bad   401
+POST   /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe/specs none  401
+POST   /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe/specs bad   401
+POST   /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe/specs/1fbe6805-93d3-49dd-bede-5e802ff49e97/index none  401
+POST   /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe/specs/1fbe6805-93d3-49dd-bede-5e802ff49e97/index bad   401
+DELETE /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe/specs/1fbe6805-93d3-49dd-bede-5e802ff49e97 none  401
+DELETE /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe/specs/1fbe6805-93d3-49dd-bede-5e802ff49e97 bad   401
+POST   /specs/1fbe6805-93d3-49dd-bede-5e802ff49e97/corrections none  401
+POST   /specs/1fbe6805-93d3-49dd-bede-5e802ff49e97/corrections bad   401
+GET    /corrections/mine                                none  401
+GET    /corrections/mine                                bad   401
+GET    /corrections/pending-count                       none  401
+GET    /corrections/pending-count                       bad   401
+GET    /corrections                                     none  401
+GET    /corrections                                     bad   401
+PATCH  /corrections/a0baf165-da43-461c-90c3-7864f768ee11 none  401
+PATCH  /corrections/a0baf165-da43-461c-90c3-7864f768ee11 bad   401
+--- public reads (expect 200) and malformed id (expect 422)
+GET    /gadgets                                         200
+GET    /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe    200
+GET    /gadgets/3271cf55-47e1-49b7-bffe-a739911faffe/specs 200
+GET    /stats/spec-coverage                             200
+GET    /stats/trending-questions                        200
+GET    /gadgets/not-a-uuid                              422
+--- data unchanged: Test specs hash ee0b308b -> ee0b308b ; gadget count 13 -> 13
