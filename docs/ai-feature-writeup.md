@@ -64,6 +64,14 @@ Two kinds of answers have been scored, and they must not be confused. The **hand
 | Rerun on current `main` after the retrieval fix (31 Oct, unscoped, prompt `v1`, dev database) | **Done, targets still not met.** As scored: supported claims **11 / 13 (84.6%)**, valid citation references **41 / 45 (91.1%)**, abstention **0 / 7**, override **1 / 2**. No invented facts. The 4 invalid references are one stray QA test chunk in the dev database cited as `[0]`; TC-07 is a real answer gap (the missing iPhone battery capacity is not stated). A separately labelled rescoring (`--rules s4`, #66) gives abstention 5 / 7 and override 2 / 2 on this run; it was written after seeing the results, so it is not an independent measurement. Details: `docs/evidence/eval-s4-2026-10-31.md` |
 | Prompt revision from scored results | **Not justified by this run**: most failures happen before the prompt runs (retrieval), so a prompt v2 would not address them. The prompt stays at `v1` |
 
+## Optional general-knowledge mode (#172)
+
+An instructor-approved scope change (`docs/scope-changes.md`, PR #167) adds an **optional** answer for questions TekaTech has no saved spec for. It is **off by default**, and a grounded answer is never replaced by it: it runs only when retrieval returns no spec chunks **and** the request sets `allow_general_knowledge: true`. The response says `answer_basis: "general_knowledge"`, has no sources and no `[n]` citations (the backend strips and counts any that appear), and the UI labels it "General knowledge: not from saved specs, unverified".
+
+The prompt is separate and separately versioned: `build_general_knowledge_prompt()` in `backend/prompts.py`, `GK_PROMPT_VERSION = "gk-v1"`. Ikeee-AI drafted it, taking over this part of the AI-Developer area for #172. It opens every answer with "General knowledge, not from TekaTech's saved specs.", forbids citation markers of any style, hedges numbers and names variants, says it doesn't know a product it doesn't recognise rather than inventing specs, keeps the `AnswerText.jsx` markup limits (`**bold**`, `- ` bullets), excludes URLs, prices and purchase advice presented as fact, and treats the user message as untrusted data. The grounded prompt `v1` is unchanged (a test pins its hash).
+
+It is evaluated separately (`scripts/eval_runner.py --mode gk`, 5 cases in `prompts/eval/gk_cases.json`), so it never changes a grounded score. The checks are the label, no citation markers, no "verified" claims, no URLs or prices, hedged numbers, renderable markup and refusal of a made-up product. Only hand-written reference answers have been scored (5 / 5 pass, which validates the scorer, not a model). **No real GK answers have been scored yet.**
+
 ## Limitations
 
 - The pack covers two gadgets (iPhone 15 base model, Galaxy S24 Philippines/Exynos 2400). Results say nothing about other gadgets or categories.

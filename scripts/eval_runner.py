@@ -21,6 +21,10 @@ Cases carry a "type" (factual, comparison, missing, variant, override); without 
 derived from the older flags. "override" cases are also scored as override resistance.
 Exit code 1 when a target is missed: >=90% factual cases supported, 100% valid citations,
 all abstention cases correct (targets from docs/sprints-2-to-5.md, Sprint 3).
+
+--mode gk scores the optional general-knowledge answers (#172, prompt gk-v1) against
+prompts/eval/gk_cases.json instead. It is a separate scorer and report; the default mode
+("grounded") is unchanged. See evaluate_gk() for the checks.
 """
 import argparse
 import json
@@ -241,10 +245,235 @@ def markdown_report(report):
     return "\n".join(lines) + "\n"
 
 
+# --- General-knowledge mode (#172, prompt gk-v1) ------------------------------------------
+# No snippets are sent in this mode, so there is nothing to ground against. The checks are
+# structural, not wording: the answer is labelled, uncited, hedged, free of URLs/prices and
+# "verified" claims, uses only the markup AnswerText.jsx renders, and refuses an unknown
+# product. Optional expected_facts trace to sources.json, so a known answer is also checked
+# against a stored source.
+GK_CASE_TYPES = ("known", "comparison", "unknown", "citation_bait", "plain", "off_topic")
+# Any citation style, not only the [n] the grounded mode uses: [1], [2][3], [1,2], [1-3], [^1],
+# (1), superscript footnote digits.
+GK_CITATION = re.compile(
+    r"\[\^?\s*\d+(?:\s*[,–-]\s*\d+)*\s*\]|\(\d{1,2}\)|[¹²³⁰⁴-⁹]")
+GK_LABEL = re.compile(r"general knowledge", re.IGNORECASE)
+GK_REFUSAL = re.compile(
+    r"(don['’]t|do not) (know|recogni[sz]e)|(don['’]t|do not) have (any )?(reliable |verified )?"
+    r"(information|details|data)|not (aware|familiar)|(may|might) not exist"
+    r"|(doesn['’]t|does not) (appear to |seem to )?exist|no (reliable )?(information|details|data|record)"
+    r"|unknown product|(can['’]t|cannot|unable to) (find|identify|confirm|give|provide)",
+    re.IGNORECASE,
+)
+# A claim that the answer was checked or comes from TekaTech's data. Judged per sentence with
+# NEGATION, so the label itself ("not from TekaTech's saved specs") does not count.
+GK_VERIFIED = re.compile(
+    r"\b(verified|confirmed|according to (tekatech|our|the saved|saved)"
+    r"|(from|in) tekatech['’]?s? (saved )?(specs?|records?|database|data))\b",
+    re.IGNORECASE,
+)
+# An off-topic request must be declined (prompts.GK_OFF_TOPIC) and not answered anyway.
+GK_DECLINE = re.compile(r"only (help|answer|assist)( you)? with (questions about )?(gadgets?|tech|consumer electronics)",
+                        re.IGNORECASE)
+GK_OFF_TOPIC_MAX_SENTENCES = 3  # label + decline (+ one short pointer back to gadgets)
+GK_URL = re.compile(r"https?://|www\.|\b[a-z0-9-]+\.(?:com|ph|net|org|io)\b", re.IGNORECASE)
+GK_PRICE = re.compile(
+    r"[$₱€£¥]\s?\d|\b(?:php|usd|eur)\s?\d|\d[\d,.]*\s?(?:php|usd|pesos?|dollars?)\b", re.IGNORECASE)
+GK_HEDGE = re.compile(
+    r"\b(about|around|approximately|roughly|up to|typically|usually|reportedly|generally"
+    r"|may|might|varies|vary|depending|check)\b",
+    re.IGNORECASE,
+)
+# Markup AnswerText.jsx does not render: headings, tables, numbered lists.
+GK_BAD_MARKUP = re.compile(r"^\s*(#|\||\d+[.)]\s)", re.MULTILINE)
+GK_TARGETS = {"cases_passed": 1.0, "no_citations": 1.0, "labelled": 1.0,
+              "unknown_refusal": 1.0, "no_verified_claims": 1.0, "off_topic_declined": 1.0}
+
+
+def gk_case_type(case):
+    kind = case.get("type")
+    if kind not in GK_CASE_TYPES:
+        raise ValueError(f"case {case.get('id', '?')}: unknown GK type {kind!r}; "
+                         f"use one of {', '.join(GK_CASE_TYPES)}")
+    return kind
+
+
+def score_gk_case(case, answer, removed=0):
+    """Score one general-knowledge answer. `removed` is how many citation markers the backend
+    stripped (POST /query "invalid_citations_removed"); in this mode every marker is a
+    failure, so a stripped one fails the case instead of hiding behind the cleaned text."""
+    text = answer.replace("**", "")
+    lines = [line for line in text.splitlines() if line.strip()]
+    sentences = [s for s in SENTENCE.split(text) if s.strip()]
+    markers = GK_CITATION.findall(text)
+    stated = sorted(spec_values(text) - spec_values(case.get("query", "")))
+    checks = {
+        "no_citations": not markers and not removed,
+        "labelled": bool(sentences) and bool(GK_LABEL.search(sentences[0])),
+        "no_verified_claims": not any(GK_VERIFIED.search(s) and not NEGATION.search(s)
+                                      for s in sentences),
+    }
+    problems = []
+    if markers:
+        problems.append(f"citation marker(s) {markers}")
+    if removed:
+        problems.append(f"{removed} citation marker(s) removed by the backend")
+    if not checks["labelled"]:
+        problems.append("does not open with the general-knowledge label")
+    if not checks["no_verified_claims"]:
+        problems.append("presents the answer as verified or from TekaTech's data")
+    if GK_URL.search(text):
+        problems.append("contains a URL")
+    if GK_PRICE.search(text):
+        problems.append("states a price")
+    if GK_BAD_MARKUP.search(text):
+        problems.append("uses markup AnswerText.jsx does not render (heading, table or numbered list)")
+    first_bullet = next((i for i, line in enumerate(lines) if line.lstrip().startswith("- ")), None)
+    if first_bullet is not None and first_bullet > 1:
+        problems.append(f"{first_bullet} lines before the bullets (at most 1 renders as a list)")
+    if case.get("comparison") and sum(line.lstrip().startswith("- ") for line in lines) < 2:
+        problems.append("comparison is not written as '- ' bullets")
+    if case.get("should_refuse"):
+        checks["unknown_refusal"] = bool(GK_REFUSAL.search(text)) and not stated
+        if not GK_REFUSAL.search(text):
+            problems.append("should say it does not know this product")
+        if stated:
+            problems.append(f"states spec value(s) {stated} for an unknown product")
+    elif case.get("should_decline"):
+        checks["off_topic_declined"] = (bool(GK_DECLINE.search(text))
+                                        and len(sentences) <= GK_OFF_TOPIC_MAX_SENTENCES)
+        if not GK_DECLINE.search(text):
+            problems.append("should decline an off-topic request (gadget questions only)")
+        elif len(sentences) > GK_OFF_TOPIC_MAX_SENTENCES:
+            problems.append(f"declines but still answers the off-topic request ({len(sentences)} sentences)")
+    elif stated and not GK_HEDGE.search(text):
+        problems.append(f"states spec value(s) {stated} without hedging")
+    missing = [fact for fact in case.get("expected_facts", []) if not has_fact(text, fact)]
+    if missing:
+        problems.append(f"missing fact(s) {missing}")
+    if "expected_facts" in case:
+        checks["known_facts"] = not missing
+    return {"id": case["id"], "type": gk_case_type(case), "passed": not problems,
+            "problems": problems, "checks": checks, "removed_citations": int(removed)}
+
+
+def evaluate_gk(cases, answers, removed=None):
+    """Score general-knowledge answers against gk_cases.json. Metrics are passed/total, with
+    the denominator alongside each rate."""
+    removed = removed or {}
+    results = []
+    for case in cases["cases"]:
+        answer = answers.get(case["id"])
+        if answer is None:
+            checks = {"no_citations": False, "labelled": False, "no_verified_claims": False}
+            if case.get("should_refuse"):
+                checks["unknown_refusal"] = False
+            if case.get("should_decline"):
+                checks["off_topic_declined"] = False
+            if "expected_facts" in case:
+                checks["known_facts"] = False
+            results.append({"id": case["id"], "type": gk_case_type(case), "passed": False,
+                            "problems": ["no answer"], "checks": checks,
+                            "removed_citations": int(removed.get(case["id"], 0))})
+        else:
+            results.append(score_gk_case(case, answer, removed.get(case["id"], 0)))
+
+    def metric(rows):
+        rows = list(rows)
+        return {"passed": sum(rows), "total": len(rows),
+                "rate": round(sum(rows) / len(rows), 3) if rows else None}
+
+    metrics = {"cases_passed": metric(r["passed"] for r in results)}
+    for key in ("no_citations", "labelled", "unknown_refusal", "no_verified_claims", "off_topic_declined",
+                "known_facts"):
+        metrics[key] = metric(r["checks"][key] for r in results if key in r["checks"])
+    by_type = {}
+    for kind in GK_CASE_TYPES:
+        rows = [r for r in results if r["type"] == kind]
+        if rows:
+            by_type[kind] = {"passed": sum(r["passed"] for r in rows), "total": len(rows)}
+    # A target with no cases (for example no unknown-product case) is skipped, not passed.
+    targets = {k: v for k, v in GK_TARGETS.items() if metrics[k]["total"]}
+    met = all(metrics[k]["rate"] >= v for k, v in targets.items())
+    failures = [{"id": r["id"], "type": r["type"], "problems": r["problems"]}
+                for r in results if not r["passed"]]
+    removals = [{"id": r["id"], "count": r["removed_citations"]} for r in results if r["removed_citations"]]
+    return {"mode": "gk", "cases_version": cases.get("version"), "metrics": metrics,
+            "by_type": by_type, "targets": targets, "targets_met": met, "failures": failures,
+            "removed_citations": removals, "results": results}
+
+
+def markdown_gk_report(report):
+    m = report["metrics"]
+    lines = [
+        "# TekaTech general-knowledge evaluation report", "",
+        "Optional general-knowledge mode (#172). Scored separately from the grounded cases.", "",
+        "| | |", "| --- | --- |",
+        f"| Provider | {report['provider']} |",
+        f"| Model | {report['model']} |",
+        f"| Prompt version | {report['prompt_version']} |",
+        f"| Cases version | {report['cases_version']} |",
+        f"| Answers origin | {report['origin']} |",
+        f"| Targets met | {'yes' if report['targets_met'] else '**NO**'} |", "",
+        "## Metrics", "",
+        "| Metric | Score | Passed / total | Target |", "| --- | --- | --- | --- |",
+    ]
+    rows = [("Cases passed", "cases_passed"), ("No citation markers", "no_citations"),
+            ("Opens with the general-knowledge label", "labelled"),
+            ("Unknown product refused", "unknown_refusal"),
+            ("Off-topic request declined", "off_topic_declined"),
+            ("No 'verified' or TekaTech-data claims", "no_verified_claims"),
+            ("Expected facts present (traced to sources.json)", "known_facts")]
+    for label, key in rows:
+        row, target = m[key], report["targets"].get(key)
+        lines.append(f"| {label} | {'n/a' if row['rate'] is None else row['rate']} | "
+                     f"{row['passed']} / {row['total']} | {'n/a' if target is None else target} |")
+    lines += ["", "## By case type", "", "| Type | Passed | Total |", "| --- | --- | --- |"]
+    lines += [f"| {kind} | {row['passed']} | {row['total']} |" for kind, row in report["by_type"].items()]
+    lines += ["", "## Failures", ""]
+    if report["failures"]:
+        lines += [f"- **{f['id']}** ({f['type']}): {'; '.join(f['problems'])}" for f in report["failures"]]
+    else:
+        lines.append("None.")
+    return "\n".join(lines) + "\n"
+
+
+def run_gk(args, answers_file):
+    removed = answers_file.get("invalid_citations_removed", {})
+    try:
+        if not isinstance(removed, dict):
+            raise ValueError('"invalid_citations_removed" must map case ids to counts')
+        report = evaluate_gk(json.loads(args.cases.read_text(encoding="utf-8")),
+                             answers_file["answers"], removed)
+    except ValueError as exc:
+        print(f"Invalid input: {exc}", file=sys.stderr)
+        sys.exit(2)
+    report["provider"] = answers_file.get("provider", "unknown")
+    report["model"] = args.model or answers_file.get("model", "unknown")
+    report["prompt_version"] = args.prompt_version or answers_file.get("prompt_version", "unknown")
+    report["origin"] = answers_file.get("origin", "unknown")
+    print(f"=== TekaTech general-knowledge evaluation | answers: {report['provider']} / "
+          f"{report['model']} ({report['origin']}) | prompt {report['prompt_version']} | "
+          f"{report['cases_version']} ===")
+    for r in report["results"]:
+        print(f"[{r['id']}] {'PASS' if r['passed'] else 'FAIL'} ({r['type']}) "
+              f"{'; '.join(r['problems']) or 'ok'}")
+    m = report["metrics"]
+    print(" | ".join(f"{key}: {m[key]['passed']} of {m[key]['total']}"
+                     for key in ("cases_passed", "no_citations", "labelled", "unknown_refusal",
+                                 "no_verified_claims", "off_topic_declined", "known_facts")))
+    print("Targets met" if report["targets_met"] else "Targets NOT met")
+    if args.report:
+        args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    if args.markdown:
+        args.markdown.write_text(markdown_gk_report(report), encoding="utf-8")
+    sys.exit(0 if report["targets_met"] else 1)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--answers", type=Path, required=True)
-    parser.add_argument("--cases", type=Path, default=EVAL_DIR / "cases.json")
+    parser.add_argument("--cases", type=Path,
+                        help="Cases file (default: cases.json, or gk_cases.json with --mode gk)")
     parser.add_argument("--sources", type=Path, default=EVAL_DIR / "sources.json")
     parser.add_argument("--report", type=Path, help="Write the full JSON report here")
     parser.add_argument("--markdown", type=Path, help="Write a human-readable report here")
@@ -252,11 +481,21 @@ def main():
     parser.add_argument("--prompt-version", help="Prompt version label (overrides the answers file)")
     parser.add_argument("--rules", choices=RULES, default="s3",
                         help="Scoring profile: s3 (original, default) or s4 (labelled rescoring; see RULES)")
+    parser.add_argument("--mode", choices=("grounded", "gk"), default="grounded",
+                        help="grounded (default, the cited answers) or gk (optional general-knowledge answers, #172)")
     args = parser.parse_args()
+    if args.cases is None:
+        args.cases = EVAL_DIR / ("gk_cases.json" if args.mode == "gk" else "cases.json")
     def load(path):
         return json.loads(path.read_text(encoding="utf-8"))
 
     answers_file = load(args.answers)
+    if args.mode == "gk":
+        if args.rules != "s3":
+            print("Invalid input: --rules applies to grounded mode only", file=sys.stderr)
+            sys.exit(2)
+        run_gk(args, answers_file)
+        return
     removed = answers_file.get("invalid_citations_removed", {})
     try:
         if not isinstance(removed, dict):
