@@ -13,7 +13,7 @@ from auth import get_optional_user
 from citations import strip_invalid_citations
 from config import settings
 from keyword_search import build_keyword_query
-from prompts import PROMPT_VERSION, build_system_prompt
+from prompts import GK_PROMPT_VERSION, PROMPT_VERSION, build_general_knowledge_prompt, build_system_prompt
 from rate_limit import limiter
 from routers.comparisons import MAX_COMPARISON_GADGETS
 from supabase_client import supabase
@@ -101,6 +101,9 @@ class QueryRequest(BaseModel):
     # an uncapped prompt. The cap applies to the list as sent, before duplicates are removed.
     gadget_ids: Optional[list[UUID]] = Field(default=None, max_length=MAX_COMPARISON_GADGETS)
     plain_language: bool = False
+    # Optional general-knowledge answer (#172). Only used when retrieval finds no spec chunks;
+    # a question that matches specs always gets the grounded, cited answer.
+    allow_general_knowledge: bool = False
 
     @field_validator("question")
     @classmethod
@@ -161,6 +164,9 @@ class QueryResponse(BaseModel):
     # How the sources were found: vector similarity, the keyword fallback (only tried when the
     # vector search found nothing), or neither (no sources; the "no relevant specs" answer).
     retrieval: Literal["vector", "keyword", "none"] = "none"
+    # What the answer rests on: saved specs (cited), the model's general knowledge (unverified,
+    # uncited, only when the request allowed it), or nothing (the "no relevant specs" reply).
+    answer_basis: Literal["specs", "general_knowledge", "none"] = "none"
 
 
 def _token_count(response, field: str) -> int | None:
@@ -351,6 +357,85 @@ def _cacheable(response: QueryResponse, *, grounded: bool) -> answer_cache.Cache
     )
 
 
+def _generate_answer(system_prompt: str, user_content: str):
+    """One capped chat call; returns (answer text, completion). Every failure is a safe 503.
+
+    Shared by the grounded answer and the general-knowledge answer, so both get the same cap,
+    reasoning effort and handling of cut-off or empty output.
+    """
+    try:
+        completion = client.chat.completions.create(
+            model=ANSWER_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content},
+            ],
+            max_completion_tokens=ANSWER_MAX_COMPLETION_TOKENS,
+            reasoning_effort=ANSWER_REASONING_EFFORT,
+        )
+    except OpenAIError as exc:
+        raise _provider_failure(exc) from None
+    except ValueError as exc:
+        raise _unusable_output(f"completion reply could not be read ({type(exc).__name__})") from None
+    try:
+        answer = completion.choices[0].message.content
+    except (AttributeError, IndexError, TypeError):
+        raise _unusable_output("completion had no choices") from None
+    # A cut-off answer can end mid-sentence with its citations missing, so it is not shown. It
+    # reuses the "unusable" sentence, which the frontend already maps to its own screen. The
+    # tokens were already billed, so they are logged; no query_history row is written.
+    if getattr(completion.choices[0], "finish_reason", None) == "length":
+        raise _unusable_output(
+            f"answer hit max_completion_tokens={ANSWER_MAX_COMPLETION_TOKENS} "
+            f"(completion_tokens={_token_count(completion, 'completion_tokens')})"
+        )
+    if not answer or not answer.strip():
+        raise _unusable_output("completion content was empty")
+    return answer, completion
+
+
+def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
+    """The optional answer from the model's own knowledge, for a question with no matching specs (#172).
+
+    No snippets are sent, only the question (and, in comparison mode, the names of the gadgets
+    asked about, so "which is better?" still says which). The prompt forbids citations; any [n]
+    marker that appears anyway has no snippet to point at, so it is removed and counted.
+    Nothing is written to query_history: that table feeds the public trending list, and an
+    unverified or off-topic question must not show up there.
+    """
+    gadget_note = ""
+    if payload.gadget_ids:
+        try:
+            rows = (
+                supabase.table("gadgets").select("id, name")
+                .in_("id", [str(i) for i in payload.gadget_ids]).execute().data
+            )
+        except Exception as exc:
+            raise _lookup_failure("gadget name lookup", exc) from None
+        names = [r["name"] for r in rows or [] if r.get("name")]
+        if names:
+            gadget_note = "\n\nGadgets being asked about: " + ", ".join(names) + "."
+    answer, completion = _generate_answer(
+        build_general_knowledge_prompt(payload.plain_language), f"Question: {payload.question}{gadget_note}"
+    )
+    # Not written to query_history, so the cost stays visible in the log instead.
+    logger.info(
+        "General-knowledge answer: prompt_tokens=%s completion_tokens=%s",
+        _token_count(completion, "prompt_tokens"), _token_count(completion, "completion_tokens"),
+    )
+    answer, invalid_citations_removed = strip_invalid_citations(answer, 0)
+    if invalid_citations_removed:
+        logger.warning("Removed %d citation marker(s) from a general-knowledge answer", invalid_citations_removed)
+    return QueryResponse(
+        answer=answer,
+        sources=[],
+        model_used=MODEL_USED,
+        invalid_citations_removed=invalid_citations_removed,
+        retrieval="none",
+        answer_basis="general_knowledge",
+    )
+
+
 @router.post("", response_model=QueryResponse)
 @limiter.limit("10/minute")
 def ask_question(request: Request, payload: QueryRequest):
@@ -365,8 +450,11 @@ def ask_question(request: Request, payload: QueryRequest):
     #    read first, so an answer built from specs that change mid-request is not stored.
     #    An admin's X-Bypass-Answer-Cache skips both lookups; the fresh answer is still stored.
     bypass_cache = _admin_bypasses_cache(request)
+    #    The general-knowledge flag is part of the scope (as a second prompt version), so a
+    #    general-knowledge answer is never served to a request without the flag, or the reverse.
+    prompt_scope = f"{PROMPT_VERSION}+{GK_PROMPT_VERSION}" if payload.allow_general_knowledge else PROMPT_VERSION
     cache_scope = answer_cache.scope_key(
-        payload.gadget_ids, payload.plain_language, PROMPT_VERSION, EMBEDDING_MODEL, ANSWER_MODEL
+        payload.gadget_ids, payload.plain_language, prompt_scope, EMBEDDING_MODEL, ANSWER_MODEL
     )
     cache_generation = answer_cache.current_generation()
     cached = None if bypass_cache else answer_cache.lookup_exact(cache_scope, payload.question)
@@ -422,6 +510,16 @@ def ask_question(request: Request, payload: QueryRequest):
     if not matches:
         matches = _keyword_matches(payload.question, query_embedding, payload.gadget_ids)
         retrieval = "keyword" if matches else "none"
+
+    if not matches and payload.allow_general_knowledge:
+        # Only reached when retrieval found nothing in this scope. Cached under the flag's own
+        # scope; not "grounded", so a similar question re-runs the free retrieval instead of
+        # reusing it, and a cache hit is not written to query_history.
+        response = _general_knowledge_answer(payload)
+        answer_cache.store(
+            cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
+        )
+        return response
 
     if not matches:
         # Cached too: every spec write through the API invalidates the answers it could
@@ -485,37 +583,9 @@ def ask_question(request: Request, payload: QueryRequest):
     system_prompt = build_system_prompt(payload.plain_language)
 
     # 5. Generate the answer, grounded in only what was retrieved
-    try:
-        completion = client.chat.completions.create(
-            model=ANSWER_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": f"Spec snippets:\n{context}{scope_note}\n\nQuestion: {payload.question}",
-                },
-            ],
-            max_completion_tokens=ANSWER_MAX_COMPLETION_TOKENS,
-            reasoning_effort=ANSWER_REASONING_EFFORT,
-        )
-    except OpenAIError as exc:
-        raise _provider_failure(exc) from None
-    except ValueError as exc:
-        raise _unusable_output(f"completion reply could not be read ({type(exc).__name__})") from None
-    try:
-        answer = completion.choices[0].message.content
-    except (AttributeError, IndexError, TypeError):
-        raise _unusable_output("completion had no choices") from None
-    # A cut-off answer can end mid-sentence with its citations missing, so it is not shown. It
-    # reuses the "unusable" sentence, which the frontend already maps to its own screen. The
-    # tokens were already billed, so they are logged; no query_history row is written.
-    if getattr(completion.choices[0], "finish_reason", None) == "length":
-        raise _unusable_output(
-            f"answer hit max_completion_tokens={ANSWER_MAX_COMPLETION_TOKENS} "
-            f"(completion_tokens={_token_count(completion, 'completion_tokens')})"
-        )
-    if not answer or not answer.strip():
-        raise _unusable_output("completion content was empty")
+    answer, completion = _generate_answer(
+        system_prompt, f"Spec snippets:\n{context}{scope_note}\n\nQuestion: {payload.question}"
+    )
 
     # The model can cite a snippet number it was never given, which the UI would render as a
     # dead citation. Drop those markers (matches are numbered 1..len(matches)) and report how
@@ -553,6 +623,7 @@ def ask_question(request: Request, payload: QueryRequest):
         model_used=MODEL_USED,
         invalid_citations_removed=invalid_citations_removed,
         retrieval=retrieval,
+        answer_basis="specs",
     )
     # 7. Only a complete, validated answer reaches this line: errors, 503s and cut-off answers
     #    raised above, so they are never cached.
