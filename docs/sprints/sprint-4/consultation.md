@@ -1,6 +1,6 @@
 # Consultation 4 packet — Sprint 4 (26–31 October 2026)
 
-**Consultation: date and time to confirm** (Consultations 2 and 3 were Mondays 19:30 Manila, so Monday 2 November 19:30 is likely). **Status cut-off: Saturday 31 October, 15:30 Manila.** Refresh PR states and the production check before the consultation.
+**Consultation: Monday 2 November 2026, 19:30 Asia/Manila** (confirmed by Ikeee-AI on 31 Oct). **Status cut-off: Saturday 31 October, 15:30 Manila.** Refresh PR states and the production check before the consultation.
 
 Format: 15 minutes, all five members.
 
@@ -84,9 +84,8 @@ Standups: **missing** — no Sprint 4 standup thread was opened.
 
 ## Still to collect before the consultation
 
-- [ ] Retro comments on #168 from Adrian, Mika, Manuel, Jopher and Ikeee-AI (draft for Ikeee-AI ready); Sprint 3 retro comments from Adrian and Manuel (#116).
-- [ ] Manuel's review of #167; a teammate's review of #170.
+- [ ] Retro comments on #168 from Adrian, Mika, Manuel and Jopher (Ikeee-AI posted 31 Oct); Sprint 3 retro comments from Adrian and Manuel (#116).
+- [ ] Manuel's review of #167; Jopher's review of #170.
 - [ ] Mika: final deck link and a time for the deploy challenge rehearsal (#169).
 - [ ] Jopher: acceptance rows 19–20 on production (#169).
 - [ ] Adrian: AI deep-dive demo cases and speaker notes (S4-AD deliverable), or a status comment.
-- [ ] Confirm the consultation date and time.
