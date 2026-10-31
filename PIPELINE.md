@@ -52,8 +52,8 @@ Read-only workflows that run from `main` on a schedule (GitHub may start them la
 | Control | Where | Effect |
 | --- | --- | --- |
 | PR policy | `pr-review.yml` | Fails when a PR links no issue/task, changes `backend/sql/` without manual-migration instructions, or includes a `.env` file; warns on PRs over 600 changed lines and on CI/hosting/secret-check changes not authored by DevOps |
-| Python review | `pr-review.yml` | `ruff 0.16.10` bug and security rules (`E4,E7,E9,F,B,S`; ignores FastAPI `B008` and test `S101`) as inline annotations; non-blocking hints for author and reviewer |
-| Reviewer assignment | `pr-reviewers.yml` (`pull_request_target`, no PR code executed) | Requests the reviewer from the team review table; works for fork PRs |
+| Python review | `pr-review.yml`, steps in the same "PR policy" job (skipped when only the PR description was edited) | `ruff 0.16.10` bug and security rules (`E4,E7,E9,F,B,S`; ignores FastAPI `B008` and test `S101`) as inline annotations; non-blocking hints for author and reviewer |
+| Owner-area labels and reviewer assignment | `labeler.yml`, one job (`pull_request_target`, no PR code executed) | Syncs owner-area labels on every push; requests the reviewer from the team review table when the PR is opened, reopened or marked ready; works for fork PRs |
 | Repository settings (applied 2026-10-17) | GitHub settings | Squash merge only; head branches deleted after merge; Dependabot alerts and security-fix PRs on; Actions limited to GitHub-owned actions plus `astral-sh/setup-uv`; fork PR workflows run with read-only token and no secrets; workflows cannot approve PRs |
 
 Automated review supports, and never replaces, the required teammate approval.

@@ -66,17 +66,15 @@ jobs:
             echo "- Files: $(wc -l <<< "$files")"
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$failed"
-
-  python-review:
-    name: Python review (ruff, non-blocking)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
+      # Ruff runs in the same job (was a separate "Python review" job): one runner start instead
+      # of two per PR event saves about a minute each time (incident 2026-10-31, Actions minutes).
+      # A description-only edit doesn't change code, so it re-runs the policy check only.
       - uses: astral-sh/setup-uv@v7
+        if: ${{ !cancelled() && github.event.action != 'edited' }}
         with:
           version: '0.12.3'
-      - name: Bug and security findings as inline annotations
+      - name: Python review (ruff, non-blocking)
+        if: ${{ !cancelled() && github.event.action != 'edited' }}
         working-directory: backend
         # B008 is FastAPI's Depends() default-argument pattern; S101 allows asserts in tests.
         run: |

@@ -1,13 +1,15 @@
-name: Label PR by owner area
+name: PR labels and reviewer
 
-# pull_request_target so labels also work on PRs from forks (a pull_request run
-# from a fork only gets a read-only token). Safe here: actions/labeler never
-# checks out or runs PR code; it reads the changed-file list through the API and
-# its config (.github/labeler.yml) from the base branch.
+# Owner-area labels and the review-table reviewer in one job (they were two workflows; one
+# runner start per PR event instead of two saves Actions minutes, incident 2026-10-31).
+# pull_request_target so both also work on PRs from forks (a pull_request run from a fork
+# only gets a read-only token). Safe here: neither step checks out or runs PR code.
+# actions/labeler reads the changed-file list through the API and its config
+# (.github/labeler.yml) from the base branch; the reviewer step only calls the GitHub API.
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -22,3 +24,24 @@ jobs:
       - uses: actions/labeler@v7
         with:
           sync-labels: true  # remove an area label when its files leave the PR
+      # Requests the reviewer from the team review table (docs/sprints-2-to-5.md) once, not on
+      # every push. Accounts: README.
+      - name: Request reviewer from review table
+        if: github.event.action != 'synchronize' && github.event.pull_request.draft == false
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          # Author -> primary reviewer (review table).
+          case "$AUTHOR" in
+            s2302756-cloud) reviewer="s2302827-byte" ;;   # Adrian -> Manuel
+            s2302827-byte)  reviewer="s2100932" ;;        # Manuel -> Jopher
+            meka-moka)      reviewer="s2100932" ;;        # Mika -> Jopher
+            s2100932)       reviewer="s2302827-byte" ;;   # Jopher -> Manuel (backend/integration)
+            Ikeee-AI)       reviewer="s2302827-byte" ;;   # Ikeee-AI -> Manuel
+            "dependabot[bot]") reviewer="Ikeee-AI" ;;      # DevOps triages, then routes to the area owner
+            *) echo "No mapping for @$AUTHOR; request a reviewer manually." >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+          esac
+          gh api -X POST "repos/$GITHUB_REPOSITORY/pulls/$PR/requested_reviewers" -f "reviewers[]=$reviewer" --silent
+          echo "Requested review from @$reviewer for PR #$PR by @$AUTHOR." >> "$GITHUB_STEP_SUMMARY"
