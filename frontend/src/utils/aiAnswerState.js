@@ -46,6 +46,20 @@ export function citedSourceCount(result) {
   return cited.size
 }
 
+/**
+ * An answer that came back with sources but cites none of them (for example after
+ * citations.py removed out-of-range markers): nothing in it is backed by a source (#124).
+ */
+export function hasNoSupportingSource(result) {
+  return !isMissingEvidence(result) && citedSourceCount(result) === 0
+}
+
+/** How many out-of-range [n] markers the backend removed (`invalid_citations_removed`), 0 if absent. */
+export function removedCitationCount(result) {
+  const n = result?.invalid_citations_removed
+  return Number.isInteger(n) && n > 0 ? n : 0
+}
+
 const FAILURES = {
   timeout: {
     title: 'The AI Timed Out',

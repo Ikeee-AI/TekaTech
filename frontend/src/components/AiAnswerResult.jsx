@@ -6,7 +6,7 @@ import FollowUpQuestions from './FollowUpQuestions'
 import { useAuth } from '../hooks/useAuth'
 import Alert from './ui/Alert'
 import Button from './ui/Button'
-import { citedSourceCount, describeAiFailure, isMissingEvidence } from '../utils/aiAnswerState'
+import { citedSourceCount, describeAiFailure, hasNoSupportingSource, isMissingEvidence, removedCitationCount } from '../utils/aiAnswerState'
 
 /** "Source: example.com" for a spec sheet link, or plain "Source" if the URL is odd. */
 function sourceLabel(url) {
@@ -49,6 +49,18 @@ function LoadingNotice({ skeletonLines }) {
       </p>
       <AnswerSkeleton lines={skeletonLines} />
     </div>
+  )
+}
+
+/** An answer that cites none of its sources: say plainly that nothing in it is backed by a
+ * saved spec. Wording proposed on #124 for Adrian to confirm, since it affects how
+ * evaluation abstentions read. */
+function NoSupportingSourceNotice({ removed }) {
+  return (
+    <Alert tone="warning" title="No supporting source cited">
+      <p>Nothing in this answer is backed by a saved spec, so treat it as unverified.</p>
+      {removed > 0 && <p className="mt-1.5">References to sources that weren&apos;t provided were removed.</p>}
+    </Alert>
   )
 }
 
@@ -152,7 +164,8 @@ export default function AiAnswerResult({
   specTargets,
 }) {
   const missingEvidence = result ? isMissingEvidence(result) : false
-  // Only cited sources count as grounding; with none cited there is no green check (#124 owns that label).
+  // Only cited sources count as grounding: with none cited there is no green check, and the
+  // "no supporting source cited" notice says so instead (#124).
   const citedCount = result && !missingEvidence ? citedSourceCount(result) : 0
   return (
     <div aria-live="polite" aria-busy={loading || undefined}>
@@ -180,6 +193,7 @@ export default function AiAnswerResult({
                   </p>
                 )}
               </div>
+              {hasNoSupportingSource(result) && <NoSupportingSourceNotice removed={removedCitationCount(result)} />}
               <div className="text-[15px] text-slate-800 leading-relaxed">
                 <AnswerText text={result.answer} sources={result.sources} onCiteClick={handleCiteClick} />
               </div>
@@ -195,7 +209,7 @@ export default function AiAnswerResult({
                 className="inline-flex items-center gap-1 min-h-9 text-sm font-semibold text-slate-700 hover:text-sage-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 rounded"
               >
                 {sourcesOpen ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
-                {result.sources.length} Source{result.sources.length === 1 ? '' : 's'} Cited
+                {result.sources.length} Source{result.sources.length === 1 ? '' : 's'} Retrieved
               </button>
               {sourcesOpen && (
                 <ol id="answer-sources" className="mt-2 space-y-2 animate-fade-in">

@@ -3,7 +3,9 @@ import {
   MalformedAnswerError,
   citedSourceCount,
   describeAiFailure,
+  hasNoSupportingSource,
   isMissingEvidence,
+  removedCitationCount,
   validateAnswerResponse,
 } from './aiAnswerState'
 
@@ -62,6 +64,31 @@ describe('citedSourceCount', () => {
   })
   it('ignores markers with no matching source', () => {
     expect(citedSourceCount({ answer: 'See [0] and [4].', sources: three })).toBe(0)
+  })
+})
+
+describe('hasNoSupportingSource', () => {
+  const two = [{}, {}]
+  it('is true for an answer with sources that cites none of them', () => {
+    expect(hasNoSupportingSource({ answer: "The specs don't say.", sources: two })).toBe(true)
+  })
+  it('is true when the only markers were out of range', () => {
+    expect(hasNoSupportingSource({ answer: 'It has 8GB RAM [7].', sources: two, invalid_citations_removed: 1 })).toBe(true)
+  })
+  it('is false when at least one source is cited', () => {
+    expect(hasNoSupportingSource({ answer: 'It has 8GB RAM [2].', sources: two })).toBe(false)
+  })
+  it('is false for missing evidence, which has its own notice', () => {
+    expect(hasNoSupportingSource({ answer: 'No specs found.', sources: [] })).toBe(false)
+  })
+})
+
+describe('removedCitationCount', () => {
+  it('returns the backend count when positive', () => {
+    expect(removedCitationCount({ invalid_citations_removed: 2 })).toBe(2)
+  })
+  it.each([[undefined], [0], [-1], ['2'], [null]])('is 0 for %s', (value) => {
+    expect(removedCitationCount({ invalid_citations_removed: value })).toBe(0)
   })
 })
 
