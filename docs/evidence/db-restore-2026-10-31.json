@@ -1,0 +1,48 @@
+{
+  "started_at": "2026-10-31T06:38:07+00:00",
+  "source_project_host": "efdggu\u2026",
+  "tables": {
+    "gadgets": {
+      "exported_rows": 13,
+      "restored_rows": 13,
+      "columns_not_in_tracked_schema": []
+    },
+    "spec_documents": {
+      "exported_rows": 12,
+      "restored_rows": 12,
+      "columns_not_in_tracked_schema": []
+    },
+    "spec_corrections": {
+      "exported_rows": 10,
+      "restored_rows": 10,
+      "columns_not_in_tracked_schema": []
+    },
+    "comparison_links": {
+      "exported_rows": 10,
+      "restored_rows": 10,
+      "columns_not_in_tracked_schema": []
+    },
+    "query_history": {
+      "exported_rows": 135,
+      "restored_rows": 135,
+      "columns_not_in_tracked_schema": []
+    }
+  },
+  "checks": {
+    "row_counts_match": true,
+    "spec_chunks_without_gadget": 0,
+    "corrections_without_chunk": 0,
+    "embedded_chunks": 11,
+    "vector_search_returns_rows": true
+  },
+  "timings_seconds": {
+    "export": 4.62,
+    "schema": 9.28,
+    "restore_rows": 0.08,
+    "verify": 0.0,
+    "total": 13.99
+  },
+  "passed": true,
+  "finished_at": "2026-10-31T06:38:22+00:00",
+  "kept_copy": null
+}
