@@ -251,7 +251,7 @@ def markdown_report(report):
 # "verified" claims, uses only the markup AnswerText.jsx renders, and refuses an unknown
 # product. Optional expected_facts trace to sources.json, so a known answer is also checked
 # against a stored source.
-GK_CASE_TYPES = ("known", "comparison", "unknown", "citation_bait", "plain")
+GK_CASE_TYPES = ("known", "comparison", "unknown", "citation_bait", "plain", "off_topic")
 # Any citation style, not only the [n] the grounded mode uses: [1], [2][3], [1,2], [1-3], [^1],
 # (1), superscript footnote digits.
 GK_CITATION = re.compile(
@@ -271,6 +271,10 @@ GK_VERIFIED = re.compile(
     r"|(from|in) tekatech['’]?s? (saved )?(specs?|records?|database|data))\b",
     re.IGNORECASE,
 )
+# An off-topic request must be declined (prompts.GK_OFF_TOPIC) and not answered anyway.
+GK_DECLINE = re.compile(r"only (help|answer|assist)( you)? with (questions about )?(gadgets?|tech|consumer electronics)",
+                        re.IGNORECASE)
+GK_OFF_TOPIC_MAX_SENTENCES = 3  # label + decline (+ one short pointer back to gadgets)
 GK_URL = re.compile(r"https?://|www\.|\b[a-z0-9-]+\.(?:com|ph|net|org|io)\b", re.IGNORECASE)
 GK_PRICE = re.compile(
     r"[$₱€£¥]\s?\d|\b(?:php|usd|eur)\s?\d|\d[\d,.]*\s?(?:php|usd|pesos?|dollars?)\b", re.IGNORECASE)
@@ -282,7 +286,7 @@ GK_HEDGE = re.compile(
 # Markup AnswerText.jsx does not render: headings, tables, numbered lists.
 GK_BAD_MARKUP = re.compile(r"^\s*(#|\||\d+[.)]\s)", re.MULTILINE)
 GK_TARGETS = {"cases_passed": 1.0, "no_citations": 1.0, "labelled": 1.0,
-              "unknown_refusal": 1.0, "no_verified_claims": 1.0}
+              "unknown_refusal": 1.0, "no_verified_claims": 1.0, "off_topic_declined": 1.0}
 
 
 def gk_case_type(case):
@@ -334,6 +338,13 @@ def score_gk_case(case, answer, removed=0):
             problems.append("should say it does not know this product")
         if stated:
             problems.append(f"states spec value(s) {stated} for an unknown product")
+    elif case.get("should_decline"):
+        checks["off_topic_declined"] = (bool(GK_DECLINE.search(text))
+                                        and len(sentences) <= GK_OFF_TOPIC_MAX_SENTENCES)
+        if not GK_DECLINE.search(text):
+            problems.append("should decline an off-topic request (gadget questions only)")
+        elif len(sentences) > GK_OFF_TOPIC_MAX_SENTENCES:
+            problems.append(f"declines but still answers the off-topic request ({len(sentences)} sentences)")
     elif stated and not GK_HEDGE.search(text):
         problems.append(f"states spec value(s) {stated} without hedging")
     missing = [fact for fact in case.get("expected_facts", []) if not has_fact(text, fact)]
@@ -356,6 +367,8 @@ def evaluate_gk(cases, answers, removed=None):
             checks = {"no_citations": False, "labelled": False, "no_verified_claims": False}
             if case.get("should_refuse"):
                 checks["unknown_refusal"] = False
+            if case.get("should_decline"):
+                checks["off_topic_declined"] = False
             if "expected_facts" in case:
                 checks["known_facts"] = False
             results.append({"id": case["id"], "type": gk_case_type(case), "passed": False,
@@ -370,7 +383,8 @@ def evaluate_gk(cases, answers, removed=None):
                 "rate": round(sum(rows) / len(rows), 3) if rows else None}
 
     metrics = {"cases_passed": metric(r["passed"] for r in results)}
-    for key in ("no_citations", "labelled", "unknown_refusal", "no_verified_claims", "known_facts"):
+    for key in ("no_citations", "labelled", "unknown_refusal", "no_verified_claims", "off_topic_declined",
+                "known_facts"):
         metrics[key] = metric(r["checks"][key] for r in results if key in r["checks"])
     by_type = {}
     for kind in GK_CASE_TYPES:
@@ -406,6 +420,7 @@ def markdown_gk_report(report):
     rows = [("Cases passed", "cases_passed"), ("No citation markers", "no_citations"),
             ("Opens with the general-knowledge label", "labelled"),
             ("Unknown product refused", "unknown_refusal"),
+            ("Off-topic request declined", "off_topic_declined"),
             ("No 'verified' or TekaTech-data claims", "no_verified_claims"),
             ("Expected facts present (traced to sources.json)", "known_facts")]
     for label, key in rows:
@@ -445,7 +460,7 @@ def run_gk(args, answers_file):
     m = report["metrics"]
     print(" | ".join(f"{key}: {m[key]['passed']} of {m[key]['total']}"
                      for key in ("cases_passed", "no_citations", "labelled", "unknown_refusal",
-                                 "no_verified_claims", "known_facts")))
+                                 "no_verified_claims", "off_topic_declined", "known_facts")))
     print("Targets met" if report["targets_met"] else "Targets NOT met")
     if args.report:
         args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")

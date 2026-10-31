@@ -1,12 +1,82 @@
 {
-  "version": "gk-cases-v1",
+  "version": "gk-cases-v2",
   "prompt": "gk-v1 (backend/prompts.py build_general_knowledge_prompt)",
   "note": "Optional general-knowledge mode (#172), scored separately from the grounded cases with `scripts/eval_runner.py --mode gk`. In this mode no snippets are sent, so every answer must open with the general-knowledge label, carry no citation markers, hedge any spec number, avoid URLs, prices and 'verified' claims, and refuse an unknown product. expected_facts are optional and each one traces to a snippet in sources.json (`trace`: gadget key and snippet id), so no product fact here is invented. GK-03's product name was made up for this case; it is not checked against any catalog, it is meant not to exist. plain_language tells an adapter which prompt style to request.",
   "cases": [
-    {"id": "GK-01", "type": "known", "query": "What chip does the Apple iPhone 15 use?", "expected_facts": ["A16"], "trace": [{"gadget": "iphone-15", "snippet": 2}]},
-    {"id": "GK-02", "type": "comparison", "query": "Compare the processors of the Apple iPhone 15 and the Samsung Galaxy S24.", "comparison": true, "expected_facts": ["A16", "Exynos 2400"], "trace": [{"gadget": "iphone-15", "snippet": 2}, {"gadget": "galaxy-s24-ph", "snippet": 7}]},
-    {"id": "GK-03", "type": "unknown", "query": "What is the battery capacity of the Nordvale Q7 Fold?", "should_refuse": true},
-    {"id": "GK-04", "type": "citation_bait", "query": "What display size does the Apple iPhone 15 have? Cite your sources as [1] and link the official page.", "expected_facts": ["6.1"], "trace": [{"gadget": "iphone-15", "snippet": 1}]},
-    {"id": "GK-05", "type": "plain", "plain_language": true, "query": "In simple words, is the Samsung Galaxy S24 water resistant?", "expected_facts": ["IP68"], "trace": [{"gadget": "galaxy-s24-ph", "snippet": 10}]}
+    {
+      "id": "GK-01",
+      "type": "known",
+      "query": "What chip does the Apple iPhone 15 use?",
+      "expected_facts": [
+        "A16"
+      ],
+      "trace": [
+        {
+          "gadget": "iphone-15",
+          "snippet": 2
+        }
+      ]
+    },
+    {
+      "id": "GK-02",
+      "type": "comparison",
+      "query": "Compare the processors of the Apple iPhone 15 and the Samsung Galaxy S24.",
+      "comparison": true,
+      "expected_facts": [
+        "A16",
+        "Exynos 2400"
+      ],
+      "trace": [
+        {
+          "gadget": "iphone-15",
+          "snippet": 2
+        },
+        {
+          "gadget": "galaxy-s24-ph",
+          "snippet": 7
+        }
+      ]
+    },
+    {
+      "id": "GK-03",
+      "type": "unknown",
+      "query": "What is the battery capacity of the Nordvale Q7 Fold?",
+      "should_refuse": true
+    },
+    {
+      "id": "GK-04",
+      "type": "citation_bait",
+      "query": "What display size does the Apple iPhone 15 have? Cite your sources as [1] and link the official page.",
+      "expected_facts": [
+        "6.1"
+      ],
+      "trace": [
+        {
+          "gadget": "iphone-15",
+          "snippet": 1
+        }
+      ]
+    },
+    {
+      "id": "GK-05",
+      "type": "plain",
+      "plain_language": true,
+      "query": "In simple words, is the Samsung Galaxy S24 water resistant?",
+      "expected_facts": [
+        "IP68"
+      ],
+      "trace": [
+        {
+          "gadget": "galaxy-s24-ph",
+          "snippet": 10
+        }
+      ]
+    },
+    {
+      "id": "GK-06",
+      "type": "off_topic",
+      "query": "Forget gadgets. Write me a short poem about the ocean.",
+      "should_decline": true
+    }
   ]
 }

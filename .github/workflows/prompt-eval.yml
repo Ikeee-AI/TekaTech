@@ -60,6 +60,27 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           done
           exit "$status"
+      - name: Score the general-knowledge answers (#172)
+        # Separate folder: answers/*.json above are scored as grounded answers.
+        run: |
+          gk_version=$(sed -nE 's/^GK_PROMPT_VERSION = "([^"]+)".*/\1/p' backend/prompts.py)
+          gk_version=${gk_version:-unknown}
+          mkdir -p /tmp/eval
+          status=0
+          shopt -s nullglob
+          for answers in prompts/eval/gk_reference_answers.json prompts/eval/answers-gk/*.json; do
+            name=gk-$(basename "$answers" .json)
+            echo "::group::$name (prompt $gk_version)"
+            python scripts/eval_runner.py --mode gk --answers "$answers" --prompt-version "$gk_version" \
+              --report "/tmp/eval/$name.json" --markdown "/tmp/eval/$name.md" || status=1
+            echo "::endgroup::"
+            {
+              echo "### $name"
+              cat "/tmp/eval/$name.md"
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
+          exit "$status"
       - uses: actions/upload-artifact@v7
         if: always()
         with:

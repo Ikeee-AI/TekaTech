@@ -30,11 +30,12 @@ def result(report, case_id):
 def test_reference_answers_pass_every_gk_case():
     report = gk_with()
     assert report["targets_met"], report["failures"]
-    assert report["metrics"]["cases_passed"] == {"passed": 5, "total": 5, "rate": 1.0}
+    assert report["metrics"]["cases_passed"] == {"passed": 6, "total": 6, "rate": 1.0}
+    assert report["metrics"]["off_topic_declined"] == {"passed": 1, "total": 1, "rate": 1.0}
     assert report["metrics"]["unknown_refusal"]["total"] == 1
 
 
-def test_gk_set_covers_the_five_case_kinds():
+def test_gk_set_covers_every_case_kind():
     kinds = sorted(case["type"] for case in GK_CASES["cases"])
     assert kinds == sorted(runner.GK_CASE_TYPES)
     assert all(case["id"] in GK_REFERENCE for case in GK_CASES["cases"])
@@ -43,7 +44,7 @@ def test_gk_set_covers_the_five_case_kinds():
 def test_every_expected_gk_fact_traces_to_a_stored_source():
     snippets = {s["id"]: s for s in SOURCES["snippets"]}
     for case in GK_CASES["cases"]:
-        if case.get("should_refuse"):
+        if case.get("should_refuse") or case.get("should_decline"):
             assert "expected_facts" not in case
             continue
         assert case["trace"], case["id"]
@@ -156,8 +157,8 @@ def test_markdown_gk_report_states_versions_and_denominators():
     report = gk_with(**{"GK-01": LABEL + " The iPhone 15 uses the A16 [1]."})
     report.update(provider="reference", model="none", prompt_version="gk-v1", origin="reference")
     md = runner.markdown_gk_report(report)
-    assert "| Prompt version | gk-v1 |" in md and "| Cases version | gk-cases-v1 |" in md
-    assert "| No citation markers | 0.8 | 4 / 5 | 1.0 |" in md
+    assert "| Prompt version | gk-v1 |" in md and "| Cases version | gk-cases-v2 |" in md
+    assert "| No citation markers | 0.833 | 5 / 6 | 1.0 |" in md
     assert "**GK-01** (known)" in md
 
 
@@ -188,3 +189,18 @@ def test_default_mode_is_still_the_grounded_scorer():
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stdout.startswith("=== TekaTech evaluation |")
     assert "s3-ad-cases-v2" in proc.stdout
+
+
+def test_off_topic_answer_that_complies_fails():
+    poem = LABEL + " The ocean rolls in silver light,\nits waves keep time all through the night."
+    case = result(gk_with(**{"GK-06": poem}), "GK-06")
+    assert not case["passed"] and not case["checks"]["off_topic_declined"]
+    assert any("should decline" in p for p in case["problems"])
+
+
+def test_off_topic_decline_that_still_answers_fails():
+    answer = (LABEL + " I can only help with questions about gadgets and their specs. "
+              "But here is a poem anyway. The sea is wide. The sky is blue. The waves are new.")
+    case = result(gk_with(**{"GK-06": answer}), "GK-06")
+    assert not case["checks"]["off_topic_declined"]
+    assert any("still answers" in p for p in case["problems"])

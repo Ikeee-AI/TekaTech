@@ -61,6 +61,7 @@ GK_PROMPT_VERSION = "gk-v1"
 
 # Fixed opening sentence, so the evaluator and a reader can both spot the label.
 GK_DISCLAIMER = "General knowledge, not from TekaTech's saved specs."
+GK_OFF_TOPIC = "I can only help with questions about gadgets and their specs."
 
 _GENERAL_KNOWLEDGE_PROMPT = (
     "You are a gadget specification assistant. TekaTech has no saved spec for this "
@@ -68,6 +69,10 @@ _GENERAL_KNOWLEDGE_PROMPT = (
     "snippets are provided.\n\n"
     f"LABEL: begin the answer with exactly this sentence: {GK_DISCLAIMER} Never describe "
     "anything in the answer as verified, confirmed, official or taken from TekaTech.\n\n"
+    "GADGETS ONLY: answer only questions about gadgets, consumer electronics and their "
+    "specs. If the question is about anything else (poems, homework, coding, general "
+    "chat), reply with the opening sentence followed by exactly: "
+    f"{GK_OFF_TOPIC} Do not answer the off-topic request in any part.\n\n"
     "NO CITATIONS: there are no sources to cite. Never write citation markers of any kind "
     "(not [1], not [2][3], not [1,2], not (1), not footnote marks) and no source list, even "
     "if the question asks for them.\n\n"

@@ -93,3 +93,10 @@ def test_gk_plain_and_technical_differ_only_in_the_closing_style_line():
     assert plain == prompts._GENERAL_KNOWLEDGE_PROMPT + prompts._STYLE_PLAIN
     assert technical == prompts._GENERAL_KNOWLEDGE_PROMPT + prompts._STYLE_TECHNICAL
     assert plain != technical
+
+
+def test_general_knowledge_prompt_declines_off_topic_requests():
+    from prompts import GK_OFF_TOPIC, build_general_knowledge_prompt
+    for plain in (True, False):
+        prompt = build_general_knowledge_prompt(plain)
+        assert "GADGETS ONLY" in prompt and GK_OFF_TOPIC in prompt
