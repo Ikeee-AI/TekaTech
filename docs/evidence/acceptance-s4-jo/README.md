@@ -2,7 +2,7 @@
 
 Owner: Jopher (`s2100932`, AI-assisted: yes). Work package S4-JO in [sprints-2-to-5.md](../../sprints-2-to-5.md): *"A fresh test user completes all applicable core journeys on the release candidate; permissions and refresh persistence hold; no unresolved critical/high-priority workflow defects."*
 
-**Status: 19 of 20 journeys pass; 0 fail.** Row 20 is still open (⬜): it needs the next production deploy. Nothing is claimed without a result.
+**Status: 20 of 20 journeys pass; 0 fail.** Nothing is claimed without a result.
 
 ## Where it was run
 - **Code:** local `main` at `f1e6151` (29 Oct; includes #128–#149). This is the release candidate until the tag.
@@ -32,7 +32,7 @@ Owner: Jopher (`s2100932`, AI-assisted: yes). Work package S4-JO in [sprints-2-t
 | 17 | **Suggest a correction** as the new user → admin **Rejects** → new user sees it | new user + admin | ✅ Pass, 30 Oct. Pending → admin `PATCH /corrections/…` 200 → **Rejected** + "New decision" badge; spec text unchanged and still indexed | [17a](17a-pending.jpg), [17b](17b-rejected.jpg) |
 | 18 | **Admin clean-up**: Delete Spec, then Delete Gadget | admin | ✅ Pass, 30 Oct. Both ask to confirm and say what goes; `DELETE` spec 204, `DELETE` gadget 204; gadget now 404; catalog back to 13 | [18a](18a-delete-spec-confirm.png), [18b](18b-delete-gadget-confirm.png) |
 | 19 | **Forgot password** email arrives and the link opens Reset Password | test user, **production** | ✅ Pass, 31 Oct, on `tekatech-web.onrender.com` (`5aa4635`). Forgot password → "Check Your Email" → Supabase "Reset your password" email → the link opened **Set a New Password** for that account → Update Password signed the user in on `tekatech-web.onrender.com` (the app goes to the catalog after the update), so the link used the production redirect URL, not localhost. Email addresses are covered in the screenshots | [19a](19a-prod-reset-email-sent.png), [19b](19b-prod-reset-email.jpg), [19c](19c-prod-set-new-password.jpg), [19d](19d-prod-signed-in-after-reset.jpg) |
-| 20 | **Data survives redeployment**: production gadget count and one gadget unchanged before/after a deploy (read-only) | — | ⬜ Read-only; with Ikeee-AI at the next deploy | |
+| 20 | **Data survives redeployment**: production gadget count and one gadget unchanged before/after a deploy (read-only) | — , **production** | ✅ Pass, 31 Oct. Before: `5aa4635` (09:32 UTC). After the release-day deploys `1fbbaf5` (#171) … `d3f2192` (#167, #170, #173, #175), both services on `d3f2192` (09:53 UTC): the same 4 gadgets, `updated_at` unchanged, the same spec and indexed counts (1/1/1/0), coverage 3 of 4. Public GET routes only | [row20-redeploy.txt](row20-redeploy.txt) |
 
 ## Defects found
 
