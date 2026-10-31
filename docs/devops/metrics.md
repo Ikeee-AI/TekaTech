@@ -8,7 +8,8 @@ Owner: the one DevOps Engineer. Record real GitHub Actions and Render deployment
 | Sprint 2 (12–18 Oct; cut-off 18 Oct 15:41 Manila) | 0.68 (55 runs) | 2.17 (21 runs) | 100.0 (77/77 runs, run level; 1 first-attempt failure re-run, PE-4) | 21 | 2.27 (20 samples) | 0 (1 failed first attempt, no impact) | N/A (no production incident) | Metrics script; actionlint + gitleaks gates; main guard; scheduled ops; Dependabot; squash-only merges |
 | Sprint 3 (interim: 18 Oct 15:41 – 23 Oct 17:30 Manila) | 0.76 (40 runs) | 2.70 (12 runs) | 98.1 (51/52 runs; 5 cancelled excluded) | 12 | 2.70 (12 samples) | 0 | N/A (no production incident) | Caching on public reads (#73); weekly live AI smoke job (#79) + key fix (#86); OpenAI keys rotated with a $10 prepaid hard cap (#76); fork-PR labeler (#67) |
 | Sprint 3 final (18–25 Oct UTC; cut-off 25 Oct 19:45 Manila) | 0.71 (88 runs) | 2.75 (25 runs) | 99.1 (112/113 completed; 18 cancelled/skipped excluded) | 25 | 2.77 (25 samples) | 0 | N/A (no production incident) | Database job uses the runner's `psql` (#107, PR checks median 37 s → 27 s); offline prompt evaluation on prompt/eval PRs (#102); smoke-job key cleaning (#86) |
-| Sprint 4 | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Sprint 4 (interim: 26–28 Oct UTC; cut-off 28 Oct 23:10 Manila) | 0.66 (53 runs) | 2.70 (19 runs) | 100.0 (72/72 completed) | 19 | 4.09 (19 samples) | 0 | N/A (no production incident) | Vitest unit tests in the frontend job (#137); Playwright failure-drill browser job (#128); stacked review batch #130–#139 merged; readiness check and request IDs (#136); retrieval fix with manual SQL (#145, #129) |
+| Sprint 4 final | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
 
 Measurement rules:
 
@@ -86,3 +87,13 @@ Deploy runs in the window:
 ## Sprint 3 final: 25 October 2026
 
 Window: `2026-10-18` to `2026-10-25` UTC, workflow `ci.yml` only, cut-off 25 Oct 19:45 Manila. Command: `python scripts/pipeline_metrics.py --label "Sprint 3 final" --since 2026-10-18 --until 2026-10-25`. Full report with every run link: [sprint3-metrics-final.json](../evidence/sprint3-metrics-final.json). 25 production deploys, 0 failed, no CI failure on main. 18 cancelled or skipped runs are excluded from the success rate; most are back-to-back merges in the same concurrency group, where the last run deploys all of them. Latest deploy: [main run 40187481617](https://github.com/Ikeee-AI/TekaTech/actions/runs/40187481617) on `4667bc1`, verified with `deployed_smoke.py` at 19:12 Manila (both hosts on the commit, 4 gadgets, CORS passed). The window overlaps the interim row (18–23 Oct); the final row replaces it for Sprint 3 totals.
+
+## Sprint 4 interim row: 28 October 2026
+
+Window: `2026-10-26` to `2026-10-28` UTC (Mon 26 Oct 08:00 – Thu 29 Oct 08:00 Manila), workflow `ci.yml` only, cut-off 28 Oct 23:10 Manila. Command: `python scripts/pipeline_metrics.py --label "Sprint 4 interim" --since 2026-10-26 --until 2026-10-28`. Full report with every run link: [sprint4-metrics-interim.json](../evidence/sprint4-metrics-interim.json).
+
+- **Deploys:** 19 production deploys, 0 failed, no CI failure on main. Latest: [main run 40712631037](https://github.com/Ikeee-AI/TekaTech/actions/runs/40712631037) on `f1e6151`.
+- **#106 (28 Oct):** the main guard blocked one deploy, because the approval wasn't on the merged commit. That isn't counted as a failed deploy (nothing reached production); the re-run after Mika's approval deployed. Recorded in the Sprint 4 log and #144.
+- **Merge-to-live:** the median rose to 4.09 min (Sprint 3: 2.77). On 28 Oct many merges landed within minutes of each other in the same concurrency group, so a merge often waited for the previous main run. The new Browser checks job also adds time to each main run. The sample isn't comparable with Sprint 3's until the final row.
+- **Deployed smoke:** passed on `77aff2e` (19:04) and on `f9b4c9e` (22:50, after the supervised production failure drill, #118).
+
