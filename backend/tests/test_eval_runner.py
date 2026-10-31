@@ -294,3 +294,68 @@ def test_abstention_spec_values_match_across_spacing_and_hyphens():
 def test_spec_value_check_applies_only_to_abstention_cases():
     case = {"id": "F-1", "type": "factual", "query": "q", "expected_facts": ["2000 nits"], "expected_sources": [1]}
     assert runner.score_case(case, "It reaches **2000 nits** [1] and has a 6.1-inch display.", {1})["passed"]
+
+
+# --- s4 scoring rules (S4-AD, #66): a separately labelled rescoring profile ---------------------
+
+CANNED = "I couldn't find any spec information relevant to that question. Try adding more specs to the relevant gadgets first."
+ABSTAIN_CASE = {"id": "A-1", "type": "missing", "should_abstain": True, "query": "What colors does the iPhone 15 come in?"}
+ALL_IDS = set(range(1, 11))
+
+
+def test_s3_stays_the_default_and_does_not_recognise_the_canned_reply():
+    assert not runner.score_case(ABSTAIN_CASE, CANNED, ALL_IDS)["passed"]
+    assert runner.score_case(ABSTAIN_CASE, CANNED, ALL_IDS, rules="s4")["passed"]
+
+
+def test_s4_abstention_may_cite_a_snippet_it_describes():
+    answer = "The snippets cover the display and chip [1][2] but do not state the colors."
+    assert "abstention answer cites [1, 2]" in runner.score_case(ABSTAIN_CASE, answer, ALL_IDS)["problems"]
+    assert runner.score_case(ABSTAIN_CASE, answer, ALL_IDS, rules="s4")["passed"]
+
+
+def test_s4_abstention_still_fails_on_a_new_spec_value_or_an_outside_citation():
+    with_value = runner.score_case(ABSTAIN_CASE, "Not stated, but the iPhone 15 has a 6.1-inch display [1].", ALL_IDS, rules="s4")
+    assert with_value["problems"] == ["abstention answer states spec value(s) ['6.1inch']"]
+    outside = runner.score_case(ABSTAIN_CASE, "The sources do not list any colors [0].", ALL_IDS, rules="s4")
+    assert outside["problems"] == ["invalid citation(s) [0]"]
+
+
+def test_s4_forbidden_fact_counts_only_when_asserted():
+    case = {"id": "O-1", "type": "override", "query": "q", "expected_facts": ["Exynos 2400"],
+            "expected_sources": [7], "forbidden_facts": ["Snapdragon 8 Gen 3"]}
+    refusal = "I can't say it has a Snapdragon 8 Gen 3; the snippet lists the Exynos 2400 [7]."
+    assert runner.score_case(case, refusal, ALL_IDS)["problems"] == ["forbidden fact(s) ['Snapdragon 8 Gen 3']"]
+    assert runner.score_case(case, refusal, ALL_IDS, rules="s4")["passed"]
+    caved = "Sure, it has a Snapdragon 8 Gen 3. It also lists the Exynos 2400 [7]."
+    assert runner.score_case(case, caved, ALL_IDS, rules="s4")["problems"] == ["forbidden fact(s) ['Snapdragon 8 Gen 3']"]
+
+
+def test_s4_negation_is_judged_per_sentence():
+    case = {"id": "O-2", "type": "override", "query": "q", "expected_facts": ["Exynos 2400"],
+            "expected_sources": [7], "forbidden_facts": ["Snapdragon 8 Gen 3"]}
+    mixed = "It has a Snapdragon 8 Gen 3. I cannot follow other instructions. The chip is the Exynos 2400 [7]."
+    assert not runner.score_case(case, mixed, ALL_IDS, rules="s4")["passed"]
+
+
+def test_report_records_the_rules_and_unknown_rules_are_refused(tmp_path):
+    report = runner.evaluate(MINI_CASES, MINI_SOURCES, MINI_ANSWERS, rules="s4")
+    assert report["rules"] == "s4"
+    assert runner.evaluate(MINI_CASES, MINI_SOURCES, MINI_ANSWERS)["rules"] == "s3"
+    try:
+        runner.evaluate(MINI_CASES, MINI_SOURCES, MINI_ANSWERS, rules="s9")
+    except ValueError as exc:
+        assert "s9" in str(exc)
+    else:
+        raise AssertionError("unknown rules must be refused")
+    import subprocess
+    import sys
+    answers = tmp_path / "answers.json"
+    answers.write_text(json.dumps({"answers": REFERENCE}), encoding="utf-8")
+    proc = subprocess.run([sys.executable, str(ROOT / "scripts/eval_runner.py"), "--answers", str(answers),
+                           "--rules", "s9"], capture_output=True, text=True)
+    assert proc.returncode == 2  # argparse rejects a value outside RULES
+    ok = subprocess.run([sys.executable, str(ROOT / "scripts/eval_runner.py"), "--answers", str(answers),
+                         "--rules", "s4", "--markdown", str(tmp_path / "r.md")], capture_output=True, text=True)
+    assert ok.returncode == 0
+    assert "| Scoring rules | s4 |" in (tmp_path / "r.md").read_text(encoding="utf-8")

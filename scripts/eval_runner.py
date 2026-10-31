@@ -39,6 +39,22 @@ ABSTAIN = re.compile(
     r"|no (information|data|details)|(can't|cannot|can not|unable to) (confirm|answer|tell)",
     re.IGNORECASE,
 )
+# Scoring rules. "s3" is the original scorer and stays the default, so earlier scores and CI keep
+# reproducing. "s4" (S4-AD, #66) changes three things, each found by reading real answers:
+#   1. the app's own canned no-retrieval reply counts as a refusal;
+#   2. an abstention may cite a snippet it describes (it still fails if it states a spec value
+#      the question did not contain, or cites a snippet outside the pack);
+#   3. a forbidden fact counts only when the answer asserts it, not when a refusal repeats it
+#      ("I can't say it has a Snapdragon 8 Gen 3"). This is a per-sentence negation heuristic.
+# Use s4 only for a separately labelled rescoring; the report records which rules scored it.
+RULES = ("s3", "s4")
+CANNED_NO_RETRIEVAL = re.compile(r"couldn['’]t find any spec information", re.IGNORECASE)
+SENTENCE = re.compile(r"[.!?\n]+")
+NEGATION = re.compile(
+    r"\b(can['’]?t|cannot|can not|won['’]?t|don['’]?t|do not|doesn['’]?t|does not|isn['’]?t|is not"
+    r"|not|no|never|unable|refus\w*)\b",
+    re.IGNORECASE,
+)
 # A number with a spec unit ("120Hz", "3349 mAh", "6.7-inch"). The ABSTAIN phrases above are
 # broad, so an answer can say "not stated" and still assert a value; an abstention answer must
 # not state a spec value that the question itself did not already contain.
@@ -77,20 +93,30 @@ def spec_values(text):
     return {re.sub(r"[\s-]+", "", m.group(0)).lower() for m in SPEC_VALUE.finditer(text)}
 
 
-def score_case(case, answer, valid_ids):
+def asserted(answer, fact):
+    """True if some sentence containing `fact` does not negate it (the s4 forbidden-fact rule)."""
+    return any(has_fact(sentence, fact) and not NEGATION.search(sentence)
+               for sentence in SENTENCE.split(answer))
+
+
+def score_case(case, answer, valid_ids, rules="s3"):
+    if rules not in RULES:
+        raise ValueError(f"unknown scoring rules {rules!r}; use one of {', '.join(RULES)}")
+    s4 = rules == "s4"
     cited = [int(n) for n in CITATION.findall(answer)]
     invalid = sorted({n for n in cited if n not in valid_ids})
-    abstained = bool(ABSTAIN.search(answer))
+    abstained = bool(ABSTAIN.search(answer)) or (s4 and bool(CANNED_NO_RETRIEVAL.search(answer)))
     problems = []
     if invalid:
         problems.append(f"invalid citation(s) {invalid}")
-    leaked = [fact for fact in case.get("forbidden_facts", []) if has_fact(answer, fact)]
+    leaked = [fact for fact in case.get("forbidden_facts", [])
+              if (asserted(answer, fact) if s4 else has_fact(answer, fact))]
     if leaked:
         problems.append(f"forbidden fact(s) {leaked}")
     if case.get("should_abstain"):
         if not abstained:
             problems.append("should have said the sources don't answer this")
-        if cited:
+        if cited and not s4:
             # No snippet answers an abstention case, so a citation means a claim was made.
             problems.append(f"abstention answer cites {sorted(set(cited))}")
         stated = sorted(spec_values(answer) - spec_values(case.get("query", "")))
@@ -109,11 +135,13 @@ def score_case(case, answer, valid_ids):
             "kind": "abstention" if case.get("should_abstain") else "factual"}
 
 
-def evaluate(cases, sources, answers, removed=None):
+def evaluate(cases, sources, answers, removed=None, rules="s3"):
     """Score answers. `removed` maps case ids to the number of citation markers the backend
     stripped before the answer reached us (POST /query "invalid_citations_removed"); each one
     counts as an invalid reference, otherwise the cleaned text alone would score 100% by
-    construction."""
+    construction. `rules` picks the scoring profile (see RULES)."""
+    if rules not in RULES:
+        raise ValueError(f"unknown scoring rules {rules!r}; use one of {', '.join(RULES)}")
     removed = removed or {}
     valid_ids = {snippet["id"] for snippet in sources["snippets"]}
     results = []
@@ -125,7 +153,7 @@ def evaluate(cases, sources, answers, removed=None):
                             "citations": [], "abstained": False,
                             "kind": "abstention" if case.get("should_abstain") else "factual"})
         else:
-            results.append(score_case(case, answer, valid_ids))
+            results.append(score_case(case, answer, valid_ids, rules))
 
     def rate(rows):
         return round(sum(r["passed"] for r in rows) / len(rows), 3) if rows else None
@@ -165,7 +193,7 @@ def evaluate(cases, sources, answers, removed=None):
                 for r in results if not r["passed"]]
     removals = [{"id": r["id"], "count": r["removed_citations"]} for r in results if r["removed_citations"]]
     return {"cases_version": cases.get("version"), "sources_version": sources.get("version"),
-            "metrics": metrics, "by_type": by_type, "targets": targets, "targets_met": met,
+            "rules": rules, "metrics": metrics, "by_type": by_type, "targets": targets, "targets_met": met,
             "failures": failures, "removed_citations": removals, "results": results}
 
 
@@ -180,6 +208,7 @@ def markdown_report(report):
         f"| Cases version | {report['cases_version']} |",
         f"| Sources version | {report['sources_version']} |",
         f"| Answers origin | {report['origin']} |",
+        f"| Scoring rules | {report.get('rules', 's3')} |",
         f"| Targets met | {'yes' if report['targets_met'] else '**NO**'} |", "",
         "## Metrics", "",
         "| Metric | Score | Passed / total | Target |", "| --- | --- | --- | --- |",
@@ -221,6 +250,8 @@ def main():
     parser.add_argument("--markdown", type=Path, help="Write a human-readable report here")
     parser.add_argument("--model", help="Model that produced the answers (overrides the answers file)")
     parser.add_argument("--prompt-version", help="Prompt version label (overrides the answers file)")
+    parser.add_argument("--rules", choices=RULES, default="s3",
+                        help="Scoring profile: s3 (original, default) or s4 (labelled rescoring; see RULES)")
     args = parser.parse_args()
     def load(path):
         return json.loads(path.read_text(encoding="utf-8"))
@@ -230,7 +261,7 @@ def main():
     try:
         if not isinstance(removed, dict):
             raise ValueError('"invalid_citations_removed" must map case ids to counts')
-        report = evaluate(load(args.cases), load(args.sources), answers_file["answers"], removed)
+        report = evaluate(load(args.cases), load(args.sources), answers_file["answers"], removed, args.rules)
     except ValueError as exc:
         print(f"Invalid input: {exc}", file=sys.stderr)
         sys.exit(2)
