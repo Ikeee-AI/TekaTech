@@ -7,6 +7,7 @@ This directory contains the prompt specification, the verified gadget source pac
 - **`eval/sources.json`**: the source pack as numbered snippets `[1]`–`[10]`, with source URLs and access dates.
 - **`eval/cases.json`**: the 10 cases with expected facts, supporting snippets and abstention flags.
 - **`eval/reference_answers.json`**: hand-written answers that validate the scorer. **Not model output.**
+- **`eval/gk_cases.json`** and **`eval/gk_reference_answers.json`**: the separate set for the optional general-knowledge mode (see below). The reference answers are hand-written too, **not model output**.
 
 ## Run the evaluator
 
@@ -51,3 +52,16 @@ python scripts/eval_runner.py --answers answers.json --model gpt-5-mini --prompt
 ## Fresh answers and the answer cache
 
 `POST /query` reuses cached answers for repeated questions (`"cached": true` in the reply). A changed `PROMPT_VERSION` or model already gets a fresh cache. To re-score an **unchanged** prompt with fresh answers, restart the local API before running `scripts/eval_adapter.py` (the cache is in-process). A logged-in admin can also send `X-Bypass-Answer-Cache: 1`. It skips the cache read for that request and is ignored for everyone else. See "Collecting real answers for evaluation" in `backend/README.md`. Each reply's `retrieval` field (`vector`, `keyword` or `none`) shows how its sources were found. The retrieval threshold changed from 0.5 to 0.25 on 27 Oct 2026 ([measurement](../docs/evidence/retrieval-threshold-2026-10-27.md)), so abstention cases now usually receive nearby snippets and rely on the prompt to decline. Re-run the 20 cases after that change.
+
+## Optional general-knowledge mode (#172, prompt `gk-v1`)
+
+An instructor-approved, **optional** mode (scope change recorded in `docs/scope-changes.md`, PR #167). It is **off by default**: grounded, cited answers stay the default and are unchanged. Only when retrieval finds no spec chunks **and** the request sets `allow_general_knowledge: true` does `POST /query` answer from the model's general knowledge, with `answer_basis: "general_knowledge"`. No snippets are sent, the answer opens with the fixed label "General knowledge, not from TekaTech's saved specs." and it carries **no citations**. The prompt is `build_general_knowledge_prompt()` in `backend/prompts.py`, versioned separately as `GK_PROMPT_VERSION = "gk-v1"`. Ikeee-AI drafted it, taking over this part of the AI-Developer area for #172.
+
+It is scored separately, so it never changes a grounded score:
+
+```bash
+python scripts/eval_runner.py --mode gk --answers prompts/eval/gk_reference_answers.json \
+    --report .local/gk-report.json --markdown .local/gk-report.md
+```
+
+`gk_cases.json` (`gk-cases-v1`) has 5 cases: a known product (`known`), a `comparison`, a made-up product (`unknown`), a question that asks for `[1]` citations and a link (`citation_bait`) and a `plain`-language question. Each answer must open with the label; have no citation marker of any style (and no marker stripped by the backend, which counts as a failure); make no "verified" or "from TekaTech's data" claim; contain no URL or price; use only `**bold**` and `- ` bullets (comparisons as bullets with at most one lead-in line); and hedge any spec number. The unknown-product case must refuse and state no spec value. Optional `expected_facts` trace to a snippet in `sources.json`. Targets are 100% on every metric, reported as passed/total. The default mode (`--mode grounded`) and the prompt-evaluation workflow, which scores only `reference_answers.json` and `answers/*.json`, are unchanged. No GK model output has been scored yet.
