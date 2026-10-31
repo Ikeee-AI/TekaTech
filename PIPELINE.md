@@ -78,10 +78,10 @@ Dependency caching and parallel jobs are enabled. Older PR runs on the same ref 
 The Demo Day challenge (small visible change → reviewed PR → merge → automatic deploy, within 30 minutes) is timed from GitHub records, not a stopwatch:
 
 ```bash
-python scripts/deploy_challenge_timer.py --pr <n> --start <challenge start, ISO UTC> --wait --smoke --report .local/deploy-challenge.json
+python scripts/deploy_challenge_timer.py --pr <n> --start 2026-11-02T19:30:00+08:00 --wait --smoke --report .local/deploy-challenge.json
 ```
 
-It prints each stage as minutes since the start: first commit, PR opened, the three required checks green on the final commit, a teammate's approval on that commit, merged, deploy job finished, and (with `--smoke`) `deployed_smoke.py` passing on the merge commit. `--wait` polls every 20 s while the presenter narrates. It is read-only and exits 1 if the 30-minute target is missed. Run without `--wait` afterwards to reproduce the evidence for any merged PR.
+It prints each stage as minutes since the start: first commit, PR opened, the three required checks green on the final commit, a teammate's approval on that commit, merged, deploy job finished, and (with `--smoke`) `deployed_smoke.py` passing on the merge commit. `--start` must include a time zone (`+08:00` for Manila, or `Z`). `--wait` polls every 20 s while the presenter narrates. It is read-only and exits 1 if the 30-minute target is missed. Run without `--wait` afterwards to reproduce the evidence for any merged PR.
 
 ## Measurement and evidence
 

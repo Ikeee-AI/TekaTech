@@ -1,0 +1,50 @@
+{
+  "start": "2026-10-31T07:46:03Z",
+  "pr": 171,
+  "author": "meka-moka",
+  "head_sha": "0821a3ce4af095976f8e2a6e0bd7855c5d9dacfb",
+  "merge_sha": "1fbbaf5c489908fe2f51a9f46ff1998f3f2839fc",
+  "approvers": [
+    "s2100932"
+  ],
+  "stages": [
+    {
+      "stage": "first_commit",
+      "at": "2026-10-31T07:46:03Z",
+      "minutes_from_start": 0.0
+    },
+    {
+      "stage": "pr_opened",
+      "at": "2026-10-31T07:46:54Z",
+      "minutes_from_start": 0.8
+    },
+    {
+      "stage": "checks_green",
+      "at": "2026-10-31T07:47:46Z",
+      "minutes_from_start": 1.7
+    },
+    {
+      "stage": "approved",
+      "at": "2026-10-31T09:28:01Z",
+      "minutes_from_start": 102.0
+    },
+    {
+      "stage": "merged",
+      "at": "2026-10-31T09:46:20Z",
+      "minutes_from_start": 120.3
+    },
+    {
+      "stage": "deployed",
+      "at": "2026-10-31T09:48:17Z",
+      "minutes_from_start": 122.2
+    },
+    {
+      "stage": "smoke_passed",
+      "at": "2026-10-31T09:48:38Z",
+      "minutes_from_start": 122.6
+    }
+  ],
+  "total_minutes": 122.6,
+  "within_target": false,
+  "main_run": "https://github.com/Ikeee-AI/TekaTech/actions/runs/41190044111"
+}
