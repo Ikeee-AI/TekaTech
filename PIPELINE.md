@@ -73,6 +73,16 @@ Dependency caching and parallel jobs are enabled. Older PR runs on the same ref 
 | `rollback.yml` — Rollback production | Actions tab, inputs: full SHA + reason | Redeploy a known-good main commit that passed all three checks to both Render services, then smoke-test it. Main must then be reconciled with a reviewed revert PR (see runbook). |
 | `release.yml` — Release notes | Push a `v*` tag on a main commit | Create a GitHub Release with generated notes; does not deploy. |
 
+### Live deploy challenge timer
+
+The Demo Day challenge (small visible change → reviewed PR → merge → automatic deploy, within 30 minutes) is timed from GitHub records, not a stopwatch:
+
+```bash
+python scripts/deploy_challenge_timer.py --pr <n> --start <challenge start, ISO UTC> --wait --smoke --report .local/deploy-challenge.json
+```
+
+It prints each stage as minutes since the start: first commit, PR opened, the three required checks green on the final commit, a teammate's approval on that commit, merged, deploy job finished, and (with `--smoke`) `deployed_smoke.py` passing on the merge commit. `--wait` polls every 20 s while the presenter narrates. It is read-only and exits 1 if the 30-minute target is missed. Run without `--wait` afterwards to reproduce the evidence for any merged PR.
+
 ## Measurement and evidence
 
 Update [metrics](docs/devops/metrics.md), [optimizations](docs/devops/optimizations.md) and [incidents](docs/devops/incidents.md) before each consultation. Keep real run links, commit SHAs and timestamps. The [first hosted PR run](https://github.com/Ikeee-AI/TekaTech/actions/runs/38167468464) passed all three quality jobs in 40 seconds; deployment correctly skipped for the PR. The metrics log records this initial baseline and its cutoff. Local command time must not be reported as CI pipeline time.
