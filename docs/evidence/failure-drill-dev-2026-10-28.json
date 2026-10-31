@@ -1,0 +1,117 @@
+{
+ "date": "2026-10-28T12:44:17+00:00",
+ "target": "local backend on TekaTech-dev (read-only DB, no writes)",
+ "rows": [
+  {
+   "status": 503,
+   "x_simulated_failure": "timeout",
+   "body": {
+    "detail": "The AI took too long to answer. Please try again."
+   },
+   "seconds": 0.65,
+   "phase": "flag ON",
+   "caller": "admin",
+   "header": "timeout"
+  },
+  {
+   "status": 503,
+   "x_simulated_failure": "quota",
+   "body": {
+    "detail": "AI answers are temporarily unavailable. Spec browsing still works."
+   },
+   "seconds": 0.34,
+   "phase": "flag ON",
+   "caller": "admin",
+   "header": "quota"
+  },
+  {
+   "status": 503,
+   "x_simulated_failure": "bad_output",
+   "body": {
+    "detail": "The AI returned an answer we couldn't use. Please rephrase and try again."
+   },
+   "seconds": 0.37,
+   "phase": "flag ON",
+   "caller": "admin",
+   "header": "bad_output"
+  },
+  {
+   "status": 200,
+   "x_simulated_failure": null,
+   "body": {
+    "answer": "I couldn't find any spec information relevant to that question. Try adding more specs to the relevant gadgets first.",
+    "sources": 0,
+    "model_used": "none",
+    "cached": false
+   },
+   "seconds": 0.31,
+   "phase": "flag ON",
+   "caller": "admin",
+   "header": "empty"
+  },
+  {
+   "status": 503,
+   "x_simulated_failure": "timeout",
+   "body": {
+    "detail": "The AI took too long to answer. Please try again."
+   },
+   "seconds": 0.4,
+   "phase": "flag ON",
+   "caller": "admin",
+   "header": "TIMEOUT"
+  },
+  {
+   "status": 422,
+   "x_simulated_failure": null,
+   "body": {
+    "detail": "Unknown simulation mode. Use one of: timeout, quota, bad_output, empty."
+   },
+   "seconds": 0.37,
+   "phase": "flag ON",
+   "caller": "admin",
+   "header": "nonsense"
+  },
+  {
+   "status": 200,
+   "x_simulated_failure": null,
+   "body": {
+    "answer": "Here\u2019s what the provided snippets state about battery size:\n\n- Galaxy S24: **4000mAh** battery [1].  \n- iPhone 15: batte",
+    "sources": 6,
+    "model_used": "openai:gpt-5-mini",
+    "cached": false
+   },
+   "seconds": 12.88,
+   "phase": "flag ON",
+   "caller": "non-admin",
+   "header": "timeout"
+  },
+  {
+   "status": 200,
+   "x_simulated_failure": null,
+   "body": {
+    "answer": "Here\u2019s what the provided snippets state about battery size:\n\n- Galaxy S24: **4000mAh** battery [1].  \n- iPhone 15: batte",
+    "sources": 6,
+    "model_used": "openai:gpt-5-mini",
+    "cached": true
+   },
+   "seconds": 0.4,
+   "phase": "flag ON",
+   "caller": "anonymous",
+   "header": "timeout"
+  },
+  {
+   "status": 200,
+   "x_simulated_failure": null,
+   "body": {
+    "answer": "Here\u2019s what the provided snippets say about battery size:\n\n- Galaxy S24 has a **4000mAh** battery [1].  \n- iPhone 15 bat",
+    "sources": 6,
+    "model_used": "openai:gpt-5-mini",
+    "cached": false
+   },
+   "seconds": 8.31,
+   "phase": "flag OFF",
+   "caller": "admin",
+   "header": "timeout"
+  }
+ ]
+}
