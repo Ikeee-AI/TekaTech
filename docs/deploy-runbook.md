@@ -68,7 +68,18 @@ Preferred code rollback preserves the reviewed history:
 
 For an urgent outage, the DevOps Engineer may redeploy the last known good commit. Preferred: **Actions → Rollback production → Run workflow** with the full 40-character SHA and the reason (incident issue). The workflow (`.github/workflows/rollback.yml`) refuses commits that are not on main or lack successful `Backend tests`, `Frontend lint and build` and `Database migrations` checks, triggers both Render hooks for that exact SHA, and runs the same smoke checks as a release; its summary and artifact are the recovery evidence. Fallback: Render's deploy controls. Immediately reconcile main with a reviewed revert PR so automatic deployment does not restore the broken code. Record the emergency action. Never roll schema backward by dropping tables; inspect compatibility and restore data from backups only with explicit team approval.
 
-Rollback rehearsal status: NOT RUN. A written runbook or workflow is not evidence of a tested rollback; rehearse it in Sprint 4 and record the elapsed recovery time.
+Rollback rehearsal status: **RUN on production, 31 October 2026** ([evidence](evidence/rollback-rehearsal-2026-10-31.md)). `rollback.yml` restored `7d2ab44` in 1 min 35 s and rolled forward to `5aa4635` in 1 min 45 s, both smoke-tested. The two commits differed only in docs/evaluation files, so the rehearsal had no user impact; a rollback across a code or schema change has not been rehearsed.
+
+## Database backup and restore
+
+Production runs on the Supabase free plan, which has no point-in-time recovery or downloadable scheduled backups. The team's backup method is a logical export of the five application tables through the REST API, restored into a disposable PostgreSQL + pgvector built from the tracked SQL:
+
+```bash
+uv run --no-project --python 3.12 --with pgserver==0.1.4 --with "psycopg[binary]==3.2.3" \
+  python scripts/db_restore_rehearsal.py --env-file backend/.env --report .local/db-restore.json
+```
+
+The script exports read-only, applies `backend/tests/sql/ci_roles.sql` and `assemble_sql.py` output to a throwaway local database, restores rows in foreign-key order, checks row counts, relationships and vector search, reports timings, then deletes the copy and the export (`--keep` keeps them). It refuses the production project. Restore rehearsal status: **RUN on TekaTech-dev, 31 October 2026** ([evidence](evidence/db-restore-2026-10-31.md)): 180 rows in 14.0 s, all checks passed. Never restore into the live project without explicit team approval; Supabase Auth users are not part of this export.
 
 ## Release tagging
 

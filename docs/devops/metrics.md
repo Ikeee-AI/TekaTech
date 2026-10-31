@@ -9,7 +9,7 @@ Owner: the one DevOps Engineer. Record real GitHub Actions and Render deployment
 | Sprint 3 (interim: 18 Oct 15:41 – 23 Oct 17:30 Manila) | 0.76 (40 runs) | 2.70 (12 runs) | 98.1 (51/52 runs; 5 cancelled excluded) | 12 | 2.70 (12 samples) | 0 | N/A (no production incident) | Caching on public reads (#73); weekly live AI smoke job (#79) + key fix (#86); OpenAI keys rotated with a $10 prepaid hard cap (#76); fork-PR labeler (#67) |
 | Sprint 3 final (18–25 Oct UTC; cut-off 25 Oct 19:45 Manila) | 0.71 (88 runs) | 2.75 (25 runs) | 99.1 (112/113 completed; 18 cancelled/skipped excluded) | 25 | 2.77 (25 samples) | 0 | N/A (no production incident) | Database job uses the runner's `psql` (#107, PR checks median 37 s → 27 s); offline prompt evaluation on prompt/eval PRs (#102); smoke-job key cleaning (#86) |
 | Sprint 4 (interim: 26–28 Oct UTC; cut-off 28 Oct 23:10 Manila) | 0.66 (53 runs) | 2.70 (19 runs) | 100.0 (72/72 completed) | 19 | 4.09 (19 samples) | 0 | N/A (no production incident) | Vitest unit tests in the frontend job (#137); Playwright failure-drill browser job (#128); stacked review batch #130–#139 merged; readiness check and request IDs (#136); retrieval fix with manual SQL (#145, #129) |
-| Sprint 4 final | Pending | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Sprint 4 final (26–31 Oct UTC; cut-off 31 Oct 14:45 Manila) | 0.72 (71 runs) | 2.78 (24 runs) | 100.0 (95/95 completed) | 24 | 3.88 (24 samples) | 0 | N/A (no production incident); rollback rehearsal 1 min 35 s | 15 PRs merged on release day; `v1.0.0` tagged on `5aa4635`; production rollback and database restore rehearsed; full-history Gitleaks clean |
 
 Measurement rules:
 
@@ -96,4 +96,12 @@ Window: `2026-10-26` to `2026-10-28` UTC (Mon 26 Oct 08:00 – Thu 29 Oct 08:00 
 - **#106 (28 Oct):** the main guard blocked one deploy, because the approval wasn't on the merged commit. That isn't counted as a failed deploy (nothing reached production); the re-run after Mika's approval deployed. Recorded in the Sprint 4 log and #144.
 - **Merge-to-live:** the median rose to 4.09 min (Sprint 3: 2.77). On 28 Oct many merges landed within minutes of each other in the same concurrency group, so a merge often waited for the previous main run. The new Browser checks job also adds time to each main run. The sample isn't comparable with Sprint 3's until the final row.
 - **Deployed smoke:** passed on `77aff2e` (19:04) and on `f9b4c9e` (22:50, after the supervised production failure drill, #118).
+
+## Sprint 4 final row: 31 October 2026
+
+Window: `2026-10-26` to `2026-10-31` UTC, workflow `ci.yml` only, cut-off 31 Oct 14:45 Manila (after the `v1.0.0` release). Command: `python scripts/pipeline_metrics.py --label "Sprint 4 final" --since 2026-10-26 --until 2026-10-31`. Full report with every run link: [sprint4-metrics-final.json](../evidence/sprint4-metrics-final.json).
+
+- **Deploys:** 24 production deploys, 0 failed. Release commit `5aa4635`: [main run 41176164488](https://github.com/Ikeee-AI/TekaTech/actions/runs/41176164488), deployed smoke passed at 14:24 Manila.
+- **Merge-to-live:** median 3.88 min (interim 4.09, Sprint 3 2.77). On 31 Oct, 12 merges landed within one minute and 3 more 17 minutes later. GitHub concurrency kept only the latest pending main run: 4 main runs deployed (`163ccba`, `7d2ab44`, `66af748`, `5aa4635`) and 11 superseded runs were cancelled (excluded from the success rate).
+- **Rollback and restore:** not part of `ci.yml`, so not in the row's counts. `rollback.yml` rehearsal: 1 min 35 s back, 1 min 45 s forward ([evidence](../evidence/rollback-rehearsal-2026-10-31.md)); database restore to a disposable copy: 14.0 s ([evidence](../evidence/db-restore-2026-10-31.md)).
 
