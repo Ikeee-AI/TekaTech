@@ -12,7 +12,7 @@ Open `https://tekatech-api.onrender.com/health` a minute earlier to wake the fre
 python scripts/demo_malformed_requests.py --api-base https://tekatech-api.onrender.com
 ```
 
-It sends 16 requests and prints the status and the message a user would see. All 16 are refused before they can write data or call OpenAI. Expected output (run on 30 Oct against a local backend on the dev database; **not yet run against production**, so do that once as part of the rehearsal):
+It sends 16 requests and prints the status and the message a user would see. All 16 are refused before they can write data or call OpenAI. Expected output (run on 30 Oct against a local backend on the dev database, and again on 31 Oct 09:30 UTC against production, `https://tekatech-api.onrender.com`: 16 of 16 refused with the same statuses and messages, no stack trace, key or file path, and a request id on each):
 
 | Group | What is sent | Result |
 | --- | --- | --- |
