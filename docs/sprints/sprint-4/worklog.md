@@ -383,3 +383,45 @@ Written with the `log-work` skill. Facts and evidence only; newest entry at the 
 - All 15 merged teammate PRs are Done (reviewed, checks green, merged, deployed, smoke-verified).
 
 **Next** — Open the records PR for review; rehearse the 30-minute deploy challenge with Mika's visible change; run the Sprint 4 retro — Ikeee-AI — before consultation 4.
+
+## 2026-10-31 18:56 Asia/Manila — Afternoon: reviews merged, deploy challenge, general-knowledge prompt, Actions minutes incident
+**Who:** Ikeee-AI (AI-assisted: yes; the `ai-engineer` agent drafted the gk-v1 prompt and evaluation, then reviewed and extended by Ikeee-AI) · **Task:** S4-IK, S5-IK (#172) · **Branch:** several (listed per item)
+
+**Done**
+- **Merged after the gate** (teammate approval on the head commit, required checks green): #171 Mika's deploy-challenge line, #173 gk-v1 prompt (Ikeee-AI, approved by Manuel), #167 release records and Consultation 4 packet, #170 deploy-challenge timer, #175 Manuel's malformed-request demo on production. Main `d3f2192` passed every job ([run 41190208701](https://github.com/Ikeee-AI/TekaTech/actions/runs/41190208701)); deployed smoke passed at 17:53.
+- **Deploy challenge rehearsal (#171):** reached production and passed smoke in 122.6 min against a 30 min target. The pipeline took 3.9 min; the review wait was 100.3 min and approval-to-merge 18.3 min. Evidence and timer fixes in #177.
+- **General-knowledge option (#172, instructor-approved):** issue with owners (Ikeee-AI taking over the prompt/eval part from Adrian's area; Manuel backend; Mika UI). gk-v1 adds a gadgets-only rule so the public `/query` can't become a free chatbot; 6 eval cases; GK scoring added to prompt-eval CI. Manuel's backend #174 approved by Jopher (586 tests locally).
+- **TechSpecs import put on hold:** its docs forbid caching or storing its data without authorization. Permission email drafted for Ikeee-AI to send. Logged in `docs/scope-changes.md`.
+- **Board and coordination:** 44 Sprint 4 items added to the board with real statuses; retro #168 (Ikeee-AI's comment posted); follow-ups #169; Consultation 4 confirmed for Mon 2 Nov 19:30.
+- **Acceptance report complete:** Jopher's #176 shows all 20 journeys passing (rows 19–20 on production; screenshots checked, emails blacked out). Approved by Ikeee-AI.
+- **Local only (not pushed while Actions is blocked):** `tekatech/s5-ik-ci-minutes` folds the reviewer workflow into the labeler job and ruff into the PR policy job (about −354 billed minutes a month expected; actionlint clean). `tekatech/s5-ik-pilot-monitor` adds `scripts/pilot_monitor.py` and `docs/devops/pilot-plan.md` (568 tests pass; a live sample measured a 43.5 s API cold start).
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| "The job was not started because recent account payments have failed or your spending limit needs to be increased…" on every workflow from 10:34 UTC | October's included Actions usage used up; the account's Actions budget is $0 with "Usage blocked" (no payment failed, $0 billed) | Incident recorded (#178). Waiting for the 1 Nov 00:00 UTC reset — open |
+| `SyntaxError: unterminated f-string literal` in `backend/prompts.py` and `unterminated string literal` in a test, while adding the off-topic rule | A Python heredoc turned `\n` escapes into real newlines | Fixed before committing; 561 tests then passed — fixed |
+| `UnicodeEncodeError: 'charmap' codec can't encode character '≥'` from `pilot_monitor.py summary` | Windows console is cp1252 | ASCII symbols in the report plus `errors="replace"` — fixed |
+| `gh: This API operation needs the "user" scope` reading billing usage | The CLI token can't read billing | Owner sent billing screenshots instead — worked around |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #171's tagline "Every AI answer links to the saved spec it came from" vs the general-knowledge option (no sources) | False once the UI can request general knowledge | Change the wording in the PR that adds the toggle — Mika — open |
+| #174 was approved before its rebase; it still contained #173's commits at first | Approval must be on the final commit | Manuel rebased to `c45c3f4`; Jopher's approval is on it; checks blocked by the incident — open |
+| The plan treats 30 min as the deploy-challenge target; the rehearsal took 122.6 min | Gate item only partly met | Reviewer and merger watch live on Demo Day — Mika, Jopher, Ikeee-AI — open |
+
+**Decisions**
+- Merge #171 alone first so its deploy wasn't cancelled by later merges, for a clean timing — Ikeee-AI.
+- Wait for the free reset rather than set an Actions budget — no urgent change, no cost — Ikeee-AI.
+- Pilot monitoring runs on the laptop, not in Actions — Ikeee-AI.
+
+**Blockers / risks**
+- CI blocked until 1 Nov 08:00 Manila; #174, #176, #177, #178 waiting — Ikeee-AI — 1 Nov.
+- November minutes: with the same traffic, the limit could return late in the month; the CI-minutes branch reduces it — Ikeee-AI — before the pilot.
+
+**Plan alignment**
+- S4-IK: release, recovery rehearsals, history scan, metrics, manifest **Done** (merged and deployed); live deploy challenge **rehearsed, target missed**.
+- S5-IK: pilot plan and monitor **ready locally**, not yet reviewed.
+
+**Next** — After the reset: re-run #174/#178 checks, gate and merge #177, #176, #174, #178, verify production, then push the two local branches as PRs — Ikeee-AI — Sun 1 Nov.
