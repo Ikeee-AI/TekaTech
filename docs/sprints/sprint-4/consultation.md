@@ -35,7 +35,7 @@ Board: https://github.com/users/Ikeee-AI/projects/1 — Sprint 4 issues and PRs 
 | Task | Owner | Delivered (merged and deployed) | Status | Remaining |
 | --- | --- | --- | --- | --- |
 | S4-AD | Adrian | Labelled s4 scoring profile and a 20-case rerun on current main, write-up updated (#166); first scored run recorded (#112) | **Partial** | Targets missed (supported claims 11/13, valid references 41/45, abstention 0/7, override 1/2). Demo cases and speaker notes for the AI deep dive not found in the repo. 0 reviews this sprint |
-| S4-MI | Mika | Delete-spec UI (#143), UTC release dates (#141), slow-answer wording (#149), "no supporting source" label (#150), equal compare columns (#163), Add Specs hint (#165) | **Partial** | UI/accessibility audit report and final deck not in the repo; visible-change rehearsal not done (#169) |
+| S4-MI | Mika | Delete-spec UI (#143), UTC release dates (#141), slow-answer wording (#149), "no supporting source" label (#150), equal compare columns (#163), Add Specs hint (#165) | **Partial** | UI/accessibility audit report not in the repo; final deck in progress (PowerPoint → Canva, link to follow, Mika on 31 Oct); visible-change rehearsal not done (#169) |
 | S4-MA | Manuel | Scoped retrieval ranking (#129), dev failure drill + rerun (#151), authorization matrix test + comparison cost (#157), API reference (#159), architecture notes (#161), malformed-request demo (#162), latency check + performance budget (#164) | **Done** | Review #167; confirm #118 can close |
 | S4-JO | Jopher | Delete-spec route (#127), failure-drill browser checks in CI (#128), correction re-index (#142), compare image fallback (#121), quick-start + fresh checkout (#155), acceptance report (#158), demo script (#160) | **Done**, 2 acceptance rows pending | Rows 19–20 on production; review Mika's challenge PR |
 | S4-IK | Ikeee-AI | Release `v1.0.0`; 15 merges on release day; full-history Gitleaks clean; rollback + restore rehearsals; Sprint 4 final metrics; submission manifest; board updated; support PRs (#130–#139, #145, #147); production drill (#152, #153) | **Partial** | #167 and #170 need review; live deploy challenge; Sprint 4 retro (#168) |
@@ -86,6 +86,6 @@ Standups: **missing** — no Sprint 4 standup thread was opened.
 
 - [ ] Retro comments on #168 from Adrian, Mika, Manuel and Jopher (Ikeee-AI posted 31 Oct); Sprint 3 retro comments from Adrian and Manuel (#116).
 - [ ] Manuel's review of #167; Jopher's review of #170.
-- [ ] Mika: final deck link and a time for the deploy challenge rehearsal (#169).
+- [ ] Mika: Canva view-only link for the final deck, and a time for the deploy challenge rehearsal (#169).
 - [ ] Jopher: acceptance rows 19–20 on production (#169).
 - [ ] Adrian: AI deep-dive demo cases and speaker notes (S4-AD deliverable), or a status comment.
