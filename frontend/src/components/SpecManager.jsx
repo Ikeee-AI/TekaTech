@@ -99,7 +99,7 @@ function AddSpecForm({ gadgetId, onSaved, onCancel }) {
           setServerError(null)
         }}
         error={errors['raw-text']}
-        hint={`Separate distinct facts with blank lines — each becomes its own searchable chunk. ${rawText.length.toLocaleString()} / ${MAX_SPEC_CHARS.toLocaleString()} characters.`}
+        hint={`Separate facts with blank lines; short blocks are grouped together into one searchable snippet. ${rawText.length.toLocaleString()} / ${MAX_SPEC_CHARS.toLocaleString()} characters.`}
         placeholder={'Display: 6.2-inch AMOLED, 120Hz\n\nBattery: 4000mAh, 25W fast charging'}
       />
       <TextField
