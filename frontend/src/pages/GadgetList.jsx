@@ -364,7 +364,7 @@ export default function GadgetList() {
                     {gadgets.length} device{gadgets.length === 1 ? '' : 's'}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-slate-600">Every AI answer links to the saved spec it came from.</p>
+                <p className="mt-1 text-sm text-slate-600">AI answers link to the saved specs they use. Optional general-knowledge answers are labelled.</p>
               </div>
               <div className="flex items-center gap-1.5">
                 <label htmlFor="sort-select" className="text-slate-600 font-mono text-xs">

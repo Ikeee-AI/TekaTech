@@ -23,6 +23,9 @@ export default function AIAnswerPanel({ question, onClose }) {
   const {
     plainLanguage,
     togglePlainLanguage,
+    allowGeneralKnowledge,
+    setAllowGeneralKnowledge,
+    requestOptions,
     loading,
     setLoading,
     error,
@@ -52,7 +55,7 @@ export default function AIAnswerPanel({ question, onClose }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.askQuestion({ question: q, plain_language: plainLanguage })
+      const data = await api.askQuestion({ question: q, ...requestOptions })
       if (requestId !== latestRequest.current) return
       // A reply without answer text or a valid source list is a failure, never an answer.
       setResult(validateAnswerResponse(data))
@@ -90,8 +93,17 @@ export default function AIAnswerPanel({ question, onClose }) {
           <p className="flex items-start gap-1.5 mt-1.5 text-xs text-slate-600">
             <Info size={14} aria-hidden="true" className="shrink-0 mt-px text-slate-500" />
             <span>
-              Answers use only the specs saved in TekaTech, with numbered sources. If something isn&apos;t in the specs,
-              TekaTech says so instead of guessing.
+              {allowGeneralKnowledge ? (
+                <>
+                  Answers use the specs saved in TekaTech, with numbered sources. General knowledge is on: if no saved
+                  spec matches, the answer comes from general knowledge and is labelled unverified.
+                </>
+              ) : (
+                <>
+                  Answers use only the specs saved in TekaTech, with numbered sources. If something isn&apos;t in the
+                  specs, TekaTech says so instead of guessing.
+                </>
+              )}
             </span>
           </p>
         </div>
@@ -116,6 +128,8 @@ export default function AIAnswerPanel({ question, onClose }) {
         handleCiteClick={handleCiteClick}
         plainLanguage={plainLanguage}
         togglePlainLanguage={togglePlainLanguage}
+        allowGeneralKnowledge={allowGeneralKnowledge}
+        setAllowGeneralKnowledge={setAllowGeneralKnowledge}
         handleCopy={handleCopy}
         copied={copied}
         followUps={followUps}

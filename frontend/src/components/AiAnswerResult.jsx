@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChevronDown, ChevronUp, ExternalLink, RefreshCw, Copy, Check, CheckCircle2, FileText, LogIn, Zap } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, ExternalLink, RefreshCw, Copy, Check, CheckCircle2, FileText, LogIn, Zap } from 'lucide-react'
 import AnswerText from './AnswerText'
 import FollowUpQuestions from './FollowUpQuestions'
 import { useAuth } from '../hooks/useAuth'
 import Alert from './ui/Alert'
 import Button from './ui/Button'
-import { citedSourceCount, describeAiFailure, hasNoSupportingSource, isMissingEvidence, removedCitationCount } from '../utils/aiAnswerState'
+import {
+  citedSourceCount,
+  describeAiFailure,
+  hasNoSupportingSource,
+  isGeneralKnowledge,
+  isMissingEvidence,
+  removedCitationCount,
+} from '../utils/aiAnswerState'
 
 /** "Source: example.com" for a spec sheet link, or plain "Source" if the URL is odd. */
 function sourceLabel(url) {
@@ -61,6 +68,58 @@ function NoSupportingSourceNotice({ removed }) {
       <p>Nothing in this answer is backed by a saved spec, so treat it as unverified.</p>
       {removed > 0 && <p className="mt-1.5">References to sources that weren&apos;t provided were removed.</p>}
     </Alert>
+  )
+}
+
+/** Marks an opt-in general-knowledge answer (#172). Text plus icon, never colour alone;
+ * amber-900 on amber-50 is about 8.8:1, the icon (amber-700) about 4.9:1. */
+function GeneralKnowledgeLabel() {
+  return (
+    <p className="flex items-start gap-1.5 text-sm font-semibold text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2">
+      <AlertTriangle size={16} aria-hidden="true" className="shrink-0 mt-0.5 text-amber-700" />
+      <span className="min-w-0">General knowledge: not from saved specs, unverified</span>
+    </p>
+  )
+}
+
+const optionLabelClass =
+  'flex items-center gap-2 min-h-9 text-sm font-medium text-slate-700 cursor-pointer select-none rounded focus-within:ring-2 focus-within:ring-sage-400 px-1 -mx-1'
+const optionInputClass = 'w-4 h-4 rounded border-slate-300 accent-sage-700 focus:outline-none'
+
+/** The answer options shown next to each other wherever a question can be (re)asked:
+ * Plain-Language Answer and the opt-in Allow General Knowledge (#172). Both are real,
+ * labelled checkboxes; a change applies to the next question or Regenerate. */
+export function AnswerOptions({ plainLanguage, togglePlainLanguage, allowGeneralKnowledge, setAllowGeneralKnowledge }) {
+  const hintId = useId()
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 min-w-0">
+      <label className={optionLabelClass}>
+        <input
+          type="checkbox"
+          checked={plainLanguage}
+          onChange={(e) => togglePlainLanguage(e.target.checked)}
+          className={optionInputClass}
+        />
+        Plain-Language Answer
+      </label>
+      {setAllowGeneralKnowledge && (
+        <>
+          <label className={optionLabelClass}>
+            <input
+              type="checkbox"
+              checked={allowGeneralKnowledge}
+              onChange={(e) => setAllowGeneralKnowledge(e.target.checked)}
+              aria-describedby={hintId}
+              className={optionInputClass}
+            />
+            Allow General Knowledge
+          </label>
+          <p id={hintId} className="basis-full text-xs text-slate-600">
+            If no saved spec matches, answer from general knowledge, labelled as unverified.
+          </p>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -156,6 +215,8 @@ export default function AiAnswerResult({
   handleCiteClick,
   plainLanguage,
   togglePlainLanguage,
+  allowGeneralKnowledge = false,
+  setAllowGeneralKnowledge,
   handleCopy,
   copied,
   skeletonLines = 3,
@@ -164,9 +225,11 @@ export default function AiAnswerResult({
   specTargets,
 }) {
   const missingEvidence = result ? isMissingEvidence(result) : false
+  // A general-knowledge answer has no sources by design: amber label, no badge, no sources.
+  const generalKnowledge = result ? isGeneralKnowledge(result) : false
   // Only cited sources count as grounding: with none cited there is no green check, and the
   // "no supporting source cited" notice says so instead (#124).
-  const citedCount = result && !missingEvidence ? citedSourceCount(result) : 0
+  const citedCount = result && !missingEvidence && !generalKnowledge ? citedSourceCount(result) : 0
   return (
     <div aria-live="polite" aria-busy={loading || undefined}>
       {loading && <LoadingNotice skeletonLines={skeletonLines} />}
@@ -179,6 +242,7 @@ export default function AiAnswerResult({
             <NoEvidenceNotice specTargets={specTargets} />
           ) : (
             <>
+              {generalKnowledge && <GeneralKnowledgeLabel />}
               <div className="flex flex-wrap items-center gap-2">
                 {citedCount > 0 && (
                   <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
@@ -200,7 +264,7 @@ export default function AiAnswerResult({
             </>
           )}
 
-          {result.sources.length > 0 && (
+          {!generalKnowledge && result.sources.length > 0 && (
             <div>
               <button
                 onClick={() => setSourcesOpen((s) => !s)}
@@ -266,15 +330,12 @@ export default function AiAnswerResult({
           <FollowUpQuestions questions={followUps} onSelect={onFollowUp} disabled={loading} />
 
           <div className="flex items-center justify-between flex-wrap gap-3 pt-3 border-t border-slate-200">
-            <label className="flex items-center gap-2 min-h-9 text-sm font-medium text-slate-700 cursor-pointer select-none rounded focus-within:ring-2 focus-within:ring-sage-400 px-1 -mx-1">
-              <input
-                type="checkbox"
-                checked={plainLanguage}
-                onChange={(e) => togglePlainLanguage(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 accent-sage-700 focus:outline-none"
-              />
-              Plain-Language Answer
-            </label>
+            <AnswerOptions
+              plainLanguage={plainLanguage}
+              togglePlainLanguage={togglePlainLanguage}
+              allowGeneralKnowledge={allowGeneralKnowledge}
+              setAllowGeneralKnowledge={setAllowGeneralKnowledge}
+            />
             <div className="flex gap-2">
               {!missingEvidence && (
                 <Button variant="secondary" size="sm" icon={copied ? Check : Copy} onClick={handleCopy}>
