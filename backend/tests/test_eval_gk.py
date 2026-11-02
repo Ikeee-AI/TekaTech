@@ -204,3 +204,62 @@ def test_off_topic_decline_that_still_answers_fails():
     case = result(gk_with(**{"GK-06": answer}), "GK-06")
     assert not case["checks"]["off_topic_declined"]
     assert any("still answers" in p for p in case["problems"])
+
+
+# --- answer_basis and the backend's own strings (S4-AD takeover, Ikeee-AI) -----------------
+# POST /query labels every reply with answer_basis. A GK case scored on a grounded reply (the
+# database had specs for the gadget) or on the canned no-match reply is not a GK result.
+
+def test_recorded_basis_other_than_general_knowledge_fails_the_case():
+    report = runner.evaluate_gk(GK_CASES, GK_REFERENCE, basis={"GK-01": "specs", "GK-03": "none"})
+    for case_id, basis in (("GK-01", "specs"), ("GK-03", "none")):
+        case = result(report, case_id)
+        assert not case["passed"] and not case["checks"]["basis_general_knowledge"]
+        assert any(f"answer_basis is '{basis}'" in p for p in case["problems"])
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": 0, "total": 2, "rate": 0.0}
+    assert not report["targets_met"]
+
+
+def test_recorded_general_knowledge_basis_passes_and_is_counted():
+    basis = {case["id"]: "general_knowledge" for case in GK_CASES["cases"]}
+    report = runner.evaluate_gk(GK_CASES, GK_REFERENCE, basis=basis)
+    assert report["targets_met"], report["failures"]
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": 6, "total": 6, "rate": 1.0}
+
+
+def test_basis_not_recorded_is_not_checked_and_has_no_target():
+    report = gk_with()
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": 0, "total": 0, "rate": None}
+    assert "basis_general_knowledge" not in report["targets"]
+    report.update(provider="reference", model="none", prompt_version="gk-v1", origin="reference")
+    md = runner.markdown_gk_report(report)
+    assert "| Reply answer_basis is general_knowledge (when recorded) | n/a | 0 / 0 | n/a |" in md
+
+
+def test_missing_answer_with_a_recorded_basis_counts_against_it():
+    answers = {k: v for k, v in GK_REFERENCE.items() if k != "GK-02"}
+    report = runner.evaluate_gk(GK_CASES, answers, basis={"GK-02": "general_knowledge"})
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": 0, "total": 1, "rate": 0.0}
+
+
+def test_cli_reads_answer_basis_from_the_answers_file(tmp_path):
+    answers = tmp_path / "answers.json"
+    answers.write_text(json.dumps({"answers": GK_REFERENCE, "answer_basis": {"GK-05": "specs"}}),
+                       encoding="utf-8")
+    out = tmp_path / "gk.json"
+    proc = run_cli("--mode", "gk", "--answers", str(answers), "--report", str(out))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "answer_basis is 'specs'" in proc.stdout
+    assert json.loads(out.read_text(encoding="utf-8"))["metrics"]["basis_general_knowledge"]["total"] == 1
+    answers.write_text(json.dumps({"answers": GK_REFERENCE, "answer_basis": ["specs"]}), encoding="utf-8")
+    assert run_cli("--mode", "gk", "--answers", str(answers)).returncode == 2
+
+
+def test_the_backend_label_and_off_topic_reply_satisfy_the_scorer():
+    # The scorer and gk-v1 must agree on the exact strings the prompt asks for; if either
+    # constant in backend/prompts.py changes, this fails instead of every real answer failing.
+    from prompts import GK_DISCLAIMER, GK_OFF_TOPIC
+    assert GK_DISCLAIMER == LABEL
+    case = result(gk_with(**{"GK-06": f"{GK_DISCLAIMER} {GK_OFF_TOPIC}"}), "GK-06")
+    assert case["passed"], case["problems"]
+    assert case["checks"]["off_topic_declined"] and case["checks"]["labelled"]

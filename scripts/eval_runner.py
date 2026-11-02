@@ -286,7 +286,13 @@ GK_HEDGE = re.compile(
 # Markup AnswerText.jsx does not render: headings, tables, numbered lists.
 GK_BAD_MARKUP = re.compile(r"^\s*(#|\||\d+[.)]\s)", re.MULTILINE)
 GK_TARGETS = {"cases_passed": 1.0, "no_citations": 1.0, "labelled": 1.0,
-              "unknown_refusal": 1.0, "no_verified_claims": 1.0, "off_topic_declined": 1.0}
+              "unknown_refusal": 1.0, "no_verified_claims": 1.0, "off_topic_declined": 1.0,
+              "basis_general_knowledge": 1.0}
+# POST /query labels every reply with answer_basis ("specs", "general_knowledge" or "none").
+# A GK case only scores the general-knowledge path when the reply says it took that path: a
+# grounded answer (retrieval found specs) or the canned no-match reply is not a GK answer, even
+# if its text happens to pass. Optional in the answers file; when it is recorded, it is checked.
+GK_BASIS = "general_knowledge"
 
 
 def gk_case_type(case):
@@ -297,10 +303,12 @@ def gk_case_type(case):
     return kind
 
 
-def score_gk_case(case, answer, removed=0):
+def score_gk_case(case, answer, removed=0, basis=None):
     """Score one general-knowledge answer. `removed` is how many citation markers the backend
     stripped (POST /query "invalid_citations_removed"); in this mode every marker is a
-    failure, so a stripped one fails the case instead of hiding behind the cleaned text."""
+    failure, so a stripped one fails the case instead of hiding behind the cleaned text.
+    `basis` is the reply's answer_basis when the answers file records it (None: not recorded,
+    not checked); anything but "general_knowledge" fails the case."""
     text = answer.replace("**", "")
     lines = [line for line in text.splitlines() if line.strip()]
     sentences = [s for s in SENTENCE.split(text) if s.strip()]
@@ -313,6 +321,10 @@ def score_gk_case(case, answer, removed=0):
                                       for s in sentences),
     }
     problems = []
+    if basis is not None:
+        checks["basis_general_knowledge"] = basis == GK_BASIS
+        if basis != GK_BASIS:
+            problems.append(f"answer_basis is {basis!r}, not {GK_BASIS!r} (not a general-knowledge answer)")
     if markers:
         problems.append(f"citation marker(s) {markers}")
     if removed:
@@ -356,10 +368,12 @@ def score_gk_case(case, answer, removed=0):
             "problems": problems, "checks": checks, "removed_citations": int(removed)}
 
 
-def evaluate_gk(cases, answers, removed=None):
+def evaluate_gk(cases, answers, removed=None, basis=None):
     """Score general-knowledge answers against gk_cases.json. Metrics are passed/total, with
-    the denominator alongside each rate."""
+    the denominator alongside each rate. `basis` maps case ids to the reply's answer_basis;
+    a case without one is not checked for it (and is not counted in that metric)."""
     removed = removed or {}
+    basis = basis or {}
     results = []
     for case in cases["cases"]:
         answer = answers.get(case["id"])
@@ -371,11 +385,13 @@ def evaluate_gk(cases, answers, removed=None):
                 checks["off_topic_declined"] = False
             if "expected_facts" in case:
                 checks["known_facts"] = False
+            if case["id"] in basis:
+                checks["basis_general_knowledge"] = False
             results.append({"id": case["id"], "type": gk_case_type(case), "passed": False,
                             "problems": ["no answer"], "checks": checks,
                             "removed_citations": int(removed.get(case["id"], 0))})
         else:
-            results.append(score_gk_case(case, answer, removed.get(case["id"], 0)))
+            results.append(score_gk_case(case, answer, removed.get(case["id"], 0), basis.get(case["id"])))
 
     def metric(rows):
         rows = list(rows)
@@ -384,7 +400,7 @@ def evaluate_gk(cases, answers, removed=None):
 
     metrics = {"cases_passed": metric(r["passed"] for r in results)}
     for key in ("no_citations", "labelled", "unknown_refusal", "no_verified_claims", "off_topic_declined",
-                "known_facts"):
+                "known_facts", "basis_general_knowledge"):
         metrics[key] = metric(r["checks"][key] for r in results if key in r["checks"])
     by_type = {}
     for kind in GK_CASE_TYPES:
@@ -422,7 +438,8 @@ def markdown_gk_report(report):
             ("Unknown product refused", "unknown_refusal"),
             ("Off-topic request declined", "off_topic_declined"),
             ("No 'verified' or TekaTech-data claims", "no_verified_claims"),
-            ("Expected facts present (traced to sources.json)", "known_facts")]
+            ("Expected facts present (traced to sources.json)", "known_facts"),
+            ("Reply answer_basis is general_knowledge (when recorded)", "basis_general_knowledge")]
     for label, key in rows:
         row, target = m[key], report["targets"].get(key)
         lines.append(f"| {label} | {'n/a' if row['rate'] is None else row['rate']} | "
@@ -439,11 +456,14 @@ def markdown_gk_report(report):
 
 def run_gk(args, answers_file):
     removed = answers_file.get("invalid_citations_removed", {})
+    basis = answers_file.get("answer_basis", {})
     try:
         if not isinstance(removed, dict):
             raise ValueError('"invalid_citations_removed" must map case ids to counts')
+        if not isinstance(basis, dict):
+            raise ValueError('"answer_basis" must map case ids to each reply\'s answer_basis')
         report = evaluate_gk(json.loads(args.cases.read_text(encoding="utf-8")),
-                             answers_file["answers"], removed)
+                             answers_file["answers"], removed, basis)
     except ValueError as exc:
         print(f"Invalid input: {exc}", file=sys.stderr)
         sys.exit(2)
@@ -460,7 +480,8 @@ def run_gk(args, answers_file):
     m = report["metrics"]
     print(" | ".join(f"{key}: {m[key]['passed']} of {m[key]['total']}"
                      for key in ("cases_passed", "no_citations", "labelled", "unknown_refusal",
-                                 "no_verified_claims", "off_topic_declined", "known_facts")))
+                                 "no_verified_claims", "off_topic_declined", "known_facts",
+                                 "basis_general_knowledge")))
     print("Targets met" if report["targets_met"] else "Targets NOT met")
     if args.report:
         args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")
