@@ -4,7 +4,7 @@
 
 Format: 15 minutes, all five members.
 
-**Sprint 4 gate (`docs/sprints-2-to-5.md`): mostly met; two conditions open.**
+**Sprint 4 gate (`docs/sprints-2-to-5.md`): mostly met; two conditions partial.**
 
 | Gate condition | Evidence | Status |
 | --- | --- | --- |
@@ -14,7 +14,7 @@ Format: 15 minutes, all five members.
 | Tested rollback | `rollback.yml` on production: back 1 min 35 s, forward 1 min 45 s; database restore to a disposable copy 14.0 s (#167) | ✅ |
 | Measured pipeline improvements | PR checks median 37 s → 27 s (#107, after-measurement in #154); Vitest and Playwright jobs added (#137, #128) | ✅ |
 | Complete submission evidence | 18 of 21 manifest items ready; open: Sprint 4 standups/retro (12), final slide deck (14) (#167, #169) | ⚠️ Partial |
-| Successful live deploy rehearsal | Not yet run; timer ready (#170); needs Mika's visible change and Jopher's review (#169) | ❌ |
+| Successful live deploy rehearsal | Rehearsed 31 Oct with #171 ([evidence](../../evidence/deploy-challenge-rehearsal-2026-10-31.md)): reached production and passed smoke, but took 122.6 min against a 30 min target. The pipeline took 3.9 min; the rest was waiting for review and merge | ⚠️ Rehearsed, target missed |
 
 ## 1. Live demo — 4 min (lead: Jopher)
 
@@ -63,7 +63,7 @@ Standups: **missing** — no Sprint 4 standup thread was opened.
 
 | Risk | Mitigation | Owner | Date |
 | --- | --- | --- | --- |
-| Live deploy challenge never rehearsed before Demo Day | Run it with the timer (#170): Mika's change, Jopher's review, Ikeee-AI narrates; target under 30 min | Mika, Jopher, Ikeee-AI | Before Demo Day |
+| Live deploy challenge took 122.6 min in rehearsal (target 30) because review and merge waited | On Demo Day, reviewer and merger watch live, the change and wording are agreed beforehand, and the timer runs with `--start`; aim for under 10 min | Mika, Jopher, Ikeee-AI | Demo Day |
 | AI quality targets still missed | Sprint 5 regression cases from pilot failures; tune the prompt only where evidence justifies it | Adrian, Manuel | 7 Nov |
 | Free Render API cold start (about a minute) during demos and the pilot | Warm 2 min before; record cold/warm timings in the pilot report | Ikeee-AI | 4–6 Nov |
 | No enforced branch protection or staging | Manual gate + CI main guard; staging carried to Sprint 5 (#34); both disclosed | Ikeee-AI | Disclosed |
@@ -86,6 +86,6 @@ Standups: **missing** — no Sprint 4 standup thread was opened.
 
 - [ ] Retro comments on #168 from Adrian, Mika, Manuel and Jopher (Ikeee-AI posted 31 Oct); Sprint 3 retro comments from Adrian and Manuel (#116).
 - [ ] Manuel's review of #167; Jopher's review of #170.
-- [ ] Mika: Canva view-only link for the final deck, and a time for the deploy challenge rehearsal (#169).
+- [ ] Mika: Canva view-only link for the final deck (#169).
 - [ ] Jopher: acceptance rows 19–20 on production (#169).
 - [ ] Adrian: AI deep-dive demo cases and speaker notes (S4-AD deliverable), or a status comment.

@@ -52,3 +52,12 @@ def test_missing_required_check_or_failed_deploy_is_not_reached():
     assert stage(result, "checks_green")["at"] is None
     assert stage(result, "deployed")["at"] is None
     assert not result["within_target"]
+
+
+def test_start_without_time_zone_is_rejected_before_any_github_call():
+    import subprocess
+    import sys
+    script = Path(__file__).resolve().parents[2] / "scripts/deploy_challenge_timer.py"
+    run = subprocess.run([sys.executable, str(script), "--pr", "1", "--start", "2026-11-02T19:30"],
+                         capture_output=True, text=True)
+    assert run.returncode == 2 and "time zone" in run.stderr

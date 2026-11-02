@@ -17,6 +17,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import time
 
 REQUIRED_CHECKS = ("Backend tests", "Frontend lint and build", "Database migrations")
@@ -114,6 +115,8 @@ def main():
     parser.add_argument("--smoke", action="store_true", help="run deployed_smoke.py on the merge commit after deploy")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
+    if args.start and parse_time(args.start).tzinfo is None:
+        parser.error("--start needs a time zone, e.g. 2026-11-02T19:30:00+08:00 (Manila) or ...T11:30:00Z")
 
     deadline = time.monotonic() + 45 * 60
     while True:
@@ -127,14 +130,20 @@ def main():
 
     smoke_at = None
     if args.smoke and deploy_job and deploy_job.get("conclusion") == "success":
-        smoke = subprocess.run([sys.executable, str(ROOT / "scripts/deployed_smoke.py"),
-                                "--api-url", "https://tekatech-api.onrender.com",
-                                "--frontend-url", "https://tekatech-web.onrender.com",
-                                "--commit", pr["merge_commit_sha"], "--attempts", "18", "--delay", "10"],
-                               capture_output=True, text=True, encoding="utf-8")
-        if smoke.returncode == 0:
-            smoke_at = json.loads(smoke.stdout)["checked_at"].split(".")[0] + "Z"
-        else:
+        # Read the result from --report, not stdout: deployed_smoke.py prints a line per failed
+        # attempt before its JSON, so stdout is not pure JSON after a retry (#170 review).
+        with tempfile.TemporaryDirectory() as tmp:
+            smoke_report = Path(tmp) / "smoke.json"
+            smoke = subprocess.run([sys.executable, str(ROOT / "scripts/deployed_smoke.py"),
+                                    "--api-url", "https://tekatech-api.onrender.com",
+                                    "--frontend-url", "https://tekatech-web.onrender.com",
+                                    "--commit", pr["merge_commit_sha"], "--attempts", "18", "--delay", "10",
+                                    "--report", str(smoke_report)],
+                                   capture_output=True, text=True, encoding="utf-8")
+            if smoke.returncode == 0 and smoke_report.exists():
+                checked_at = json.loads(smoke_report.read_text(encoding="utf-8"))["checked_at"]
+                smoke_at = checked_at.split(".")[0].removesuffix("+00:00") + "Z"
+        if smoke_at is None:
             print("deployed smoke FAILED:\n" + smoke.stdout[-800:], file=sys.stderr)
 
     result = stages(args.start, pr, commits, check_runs, reviews, deploy_job, smoke_at)
