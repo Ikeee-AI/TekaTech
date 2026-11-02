@@ -1,8 +1,10 @@
-# AI feature write-up (S3-AD draft)
+# AI feature write-up (S3-AD draft, S4-AD release sections)
 
-Draft for Sprint 3, issue #54. It describes how TekaTech's AI answers are grounded and how they are evaluated. **No real model has been scored yet**, so this document makes no claim about answer quality; the results section is marked Blocked until a real run exists.
+Draft for Sprint 3, issue #54. It describes how TekaTech's AI answers are grounded and how they are evaluated. **No real model has been scored yet**, so this document makes no claim about answer quality; the results section is marked Blocked until a real run exists. (Out of date since 25 Oct: real runs are now recorded in "What has been measured so far" and the release report below.)
 
 Written against the evaluation changes in #74 (case format), #81 (20-case set) and #80 (runner and reports). Sections that describe them are accurate once those PRs are merged.
+
+**Release sections (S4-AD).** Taken over by Ikeee-AI (AI-assisted) from S4-AD after the 31 Oct deadline; Adrian's delivered parts (#166, #112, #89, #90, #105) remain credited to him. The takeover added, on 2 Nov 2026: [Release AI-quality report (v1.0.0)](#release-ai-quality-report-v100), [Known AI limitations (release v1.0.0)](#known-ai-limitations-release-v100), the demo cases in [`docs/demo/ai-demo-cases.md`](demo/ai-demo-cases.md), the speaker notes in [`docs/demo/ai-deep-dive-speaker-notes.md`](demo/ai-deep-dive-speaker-notes.md), corrections to the general-knowledge section and an `answer_basis` check in the GK scorer. No new model answers were collected for them; they reuse the 31 Oct numbers from #166.
 
 ## What the feature does
 
@@ -66,21 +68,70 @@ Two kinds of answers have been scored, and they must not be confused. The **hand
 
 ## Optional general-knowledge mode (#172)
 
-An instructor-approved scope change (`docs/scope-changes.md`, PR #167) adds an **optional** answer for questions TekaTech has no saved spec for. It is **off by default**, and a grounded answer is never replaced by it: it runs only when retrieval returns no spec chunks **and** the request sets `allow_general_knowledge: true`. The response says `answer_basis: "general_knowledge"`, has no sources and no `[n]` citations (the backend strips and counts any that appear), and the UI labels it "General knowledge: not from saved specs, unverified".
+An instructor-approved scope change (`docs/scope-changes.md`, PR #167) adds an **optional** answer for questions TekaTech has no saved spec for. It is **off by default**, and a grounded answer is never replaced by it: it runs only when retrieval returns no spec chunks **and** the request sets `allow_general_knowledge: true`. The response says `answer_basis: "general_knowledge"`, has no sources and no `[n]` citations (the backend strips and counts any that appear). The backend part is merged (#174); **the UI is not built yet** (Mika's area): no page sends `allow_general_knowledge`, so on v1.0.0 and current `main` users only get grounded answers.
 
 The prompt is separate and separately versioned: `build_general_knowledge_prompt()` in `backend/prompts.py`, `GK_PROMPT_VERSION = "gk-v1"`. Ikeee-AI drafted it, taking over this part of the AI-Developer area for #172. It opens every answer with "General knowledge, not from TekaTech's saved specs.", forbids citation markers of any style, hedges numbers and names variants, says it doesn't know a product it doesn't recognise rather than inventing specs, keeps the `AnswerText.jsx` markup limits (`**bold**`, `- ` bullets), excludes URLs, prices and purchase advice presented as fact, and treats the user message as untrusted data. The grounded prompt `v1` is unchanged (a test pins its hash).
 
-It is evaluated separately (`scripts/eval_runner.py --mode gk`, 5 cases in `prompts/eval/gk_cases.json`), so it never changes a grounded score. The checks are the label, no citation markers, no "verified" claims, no URLs or prices, hedged numbers, renderable markup and refusal of a made-up product. Only hand-written reference answers have been scored (5 / 5 pass, which validates the scorer, not a model). **No real GK answers have been scored yet.**
+It is evaluated separately (`scripts/eval_runner.py --mode gk`, 6 cases in `prompts/eval/gk_cases.json`, `gk-cases-v2`: known product, comparison, made-up product, citation bait, plain language and an off-topic request), so it never changes a grounded score. The checks are the label, no citation markers, no "verified" claims, no URLs or prices, hedged numbers, renderable markup, refusal of a made-up product and the fixed off-topic decline (`prompts.GK_OFF_TOPIC`). Only hand-written reference answers have been scored (6 / 6 pass, which validates the scorer, not a model). **No real GK answers have been scored yet.**
 
-## Limitations
+The S4-AD takeover (2 Nov) checked how this is wired and closed two gaps, offline only:
+
+- **`answer_basis` was not checked.** A GK case answered from saved specs (the database had that gadget) or by the canned no-match reply was scored on its text alone. The answers file may now carry `answer_basis` per case, as `/query` returns it; when it does, anything but `general_knowledge` fails the case and the report shows the metric with its denominator. When it is absent the check is skipped, not passed, so earlier reports are unchanged.
+- **Nothing tied the scorer to the real reply.** `backend/tests/test_eval_gk_query.py` sends all 6 GK cases through `POST /query` with OpenAI and Supabase mocked (the mock returns the reference answers), scores the real reply shape, and checks that a citation the backend strips still fails the case and that grounded replies are not credited as GK. `test_eval_gk.py` also pins that the backend's `GK_DISCLAIMER` and `GK_OFF_TOPIC` strings pass the scorer.
+
+Still open, as a contract for Manuel (`scripts/eval_adapter.py` is his): a `--mode gk` that uses `gk_cases.json`, sends `allow_general_knowledge: true` and each case's `plain_language`, records `answer_basis` and `invalid_citations_removed` per case and skips citation rewriting (GK replies have no sources). Until then a real GK run has to be collected by hand. GK cases about the iPhone 15 or Galaxy S24 must run against a database **without** those gadgets' specs, or `/query` answers them grounded; the `answer_basis` check now reports that instead of hiding it.
+
+## Release AI-quality report (v1.0.0)
+
+Taken over by Ikeee-AI (AI-assisted) from S4-AD after the 31 Oct deadline; Adrian's delivered parts (#166, #112, #89, #90, #105) remain credited to him. This section reuses Adrian's 31 Oct run from #166; no answers were collected again for it.
+
+**What was scored.** Release [`v1.0.0`](https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.0.0) is `5aa4635`. The 31 Oct run was made on `main` at `f1e6151`; `git diff f1e6151 5aa4635 -- backend/prompts.py backend/routers/query.py backend/citations.py` is empty, so the scored answer path is the released one. Provider OpenAI, `gpt-5-mini` through `POST /query`, prompt `v1`, cases `s3-ad-cases-v2` (20), sources `s2-ad-sources-v2`, TekaTech-dev database, unscoped questions, original `--rules s3` scorer. Evidence: [`eval-s4-2026-10-31.md`](evidence/eval-s4-2026-10-31.md), with the exact answers and the runner report alongside it.
+
+| Sprint 3 target | v1.0.0 result | Met |
+| --- | --- | --- |
+| Supported factual claims at least 90% | **11 / 13** (84.6%) | **No** |
+| Valid citation references 100% | **41 / 45** (91.1%) | **No** |
+| Every abstention case (missing, variant, override) correct | **0 / 7** as scored | **No** |
+| Override resistance 100% | **1 / 2** | **No** |
+| Cases passed (no target; context) | 11 / 20 (factual 8/8, comparison 2/4, missing 0/4, variant 0/2, override 1/2) | n/a |
+
+**The S4-AD acceptance "Sprint 3 thresholds still pass" is not met.** The separately labelled `s4` rescoring (#66) of the same answers gives abstention 5 / 7 and override 2 / 2; its rules were written after seeing the results, so it is reported as a rescoring, never as the result.
+
+**Citation accuracy review.** All 4 invalid references are `[0]`: a real retrieved chunk that is not in the evaluation pack (one stray QA row on a dev-database gadget named "Test Test"), cited by TC-10, TC-15 (twice) and TC-18. The backend removed 0 markers in this run, so the model cited no number it was not given. The gadget-scoped run on 28 Oct (the path the gadget and compare pages use, which cannot reach that chunk) scored 61 / 61 valid references. What neither the backend nor these numbers prove: that each valid `[n]` sits on the claim it supports; the evaluator only checks that a supporting snippet is cited.
+
+**Fabrication and critical defects.** No answer in the 31 Oct run asserted an invented fact (Adrian read all 20 in #166; the report has no forbidden-fact failure). No critical fabricated-answer or citation defect was found in the release scenarios in [`docs/demo/ai-demo-cases.md`](demo/ai-demo-cases.md). Open, not critical: TC-07 omits that the iPhone 15 battery capacity is missing from the sources (a real answer gap on both runs), and the stray dev chunk (test data, not product data).
+
+**Prompt version for the release: `v1`**, unchanged since #83 and pinned by a hash in `backend/tests/test_prompts.py`. The scored failures are retrieval, scorer strictness and one answer gap, none of which a prompt v2 is shown to fix, so no v2 was made and the prompt was not tuned to pass a target. The optional `gk-v1` prompt merged after the release (#173, #174), is off by default, has no UI and has **no scored model output**.
+
+**General-knowledge mode.** GK reference answers 6 / 6 (scorer validation only, not model quality). Real GK answers: n/a, not collected (needs the adapter contract above and an approved, capped run).
+
+## Known AI limitations (release v1.0.0)
+
+Taken over by Ikeee-AI (AI-assisted) from S4-AD after the 31 Oct deadline; Adrian's delivered parts (#166, #112, #89, #90, #105) remain credited to him. The first group is how the AI behaves for a user; the second is what the evaluation can and cannot show.
+
+**Behavior**
+
+- **Only what is saved.** Answers come only from spec text stored for a gadget. A gadget with no indexed specs gets "I couldn't find any spec information…", even for well-known facts. The optional general-knowledge answer (#172) is off by default and has no UI yet.
+- **Comparisons can omit the "not stated" note.** TC-07 gives correct values but does not say the iPhone 15 battery capacity is missing from the sources (28 Oct and 31 Oct runs).
+- **Refusals cite what they checked.** Correct refusals often name the snippets they looked at ("They only cover the processor [7]…"); the strict `s3` scorer counts that as a failed abstention.
+- **The catalog ask box is unscoped.** It can retrieve any gadget's chunk, including stray test data in the database (the `[0]` citations on 31 Oct). The gadget and compare pages are scoped to their gadgets.
+- **Wrong-claim citations are not caught.** The backend removes `[n]` outside the snippets sent (`backend/citations.py`) and reports `invalid_citations_removed`; a real snippet number attached to the wrong claim passes through.
+- **User-submitted spec text reaches the prompt.** Any logged-in user can save spec text; the prompt frames snippets as untrusted data, which mitigates but does not prevent stored prompt injection. This is a deliberately accepted risk.
+- **Long answers fail instead of truncating.** Output is capped at 1500 completion tokens with low reasoning effort; an answer that hits the cap is a 503 "couldn't use" message, never shown partially. Provider timeouts, quota errors and empty output are also 503s with plain messages.
+- **Variants.** The prompt keeps variants distinct (Snapdragon S24, iPhone 15 Plus), but only if the saved specs name the variant; a vague spec cannot be made specific.
+
+**Evaluation**
 
 - The pack covers two gadgets (iPhone 15 base model, Galaxy S24 Philippines/Exynos 2400). Results say nothing about other gadgets or categories.
+- Twenty cases give coarse percentages: one failed factual case moves the factual score by about 8 points.
 - There is no true two-source conflict case. Conflicting-source is covered by the two variant cases only. The Samsung page lists 4000mAh (typical) in its spec line and 3880mAh (rated) in a footnote, which could become a real conflict case with one added snippet.
 - Matching is by whole value, not meaning. A fact written a different way (for example "four thousand milliamp-hours") is scored as missing.
-- The `forbidden_facts` check can fail a good answer that repeats the forbidden value while refusing it (for example "not a Snapdragon 8 Gen 3"). Failures are listed for human review rather than trusted blindly.
+- The `forbidden_facts` check can fail a good answer that repeats the forbidden value while refusing it (for example "not a Snapdragon 8 Gen 3"); this happened to TC-20 on 28 Oct. Failures are listed for human review rather than trusted blindly.
 - Abstention is detected from common phrasings; an unusual refusal could be marked as not abstaining.
+- The `s4` rescoring rules were written after seeing results, so they are not an independent measurement.
+- The 31 Oct run was unscoped and ran with a stray chunk in the dev database; a clean rerun (chunk removed, scoped and unscoped) has not been done.
 - The Samsung page now shows more than the 17 October pack records (price, memory, colors, dimensions). The spec's "removed because the page does not state them" note is out of date for RAM and price; the pack itself is unchanged.
-- Twenty cases give coarse percentages: one failed factual case moves the factual score by about 8 points.
+- No general-knowledge model output has been scored; the 6 GK reference answers only validate the scorer.
 
 ## How to run it
 
