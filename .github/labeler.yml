@@ -5,10 +5,13 @@
 area:ai:  # Adrian: prompt assets, grounding rules, evaluation
   - changed-files:
       - any-glob-to-any-file:
-          - backend/prompts/**
-          - backend/evals/**
-          - evals/**
+          - backend/prompts.py
+          - backend/citations.py
           - backend/routers/query.py
+          - prompts/**
+          - scripts/eval_runner.py
+          - docs/ai-feature-writeup.md
+          - docs/demo/ai-*.md
 
 area:backend:  # Manuel: API contracts, auth, schema, providers, retrieval
   - changed-files:
@@ -16,6 +19,11 @@ area:backend:  # Manuel: API contracts, auth, schema, providers, retrieval
           - backend/*.py
           - backend/sql/**
           - backend/routers/query.py
+          - backend/routers/techspecs.py
+          - scripts/eval_adapter.py  # Manuel's runtime adapter for Adrian's evaluator
+          - docs/architecture.md
+          - docs/database.md
+          - docs/demo/malformed-request-demo.md
           - backend/pyproject.toml
           - backend/uv.lock
 
@@ -31,6 +39,8 @@ area:workflows:  # Jopher: feature endpoints, API wiring, forms, state, integrat
           - frontend/src/api/**
           - frontend/src/pages/**
           - frontend/src/hooks/**
+          - docs/demo/user-demo-script.md
+          - docs/evidence/acceptance-*/**
 
 area:frontend:  # Mika: layouts, styling, accessibility, visual components
   - changed-files:
@@ -51,3 +61,6 @@ area:devops:  # Ikeee-AI: CI/CD, hosting, ops scripts and docs
           - scripts/**
           - PIPELINE.md
           - docs/devops/**
+          - docs/sprints/**
+          - docs/deploy-runbook.md
+          - docs/submission-manifest.md
