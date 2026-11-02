@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -24,6 +24,15 @@ class Settings(BaseSettings):
     # append an entry (1 = use the rightmost entry). Left-hand entries are client-supplied and ignored.
     trust_proxy_headers: bool = False
     trusted_proxy_hops: int = Field(default=1, ge=1, le=5)
+
+    # TechSpecs import (backend/techspecs.py, routers/techspecs.py). OFF until TechSpecs gives
+    # written authorization to store their data: their terms forbid downloading or caching it
+    # without permission. While off, the admin routes answer 503 and make no outbound call.
+    # Keep all three out of render.yaml (a test checks). SecretStr keeps the values out of
+    # reprs and logs.
+    techspecs_enabled: bool = False
+    techspecs_api_id: SecretStr | None = None
+    techspecs_api_key: SecretStr | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
