@@ -4,6 +4,7 @@ import {
   citedSourceCount,
   describeAiFailure,
   hasNoSupportingSource,
+  isGeneralKnowledge,
   isMissingEvidence,
   removedCitationCount,
   validateAnswerResponse,
@@ -138,5 +139,24 @@ describe('describeAiFailure', () => {
   it('does not let one result mutate the shared copy for later failures', () => {
     describeAiFailure(httpError(422, 'Custom sentence.'))
     expect(describeAiFailure({ status: 422, message: 123 }).message).toBe('Try a shorter, more specific question.')
+  })
+})
+
+describe('general-knowledge answers (#172)', () => {
+  const gk = { answer: 'General knowledge: about 4500 mAh.', sources: [], answer_basis: 'general_knowledge' }
+
+  it('is recognised only from answer_basis', () => {
+    expect(isGeneralKnowledge(gk)).toBe(true)
+    expect(isGeneralKnowledge({ ...gk, answer_basis: 'none' })).toBe(false)
+    expect(isGeneralKnowledge({ answer: 'x', sources: [] })).toBe(false)
+  })
+
+  it('is not missing evidence and not an unsupported grounded answer', () => {
+    expect(isMissingEvidence(gk)).toBe(false)
+    expect(hasNoSupportingSource(gk)).toBe(false)
+  })
+
+  it('leaves a no-match answer with the option off as missing evidence', () => {
+    expect(isMissingEvidence({ ...gk, answer_basis: 'none' })).toBe(true)
   })
 })

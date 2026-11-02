@@ -26,9 +26,20 @@ export function validateAnswerResponse(data) {
   return data
 }
 
-/** A 200 reply with no sources means retrieval found nothing to ground an answer in. */
+/**
+ * An opt-in general-knowledge answer (#172): no saved spec matched and the user allowed
+ * general knowledge, so the answer has no sources and no citations by design.
+ */
+export function isGeneralKnowledge(result) {
+  return result?.answer_basis === 'general_knowledge'
+}
+
+/**
+ * A 200 reply with no sources means retrieval found nothing to ground an answer in,
+ * unless it is a general-knowledge answer, which is shown (labelled) instead.
+ */
 export function isMissingEvidence(result) {
-  return result.sources.length === 0
+  return result.sources.length === 0 && !isGeneralKnowledge(result)
 }
 
 /**
@@ -51,7 +62,7 @@ export function citedSourceCount(result) {
  * citations.py removed out-of-range markers): nothing in it is backed by a source (#124).
  */
 export function hasNoSupportingSource(result) {
-  return !isMissingEvidence(result) && citedSourceCount(result) === 0
+  return !isMissingEvidence(result) && !isGeneralKnowledge(result) && citedSourceCount(result) === 0
 }
 
 /** How many out-of-range [n] markers the backend removed (`invalid_citations_removed`), 0 if absent. */

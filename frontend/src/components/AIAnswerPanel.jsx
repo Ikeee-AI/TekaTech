@@ -23,6 +23,9 @@ export default function AIAnswerPanel({ question, onClose }) {
   const {
     plainLanguage,
     togglePlainLanguage,
+    allowGeneralKnowledge,
+    setAllowGeneralKnowledge,
+    requestOptions,
     loading,
     setLoading,
     error,
@@ -52,7 +55,7 @@ export default function AIAnswerPanel({ question, onClose }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.askQuestion({ question: q, plain_language: plainLanguage })
+      const data = await api.askQuestion({ question: q, ...requestOptions })
       if (requestId !== latestRequest.current) return
       // A reply without answer text or a valid source list is a failure, never an answer.
       setResult(validateAnswerResponse(data))
@@ -116,6 +119,8 @@ export default function AIAnswerPanel({ question, onClose }) {
         handleCiteClick={handleCiteClick}
         plainLanguage={plainLanguage}
         togglePlainLanguage={togglePlainLanguage}
+        allowGeneralKnowledge={allowGeneralKnowledge}
+        setAllowGeneralKnowledge={setAllowGeneralKnowledge}
         handleCopy={handleCopy}
         copied={copied}
         followUps={followUps}

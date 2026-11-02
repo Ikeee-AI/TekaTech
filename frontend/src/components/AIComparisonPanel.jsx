@@ -5,7 +5,7 @@ import { useAiAnswer } from '../hooks/useAiAnswer'
 import { validateAnswerResponse } from '../utils/aiAnswerState'
 import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { suggestFollowUps } from '../utils/followUps'
-import AiAnswerResult from './AiAnswerResult'
+import AiAnswerResult, { AnswerOptions } from './AiAnswerResult'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
 
@@ -32,6 +32,9 @@ export default function AIComparisonPanel({
   const {
     plainLanguage,
     togglePlainLanguage,
+    allowGeneralKnowledge,
+    setAllowGeneralKnowledge,
+    requestOptions,
     loading,
     setLoading,
     error,
@@ -80,7 +83,7 @@ export default function AIComparisonPanel({
     setLoading(true)
     setError(null)
     try {
-      const data = await api.askQuestion({ question: q, gadget_ids: gadgetIds, plain_language: plainLanguage })
+      const data = await api.askQuestion({ question: q, gadget_ids: gadgetIds, ...requestOptions })
       // A reply without answer text or a valid source list is a failure, never an answer.
       setResult(validateAnswerResponse(data))
       setSourcesOpen(false)
@@ -165,15 +168,12 @@ export default function AIComparisonPanel({
             </p>
           </div>
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <label className="flex items-center gap-2 min-h-9 text-sm font-medium text-slate-700 cursor-pointer select-none rounded focus-within:ring-2 focus-within:ring-sage-400 px-1 -mx-1">
-              <input
-                type="checkbox"
-                checked={plainLanguage}
-                onChange={(e) => togglePlainLanguage(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 accent-sage-700 focus:outline-none"
-              />
-              Plain-Language Answer
-            </label>
+            <AnswerOptions
+              plainLanguage={plainLanguage}
+              togglePlainLanguage={togglePlainLanguage}
+              allowGeneralKnowledge={allowGeneralKnowledge}
+              setAllowGeneralKnowledge={setAllowGeneralKnowledge}
+            />
             <Button variant="primary" icon={Sparkles} onClick={() => handleAsk()} disabled={!question.trim()}>
               {buttonLabel}
             </Button>
@@ -193,6 +193,8 @@ export default function AIComparisonPanel({
         handleCiteClick={handleCiteClick}
         plainLanguage={plainLanguage}
         togglePlainLanguage={togglePlainLanguage}
+        allowGeneralKnowledge={allowGeneralKnowledge}
+        setAllowGeneralKnowledge={setAllowGeneralKnowledge}
         handleCopy={handleCopy}
         copied={copied}
         skeletonLines={4}
