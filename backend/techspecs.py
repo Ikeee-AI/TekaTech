@@ -35,6 +35,7 @@ PRODUCT_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 # Flattening limits: the product text is later saved through the normal spec path, which has
 # its own character and embedding-token caps; these just keep one odd response bounded.
+MIN_PROVIDER_PAGE_SIZE = 10  # TechSpecs' own minimum for `size` on search
 MAX_DEPTH = 4
 MAX_LINES = 400
 MAX_KEY_CHARS = 80
@@ -159,14 +160,19 @@ def _summary(item: Any) -> dict | None:
 
 
 def search(query: str, page: int = 0, size: int = 10) -> list[dict]:
-    """Preview results only; nothing is stored. Items without a usable id are dropped."""
-    payload = _get("/products/search", {"query": query, "page": page, "size": size})
+    """Preview results only; nothing is stored. Items without a usable id are dropped.
+
+    TechSpecs rejects size < 10 with HTTP 400 ("Number must be greater than or equal to 10",
+    seen with a trial key on 2 Nov 2026), so at least 10 are requested and the list is cut to
+    `size` here."""
+    provider_size = max(size, MIN_PROVIDER_PAGE_SIZE)
+    payload = _get("/products/search", {"query": query, "page": page, "size": provider_size})
     results = []
     for item in _items(payload):
         summary = _summary(item)
         if summary:
             results.append(summary)
-    return results
+    return results[:size]
 
 
 def _product_object(payload: Any) -> dict | None:

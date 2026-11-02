@@ -161,6 +161,20 @@ def test_non_admins_are_refused_even_when_enabled(client, fake_supabase, enabled
 # --- search --------------------------------------------------------------------------------
 
 
+def test_search_requests_at_least_ten_and_cuts_to_size(client, fake_supabase, enabled, provider):
+    many = {"data": {"results": [
+        {"Product": {"id": f"p{i}", "Brand": "Example", "Model": f"Phone {i}"}} for i in range(12)
+    ]}}
+    calls = provider(lambda request: httpx.Response(200, json=many))
+    resp = client.get("/techspecs/search", params={"query": "phone", "size": 3})
+    assert resp.status_code == 200
+    assert [r["id"] for r in resp.json()["results"]] == ["p0", "p1", "p2"]
+    assert calls[0].url.params["size"] == "10"
+    resp = client.get("/techspecs/search", params={"query": "phone", "size": 15})
+    assert calls[1].url.params["size"] == "15"
+    assert len(resp.json()["results"]) == 12
+
+
 def test_search_maps_results_and_sends_credentials_as_headers(client, fake_supabase, enabled, provider):
     calls = provider(lambda request: httpx.Response(200, json=SEARCH_BODY))
     resp = client.get("/techspecs/search", params={"query": " iphone ", "page": 1, "size": 5})
@@ -174,7 +188,8 @@ def test_search_maps_results_and_sends_credentials_as_headers(client, fake_supab
     (request,) = calls
     assert request.method == "GET"
     assert request.url.path == "/v5/products/search"
-    assert dict(request.url.params) == {"query": "iphone", "page": "1", "size": "5"}
+    # TechSpecs rejects size < 10 (HTTP 400), so 10 is requested and the list cut to 5 here.
+    assert dict(request.url.params) == {"query": "iphone", "page": "1", "size": "10"}
     assert request.headers["x-api-id"] == PLACEHOLDER_ID
     assert request.headers["x-api-key"] == PLACEHOLDER_KEY
     assert PLACEHOLDER_KEY not in str(request.url)
