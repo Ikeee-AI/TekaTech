@@ -10,6 +10,7 @@ Owner: the one DevOps Engineer. Record real GitHub Actions and Render deployment
 | Sprint 3 final (18–25 Oct UTC; cut-off 25 Oct 19:45 Manila) | 0.71 (88 runs) | 2.75 (25 runs) | 99.1 (112/113 completed; 18 cancelled/skipped excluded) | 25 | 2.77 (25 samples) | 0 | N/A (no production incident) | Database job uses the runner's `psql` (#107, PR checks median 37 s → 27 s); offline prompt evaluation on prompt/eval PRs (#102); smoke-job key cleaning (#86) |
 | Sprint 4 (interim: 26–28 Oct UTC; cut-off 28 Oct 23:10 Manila) | 0.66 (53 runs) | 2.70 (19 runs) | 100.0 (72/72 completed) | 19 | 4.09 (19 samples) | 0 | N/A (no production incident) | Vitest unit tests in the frontend job (#137); Playwright failure-drill browser job (#128); stacked review batch #130–#139 merged; readiness check and request IDs (#136); retrieval fix with manual SQL (#145, #129) |
 | Sprint 4 final (26–31 Oct UTC; cut-off 31 Oct 14:45 Manila) | 0.72 (71 runs) | 2.78 (24 runs) | 100.0 (95/95 completed) | 24 | 3.88 (24 samples) | 0 | N/A (no production incident); rollback rehearsal 1 min 35 s | 15 PRs merged on release day; `v1.0.0` tagged on `5aa4635`; production rollback and database restore rehearsed; full-history Gitleaks clean |
+| Sprint 5 interim (1–2 Nov UTC; cut-off 2 Nov 19:30 Manila) | 0.96 (16 runs) | 2.50 (16 runs) | 100.0 (32/32 completed) | 16 | 2.54 (16 samples) | 0 | 18 h 19 min CI/CD outage (31 Oct 10:34 UTC → first successful run 1 Nov 04:52 UTC); no production incident | Actions-minutes cut (#182): 8 → 6 jobs per PR opened, measured; labeler rules fixed (#190); pilot plan and sampler (#183); Dependabot updates merged (#179–#181) |
 
 Measurement rules:
 
@@ -104,4 +105,14 @@ Window: `2026-10-26` to `2026-10-31` UTC, workflow `ci.yml` only, cut-off 31 Oct
 - **Deploys:** 24 production deploys, 0 failed. Release commit `5aa4635`: [main run 41176164488](https://github.com/Ikeee-AI/TekaTech/actions/runs/41176164488), deployed smoke passed at 14:24 Manila.
 - **Merge-to-live:** median 3.88 min (interim 4.09, Sprint 3 2.77). On 31 Oct, 12 merges landed within one minute and 3 more 17 minutes later. GitHub concurrency kept only the latest pending main run: 4 main runs deployed (`163ccba`, `7d2ab44`, `66af748`, `5aa4635`) and 11 superseded runs were cancelled (excluded from the success rate).
 - **Rollback and restore:** not part of `ci.yml`, so not in the row's counts. `rollback.yml` rehearsal: 1 min 35 s back, 1 min 45 s forward ([evidence](../evidence/rollback-rehearsal-2026-10-31.md)); database restore to a disposable copy: 14.0 s ([evidence](../evidence/db-restore-2026-10-31.md)).
+
+## Sprint 5 interim row: 2 November 2026
+
+Window: `2026-11-01` to `2026-11-02` UTC, workflow `ci.yml` only, cut-off 2 Nov 19:30 Manila, before the pilot (Wed 4 Nov 12:00). Command: `python scripts/pipeline_metrics.py --label "Sprint 5 interim" --since 2026-11-01 --until 2026-11-02`. Full report with every run link: [sprint5-metrics-interim.json](../evidence/sprint5-metrics-interim.json).
+
+- **Deploys:** 16 production deploys, 0 failed, one per merged PR on 2 Nov (#176, #177, #174, #178, #183, #185, #184, #182, #186, #187, #181, #180, #179, #188, #190, #189). Last: `83fe025`, [main run 41434471182](https://github.com/Ikeee-AI/TekaTech/actions/runs/41434471182), deployed smoke passed at 19:12 Manila. Merges were one at a time (`.local/merge-sequence.sh` waits for each deploy), so no main run was superseded this time.
+- **Merge-to-live:** 2.54 min (Sprint 4 final 3.88), because the merges were serial instead of queued.
+- **PR pipeline:** 0.96 min average over 16 runs (Sprint 4 0.72). Small sample, including re-runs of runs blocked on 31 Oct and three Dependabot PRs; not comparable yet. Recheck at the Sprint 5 final row.
+- **Recovery (CI/CD, no production impact):** the [31 Oct Actions-minutes incident](incidents.md) ran from the first blocked run (31 Oct 10:34 UTC) to the first first-attempt success after the monthly reset ([Ops - production health, 1 Nov 04:52 UTC, run 41274762744](https://github.com/Ikeee-AI/TekaTech/actions/runs/41274762744)): **18 h 19 min**. Jobs could start from the 00:00 UTC reset (13 h 26 min); nothing triggered a run before 04:52.
+- **Not in `ci.yml` counts:** the "Dependabot Updates" security job for `minimatch` failed twice on 2 Nov (`security_update_not_possible`: `eslint` 10.13 needs `minimatch` ^10, the fix is 11.0.1; dev-only dependency). It is not a CI or deploy failure.
 

@@ -58,7 +58,7 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
 
 ## 2026-10-31: GitHub Actions stopped starting jobs (October minutes used up)
 
-**Status: open, waiting for the monthly reset.** CI/CD outage; **no production impact.** Owner: Ikeee-AI (pipeline/hosting).
+**Status: resolved 1 Nov 2026** (recovery time 18 h 19 min to the first first-attempt success; jobs could start from the 00:00 UTC reset). CI/CD outage; **no production impact.** Owner: Ikeee-AI (pipeline/hosting).
 
 - **Affected:** PR #174 head `c45c3f4` (Manuel's rebase). Every workflow on the push failed in 1–2 s with zero steps: [CI 41193288864](https://github.com/Ikeee-AI/TekaTech/actions/runs/41193288864), [PR automated review 41193288867](https://github.com/Ikeee-AI/TekaTech/actions/runs/41193288867), [owner-area labels 41193288338](https://github.com/Ikeee-AI/TekaTech/actions/runs/41193288338). The jobs' annotation: "The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings".
 - **Impact:** no workflow can start, so no PR can pass the merge gate, main can't deploy, and the scheduled ops jobs (daily production smoke, weekly AI smoke) can't run. Production was unaffected: it kept serving `d3f2192`, which passed its deployed smoke at 09:53 UTC ([main run 41190208701](https://github.com/Ikeee-AI/TekaTech/actions/runs/41190208701)). PRs #174, #176 and #177 were held unmerged.
@@ -67,7 +67,10 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
   - 10:34: first blocked runs, on Manuel's push.
   - About 10:40: detected and reported by Manuel to Ikeee-AI, with the annotation and his local test run (586 passed).
   - 10:45–10:47: confirmed by Ikeee-AI on the account's billing pages.
-  - Expected recovery: 1 Nov 00:00 UTC (08:00 Manila), when the monthly included usage resets. Recovery time is to be filled in after the first successful run.
+  - 1 Nov 00:00 UTC (08:00 Manila): monthly included usage reset.
+  - 1 Nov 04:52 UTC: first workflow to succeed on its first attempt, the scheduled production health check ([run 41274762744](https://github.com/Ikeee-AI/TekaTech/actions/runs/41274762744)). **Recovery time: 18 h 19 min** from the first blocked run.
+  - 2 Nov, morning UTC: the blocked runs on #174 and #178 were re-run and passed (#174's CI finished 05:35 UTC); #176, #177, #174 and #178 merged and deployed 05:37–05:47 UTC.
+  - 2 Nov 08:20 UTC: prevention #182 merged (fewer job starts per PR event; measured 8 → 6 jobs per PR opened, see [optimizations.md](optimizations.md)).
 - **Root cause:** the repository is private, so Actions minutes count against the account's monthly included usage. October's metered Actions usage reached about $12.50 gross (1–31 Oct; $0 billed every day). The account's **"Ikeee-AI – Actions" budget is $0.00 with "Usage blocked"**, so once the included usage was used up, GitHub stopped starting jobs instead of billing. No payment failed. Volume: **981 workflow runs in October** (CI 346, PR automated review 262, owner-area labels 201, reviewer assignment 92, ops 23, Dependabot about 50). Every job is billed as at least one minute. Release day alone (31 Oct) had about 20 merges and pushes.
 - **Fix:** wait for the 1 Nov reset (no cost). Then re-run the failed jobs on #174 (no new push needed), re-check the gate on #174, #176 and #177, merge, and run `verify-deploy`. Fallback, if a change must ship before the reset: raise the Actions budget to a small cap (for example $5, which needs a payment method). Not used, because nothing was urgent.
 - **Prevention (Ikeee-AI, Sprint 5):**
