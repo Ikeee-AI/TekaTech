@@ -93,8 +93,17 @@ export default function AIAnswerPanel({ question, onClose }) {
           <p className="flex items-start gap-1.5 mt-1.5 text-xs text-slate-600">
             <Info size={14} aria-hidden="true" className="shrink-0 mt-px text-slate-500" />
             <span>
-              Answers use only the specs saved in TekaTech, with numbered sources. If something isn&apos;t in the specs,
-              TekaTech says so instead of guessing.
+              {allowGeneralKnowledge ? (
+                <>
+                  Answers use the specs saved in TekaTech, with numbered sources. General knowledge is on: if no saved
+                  spec matches, the answer comes from general knowledge and is labelled unverified.
+                </>
+              ) : (
+                <>
+                  Answers use only the specs saved in TekaTech, with numbered sources. If something isn&apos;t in the
+                  specs, TekaTech says so instead of guessing.
+                </>
+              )}
             </span>
           </p>
         </div>

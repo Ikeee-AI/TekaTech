@@ -119,8 +119,17 @@ export default function AIComparisonPanel({
         <h2 id="ai-compare-title" className="text-lg font-bold text-slate-900">{title}</h2>
       </div>
       <p className="text-sm text-slate-600 mb-4">
-        Answers use only the specs saved for {gadgetNames.join(', ')}, with numbered sources. If something isn&apos;t in
-        the specs, TekaTech says so instead of guessing.
+        {allowGeneralKnowledge ? (
+          <>
+            Answers use the specs saved for {gadgetNames.join(', ')}, with numbered sources. General knowledge is on: if
+            no saved spec matches, the answer comes from general knowledge and is labelled unverified.
+          </>
+        ) : (
+          <>
+            Answers use only the specs saved for {gadgetNames.join(', ')}, with numbered sources. If something isn&apos;t
+            in the specs, TekaTech says so instead of guessing.
+          </>
+        )}
       </p>
 
       {!checkingSpecs && missingSpecs.length > 0 && (

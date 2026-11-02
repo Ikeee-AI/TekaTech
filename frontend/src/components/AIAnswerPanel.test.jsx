@@ -59,4 +59,18 @@ describe('AIAnswerPanel request body', () => {
       allow_general_knowledge: true,
     })
   })
+
+  it('says general knowledge is on in the intro only while the box is ticked', async () => {
+    renderPanel()
+    await screen.findByText('Answer based on 1 cited spec')
+    expect(screen.getByText(/Answers use only the specs saved in TekaTech/)).toBeTruthy()
+    expect(screen.queryByText(/General knowledge is on/)).toBeNull()
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Allow General Knowledge' }))
+    expect(screen.getByText(/General knowledge is on/)).toBeTruthy()
+    expect(screen.queryByText(/Answers use only the specs saved/)).toBeNull()
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Allow General Knowledge' }))
+    expect(screen.getByText(/Answers use only the specs saved in TekaTech/)).toBeTruthy()
+  })
 })
