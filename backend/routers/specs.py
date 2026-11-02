@@ -57,10 +57,18 @@ class SpecDocumentResponse(BaseModel):
 @router.post("", status_code=201)
 @limiter.limit("20/hour")
 def ingest_spec_text(request: Request, gadget_id: UUID, payload: SpecIngestRequest, user=Depends(get_current_user)):
-    exists = supabase.table("gadgets").select("id").eq("id", str(gadget_id)).execute()
-    if not exists.data:
+    if not gadget_exists(gadget_id):
         raise HTTPException(status_code=404, detail="Gadget not found")
+    return save_spec_text(gadget_id, payload)
 
+
+def gadget_exists(gadget_id: UUID) -> bool:
+    return bool(supabase.table("gadgets").select("id").eq("id", str(gadget_id)).execute().data)
+
+
+def save_spec_text(gadget_id: UUID, payload: SpecIngestRequest) -> dict:
+    """The one spec-saving path: chunk, store pending with NULL embeddings, no AI call.
+    Also used by the TechSpecs import (routers/techspecs.py). The caller checks the gadget."""
     chunks = chunk_text(payload.raw_text)
     if not chunks:
         raise HTTPException(status_code=400, detail="No usable text found to chunk")

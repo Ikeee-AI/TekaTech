@@ -140,6 +140,18 @@ For the course's "controlled model failure" evidence, the drill may run on produ
 
 If step 3 or 4 fails, remove the variable before anything else; while it is on, admins (and only admins) can trigger simulated failures.
 
+## TechSpecs import (disabled)
+
+An admin-only way to pull one product's specifications from the [TechSpecs API](https://techspecs.io) (v5) into an **existing** gadget, instead of typing them in. It is **disabled** and must stay disabled until TechSpecs gives written authorization (requested from support@techspecs.io): their documentation says the data is watermarked and that downloading or caching it without authorization is forbidden.
+
+- Settings: `techspecs_enabled` (default `false`), `techspecs_api_id`, `techspecs_api_key` (both optional, held as secrets and never logged or returned). Names are in `.env.example`; none of them belong in `render.yaml` (a test checks).
+- While disabled, both routes answer **503** "TechSpecs import is disabled pending written authorization from TechSpecs..." after the admin check, and make no outbound call. Enabled without both credentials is also 503.
+- `GET /techspecs/search?query=&page=&size=` (admin, 30/hour): `query` 2-100 characters, `page` 0-50, `size` 1-20. Returns `{"query", "page", "size", "results": [{"id", "name", "brand", "model", "category"}]}`. A preview only: nothing is stored or cached.
+- `POST /techspecs/import` (admin, 20/hour) with `{"gadget_id": "<uuid>", "product_id": "<1-64 letters, digits, _ or ->"}`: fetches the product and saves it through the same path as `POST /gadgets/{id}/specs` (chunked, `pending`, no OpenAI call; index it afterwards as usual). The text starts with `Source: TechSpecs (techspecs.io), product <id>, retrieved <YYYY-MM-DD> (UTC)`, then one `Section / Key: value` line per spec field, and every chunk gets `source_url` `https://techspecs.io/`. It never creates a gadget (404 if the gadget does not exist) and is subject to the normal spec limits (422 if the product is too long for one saved spec).
+- Provider failures: credentials rejected (401/403) and an unusable response are **502**; TechSpecs rate limit (429), timeout (10 s), connection or 5xx errors are **503**; unknown product is 404. No provider body, header or key is returned.
+- The detail response schema is not documented, so `techspecs.py` parses it defensively; check the saved text the first time it is used against a real response. Imported text is spec text like any other: untrusted grounding data for `/query`.
+- **Checking the parser with a free-trial key, before authorization:** `scripts/techspecs_probe.py` (run from `backend/` with `TECHSPECS_API_ID` / `TECHSPECS_API_KEY` in your own `.env`). Without `--yes` it only prints the plan. With `--yes` it makes at most 3 calls (1 search + up to 2 product lookups) and prints the response *shape* (keys, types, list lengths) and the parser's line and section counts; spec values only with `--show-values`, on screen. It stores nothing (no database, file or cache) and never prints the key. Don't run it in CI or on Render, and don't paste real TechSpecs values into the repo, an issue or a PR; record findings as field names and counts only.
+
 ## Collecting real answers for evaluation
 
 `scripts/eval_adapter.py` asks the evaluation questions through a running API and writes the answers in the shape `scripts/eval_runner.py` scores. The runner numbers the verified source pack `[1]`-`[10]`, but `/query` numbers whatever it retrieved `[1]`-`[N]` per question, so the adapter maps each retrieved chunk back to the pack snippet it holds and rewrites the markers to pack ids (a chunk outside the pack becomes `[0]`, which the runner reports as an invalid citation).
@@ -184,6 +196,8 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/corrections/pending-count` | GET | admin | none | 200 `{"count": N}` | 401, 403, 503 |
 | `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}`; only `pending` corrections can be resolved | 200 | 400, 401, 403, 404, 409 (`"Correction was already approved"` / `rejected`), 503 |
 | `/query` | POST | none (optional admin headers: `X-Simulate-Failure`, `X-Bypass-Answer-Cache`) | `{"question": "...", "gadget_ids": [...], "plain_language": false, "allow_general_knowledge": false}` | 200 `{"answer", "sources", "model_used", "invalid_citations_removed", "cached", "cache_match", "retrieval", "answer_basis"}`; `retrieval` is `"vector"`, `"keyword"` or `"none"`; `answer_basis` is `"specs"`, `"general_knowledge"` or `"none"` (see below) | 422 (empty or over-limit question), 429, 503 (AI timeout, provider failure or unusable answer; see below) |
+| `/techspecs/search` | GET | admin | query `query` (2-100 chars), `page` (0-50), `size` (1-20) | 200 `{"query", "page", "size", "results"}`; nothing stored | 401, 403, 422, 429 (30/hour), 502, 503 (disabled by default; see "TechSpecs import") |
+| `/techspecs/import` | POST | admin | `{"gadget_id", "product_id"}` | 201 `{"gadget_id", "chunks_created", "indexing_status", "product_id", "source", "source_url"}` | 401, 403, 404, 422, 429 (20/hour), 502, 503 (disabled by default) |
 
 Every route with an `{id}`, `{gadget_id}`, `{spec_id}` or `{correction_id}` path parameter returns 422 for a malformed UUID.
 

@@ -47,6 +47,8 @@ EXPECTED = {
     ("POST", "/query"): PUBLIC,
     ("GET", "/stats/spec-coverage"): PUBLIC,
     ("GET", "/stats/trending-questions"): PUBLIC,
+    ("GET", "/techspecs/search"): ADMIN,
+    ("POST", "/techspecs/import"): ADMIN,
 }
 
 # /health/ready reaches for the real database, which a unit test must not do.
@@ -73,10 +75,10 @@ def _allowed(level, caller):
 def _app_routes():
     """Every APIRoute the app serves: its own, plus each included router's (prefixes are baked into the path)."""
     from main import app
-    from routers import comparisons, corrections, gadgets, query, specs, stats
+    from routers import comparisons, corrections, gadgets, query, specs, stats, techspecs
 
     routes = [r for r in app.routes if isinstance(r, APIRoute)]
-    for module in (gadgets, specs, corrections, comparisons, query, stats):
+    for module in (gadgets, specs, corrections, comparisons, query, stats, techspecs):
         routes += [r for r in module.router.routes if isinstance(r, APIRoute)]
     return routes
 
