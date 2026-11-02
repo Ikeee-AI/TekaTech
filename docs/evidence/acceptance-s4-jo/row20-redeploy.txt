@@ -1,0 +1,20 @@
+Acceptance row 20: production data survives redeployment (read-only)
+Public GET routes only: /version, /version.json, /health, /gadgets, /gadgets/{id}/specs, /stats/spec-coverage.
+No login, no writes.
+
+BEFORE  2026-10-31T09:32:51Z  api 5aa4635 / web 5aa4635 (v1.0.0)
+Redeploys in between (main pipeline, 31 Oct):
+  09:49Z  1fbbaf5  #171 (catalog tagline, deploy challenge)
+  09:49Z  d6b68d7  #173
+  ...     e1e4a93  #167, 9272590 #170 (merged together with #175)
+  09:52Z  d3f2192  #175 (api and web both serving it)
+AFTER   2026-10-31T09:53:23Z  api d3f2192 / web d3f2192, /health {"status":"ok"}
+
+Gadget                    id                                     updated_at            specs  indexed  before -> after
+Infinix Note 50 Pro 5G+   b099dab9-4983-4e00-8a1c-4b516e17789c   2026-10-19T10:09:20Z  1      1        same
+iPhone 15                 073ad803-9ef7-46dc-bf73-fef21f2c074a   2026-10-22T15:13:33Z  1      1        same
+Poco x7 Pro               a621bb58-4c4b-431f-b776-09189150c727   2026-10-30T05:19:27Z  1      1        same
+Rog Ally                  88f75ae3-44b0-46d8-8760-4fa5fd892486   2026-08-08T19:37:59Z  0      0        same
+
+/gadgets count: 4 -> 4.  /stats/spec-coverage: {"covered":3,"total":4} -> same.
+Result: PASS, nothing lost or changed across the redeploys.
