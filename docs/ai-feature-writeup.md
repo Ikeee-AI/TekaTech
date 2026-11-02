@@ -79,7 +79,7 @@ The S4-AD takeover (2 Nov) checked how this is wired and closed two gaps, offlin
 - **`answer_basis` was not checked.** A GK case answered from saved specs (the database had that gadget) or by the canned no-match reply was scored on its text alone. The answers file may now carry `answer_basis` per case, as `/query` returns it; when it does, anything but `general_knowledge` fails the case and the report shows the metric with its denominator. When it is absent the check is skipped, not passed, so earlier reports are unchanged.
 - **Nothing tied the scorer to the real reply.** `backend/tests/test_eval_gk_query.py` sends all 6 GK cases through `POST /query` with OpenAI and Supabase mocked (the mock returns the reference answers), scores the real reply shape, and checks that a citation the backend strips still fails the case and that grounded replies are not credited as GK. `test_eval_gk.py` also pins that the backend's `GK_DISCLAIMER` and `GK_OFF_TOPIC` strings pass the scorer.
 
-Still open, as a contract for Manuel (`scripts/eval_adapter.py` is his): a `--mode gk` that uses `gk_cases.json`, sends `allow_general_knowledge: true` and each case's `plain_language`, records `answer_basis` and `invalid_citations_removed` per case and skips citation rewriting (GK replies have no sources). Until then a real GK run has to be collected by hand. GK cases about the iPhone 15 or Galaxy S24 must run against a database **without** those gadgets' specs, or `/query` answers them grounded; the `answer_basis` check now reports that instead of hiding it.
+Delivered by Manuel in #189 (merged 2 Nov 2026): `scripts/eval_adapter.py --mode gk` uses `gk_cases.json`, sends `allow_general_knowledge: true` and each case's `plain_language`, records `answer_basis` and `invalid_citations_removed` per case and skips citation rewriting (GK replies have no sources). Plan only without `--yes`; a real run is paid and needs Ikeee-AI's approval. GK cases about the iPhone 15 or Galaxy S24 must run against a database **without** those gadgets' specs, or `/query` answers them grounded; the `answer_basis` check now reports that instead of hiding it.
 
 ## Release AI-quality report (v1.0.0)
 
@@ -103,7 +103,7 @@ Taken over by Ikeee-AI (AI-assisted) from S4-AD after the 31 Oct deadline; Adria
 
 **Prompt version for the release: `v1`**, unchanged since #83 and pinned by a hash in `backend/tests/test_prompts.py`. The scored failures are retrieval, scorer strictness and one answer gap, none of which a prompt v2 is shown to fix, so no v2 was made and the prompt was not tuned to pass a target. The optional `gk-v1` prompt merged after the release (#173, #174), is off by default, has no UI and has **no scored model output**.
 
-**General-knowledge mode.** GK reference answers 6 / 6 (scorer validation only, not model quality). Real GK answers: n/a, not collected (needs the adapter contract above and an approved, capped run).
+**General-knowledge mode.** GK reference answers 6 / 6 (scorer validation only, not model quality). Real GK answers: n/a, not collected yet (the adapter mode exists since #189; a real run needs an approved, capped run against a database without those gadgets' specs).
 
 ## Known AI limitations (release v1.0.0)
 
