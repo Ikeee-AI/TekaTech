@@ -31,6 +31,8 @@ class FakeApi:
 
     def __call__(self, method, url, body=None):
         self.calls.append((method, url))
+        if url.endswith("/query"):
+            self.bodies = getattr(self, "bodies", []) + [body]
         if url.endswith("/gadgets"):
             return [{"id": "g1"}]
         if url.endswith("/gadgets/g1/specs"):
@@ -189,3 +191,82 @@ def test_default_prompt_version_comes_from_the_backend_module():
     import re
     text = (Path(__file__).resolve().parents[1] / "prompts.py").read_text(encoding="utf-8")
     assert adapter.default_prompt_version() == re.search(r'PROMPT_VERSION = "([^"]+)"', text).group(1)
+
+
+# --- --mode gk (#172) ---
+
+GK_CASES = [
+    {"id": "G-1", "query": "What is a good battery life for a phone?"},
+    {"id": "G-2", "query": "Explain OLED simply.", "plain_language": True},
+]
+
+
+def gk_reply(answer, basis="general_knowledge", removed=0):
+    return {"answer": answer, "sources": [], "model_used": "openai:gpt-5-mini",
+            "invalid_citations_removed": removed, "answer_basis": basis}
+
+
+def run_gk_cli(tmp_path, api, *extra):
+    cases = tmp_path / "gk_cases.json"
+    cases.write_text(json.dumps({"cases": GK_CASES}), encoding="utf-8")
+    out = tmp_path / "gk_answers.json"
+    code = adapter.main(["--api-base", "http://127.0.0.1:8000", "--mode", "gk", "--cases", str(cases),
+                         "--out", str(out), *extra], http=api, sleep=lambda _s: None)
+    return code, out
+
+
+def test_gk_mode_opts_in_sends_plain_language_and_records_the_basis(tmp_path):
+    api = FakeApi([], [gk_reply("From general knowledge: about a day."),
+                       gk_reply("From general knowledge: a screen type.", basis="none", removed=1)])
+    code, out = run_gk_cli(tmp_path, api, "--yes")
+    saved = json.loads(out.read_text(encoding="utf-8"))
+    assert code == 0
+    assert api.bodies == [
+        {"question": GK_CASES[0]["query"], "allow_general_knowledge": True, "plain_language": False},
+        {"question": GK_CASES[1]["query"], "allow_general_knowledge": True, "plain_language": True},
+    ]
+    assert saved["answers"]["G-1"] == "From general knowledge: about a day."  # text untouched
+    assert saved["answer_basis"] == {"G-1": "general_knowledge", "G-2": "none"}
+    assert saved["invalid_citations_removed"] == {"G-1": 0, "G-2": 1}
+
+
+def test_gk_mode_needs_no_pack_and_reads_no_specs(tmp_path, capsys):
+    api = FakeApi([], [])  # an empty catalogue would stop grounded mode
+    code, _ = run_gk_cli(tmp_path, api)
+    assert code == 0 and api.calls == []
+    assert "no pack check" in capsys.readouterr().out
+
+
+def test_gk_mode_defaults_to_the_gk_prompt_version_and_cases(tmp_path):
+    api = FakeApi([], [gk_reply("a"), gk_reply("b")])
+    _, out = run_gk_cli(tmp_path, api, "--yes")
+    assert json.loads(out.read_text(encoding="utf-8"))["prompt_version"] == adapter.default_prompt_version("GK_PROMPT_VERSION")
+    assert adapter.default_prompt_version("GK_PROMPT_VERSION") != adapter.default_prompt_version()
+
+
+def test_grounded_requests_do_not_opt_in_to_general_knowledge(tmp_path):
+    api = FakeApi(ONE_PER_CHUNK, [reply("Ok [1].", ["A16 Bionic chip."]), reply("Ok [2].", ["A16 Bionic chip."])])
+    run_cli(tmp_path, api, "--yes")
+    assert all(set(b) == {"question"} for b in api.bodies)
+    assert "answer_basis" not in json.loads((tmp_path / "answers.json").read_text(encoding="utf-8"))
+
+
+def test_gk_output_feeds_the_scorer_and_a_grounded_reply_fails_on_basis(tmp_path):
+    spec = importlib.util.spec_from_file_location("eval_runner", Path(__file__).resolve().parents[2] / "scripts/eval_runner.py")
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    root = Path(__file__).resolve().parents[2] / "prompts/eval"
+    cases = json.loads((root / "gk_cases.json").read_text(encoding="utf-8"))
+    ref = json.loads((root / "gk_reference_answers.json").read_text(encoding="utf-8"))["answers"]
+    ids = [c["id"] for c in cases["cases"]]
+    replies = [gk_reply(ref[i]) for i in ids]
+    replies[0] = gk_reply(ref[ids[0]], basis="specs")  # the database held specs: grounded, not GK
+    case_file = tmp_path / "all_gk.json"
+    case_file.write_text(json.dumps(cases), encoding="utf-8")
+    out = tmp_path / "out.json"
+    adapter.main(["--api-base", "http://127.0.0.1:8000", "--mode", "gk", "--cases", str(case_file), "--out", str(out), "--yes"],
+                 http=FakeApi([], replies), sleep=lambda _s: None)
+    saved = json.loads(out.read_text(encoding="utf-8"))
+    report = runner.evaluate_gk(cases, saved["answers"], saved["invalid_citations_removed"], saved["answer_basis"])
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": 5, "total": 6, "rate": 0.833}
+    assert not report["targets_met"]
