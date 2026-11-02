@@ -332,3 +332,62 @@ def test_search_provider_failures_are_safe(client, enabled, provider, status, ex
 def test_settings_repr_never_shows_the_key(enabled):
     assert PLACEHOLDER_KEY not in repr(settings)
     assert PLACEHOLDER_ID not in repr(settings)
+
+
+# --- shape of a real v5 response (trial probe, 2 Nov 2026) ---------------------------------
+# Keys and nesting copied from the probe's shape output; every value is made up. No TechSpecs
+# data is stored in the repo.
+
+V5_SEARCH = {
+    "status": "success", "total_results": 2, "total_results_per_page": 10, "total_pages": 1, "page": 0,
+    "data": [
+        {"Product": {"id": "aaaaaaaaaaaaaaaaaaaaaaa1", "Brand": "Example", "Category": "Smartphones",
+                     "Model": "Example Phone 9", "Version": "X100", "Thumbnail": "https://example.invalid/t.png"},
+         "Release Date": "2030-01-01", "Image": "https://example.invalid/i.png"},
+        {"Product": {"id": "aaaaaaaaaaaaaaaaaaaaaaa2", "Brand": "Example", "Category": "Smartphones",
+                     "Model": "Phone 9 Pro", "Version": "X200", "Thumbnail": "https://example.invalid/t.png"},
+         "Release Date": "2030-01-01", "Image": "https://example.invalid/i.png"},
+    ],
+}
+
+V5_DETAIL = {
+    "status": "success",
+    "data": {
+        "_id": "aaaaaaaaaaaaaaaaaaaaaaa1",
+        "Product": {"Manufacturer": "Example Corp", "OEM ID": "X100", "Brand": "Example", "Category": "Smartphones",
+                    "Model": "Example Phone 9", "Version": "X100", "english_id": "zzz", "Is Translated": True},
+        "Design": {"Body": {"Height": "150 mm (5.9 in)", "Height_mm": 150.0, "Height_in": 5.9,
+                            "Weight": "170 g (6.0 oz)", "Weight_g": 170, "Weight_oz": 6.0}},
+        "Inside": {"Battery": {"Capacity": "4000 mAh", "Capacity_mAh": 4000, "Charging Power": "20 W",
+                               "Charging Power_W": 20},
+                   "Processor": {"CPU": "Example Chip", "CPU Clock Speed_MHz": 3000}},
+        "Display": {"Diagonal": "6.1 in", "Diagonal_mm": 155.0, "Screen to Body Ratio_%": 86.0},
+        "Camera": {"Back Camera": {"Resolution": "48 MP", "Resolution_MP": 48, "Aperture (W)_f/": 1.6}},
+        "Key Aspects": {"Wireless &amp; Cellular": "5G, Wi-Fi 6", "MSRP": None},
+        "english_id": "zzz", "added_on": "2030-01-01T00:00:00Z", "updated_at": "2030-01-02T00:00:00Z",
+    },
+}
+
+
+def test_v5_search_shape_and_name_without_repeated_brand(monkeypatch):
+    monkeypatch.setattr(techspecs, "_get", lambda path, params: V5_SEARCH)
+    results = techspecs.search("phone 9", size=10)
+    assert [r["id"] for r in results] == ["aaaaaaaaaaaaaaaaaaaaaaa1", "aaaaaaaaaaaaaaaaaaaaaaa2"]
+    assert results[0]["name"] == "Example Phone 9 X100"  # model already starts with the brand
+    assert results[1]["name"] == "Example Phone 9 Pro X200"  # model without the brand gets it prefixed
+    assert results[0]["category"] == "Smartphones"
+
+
+def test_v5_detail_drops_bookkeeping_and_unit_duplicates(monkeypatch):
+    monkeypatch.setattr(techspecs, "_get", lambda path, params: V5_DETAIL)
+    product = techspecs.get_product("aaaaaaaaaaaaaaaaaaaaaaa1")
+    lines = product["lines"]
+    assert product["name"] == "Example Phone 9 X100"
+    assert "Design / Body / Height: 150 mm (5.9 in)" in lines
+    assert "Inside / Battery / Capacity: 4000 mAh" in lines
+    assert "Key Aspects / Wireless & Cellular: 5G, Wi-Fi 6" in lines  # HTML entity decoded
+    text = "\n".join(lines)
+    for dropped in ("_mm", "_in:", "_g:", "_oz", "_mAh", "_W:", "_MHz", "_%", "_f/", "_MP",
+                    "english_id", "added_on", "updated_at", "OEM ID", "Is Translated", "&amp;"):
+        assert dropped not in text, dropped
+    assert "Product / Manufacturer: Example Corp" in lines

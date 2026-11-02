@@ -17,6 +17,7 @@ httpx is already installed at runtime as a dependency of openai and supabase.
 """
 from __future__ import annotations
 
+import html
 import logging
 import re
 from typing import Any
@@ -40,8 +41,16 @@ MAX_DEPTH = 4
 MAX_LINES = 400
 MAX_KEY_CHARS = 80
 MAX_VALUE_CHARS = 300
-# Internal ids and sections that hold pictures or links, not specifications.
-SKIPPED_KEYS = {"id", "_id", "image", "images", "thumbnail", "thumbnails", "photo", "photos", "links", "url", "urls"}
+# Internal ids, bookkeeping and sections that hold pictures or links, not specifications.
+# english_id / added_on / updated_at / OEM ID / Is Translated seen in a real v5 detail response
+# (trial probe, 2 Nov 2026).
+SKIPPED_KEYS = {
+    "id", "_id", "image", "images", "thumbnail", "thumbnails", "photo", "photos", "links", "url", "urls",
+    "english_id", "added_on", "updated_at", "oem id", "is translated",
+}
+# v5 repeats many measurements as unit-suffixed numbers next to the readable text
+# ("Height": "147.6 mm (5.81 in)" plus "Height_mm", "Height_in"). The readable one is kept.
+UNIT_DUPLICATE_KEY = re.compile(r"_(mm|in|inch|g|oz|mhz|ghz|w|wh|mah|ppi|mp|%|f/|hz|gb|tb|v)$", re.IGNORECASE)
 
 _WHITESPACE = re.compile(r"\s+")
 
@@ -99,7 +108,9 @@ def _get(path: str, params: dict[str, Any]) -> Any:
 
 
 def _clean(value: Any, limit: int) -> str:
-    text = _WHITESPACE.sub(" ", "".join(ch if ch.isprintable() else " " for ch in str(value))).strip()
+    # v5 sends some text HTML-escaped ("Wireless &amp; Cellular").
+    text = html.unescape(str(value))
+    text = _WHITESPACE.sub(" ", "".join(ch if ch.isprintable() else " " for ch in text)).strip()
     return text[:limit]
 
 
@@ -149,7 +160,10 @@ def _summary(item: Any) -> dict | None:
     product_id = fields.get("id")
     if not product_id or not PRODUCT_ID_PATTERN.match(product_id):
         return None
-    name = " ".join(part for part in (fields.get("brand"), fields.get("model"), fields.get("version")) if part)
+    brand, model = fields.get("brand"), fields.get("model")
+    if brand and model and model.lower().startswith(brand.lower()):
+        brand = None  # v5 models already start with the brand ("Apple iPhone 15")
+    name = " ".join(part for part in (brand, model, fields.get("version")) if part)
     return {
         "id": product_id,
         "name": name or product_id,
@@ -202,7 +216,7 @@ def _flatten(obj: Any, path: list[str], lines: list[str], depth: int) -> None:
     if isinstance(obj, dict):
         for key, value in obj.items():
             key_text = _clean(key, MAX_KEY_CHARS)
-            if not key_text or key_text.lower() in SKIPPED_KEYS:
+            if not key_text or key_text.lower() in SKIPPED_KEYS or UNIT_DUPLICATE_KEY.search(key_text):
                 continue
             _flatten(value, path + [key_text], lines, depth + 1)
         return
