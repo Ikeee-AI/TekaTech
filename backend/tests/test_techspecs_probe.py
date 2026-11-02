@@ -74,3 +74,18 @@ def test_shape_never_includes_values(probe):
     text = "\n".join(probe.shape(DETAIL))
     assert "Display" in text and "str" in text
     assert "OLED" not in text and "abc123" not in text
+
+
+def test_error_message_shown_with_credentials_masked(probe, monkeypatch, capsys):
+    import httpx
+
+    monkeypatch.setattr(techspecs, "_credentials", lambda: ("placeholder-id", "placeholder-key"))
+    capture = probe.ErrorCapture()
+    request = httpx.Request("GET", "https://api.techspecs.io/v5/products/search")
+    capture(httpx.Response(400, text='{"error":"category is required","key":"placeholder-key"}', request=request))
+    capture(httpx.Response(200, text='{"data":{"results":[]}}', request=request))  # success bodies are not kept
+    probe.print_error(techspecs.TechSpecsError("unavailable", 400), capture)
+    out = capsys.readouterr().out
+    assert "category is required" in out
+    assert "placeholder-key" not in out and "***" in out
+    assert "results" not in out

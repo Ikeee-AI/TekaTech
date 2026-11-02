@@ -27,6 +27,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import httpx  # noqa: E402
+
 import techspecs  # noqa: E402
 from techspecs import TechSpecsError  # noqa: E402
 
@@ -58,6 +60,39 @@ def shape(value: Any, depth: int = 0, indent: str = "") -> list[str]:
     if value is None:
         return [f"{indent}null"]
     return [f"{indent}{type(value).__name__}"]
+
+
+ERROR_BODY_CHARS = 500
+
+
+class ErrorCapture:
+    """httpx response hook: keeps status and body of a *failed* call so the probe can show
+    TechSpecs' error message. Error bodies describe our request, not product data. Credentials
+    are masked in case the provider echoes them."""
+
+    def __init__(self):
+        self.status: int | None = None
+        self.body = ""
+
+    def __call__(self, response):
+        if response.status_code >= 400:
+            response.read()
+            self.status = response.status_code
+            text = response.text[:ERROR_BODY_CHARS]
+            try:
+                api_id, api_key = techspecs._credentials()
+                for secret in (api_id, api_key):
+                    text = text.replace(secret, "***")
+            except TechSpecsError:
+                pass
+            self.body = text
+
+
+def print_error(exc: TechSpecsError, capture: ErrorCapture) -> None:
+    print(f"FAILED: {exc.kind} (HTTP {exc.status_code or '-'})")
+    if capture.status is not None:
+        print(f"TechSpecs error message (first {ERROR_BODY_CHARS} characters, key masked):")
+        print(f"  {capture.body or '(empty body)'}")
 
 
 class CountingGet:
@@ -96,13 +131,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     counter = CountingGet(techspecs._get, limit)
+    capture = ErrorCapture()
+    original_client = techspecs._make_client
     techspecs._get = counter
+    techspecs._make_client = lambda: httpx.Client(
+        base_url=techspecs.BASE_URL, timeout=techspecs.TIMEOUT, event_hooks={"response": [capture]}
+    )
     try:
         print("\n== Search")
         try:
             results = techspecs.search(args.query.strip(), page=0, size=5)
         except TechSpecsError as exc:
-            print(f"FAILED: {exc.kind} (HTTP {exc.status_code or '-'})")
+            print_error(exc, capture)
             return 1
         print("Raw response shape:")
         print("\n".join(shape(counter.last_payload, indent="  ")))
@@ -119,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 product = techspecs.get_product(r["id"])
             except TechSpecsError as exc:
-                print(f"FAILED: {exc.kind} (HTTP {exc.status_code or '-'})")
+                print_error(exc, capture)
                 if counter.last_payload is not None and exc.kind == "bad_response":
                     print("Raw response shape:")
                     print("\n".join(shape(counter.last_payload, indent="  ")))
@@ -139,6 +179,7 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"  {line}")
     finally:
         techspecs._get = counter.original
+        techspecs._make_client = original_client
         print(f"\nCalls made: {counter.calls} of at most {limit}. Nothing was stored.")
     return 0 if ok else 1
 
