@@ -8,6 +8,7 @@ import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
 import BackLink from '../components/ui/BackLink'
 import AIComparisonPanel from '../components/AIComparisonPanel'
+import CompareAddGadget from '../components/CompareAddGadget'
 import { friendlyError } from '../utils/requestErrors'
 
 // Matches the backend's MAX_COMPARISON_GADGETS (routers/comparisons.py).
@@ -142,6 +143,14 @@ export default function ComparePage() {
     }
   }
 
+  // #203: add one more gadget without leaving the page. Same ?ids= update as removing,
+  // so the share link and the AI panel follow the new set; the toast is announced.
+  function addGadget(gadget) {
+    if (ids.includes(gadget.id) || ids.length >= MAX_COMPARE_GADGETS) return
+    setSearchParams({ ids: [...ids, gadget.id].join(',') }, { state: location.state })
+    toast.success(`${gadget.name} added to the comparison`)
+  }
+
   if (loading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4" role="status" aria-label="Loading comparison">
@@ -214,7 +223,16 @@ export default function ComparePage() {
           <Share2 size={13} /> {sharing ? 'Creating Link…' : 'Share'}
         </button>
       </div>
-      <p className="text-sm text-gray-500 mb-6">Side-by-side spec comparison.</p>
+      <p className="text-sm text-gray-500 mb-4">Side-by-side spec comparison.</p>
+      <div className="mb-6">
+        {ids.length < MAX_COMPARE_GADGETS ? (
+          <CompareAddGadget excludeIds={ids} onAdd={addGadget} />
+        ) : (
+          <p className="text-sm text-slate-600">
+            {MAX_COMPARE_GADGETS} gadgets is the most you can compare. Remove one (×) to add another.
+          </p>
+        )}
+      </div>
       {shareUrl && (
         <div className="flex items-center gap-2 -mt-3 mb-6">
                     <label htmlFor="share-url" className="text-xs font-medium text-gray-600 shrink-0">
