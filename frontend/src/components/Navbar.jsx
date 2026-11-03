@@ -275,13 +275,19 @@ function Navbar() {
                   className="absolute -top-1 -right-1"
                 />
               </NavLink>
-              <span
-                className="w-9 h-9 rounded-full bg-sage-700 text-white flex items-center justify-center shrink-0"
-                title={user.email}
-                aria-hidden="true"
+              {/* The avatar opens the Account page (#204): email, change password. */}
+              <NavLink
+                to="/account"
+                aria-label="Your account"
+                title="Your account"
+                className={({ isActive }) =>
+                  `w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0 transition ${focusRing} ${
+                    isActive ? 'bg-sage-800 ring-2 ring-sage-300' : 'bg-sage-700 hover:bg-sage-800'
+                  }`
+                }
               >
-                <User size={18} />
-              </span>
+                <User size={18} aria-hidden="true" />
+              </NavLink>
               <button
                 onClick={handleSignOut}
                 aria-label="Log out"
@@ -331,6 +337,11 @@ function Navbar() {
                   srLabel={decisionsLabel(unseenDecisions)}
                   className="ml-1.5 align-text-bottom"
                 />
+              </NavLink>
+            )}
+            {user && (
+              <NavLink to="/account" className={mobileLinkClass}>
+                Account
               </NavLink>
             )}
             {user ? (
