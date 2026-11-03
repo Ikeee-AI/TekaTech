@@ -85,7 +85,24 @@ begin
     'public.spec_corrections'::regclass, 'public.comparison_links'::regclass, 'public.query_history'::regclass
   ) and relrowsecurity;
   if n != 5 then raise exception 'All application tables must enable RLS'; end if;
+  -- My Gadgets: one row per (user, gadget), private to the backend, removed with the gadget.
+  insert into user_gadgets(user_id, gadget_id) values ('00000000-0000-0000-0000-0000000000a1', gadget_a);
+  begin
+    insert into user_gadgets(user_id, gadget_id) values ('00000000-0000-0000-0000-0000000000a1', gadget_a);
+    raise exception 'A gadget must appear at most once in a user''s list';
+  exception when unique_violation then null;
+  end;
+  if has_table_privilege('anon', 'public.user_gadgets', 'SELECT') or
+     has_table_privilege('authenticated', 'public.user_gadgets', 'INSERT') then
+    raise exception 'Browser roles must not access user_gadgets directly';
+  end if;
+  if not (select relrowsecurity from pg_class where oid = 'public.user_gadgets'::regclass) then
+    raise exception 'user_gadgets must enable RLS';
+  end if;
   delete from gadgets where id = gadget_a;
+  if exists (select 1 from user_gadgets where gadget_id = gadget_a) then
+    raise exception 'Deleting a gadget must remove it from every user''s list';
+  end if;
   if exists (select 1 from spec_documents where gadget_id = gadget_a) or
      exists (select 1 from spec_corrections where spec_document_id = pending_spec) then
     raise exception 'Deleting a gadget must cascade to specs and corrections';
@@ -95,6 +112,7 @@ $$;
 -- Exercise backend permissions and RLS bypass, rather than just checking ACLs.
 set local role service_role;
 select id from public.gadgets limit 1;
+select user_id from public.user_gadgets limit 1;
 select * from public.match_spec_documents(
   ('[' || '1,' || repeat('0,', 1534) || '0]')::vector, 0, 0.5
 );

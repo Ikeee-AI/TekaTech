@@ -23,7 +23,10 @@ export default function Login() {
   const fromLocation = location.state?.from
   const from = fromLocation?.pathname
     ? { pathname: fromLocation.pathname, search: fromLocation.search ?? '', hash: fromLocation.hash ?? '' }
-    : '/'
+    : null
+  // With no page to return to, admins land on the catalog they curate and everyone
+  // else on their own My Gadgets dashboard.
+  const landing = (signedInUser) => from ?? (signedInUser?.app_metadata?.is_admin ? '/' : '/my-gadgets')
 
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
@@ -51,9 +54,9 @@ export default function Login() {
     setNotice(null)
     try {
       if (mode === 'login') {
-        await signIn(email, password)
+        const signedInUser = await signIn(email, password)
         toast.success('Logged in')
-        navigate(from, { replace: true })
+        navigate(landing(signedInUser), { replace: true })
       } else {
         const data = await signUp(email, password)
         if (data?.user && data.user.identities?.length === 0) {
@@ -63,7 +66,7 @@ export default function Login() {
         } else if (data?.session) {
           // Only happens if email confirmation is turned off in Supabase.
           toast.success('Account created')
-          navigate(from, { replace: true })
+          navigate(landing(data.user), { replace: true })
         } else {
           switchMode('login')
           setNotice('confirm')

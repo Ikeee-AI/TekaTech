@@ -192,6 +192,9 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/stats/trending-questions` | GET | none | query: `limit` (1–10, default 5) | 200 list; each `question` at most 150 chars | 422 (limit out of range) |
 | `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` (stripped; 1–20,000 chars and at most 6,000 embedding tokens, same as spec ingestion) | 201 | 401, 404, 422, 429 (20/hour) |
 | `/corrections` | GET | admin | query `status` | 200 list | 401, 403 |
+| `/me/gadgets` | GET | logged-in | none (always the session user) | 200 list, newest first, max 50: `{"added_at", "gadget": GadgetResponse}` | 401, 503 |
+| `/me/gadgets/{gadget_id}` | PUT | logged-in | path `gadget_id` (a catalog gadget) | 204; already in the list is a no-op. 120/hour | 401, 404 (no such gadget), 409 (list full, 50), 422, 429, 503 |
+| `/me/gadgets/{gadget_id}` | DELETE | logged-in | path `gadget_id` | 204, removes it from the caller's list only (idempotent). 120/hour | 401, 422, 429, 503 |
 | `/corrections/mine` | GET | logged-in | none (always the session user; no user-id parameter) | 200 list, newest first, max 50: `{"id", "status", "suggested_content", "created_at", "reviewed_at", "spec_id", "spec_excerpt", "gadget": {"id", "name", "brand"} \| null}` | 401, 503 (`"Couldn't load your suggestions right now."`) |
 | `/corrections/pending-count` | GET | admin | none | 200 `{"count": N}` | 401, 403, 503 |
 | `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}`; only `pending` corrections can be resolved | 200 | 400, 401, 403, 404, 409 (`"Correction was already approved"` / `rejected`), 503 |
