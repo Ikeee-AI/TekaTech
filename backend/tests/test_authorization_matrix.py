@@ -52,6 +52,8 @@ EXPECTED = {
     ("GET", "/me/gadgets"): USER,
     ("PUT", "/me/gadgets/{gadget_id}"): USER,
     ("DELETE", "/me/gadgets/{gadget_id}"): USER,
+    ("GET", "/me/gadgets/{gadget_id}/questions"): USER,
+    ("DELETE", "/me/gadgets/{gadget_id}/questions"): USER,
 }
 
 # /health/ready reaches for the real database, which a unit test must not do.

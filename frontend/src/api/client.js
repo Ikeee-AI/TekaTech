@@ -65,4 +65,7 @@ export const api = {
   getMyGadgets: () => request(`/me/gadgets`),
   addMyGadget: (gadgetId) => request(`/me/gadgets/${gadgetId}`, { method: "PUT" }),
   removeMyGadget: (gadgetId) => request(`/me/gadgets/${gadgetId}`, { method: "DELETE" }),
+  // The signed-in user's saved questions about one gadget (POST /query saves them), oldest first.
+  getGadgetQuestions: (gadgetId) => request(`/me/gadgets/${gadgetId}/questions`),
+  clearGadgetQuestions: (gadgetId) => request(`/me/gadgets/${gadgetId}/questions`, { method: "DELETE" }),
 }
