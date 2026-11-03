@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom'
 import { X, Sparkles, ImageOff, Trophy, Share2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
@@ -65,6 +65,10 @@ function CompareValue({ row, gadget }) {
 export default function ComparePage() {
   useDocumentTitle('Compare')
   const [searchParams, setSearchParams] = useSearchParams()
+  // Opened from My Gadgets? Then "back" returns there instead of to the catalog.
+  const location = useLocation()
+  const fromMyGadgets = location.state?.from === '/my-gadgets'
+  const back = fromMyGadgets ? { to: '/my-gadgets', label: 'Back to My Gadgets' } : { to: '/', label: 'Back to Catalog' }
   const navigate = useNavigate()
   const ids = useMemo(() => parseIds(searchParams.get('ids')), [searchParams])
 
@@ -133,7 +137,8 @@ export default function ComparePage() {
     if (next.length === 0) {
       navigate('/')
     } else {
-      setSearchParams({ ids: next.join(',') })
+      // Keep the router state, so removing a gadget doesn't lose where the user came from.
+      setSearchParams({ ids: next.join(',') }, { state: location.state })
     }
   }
 
@@ -165,13 +170,13 @@ export default function ComparePage() {
       <EmptyState
         icon={Sparkles}
         title="Pick at Least 2 Gadgets to Compare"
-        description="Head back to the catalog, select 2–3 gadgets using the checkmarks, then hit Compare."
+        description={fromMyGadgets ? 'Head back to My Gadgets, select 2–5 gadgets, then choose Compare & Ask AI.' : 'Head back to the catalog, select 2–3 gadgets using the checkmarks, then hit Compare.'}
         action={
           <Link
-            to="/"
+            to={back.to}
             className="inline-flex items-center gap-1.5 bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-sage-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 focus-visible:ring-offset-2"
           >
-            Back to Catalog
+            {back.label}
           </Link>
         }
       />
@@ -193,7 +198,7 @@ export default function ComparePage() {
 
   return (
     <div>
-      <BackLink to="/">Back to Catalog</BackLink>
+      <BackLink to={back.to}>{back.label}</BackLink>
 
       <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
         <h1 className="font-display text-xl sm:text-2xl font-medium text-gray-900 tracking-tight">

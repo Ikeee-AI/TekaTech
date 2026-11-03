@@ -350,6 +350,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   const addButtonRef = useFocusOnClose(showForm)
   const [indexingId, setIndexingId] = useState(null)
   const [indexErrors, setIndexErrors] = useState({})
+  const [bulk, setBulk] = useState(null) // Index All Pending progress: { done, total } while running
 
   // `background` refreshes without the loading skeleton, so the list (and any
   // open correction form) stays on screen; a failed background refresh keeps it.
@@ -371,25 +372,62 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
     loadSpecs()
   }, [loadSpecs])
 
-  async function handleIndex(gid, specId) {
+  // Indexes one chunk. Returns the error (or null), so a bulk run can stop on a rate limit.
+  function indexOne(gid, specId) {
     setIndexingId(specId)
     setIndexErrors((prev) => withEntry(prev, specId, undefined))
-    try {
-      await api.indexSpec(gid, specId)
-      toast.success('Spec ready for AI questions')
-      // Show the new status straight away, then confirm it from the server quietly.
-      setState((s) => ({
-        ...s,
-        specs: s.specs.map((sp) => (sp.id === specId ? { ...sp, indexing_status: 'indexed' } : sp)),
-      }))
-      loadSpecs({ background: true })
-    } catch (err) {
-      // Kept on the card (not just a toast) so the failure stays visible until retried.
-      const message = indexFailureMessage(err)
-      setIndexErrors((prev) => withEntry(prev, specId, message))
-    } finally {
-      setIndexingId(null)
+    return api
+      .indexSpec(gid, specId)
+      .then(() => {
+        // Show the new status straight away; the caller confirms it from the server quietly.
+        setState((s) => ({
+          ...s,
+          specs: s.specs.map((sp) => (sp.id === specId ? { ...sp, indexing_status: 'indexed' } : sp)),
+        }))
+        return null
+      })
+      .catch((err) => {
+        // Kept on the card (not just a toast) so the failure stays visible until retried.
+        setIndexErrors((prev) => withEntry(prev, specId, indexFailureMessage(err)))
+        return err
+      })
+      .finally(() => setIndexingId(null))
+  }
+
+  async function handleIndex(gid, specId) {
+    const err = await indexOne(gid, specId)
+    if (!err) toast.success('Spec ready for AI questions')
+    loadSpecs({ background: true })
+  }
+
+  // Admin convenience: index every pending chunk in turn (one request at a time, the same
+  // endpoint as the per-card button). Stops at a rate limit (20/hour) or a session problem
+  // instead of hammering the API; other failures stay on their card and the run continues.
+  async function handleIndexAll() {
+    const pending = state.specs.filter((sp) => sp.indexing_status !== 'indexed').map((sp) => sp.id)
+    if (pending.length === 0) return
+    let ok = 0
+    let failed = 0
+    let stopped = null
+    for (let i = 0; i < pending.length; i += 1) {
+      setBulk({ done: i, total: pending.length })
+      const err = await indexOne(gadgetId, pending[i])
+      if (!err) ok += 1
+      else {
+        failed += 1
+        if (err.status === 429 || err.status === 401) {
+          stopped = err.status
+          break
+        }
+      }
     }
+    setBulk(null)
+    loadSpecs({ background: true })
+    const left = pending.length - ok
+    if (stopped === 429) toast.error(`Indexed ${ok}. Stopped at the hourly indexing limit; ${left} still pending.`)
+    else if (stopped === 401) toast.error(`Indexed ${ok}. Log in again to index the remaining ${left}.`)
+    else if (failed > 0) toast.error(`Indexed ${ok} of ${pending.length}. ${failed} failed; see the cards below.`)
+    else toast.success(`All ${ok} spec${ok === 1 ? '' : 's'} ready for AI questions`)
   }
 
   const { status, specs } = state
@@ -469,6 +507,24 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
       )}
 
       {status === 'ready' && specs.length > 0 && <AiReadiness specs={specs} />}
+
+      {isAdmin && status === 'ready' && specs.some((sp) => sp.indexing_status !== 'indexed') && (
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <Button
+            variant="primary"
+            size="sm"
+            icon={Sparkles}
+            loading={bulk !== null}
+            disabled={indexingId !== null}
+            onClick={handleIndexAll}
+          >
+            {bulk
+              ? `Indexing ${bulk.done + 1} of ${bulk.total}…`
+              : `Index All Pending (${specs.filter((sp) => sp.indexing_status !== 'indexed').length})`}
+          </Button>
+          <span className="text-xs text-slate-600">One at a time; indexing is limited to 20 per hour.</span>
+        </div>
+      )}
 
       {status === 'ready' && specs.length > 0 && (
         <ul className="space-y-3">

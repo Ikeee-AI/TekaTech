@@ -172,7 +172,7 @@ export default function MyGadgets() {
                 size="sm"
                 icon={Scale}
                 disabled={!canCompare}
-                onClick={() => navigate(`/compare?ids=${[...selected].join(',')}`)}
+                onClick={() => navigate(`/compare?ids=${[...selected].join(',')}`, { state: { from: '/my-gadgets' } })}
               >
                 Compare &amp; Ask AI
               </Button>
