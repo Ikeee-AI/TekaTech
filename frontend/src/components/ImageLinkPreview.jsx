@@ -9,7 +9,9 @@ import { CheckCircle2, ImageOff, Loader2 } from 'lucide-react'
 export default function ImageLinkPreview({ url, status, onResult }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-white">
+      {/* Same box as the catalog card's photo (GadgetList GadgetCard: w-24 h-24, rounded-lg,
+          object-cover), so "how the catalog card will show it" is true, cropping included. */}
+      <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
         {/* key: a new link starts a fresh load, so a stale onLoad can't mark it as working. */}
         <img
           key={url}
@@ -17,7 +19,7 @@ export default function ImageLinkPreview({ url, status, onResult }) {
           alt="Preview of the image link"
           onLoad={() => onResult(url, 'loaded')}
           onError={() => onResult(url, 'failed')}
-          className={status === 'loaded' ? 'h-full w-full object-contain' : 'hidden'}
+          className={status === 'loaded' ? 'h-full w-full object-cover' : 'hidden'}
         />
         {status === 'pending' && <Loader2 size={18} aria-hidden="true" className="animate-spin text-slate-500" />}
         {status === 'failed' && <ImageOff size={18} aria-hidden="true" className="text-red-700" />}
