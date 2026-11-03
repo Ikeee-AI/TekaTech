@@ -255,3 +255,50 @@
 - Make the Demo Day account an admin; tell Jopher — Ikeee-AI — before Demo Day.
 - Continue the gap review of the remaining journeys (ask, compare/share, corrections, admin) — Ikeee-AI — 3–4 Nov.
 - Decide the pilot date or drop it, and record it — Ikeee-AI — after the gaps are triaged.
+
+## 2026-11-03 17:45 Asia/Manila — Gadget AI chat with saved conversation (#210); specs grouped by source (#211)
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code) · **Task:** S5-IK (owner-requested product gaps; takeovers across Manuel, Jopher and Mika areas) · **Branch:** `tekatech/s5-ik-gadget-ai-thread`, `tekatech/s5-ik-spec-source-cards`
+
+**Done**
+- **Per-gadget AI conversation** — PR [#210](https://github.com/Ikeee-AI/TekaTech/pull/210), commits `e7ee46e`, `28a9e41`, `f7cd23c`.
+  - New table `user_questions` (`backend/sql/user_questions.sql`). The owner applied it in the Supabase SQL Editor on 3 Nov; afterwards the backend's service-role client read the table (0 rows).
+  - `POST /query` stays public and saves a turn only for a valid session asking about exactly one gadget. A failed save never fails the answer. New `GET`/`DELETE /me/gadgets/{id}/questions` (caller's own thread only).
+  - `regenerate: true` on `/query` replaces the caller's newest saved turn for the same question instead of adding a duplicate. An error retry never sends it.
+  - The gadget page's AI box is now a chat (`GadgetChatPanel`): scrollable conversation with a jump-to-latest button, message box at the bottom (Enter sends, Shift+Enter new line), user bubbles right and answers left, New Chat deletes the thread. The Compare page panel is unchanged.
+  - Local: backend 679 passed; frontend lint clean, build ok, vitest 249 passed; Playwright failure drill 8/8 passed after the fix below.
+  - The owner clicked through the chat locally (dev servers against the project's database) and confirmed it works. **Not yet checked on production** (unmerged).
+- **Specifications grouped by source** — PR [#211](https://github.com/Ikeee-AI/TekaTech/pull/211), commit `cd6df58`. One collapsible card per source link (link and date once, chunks as rows, first card open), `Label: value` lines as a fact list, per-card AI readiness, admin **Index All for AI**. Frontend only. Local: lint clean, build ok, vitest 248 passed. CI [run 41610944164](https://github.com/Ikeee-AI/TekaTech/actions/runs/41610944164) passed. The owner checked it locally. **Not yet checked on production** (unmerged).
+- Docs in the PRs: `docs/database.md` (step 8 for the new table), `docs/quick-start.md`, `backend/README.md` API rows, `docs/scope-changes.md`, `CLAUDE.md`/`AGENTS.md`.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| CI [run 41609712543](https://github.com/Ikeee-AI/TekaTech/actions/runs/41609712543) on `28a9e41`: Browser checks (failure drill) failed, 4 gadget-page tests ✘ after 30 s each | `e2e/failure-drill.spec.js` still looked for the old "Question to Ask" box and "Ask" button, which the chat replaced. The dependent-test search had covered `src/` but not `e2e/` | Spec updated for the chat (box label, Send button, question kept as the chat bubble) — `f7cd23c`; 8/8 passed locally; CI [run 41612210371](https://github.com/Ikeee-AI/TekaTech/actions/runs/41612210371) on `f7cd23c` all green — fixed |
+| Local `npx playwright test`: all 8 failed with "Executable doesn't exist … npx playwright install" | Playwright's Chromium was not installed on the laptop | `npx playwright install chromium` — fixed |
+| `bash: unexpected EOF while looking for matching '` while editing `SpecManager.jsx` | Shell quoting in a heredoc | Edit moved into a script file; nothing had been written — fixed |
+| ESLint `react-refresh/only-export-components` on `SpecManager.jsx` | Helper functions exported from a component file | Moved to `frontend/src/utils/specLayout.js` — fixed |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #210 and #211 change UI in Mika's area, endpoints/wiring in Jopher's and schema in Manuel's | Ownership overlap | Built as Ikeee-AI takeovers at the owner's request; area owners tagged for review in each PR — open until reviewed |
+| Local testing runs against the project's production database (local backend `.env`) | Test questions spend real OpenAI credit and write real `user_questions` rows | Owner informed before testing; clear test threads with New Chat — open (no separate dev DB in use) |
+
+**Decisions**
+- Saved conversation only for signed-in users asking about a single gadget. Earlier turns are **not** sent to the model, so prompt and cost are unchanged — Ikeee-AI.
+- Regenerate replaces the saved turn rather than keeping both — Ikeee-AI (owner).
+- Chat UI only on the gadget page; comparisons keep `AIComparisonPanel` — Ikeee-AI.
+- Specs redesign in its own PR (#211), not added to #210 — one branch per issue — Ikeee-AI.
+- Existing spec labels kept (Index for AI, Ready for AI, Suggest Correction) because the demo script and quick-start use them — Ikeee-AI.
+
+**Blockers / risks**
+- #210 and #211 need one teammate approval each before merge — Manuel / Jopher / Mika — 4 Nov.
+- Spec cards group by the exact link text, so `www.` or a trailing `/` makes a second card. Normalising was offered to the owner, not done — Ikeee-AI — if requested.
+
+**Plan alignment**
+- #210: **Partial** (checks green on `f7cd23c`; not reviewed, merged or deployed).
+- #211: **Partial** (checks passed; not reviewed, merged or deployed).
+- Pilot: still **Not started (on hold)**.
+
+**Next**
+- Get reviews on #210 and #211, merge, then do the production check (chat: ask two questions, reload, New Chat; specs: cards and dropdown) and record it in each PR — Ikeee-AI — after approval.
