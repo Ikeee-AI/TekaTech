@@ -240,7 +240,7 @@
 - First-login fixes go to Jopher as issue #196, not a takeover — Ikeee-AI.
 
 **Blockers / risks**
-- The Supabase email sending limit is unchecked. Every new account needs a confirmation email, so several sign-ups at once may fail with "Too many requests" — Ikeee-AI — before any testers are invited.
+- ~~The Supabase email sending limit is unchecked.~~ **Resolved at about 13:15:** it was 2 emails/hour. Production now uses Brevo custom SMTP at 30/hour, and a test sign-up email arrived instantly in the inbox and its link signed the user in (`docs/devops/environments.md`, E7) — Ikeee-AI.
 - Admin landing after log-in is covered by unit tests only, not clicked through on production — Ikeee-AI — next admin log-in.
 - The backup rehearsal with `user_gadgets` has not been run — Ikeee-AI — Sprint 5.
 - Actions minutes for November are unknown (billing API unavailable) — Ikeee-AI — 3 Nov.
@@ -251,7 +251,7 @@
 
 **Next**
 - Merge this log/backup PR after review — Ikeee-AI — 3 Nov.
-- Check Supabase Authentication → Rate Limits (emails) — Ikeee-AI — 3 Nov.
+- ~~Check Supabase Authentication → Rate Limits (emails)~~ — done 3 Nov (Brevo SMTP, see above).
 - Make the Demo Day account an admin; tell Jopher — Ikeee-AI — before Demo Day.
 - Continue the gap review of the remaining journeys (ask, compare/share, corrections, admin) — Ikeee-AI — 3–4 Nov.
 - Decide the pilot date or drop it, and record it — Ikeee-AI — after the gaps are triaged.
