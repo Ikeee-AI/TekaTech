@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save, Loader2, AlertCircle } from 'lucide-react'
+import { ChevronDown, FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save, Loader2, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
@@ -11,6 +11,7 @@ import Alert from './ui/Alert'
 import { TextField, TextAreaField } from './ui/FormField'
 import { friendlyError } from '../utils/requestErrors'
 import { notifyCorrectionsChanged } from '../utils/correctionNotices'
+import { groupSpecsBySource, specBlocks } from '../utils/specLayout'
 
 const MAX_SPEC_CHARS = 20_000 // mirrors MAX_RAW_TEXT_LENGTH in backend/routers/specs.py
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
@@ -264,23 +265,77 @@ function AiReadiness({ specs }) {
   )
 }
 
-function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDeleted }) {
+function sourceLabel(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
+function SpecContent({ content }) {
+  return (
+    <div className="space-y-2">
+      {specBlocks(content).map((block, i) =>
+        block.type === 'facts' ? (
+          <dl key={i} className="grid grid-cols-1 sm:grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 gap-y-1 text-[15px]">
+            {block.items.map((item, j) => (
+              <div key={j} className="contents">
+                <dt className="font-medium text-slate-500 sm:pt-px">{item.label}</dt>
+                <dd className="text-slate-900 break-words mb-1 sm:mb-0">{item.value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p key={i} className="text-[15px] text-slate-800 break-words">
+            {block.text}
+          </p>
+        ),
+      )}
+    </div>
+  )
+}
+
+/** One saved chunk inside its source card: the text, plus row-level status and actions. */
+function SpecRow({ spec, user, isAdmin, gadgetId, indexingId, indexError, onIndex, onDeleted }) {
   const [correcting, setCorrecting] = useState(false)
   const suggestButtonRef = useFocusOnClose(correcting)
   const indexed = spec.indexing_status === 'indexed'
-  // Admin-curated catalog: POST /gadgets/{id}/specs/{spec_id}/index is admin-only.
-  const isAdmin = Boolean(user?.app_metadata?.is_admin)
   const isIndexing = indexingId === spec.id
   const indexState = indexed ? 'indexed' : isIndexing ? 'indexing' : indexError ? 'failed' : 'pending'
-  const [now] = useState(() => Date.now())
-  const outdated = now - new Date(spec.verified_at).getTime() > SIX_MONTHS_MS
 
   return (
-    <li className="bg-white border border-slate-200 rounded-xl px-4 sm:px-5 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-        <IndexBadge state={indexState} />
-        <div className="flex items-center gap-2">
-          {isAdmin && !indexed && (
+    <li className="px-4 sm:px-5 py-3.5" aria-label={`Spec #${spec.chunk_index}`}>
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <SpecContent content={spec.content} />
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {user && !correcting && (
+            <Button
+              ref={suggestButtonRef}
+              variant="ghost"
+              size="sm"
+              icon={Flag}
+              onClick={() => setCorrecting(true)}
+              aria-label={`Suggest Correction for spec #${spec.chunk_index}`}
+              title="Suggest Correction"
+              className="!px-2.5"
+            />
+          )}
+          <DeleteSpecButton gadgetId={gadgetId} spec={spec} onDeleted={onDeleted} />
+        </div>
+      </div>
+
+      {indexState !== 'indexed' && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <IndexBadge state={indexState} />
+          {indexState === 'pending' && (
+            <span className="text-sm text-amber-900">
+              The AI can&apos;t use this part yet.{!isAdmin && ' An admin needs to index it.'}
+            </span>
+          )}
+          {isAdmin && (
             <Button
               variant="outline"
               size="sm"
@@ -292,52 +347,97 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDel
               {isIndexing ? 'Indexing…' : indexError ? 'Retry Indexing' : 'Index for AI'}
             </Button>
           )}
-          <span className="text-xs text-slate-600 bg-slate-100 rounded px-1.5 py-0.5">
-            <span className="sr-only">Chunk </span>#{spec.chunk_index}
-          </span>
-          <DeleteSpecButton gadgetId={gadgetId} spec={spec} onDeleted={onDeleted} />
         </div>
-      </div>
-
+      )}
       {indexState === 'failed' && (
-        <Alert tone="error" title="Indexing Failed — Your Spec Is Saved" className="mb-3">
+        <Alert tone="error" title="Indexing Failed — Your Spec Is Saved" className="mt-2.5">
           {indexError}
         </Alert>
       )}
-      {indexState === 'pending' && (
-        <p className="text-sm text-amber-900 mb-2">
-          The AI can&apos;t use this spec until it is indexed.{!isAdmin && ' An admin needs to index it.'}
-        </p>
-      )}
 
-      <p className="text-[15px] text-slate-800 whitespace-pre-line break-words">{spec.content}</p>
+      {correcting && <CorrectionForm spec={spec} onDone={() => setCorrecting(false)} />}
+    </li>
+  )
+}
 
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mt-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {spec.source_url && (
+/** One card per source: link and date once in the header, its chunks as rows below. */
+function SpecSourceGroup({ group, defaultOpen, user, isAdmin, gadgetId, indexingId, indexErrors, onIndex, onDeleted }) {
+  const [now] = useState(() => Date.now())
+  const [expanded, setExpanded] = useState(defaultOpen)
+  const rowsId = useId()
+  const { sourceUrl, specs } = group
+  // A part that is indexing or failed to index keeps its card open, so the progress or the
+  // error is never hidden behind a closed card.
+  const mustShow = specs.some((s) => indexingId === s.id || indexErrors[s.id])
+  const open = expanded || mustShow
+  const ready = specs.filter((s) => s.indexing_status === 'indexed').length
+  // The oldest verification in the group decides "May Be Outdated".
+  const oldest = specs.reduce((a, s) => (new Date(s.verified_at) < new Date(a) ? s.verified_at : a), specs[0].verified_at)
+  const outdated = now - new Date(oldest).getTime() > SIX_MONTHS_MS
+
+  return (
+    <li className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div
+        className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 sm:px-5 py-3 bg-slate-50 ${open ? 'border-b border-slate-200' : ''}`}
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+          {sourceUrl ? (
             <a
-              href={spec.source_url}
+              href={sourceUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 min-h-10 sm:min-h-0 text-sm font-medium text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+              className="inline-flex items-center gap-1.5 min-h-10 sm:min-h-0 text-sm font-semibold text-sage-700 hover:underline rounded break-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
             >
-              <ExternalLink size={13} aria-hidden="true" /> Source
-              <span className="sr-only">(opens in a new tab)</span>
+              <ExternalLink size={14} aria-hidden="true" className="shrink-0" /> {sourceLabel(sourceUrl)}
+              <span className="sr-only">(source, opens in a new tab)</span>
             </a>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+              <FileText size={14} aria-hidden="true" /> No source link
+            </span>
           )}
-          <span className="inline-flex items-center gap-1 text-sm text-slate-600" title={formatDate(spec.verified_at)}>
-            <Calendar size={13} aria-hidden="true" /> Verified {timeAgo(spec.verified_at)}
+          <span className="inline-flex items-center gap-1 text-sm text-slate-600" title={formatDate(oldest)}>
+            <Calendar size={13} aria-hidden="true" /> Verified {timeAgo(oldest)}
           </span>
           {outdated && <span className="text-sm text-amber-800 font-semibold">May Be Outdated</span>}
         </div>
-        {user && !correcting && (
-          <Button ref={suggestButtonRef} variant="ghost" size="sm" icon={Flag} onClick={() => setCorrecting(true)}>
-            Suggest Correction
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {ready === specs.length ? (
+            <IndexBadge state="indexed" />
+          ) : (
+            <span className="text-xs font-semibold text-amber-800">
+              {ready} of {specs.length} ready for AI
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setExpanded(!open)}
+            disabled={mustShow}
+            aria-expanded={open}
+            aria-controls={rowsId}
+            aria-label={`${open ? 'Hide' : 'Show'} ${specs.length} spec part${specs.length === 1 ? '' : 's'} from ${sourceUrl ? sourceLabel(sourceUrl) : 'no source link'}`}
+            className="inline-flex items-center gap-1 min-h-10 sm:min-h-8 px-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-200/70 disabled:opacity-60 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+          >
+            {specs.length} part{specs.length === 1 ? '' : 's'}
+            <ChevronDown size={16} aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
       </div>
-
-      {correcting && <CorrectionForm spec={spec} onDone={() => setCorrecting(false)} />}
+      <ul id={rowsId} hidden={!open} className="divide-y divide-slate-100">
+        {specs.map((spec) => (
+          <SpecRow
+            key={spec.id}
+            spec={spec}
+            user={user}
+            isAdmin={isAdmin}
+            gadgetId={gadgetId}
+            indexingId={indexingId}
+            indexError={indexErrors[spec.id]}
+            onIndex={onIndex}
+            onDeleted={onDeleted}
+          />
+        ))}
+      </ul>
     </li>
   )
 }
@@ -527,9 +627,20 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
       )}
 
       {status === 'ready' && specs.length > 0 && (
-        <ul className="space-y-3">
-          {specs.map((spec) => (
-            <SpecCard key={spec.id} spec={spec} user={user} gadgetId={gadgetId} indexingId={indexingId} indexError={indexErrors[spec.id]} onIndex={handleIndex} onDeleted={loadSpecs} />
+        <ul className="space-y-4">
+          {groupSpecsBySource(specs).map((group, i) => (
+            <SpecSourceGroup
+              key={group.key || 'no-source'}
+              defaultOpen={i === 0}
+              group={group}
+              user={user}
+              isAdmin={isAdmin}
+              gadgetId={gadgetId}
+              indexingId={indexingId}
+              indexErrors={indexErrors}
+              onIndex={handleIndex}
+              onDeleted={loadSpecs}
+            />
           ))}
         </ul>
       )}

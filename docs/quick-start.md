@@ -54,7 +54,7 @@ The catalog is curated by the TekaTech team: only admin accounts see **Add Gadge
 1. On a gadget's page, click **Add Specs**.
 2. Paste the spec text. Separate facts with blank lines; short blocks are grouped into snippets of about 300 tokens, so a short spec sheet may become a single card. Add the **Source URL** you copied it from, then **Save Specs**.
 3. New specs show **Pending AI Indexing**. They're saved and readable straight away, but the AI can't use them yet.
-4. Click **Index for AI** on each one, or **Index All Pending** once. When the badge says **Ready for AI**, answers can cite it. If indexing fails, your text is still saved; try again later.
+4. Specs saved from one source link appear together in one card; the **parts** button in its header opens or closes it (the first card starts open). Click **Index for AI** on a part, or **Index All Pending** once for the whole gadget. When a card's header says **Ready for AI**, answers can cite it. If indexing fails, your text is still saved; try again later.
 
 ### My Gadgets (your dashboard)
 - After you log in you land on **My Gadgets**. It's empty at first.
@@ -62,7 +62,7 @@ The catalog is curated by the TekaTech team: only admin accounts see **Add Gadge
 - On **My Gadgets**: **Ask AI** opens the gadget's page with its question box, and **Remove** takes it off your list (the catalog is unchanged). Tick 2–5 gadgets and click **Compare & Ask AI** to compare them side by side and ask about all of them at once.
 
 ### Suggest a correction
-1. On any spec card, click **Suggest Correction**, write the corrected text, and **Submit for Review**.
+1. On any spec, click the **flag** button (**Suggest Correction**), write the corrected text, and **Submit for Review**.
 2. Click the **inbox icon** (📥, top bar; **My Suggestions** on phones) to follow it: **Pending**, then **Approved** or **Rejected**. A **New decision** badge appears when an admin has decided.
 
 ---
