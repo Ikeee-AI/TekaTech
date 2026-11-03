@@ -268,6 +268,8 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDel
   const [correcting, setCorrecting] = useState(false)
   const suggestButtonRef = useFocusOnClose(correcting)
   const indexed = spec.indexing_status === 'indexed'
+  // Admin-curated catalog: POST /gadgets/{id}/specs/{spec_id}/index is admin-only.
+  const isAdmin = Boolean(user?.app_metadata?.is_admin)
   const isIndexing = indexingId === spec.id
   const indexState = indexed ? 'indexed' : isIndexing ? 'indexing' : indexError ? 'failed' : 'pending'
   const [now] = useState(() => Date.now())
@@ -278,7 +280,7 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDel
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
         <IndexBadge state={indexState} />
         <div className="flex items-center gap-2">
-          {user && !indexed && (
+          {isAdmin && !indexed && (
             <Button
               variant="outline"
               size="sm"
@@ -304,7 +306,7 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDel
       )}
       {indexState === 'pending' && (
         <p className="text-sm text-amber-900 mb-2">
-          The AI can&apos;t use this spec until it is indexed.{!user && ' A contributor needs to index it.'}
+          The AI can&apos;t use this spec until it is indexed.{!isAdmin && ' An admin needs to index it.'}
         </p>
       )}
 
@@ -342,6 +344,7 @@ function SpecCard({ spec, user, gadgetId, indexingId, indexError, onIndex, onDel
 
 export default function SpecManager({ gadgetId, onSpecsChange }) {
   const { user } = useAuth()
+  const isAdmin = Boolean(user?.app_metadata?.is_admin)
   const [state, setState] = useState({ status: 'loading', specs: [] })
   const [showForm, setShowForm] = useState(false)
   const addButtonRef = useFocusOnClose(showForm)
@@ -398,21 +401,31 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
           <FileText size={20} className="text-sage-700" aria-hidden="true" /> Specifications
           {status === 'ready' && <span className="text-sm font-medium text-slate-500">({specs.length})</span>}
         </h2>
-        {user ? (
+        {/* Admin-curated catalog (scope change, 3 Nov 2026): only admins add specs.
+            Everyone else contributes by suggesting corrections, which needs an account. */}
+        {isAdmin ? (
           !showForm && (
             <Button ref={addButtonRef} variant="outline" icon={Plus} onClick={() => setShowForm(true)}>
               Add Specs
             </Button>
           )
         ) : (
-          <Button as={Link} to="/login" variant="outline" icon={LogIn}>
-            Log In to Add Specs
-          </Button>
+          !user && (
+            <Button as={Link} to="/login" variant="outline" icon={LogIn}>
+              Log In to Suggest Corrections
+            </Button>
+          )
         )}
       </div>
-      <p className="text-sm text-slate-600 mb-4">
-        Specs are saved immediately. Use Index for AI when credit is available; pending specs remain readable here.
-      </p>
+      {isAdmin ? (
+        <p className="text-sm text-slate-600 mb-4">
+          Specs are saved immediately. Use Index for AI when credit is available; pending specs remain readable here.
+        </p>
+      ) : (
+        <p className="text-sm text-slate-600 mb-4">
+          Specs are added by the TekaTech team. Spot a mistake? Use Suggest Correction on the spec and an admin will review it.
+        </p>
+      )}
 
       {showForm && (
         <AddSpecForm

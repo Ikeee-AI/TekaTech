@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { Pencil, Calendar, ImageOff, LogIn } from 'lucide-react'
+import { Pencil, Calendar, ImageOff } from 'lucide-react'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
@@ -133,13 +133,10 @@ export default function GadgetDetail() {
           </dl>
 
           <div className="flex flex-wrap gap-3 mt-auto pt-6">
-            {user ? (
+            {/* Admin-curated catalog: PATCH /gadgets/{id} is admin-only. */}
+            {user?.app_metadata?.is_admin && (
               <Button as={Link} to={`/gadgets/${id}/edit`} variant="outline" icon={Pencil}>
                 Edit
-              </Button>
-            ) : (
-              <Button as={Link} to="/login" state={{ from: { pathname: `/gadgets/${id}/edit` } }} variant="outline" icon={LogIn}>
-                Log In to Edit
               </Button>
             )}
             <DeleteGadgetButton gadget={gadget} onDeleted={() => navigate('/', { replace: true })} />

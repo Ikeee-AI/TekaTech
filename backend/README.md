@@ -53,7 +53,7 @@ The Ollama probe calls `http://127.0.0.1:11434/api/generate` from backend code, 
 
 ## Architecture notes
 
-- Admin authorization uses Supabase `app_metadata.is_admin`, never client-writable `user_metadata`. Any logged-in user can create/edit gadgets, save/index specs and submit corrections. Only admins delete gadgets and review/resolve corrections.
+- Admin authorization uses Supabase `app_metadata.is_admin`, never client-writable `user_metadata`. The catalog is admin-curated (3 Nov 2026): only admins create/edit/delete gadgets, save/index/delete specs and review/resolve corrections. Any logged-in user can submit corrections and list their own.
 - RLS is enabled and direct browser table/RPC privileges are revoked, but the service-role backend bypasses it. FastAPI authorization is essential.
 - Embeddings use `text-embedding-3-small` / `cl100k_base`; chat uses `gpt-5-mini` / `o200k_base`. Input limits check both characters and tokens.
 - The prompt treats snippets as untrusted data and matches the frontend renderer's citation/bold/bullet rules. Keep those contracts when changing AI code. The text and its version label (`PROMPT_VERSION`) live in `backend/prompts.py`; an evaluation report's `prompt_version` should carry the same label.
@@ -72,7 +72,7 @@ The browser never queries data tables directly. Supabase is used from the browse
 3. The backend verifies it with `supabase.auth.get_user(token)` in `auth.py`.
 4. Route-level authorization (`get_current_user`, `get_current_admin_user`) is the only access control — the backend's service-role key bypasses RLS, so Supabase RLS policies provide zero defense-in-depth here.
 
-Admin is a flag on the Supabase auth user's `app_metadata`, which only the admin API (service-role key) can set. A user can never grant it to themselves. Admin-only operations today: delete gadget, list/resolve corrections. Any logged-in user can create/edit gadgets, ingest/index specs, and submit corrections.
+Admin is a flag on the Supabase auth user's `app_metadata`, which only the admin API (service-role key) can set. A user can never grant it to themselves. Admin-only operations today: create/edit/delete gadgets, ingest/index/delete specs, list/resolve corrections. Any logged-in user can submit corrections and list their own.
 
 The relationship actually used by the app is `gadgets.id -> spec_documents.gadget_id` (one gadget, many spec chunks, cascade delete). `spec_documents` -> `spec_corrections` (one spec, many corrections, cascade delete) is the second relationship. Both are reproduced in scratch Postgres by `backend/sql/001_baseline.sql` without Supabase-managed Auth tables.
 
@@ -178,13 +178,13 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/health/ready` | GET | none | none | 200 `{"status": "ok", "database": "ok", "latency_ms": N}`; `Cache-Control: no-store` | 503 `{"status": "error", "database": "error", "latency_ms": N}` (the database failed or took over 5 s; never any error text), 429 (30/minute) |
 | `/version` | GET | none | none | 200 `{"commit": "..."}` | — |
 | `/gadgets` | GET | none | query: `category`, `brand` | 200 list | — |
-| `/gadgets` | POST | logged-in | `GadgetCreate` (limits below) | 201 `GadgetResponse` | 401, 422, 503 (database write failed) |
+| `/gadgets` | POST | admin | `GadgetCreate` (limits below) | 201 `GadgetResponse` | 401, 403, 422, 503 (database write failed) |
 | `/gadgets/{id}` | GET | none | path `id` | 200 `GadgetResponse` | 404 |
-| `/gadgets/{id}` | PATCH | logged-in | `GadgetUpdate`: only sent fields change; explicit `null` clears `release_date`, `price_php`, `image_url` | 200 `GadgetResponse` | 400 (no fields), 401, 404, 422 (incl. `null` name/brand/category), 503 |
+| `/gadgets/{id}` | PATCH | admin | `GadgetUpdate`: only sent fields change; explicit `null` clears `release_date`, `price_php`, `image_url` | 200 `GadgetResponse` | 400 (no fields), 401, 403, 404, 422 (incl. `null` name/brand/category), 503 |
 | `/gadgets/{id}` | DELETE | admin | path `id` | 204 | 401, 403, 404 |
 | `/gadgets/{id}/specs` | GET | none | path `id` | 200 list | — |
-| `/gadgets/{id}/specs` | POST | logged-in | `{"raw_text": "...", "source_url": "..."}` (`source_url` optional, http(s), max 2000 chars) | 201 `{"gadget_id", "chunks_created", "indexing_status"}` | 400, 401, 404, 422, 429 |
-| `/gadgets/{id}/specs/{spec_id}/index` | POST | logged-in | path ids | 200 `{"id", "indexing_status"}` | 401, 404, 409, 422, 429, 503 |
+| `/gadgets/{id}/specs` | POST | admin | `{"raw_text": "...", "source_url": "..."}` (`source_url` optional, http(s), max 2000 chars) | 201 `{"gadget_id", "chunks_created", "indexing_status"}` | 400, 401, 403, 404, 422, 429 |
+| `/gadgets/{id}/specs/{spec_id}/index` | POST | admin | path ids | 200 `{"id", "indexing_status"}` | 401, 403, 404, 409, 422, 429, 503 |
 | `/gadgets/{id}/specs/{spec_id}` | DELETE | admin | path ids | 204; its corrections are deleted with it (`on delete cascade`), and saved AI answers about the gadget are dropped from the answer cache | 401, 403, 404 (no such spec, or the spec belongs to another gadget) |
 | `/comparisons` | POST | none | `{"gadget_ids": [...]}` (at most 5 sent; duplicates removed, then at least 2 must remain) | 201 | 404 (a gadget doesn't exist), 422 (fewer than 2 different, more than 5, malformed id), 429, 503, 500 (no free link name after 5 tries; try again) |
 | `/comparisons/{slug}` | GET | none | path `slug` | 200 `{"slug", "gadget_ids"}` (view count is best-effort and never fails the request) | 404 |

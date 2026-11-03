@@ -7,7 +7,7 @@ import answer_cache
 import cache
 from schemas import GadgetCreate, GadgetUpdate, GadgetResponse, normalize_category
 from supabase_client import supabase
-from auth import get_current_user, get_current_admin_user
+from auth import get_current_admin_user
 
 router = APIRouter(prefix="/gadgets", tags=["gadgets"])
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ def get_gadget(gadget_id: UUID, response: Response):
     return data
 
 @router.post("", response_model=GadgetResponse, status_code=201)
-def create_gadget(gadget: GadgetCreate, user=Depends(get_current_user)):
+def create_gadget(gadget: GadgetCreate, user=Depends(get_current_admin_user)):
     payload = gadget.model_dump(mode="json", exclude_none=True)
     try:
         result = supabase.table("gadgets").insert(payload).execute()
@@ -66,7 +66,7 @@ def create_gadget(gadget: GadgetCreate, user=Depends(get_current_user)):
     return result.data[0]
 
 @router.patch("/{gadget_id}", response_model=GadgetResponse)
-def update_gadget(gadget_id: UUID, gadget: GadgetUpdate, user=Depends(get_current_user)):
+def update_gadget(gadget_id: UUID, gadget: GadgetUpdate, user=Depends(get_current_admin_user)):
     # exclude_unset, not exclude_none: an omitted field is left alone, while an
     # explicit null clears release_date / price_php / image_url (GadgetUpdate
     # refuses null for the required columns).

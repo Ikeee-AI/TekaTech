@@ -54,7 +54,7 @@ function App() {
               <Route
                 path="/gadgets/:id/edit"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute adminOnly>
                     <EditGadget />
                   </ProtectedRoute>
                 }
@@ -62,7 +62,7 @@ function App() {
               <Route
                 path="/add"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute adminOnly>
                     <AddGadget />
                   </ProtectedRoute>
                 }
