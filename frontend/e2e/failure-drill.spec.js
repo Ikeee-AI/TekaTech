@@ -17,7 +17,11 @@ const JOURNEYS = [
     name: 'ask from a gadget page',
     url: `/gadgets/${IPHONE.id}`,
     panelTitle: `Ask About ${IPHONE.name}`,
-    button: 'Ask',
+    // The gadget page's chat (GadgetChatPanel): the message box empties on send and the
+    // question stays on screen as the user's chat bubble.
+    boxLabel: `Ask about ${IPHONE.name}`,
+    button: 'Send question',
+    keepsQuestion: 'bubble',
     question: 'What chip does the iPhone 15 use?',
     gadgetIds: [IPHONE.id],
   },
@@ -25,7 +29,9 @@ const JOURNEYS = [
     name: 'compare two gadgets',
     url: `/compare?ids=${IPHONE.id},${GALAXY.id}`,
     panelTitle: 'AI Trade-Off Comparison',
+    boxLabel: 'Question to Ask',
     button: 'Generate Comparison',
+    keepsQuestion: 'box',
     question: 'Which one has the better chip?',
     gadgetIds: [IPHONE.id, GALAXY.id],
   },
@@ -35,7 +41,7 @@ async function askQuestion(page, journey) {
   await page.goto(journey.url)
   const panel = page.getByRole('region', { name: journey.panelTitle })
   await expect(panel).toBeVisible()
-  const box = panel.getByLabel('Question to Ask')
+  const box = panel.getByLabel(journey.boxLabel)
   await box.fill(journey.question)
   await panel.getByRole('button', { name: journey.button, exact: true }).click()
   return { panel, box }
@@ -50,8 +56,9 @@ for (const journey of JOURNEYS) {
 
         // 1. The safe failure state, never a raw error.
         await expect(panel.getByText(title, { exact: true })).toBeVisible()
-        // 2. What the user typed is still there.
-        await expect(box).toHaveValue(journey.question)
+        // 2. What the user typed is still there (in the box, or as the chat bubble).
+        if (journey.keepsQuestion === 'box') await expect(box).toHaveValue(journey.question)
+        else await expect(panel.getByText(journey.question, { exact: true })).toBeVisible()
 
         // 3. Try Again sends the same question and shows a cited answer, no retyping.
         await panel.getByRole('button', { name: 'Try Again' }).click()
