@@ -72,14 +72,14 @@ Rollback rehearsal status: **RUN on production, 31 October 2026** ([evidence](ev
 
 ## Database backup and restore
 
-Production runs on the Supabase free plan, which has no point-in-time recovery or downloadable scheduled backups. The team's backup method is a logical export of the five application tables through the REST API, restored into a disposable PostgreSQL + pgvector built from the tracked SQL:
+Production runs on the Supabase free plan, which has no point-in-time recovery or downloadable scheduled backups. The team's backup method is a logical export of the six application tables (the original five plus `user_gadgets`, My Gadgets, since 3 Nov 2026) through the REST API, restored into a disposable PostgreSQL + pgvector built from the tracked SQL:
 
 ```bash
 uv run --no-project --python 3.12 --with pgserver==0.1.4 --with "psycopg[binary]==3.2.3" \
   python scripts/db_restore_rehearsal.py --env-file backend/.env --report .local/db-restore.json
 ```
 
-The script exports read-only, applies `backend/tests/sql/ci_roles.sql` and `assemble_sql.py` output to a throwaway local database, restores rows in foreign-key order, checks row counts, relationships and vector search, reports timings, then deletes the copy and the export (`--keep` keeps them). It refuses the production project. Restore rehearsal status: **RUN on TekaTech-dev, 31 October 2026** ([evidence](evidence/db-restore-2026-10-31.md)): 180 rows in 14.0 s, all checks passed. Never restore into the live project without explicit team approval; Supabase Auth users are not part of this export.
+The script exports read-only, applies `backend/tests/sql/ci_roles.sql` and `assemble_sql.py` output to a throwaway local database, restores rows in foreign-key order, checks row counts, relationships and vector search, reports timings, then deletes the copy and the export (`--keep` keeps them). It refuses the production project. A source project that hasn't applied `backend/sql/user_gadgets.sql` yet is listed under `tables_missing_in_source` instead of failing. The 31 Oct rehearsal below predates that table and has not been re-run with it. Restore rehearsal status: **RUN on TekaTech-dev, 31 October 2026** ([evidence](evidence/db-restore-2026-10-31.md)): 180 rows in 14.0 s, all checks passed. Never restore into the live project without explicit team approval; Supabase Auth users are not part of this export.
 
 ## Release tagging
 
