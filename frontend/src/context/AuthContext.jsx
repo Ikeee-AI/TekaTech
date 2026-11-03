@@ -32,6 +32,17 @@ export function AuthProvider({ children }) {
     return data
   }
 
+  // A new sign-up confirmation email (#196), for an expired link or one that never arrived.
+  // Same redirect as signUp(). The page shows a neutral message whatever the address.
+  async function resendConfirmation(email) {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    })
+    if (error) throw error
+  }
+
   // Returns the signed-in user, so Login.jsx can pick the landing page (admins: catalog,
   // everyone else: My Gadgets).
   async function signIn(email, password) {
@@ -62,7 +73,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signUp, signIn, signOut, requestPasswordReset, updatePassword }}
+      value={{ user, loading, signUp, resendConfirmation, signIn, signOut, requestPasswordReset, updatePassword }}
     >
       {children}
     </AuthContext.Provider>

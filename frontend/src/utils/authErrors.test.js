@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { authErrorMessage, readAuthLinkError } from './authErrors'
+import { authErrorMessage, classifyAuthLink, isEmailNotConfirmed, readAuthLinkError } from './authErrors'
 
 const authError = (fields) => Object.assign(new Error(fields.message ?? ''), fields)
 
@@ -54,5 +54,46 @@ describe('readAuthLinkError', () => {
   it('prefers the hash over the query string', () => {
     window.history.replaceState(null, '', '/reset-password?error_code=from_query#error_code=from_hash')
     expect(readAuthLinkError()).toBe('from_hash')
+  })
+})
+
+describe('email not confirmed (#196)', () => {
+  it.each([
+    ['the error code', { code: 'email_not_confirmed', message: 'Email not confirmed', status: 400 }],
+    ['only the message', { message: 'Email not confirmed', status: 400 }],
+  ])('is recognised from %s and mapped to a plain sentence', (_label, fields) => {
+    const err = authError(fields)
+    expect(isEmailNotConfirmed(err)).toBe(true)
+    expect(authErrorMessage(err)).toBe(
+      "This email isn't confirmed yet. Open the link in the confirmation email, or send a new one.",
+    )
+  })
+
+  it('is not confused with other failures', () => {
+    expect(isEmailNotConfirmed(authError({ message: 'Invalid login credentials' }))).toBe(false)
+    expect(isEmailNotConfirmed(null)).toBe(false)
+  })
+})
+
+describe('classifyAuthLink (#196)', () => {
+  it('recognises a working sign-up confirmation link', () => {
+    expect(classifyAuthLink('#access_token=abc&refresh_token=r&expires_in=3600&token_type=bearer&type=signup')).toEqual({
+      kind: 'confirmed',
+    })
+  })
+
+  it('returns the error code of an expired or used link, from the hash or the query string', () => {
+    expect(classifyAuthLink('#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid')).toEqual({
+      kind: 'error',
+      code: 'otp_expired',
+    })
+    expect(classifyAuthLink('', '?error=access_denied')).toEqual({ kind: 'error', code: 'access_denied' })
+  })
+
+  it('ignores reset links, other sessions and plain URLs', () => {
+    expect(classifyAuthLink('#access_token=abc&type=recovery')).toBeNull()
+    expect(classifyAuthLink('#type=signup')).toBeNull()
+    expect(classifyAuthLink('', '?ask=battery')).toBeNull()
+    expect(classifyAuthLink()).toBeNull()
   })
 })

@@ -18,7 +18,33 @@ export function authErrorMessage(err, fallback = 'Something went wrong. Please t
   if (err.name === 'AuthSessionMissingError' || err.code === 'session_not_found' || err.code === 'session_expired') {
     return 'Your reset session has expired. Request a new reset link, then try again.'
   }
+  if (isEmailNotConfirmed(err)) {
+    return "This email isn't confirmed yet. Open the link in the confirmation email, or send a new one."
+  }
   return err.message || fallback
+}
+
+/** Logging in before confirming: Supabase answers `email_not_confirmed` ("Email not confirmed"). */
+export function isEmailNotConfirmed(err) {
+  return err?.code === 'email_not_confirmed' || /^email not confirmed$/i.test(err?.message ?? '')
+}
+
+/**
+ * What an email link left in the URL it opened (#196):
+ * - `{ kind: 'error', code }` for an expired or used link (`#error_code=otp_expired`, or the
+ *   same in the query string);
+ * - `{ kind: 'confirmed' }` for a working sign-up confirmation link (`#access_token=…&type=signup`);
+ * - `null` for anything else, including a password-reset link (`type=recovery`).
+ */
+export function classifyAuthLink(hash = '', search = '') {
+  const fromHash = new URLSearchParams(hash.replace(/^#/, ''))
+  const fromQuery = new URLSearchParams(search)
+  for (const params of [fromHash, fromQuery]) {
+    const code = params.get('error_code') || params.get('error')
+    if (code) return { kind: 'error', code }
+  }
+  if (fromHash.get('access_token') && fromHash.get('type') === 'signup') return { kind: 'confirmed' }
+  return null
 }
 
 /**
@@ -28,11 +54,6 @@ export function authErrorMessage(err, fallback = 'Something went wrong. Please t
  */
 export function readAuthLinkError() {
   if (typeof window === 'undefined') return null
-  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-  const query = new URLSearchParams(window.location.search)
-  for (const params of [hash, query]) {
-    const code = params.get('error_code') || params.get('error')
-    if (code) return code
-  }
-  return null
+  const link = classifyAuthLink(window.location.hash, window.location.search)
+  return link?.kind === 'error' ? link.code : null
 }
