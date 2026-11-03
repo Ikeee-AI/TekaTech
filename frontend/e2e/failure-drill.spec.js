@@ -17,8 +17,8 @@ const JOURNEYS = [
     name: 'ask from a gadget page',
     url: `/gadgets/${IPHONE.id}`,
     panelTitle: `Ask About ${IPHONE.name}`,
-    // The gadget page's chat (GadgetChatPanel): the message box empties on send and the
-    // question stays on screen as the user's chat bubble.
+    // The gadget page's chat (GadgetChatPanel): the message box empties on send, the question
+    // becomes the chat's latest message, and a failed question goes back in the box.
     boxLabel: `Ask about ${IPHONE.name}`,
     button: 'Send question',
     keepsQuestion: 'bubble',
@@ -56,9 +56,12 @@ for (const journey of JOURNEYS) {
 
         // 1. The safe failure state, never a raw error.
         await expect(panel.getByText(title, { exact: true })).toBeVisible()
-        // 2. What the user typed is still there (in the box, or as the chat bubble).
-        if (journey.keepsQuestion === 'box') await expect(box).toHaveValue(journey.question)
-        else await expect(panel.getByText(journey.question, { exact: true })).toBeVisible()
+        // 2. What the user typed is still there: in the box, and on a gadget page also as
+        //    the chat's latest message (the chat puts a failed question back in the box).
+        await expect(box).toHaveValue(journey.question)
+        if (journey.keepsQuestion === 'bubble') {
+          await expect(panel.getByRole('listitem', { name: `Latest question: ${journey.question}` })).toBeVisible()
+        }
 
         // 3. Try Again sends the same question and shows a cited answer, no retyping.
         await panel.getByRole('button', { name: 'Try Again' }).click()

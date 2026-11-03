@@ -126,7 +126,10 @@ describe('GadgetChatPanel', () => {
     await screen.findByText('What chip does it use?')
     fireEvent.change(composer(), { target: { value: 'How long does the battery last?' } })
     fireEvent.keyDown(composer(), { key: 'Enter' })
-    fireEvent.click(await screen.findByRole('button', { name: /try again|retry/i }))
+    const retry = await screen.findByRole('button', { name: /try again|retry/i })
+    // The failed question is back in the message box, ready to edit.
+    expect(composer().value).toBe('How long does the battery last?')
+    fireEvent.click(retry)
     await screen.findByText(/It lasts about a day/)
     expect(api.askQuestion.mock.calls[1][0].regenerate).toBeUndefined()
   })

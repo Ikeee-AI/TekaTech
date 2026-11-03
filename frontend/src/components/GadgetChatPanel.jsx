@@ -144,6 +144,9 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
     } catch (err) {
       if (requestId !== latestRequest.current) return
       setError(err)
+      // The question goes back in the message box (unless something new was typed), so it can
+      // be edited and sent again; Try Again still resends it unchanged.
+      setDraft((current) => (current.trim() ? current : question))
     } finally {
       if (requestId === latestRequest.current) setLoading(false)
     }
