@@ -54,7 +54,7 @@ The catalog is curated by the TekaTech team: only admin accounts see **Add Gadge
 1. On a gadget's page, click **Add Specs**.
 2. Paste the spec text. Separate facts with blank lines; short blocks are grouped into snippets of about 300 tokens, so a short spec sheet may become a single card. Add the **Source URL** you copied it from, then **Save Specs**.
 3. New specs show **Pending AI Indexing**. They're saved and readable straight away, but the AI can't use them yet.
-4. Click **Index for AI** on each one. When the badge says **Ready for AI**, answers can cite it. If indexing fails, your text is still saved; try again later.
+4. Click **Index for AI** on each one, or **Index All Pending** once. When the badge says **Ready for AI**, answers can cite it. If indexing fails, your text is still saved; try again later.
 
 ### My Gadgets (your dashboard)
 - After you log in you land on **My Gadgets**. It's empty at first.
@@ -70,6 +70,8 @@ The catalog is curated by the TekaTech team: only admin accounts see **Add Gadge
 ## For admins
 
 Admin rights are set by the team (`app_metadata.is_admin`). You can't give them to yourself.
+
+- **Adding gadgets and specs:** follow the [admin catalog guide](admin-catalog-guide.md) (fields, spec format, sources, indexing). After adding specs, **Index All Pending** (above the spec cards) indexes every pending card in turn. It stops at the 20-per-hour indexing limit and tells you how many are left.
 
 - **Review Queue** (top bar; the red number is how many are waiting): each suggestion shows the current text and the suggested text, with removed words struck through and added words underlined. **Approve** replaces the spec text and re-indexes it for the AI automatically; **Reject** keeps the current text.
 - **Delete Gadget** (on the gadget's page or its edit page) and **Delete Spec** (the bin icon on a spec card) are admin-only and ask you to confirm first.
