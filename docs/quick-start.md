@@ -56,6 +56,11 @@ The catalog is curated by the TekaTech team: only admin accounts see **Add Gadge
 3. New specs show **Pending AI Indexing**. They're saved and readable straight away, but the AI can't use them yet.
 4. Click **Index for AI** on each one. When the badge says **Ready for AI**, answers can cite it. If indexing fails, your text is still saved; try again later.
 
+### My Gadgets (your dashboard)
+- After you log in you land on **My Gadgets**. It's empty at first.
+- In the **Catalog**, click **Add to My Gadgets** on any gadget card. Click it again (**In My Gadgets**) to take it off.
+- On **My Gadgets**: **Ask AI** opens the gadget's page with its question box, and **Remove** takes it off your list (the catalog is unchanged). Tick 2–5 gadgets and click **Compare & Ask AI** to compare them side by side and ask about all of them at once.
+
 ### Suggest a correction
 1. On any spec card, click **Suggest Correction**, write the corrected text, and **Submit for Review**.
 2. Click the **inbox icon** (📥, top bar; **My Suggestions** on phones) to follow it: **Pending**, then **Approved** or **Rejected**. A **New decision** badge appears when an admin has decided.

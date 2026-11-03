@@ -7,7 +7,7 @@ MIGRATIONS = (
     "001_baseline.sql", "save_specs_before_indexing.sql",
     "add_query_history_token_columns.sql", "match_spec_documents.sql",
     "keyword_match_spec_documents.sql",
-    "increment_comparison_view_count.sql", "api_access.sql",
+    "increment_comparison_view_count.sql", "user_gadgets.sql", "api_access.sql",
 )
 
 

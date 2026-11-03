@@ -49,6 +49,9 @@ EXPECTED = {
     ("GET", "/stats/trending-questions"): PUBLIC,
     ("GET", "/techspecs/search"): ADMIN,
     ("POST", "/techspecs/import"): ADMIN,
+    ("GET", "/me/gadgets"): USER,
+    ("PUT", "/me/gadgets/{gadget_id}"): USER,
+    ("DELETE", "/me/gadgets/{gadget_id}"): USER,
 }
 
 # /health/ready reaches for the real database, which a unit test must not do.
@@ -75,10 +78,10 @@ def _allowed(level, caller):
 def _app_routes():
     """Every APIRoute the app serves: its own, plus each included router's (prefixes are baked into the path)."""
     from main import app
-    from routers import comparisons, corrections, gadgets, query, specs, stats, techspecs
+    from routers import comparisons, corrections, gadgets, my_gadgets, query, specs, stats, techspecs
 
     routes = [r for r in app.routes if isinstance(r, APIRoute)]
-    for module in (gadgets, specs, corrections, comparisons, query, stats, techspecs):
+    for module in (gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets):
         routes += [r for r in module.router.routes if isinstance(r, APIRoute)]
     return routes
 
@@ -166,7 +169,7 @@ def test_each_caller_gets_exactly_the_access_the_matrix_says(real_auth, fake_sup
             headers = {"Authorization": header} if header else {}
             # An empty body: for an allowed caller it fails validation (422) or finds nothing (404),
             # which is enough to show auth let it through, and nothing here can reach OpenAI.
-            resp = real_auth.request(method, _concrete(template), headers=headers, json={} if method in ("POST", "PATCH") else None)
+            resp = real_auth.request(method, _concrete(template), headers=headers, json={} if method in ("POST", "PATCH", "PUT") else None)
             where = f"{caller} -> {method} {template} -> {resp.status_code}"
             if _allowed(level, caller):
                 assert resp.status_code not in (401, 403), where

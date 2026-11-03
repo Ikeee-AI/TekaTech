@@ -61,4 +61,8 @@ export const api = {
   askQuestion: (data) => request(`/query`, { method: "POST", body: JSON.stringify(data) }),
   getSpecCoverage: () => request(`/stats/spec-coverage`),
   getTrendingQuestions: () => request(`/stats/trending-questions`),
+  // My Gadgets: the session user's personal list of catalog gadgets (backend scopes to the caller).
+  getMyGadgets: () => request(`/me/gadgets`),
+  addMyGadget: (gadgetId) => request(`/me/gadgets/${gadgetId}`, { method: "PUT" }),
+  removeMyGadget: (gadgetId) => request(`/me/gadgets/${gadgetId}`, { method: "DELETE" }),
 }

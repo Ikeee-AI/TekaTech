@@ -53,7 +53,17 @@ Run these in Supabase SQL Editor as the project postgres owner:
 4. `backend/sql/match_spec_documents.sql`
 5. `backend/sql/keyword_match_spec_documents.sql` (keyword fallback for `/query`, issue #88; revokes browser access to its own function)
 6. `backend/sql/increment_comparison_view_count.sql`
-7. `backend/sql/api_access.sql` (last, to restrict RPC/table grants)
+7. `backend/sql/user_gadgets.sql` (My Gadgets, 3 Nov 2026: one table, private to the backend)
+8. `backend/sql/api_access.sql` (last, to restrict RPC/table grants)
+
+### Adding My Gadgets to an existing project
+
+Projects set up before 3 November 2026 need only step 7, and it must run **before** the backend that serves `/me/gadgets` is deployed. Paste `backend/sql/user_gadgets.sql` into the SQL Editor and run it once as the project owner. It creates the `user_gadgets` table (`create table if not exists`, safe to re-run) with a `(user_id, gadget_id)` primary key, an index, `on delete cascade` from `gadgets`, RLS on, no browser access, and `service_role` access, then reloads the PostgREST schema cache. It changes no existing table or data. Check it with:
+
+```sql
+select relrowsecurity from pg_class where oid = 'public.user_gadgets'::regclass;  -- true
+select has_table_privilege('authenticated', 'public.user_gadgets', 'SELECT');    -- false
+```
 
 ### Adding the keyword fallback to an existing project
 

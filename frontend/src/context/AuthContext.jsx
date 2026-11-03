@@ -43,9 +43,12 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }
 
+  // Returns the signed-in user, so Login.jsx can pick the landing page (admins: catalog,
+  // everyone else: My Gadgets).
   async function signIn(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
+    return data?.user ?? null
   }
 
   async function signOut() {
