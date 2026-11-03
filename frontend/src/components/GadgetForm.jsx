@@ -3,7 +3,8 @@ import { Save } from 'lucide-react'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
 import { TextField, ErrorSummary } from './ui/FormField'
-import { GADGET_FIELD_LABELS, validateGadget, toGadgetPayload } from '../utils/gadgetValidation'
+import ImageLinkPreview from './ImageLinkPreview'
+import { GADGET_FIELD_LABELS, isHttpUrl, validateGadget, toGadgetPayload } from '../utils/gadgetValidation'
 import { friendlyError } from '../utils/requestErrors'
 
 /**
@@ -21,6 +22,9 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState(null)
   const focusSummary = useRef(false)
+  // Live preview result for one image link (#202). Kept with the link it belongs to, so
+  // editing the link makes the status 'pending' again until the new one loads or fails.
+  const [imageCheck, setImageCheck] = useState({ url: '', status: 'pending' })
 
   // After a failed submit, move focus to the error summary once it has rendered.
   useEffect(() => {
@@ -29,7 +33,9 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
     document.getElementById('gadget-form-errors')?.focus()
   })
 
-  const errors = validateGadget(form)
+  const imageUrl = form.image_url.trim()
+  const imageStatus = imageCheck.url === imageUrl ? imageCheck.status : 'pending'
+  const errors = validateGadget(form, { imageStatus })
   const visibleErrors = Object.fromEntries(
     Object.entries(errors).filter(([field]) => submitted || touched[field]),
   )
@@ -102,8 +108,11 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
         type="url"
         inputMode="url"
         placeholder="https://…"
-        hint="Paste a link to a product photo. File upload comes later."
+        hint="A direct image link: opening it shows only the picture (usually ending in .jpg, .png or .webp)."
       />
+      {isHttpUrl(imageUrl) && (
+        <ImageLinkPreview url={imageUrl} status={imageStatus} onResult={(url, status) => setImageCheck({ url, status })} />
+      )}
 
       {serverError && (
         <Alert tone="error" title={isEdit ? 'Changes Not Saved' : 'Gadget Not Saved'}>

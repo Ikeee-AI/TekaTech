@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { EMPTY_GADGET, toGadgetPayload, validateGadget } from './gadgetValidation'
+import {
+  EMPTY_GADGET,
+  IMAGE_LINK_FAILED,
+  IMAGE_LINK_UNCHECKED,
+  looksLikeImageUrl,
+  toGadgetPayload,
+  validateGadget,
+} from './gadgetValidation'
 
 const VALID = {
   ...EMPTY_GADGET,
@@ -93,5 +100,42 @@ describe('toGadgetPayload', () => {
     const payload = toGadgetPayload(form({ release_date: '2024-08-22', image_url: ' https://x.test/a.png ' }))
     expect(payload.release_date).toBe('2024-08-22')
     expect(payload.image_url).toBe('https://x.test/a.png')
+  })
+})
+
+describe('image links (#202)', () => {
+  it.each([
+    ['https://example.com/poco-x7.png', true],
+    ['https://example.com/a/b/PHOTO.JPG', true],
+    ['https://example.com/pic.webp?v=2', true],
+    ['https://example.com/pic.avif', true],
+    ['https://cdn.example.com/is/image/s24?fmt=jpeg&wid=600', true],
+    ['https://cdn.example.com/img/123?format=webp', true],
+    ['https://www.example.com/poco-x7-pro', false],
+    ['https://www.example.com/product.html', false],
+    ['https://www.example.com/search?q=poco+x7+pro', false],
+    ['not a url', false],
+  ])('looksLikeImageUrl(%j) is %s', (url, expected) => {
+    expect(looksLikeImageUrl(url)).toBe(expected)
+  })
+
+  const withImage = (image_url, imageStatus) => validateGadget(form({ image_url }), { imageStatus }).image_url
+
+  it('blocks a link the preview could not load, even with an image extension', () => {
+    expect(withImage('https://example.com/poco.png', 'failed')).toBe(IMAGE_LINK_FAILED)
+  })
+
+  it('accepts any link once the preview has loaded it as an image', () => {
+    expect(withImage('https://cdn.example.com/is/image/s24', 'loaded')).toBeUndefined()
+  })
+
+  it('while the preview is pending, accepts an image extension and asks about anything else', () => {
+    expect(withImage('https://example.com/poco.png', 'pending')).toBeUndefined()
+    expect(withImage('https://www.example.com/poco-x7-pro', 'pending')).toBe(IMAGE_LINK_UNCHECKED)
+  })
+
+  it('still reports a non-http link first, and an empty link is fine', () => {
+    expect(withImage('example.com/poco.png', 'failed')).toMatch(/http:\/\/ or https:\/\//)
+    expect(withImage('', 'failed')).toBeUndefined()
   })
 })
