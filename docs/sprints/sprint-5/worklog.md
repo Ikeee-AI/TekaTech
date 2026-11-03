@@ -134,3 +134,63 @@
 - Chase Mika on the GK UI and the deck link; ask Adrian for the #168 retro comment — Ikeee-AI — Tue 3 Nov morning.
 - Pilot pre-checks (Actions minutes left, OpenAI balance, laptop sleep off) — Ikeee-AI — Tue 3 Nov.
 - Freeze 10:00, start the monitor 11:55, pilot 12:00 — Ikeee-AI — Wed 4 Nov.
+
+## 2026-11-02 22:47 Asia/Manila — General-knowledge UI taken over and live; #172 closed
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code with the `frontend-engineer` agent, reviewed and extended by Ikeee-AI) · **Task:** takeover of the S5-MI #172 UI item (with Mika's agreement), S5-IK · **Branch:** `tekatech/s5-takeover-mika-gk-ui`, `tekatech/s5-ik-writeup-adapter-gk`, `tekatech/s5-ik-metrics-log-2026-11-02b`
+
+**Done**
+- **General-knowledge UI (#193)** was built first as a local fallback, then opened as a takeover once Mika agreed (she had not started it).
+  - **Contents:**
+    - an "Allow General Knowledge" toggle, off by default and not saved between visits;
+    - an amber "General knowledge: not from saved specs, unverified" label, with the sources and cited badge hidden;
+    - the panel intro switches while the toggle is on;
+    - the #171 catalog line reworded.
+  - **Checks:** Vitest 209 → 227; lint and build clean.
+  - **Reviews:** Mika was added at her request so she stays informed. Jopher and Manuel approved on head `276ff73`.
+  - **Merged and deployed:** `1c844d2` ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/41456799300)).
+- **Browser check before the PR:** run on local dev (TekaTech-dev, Pixel 9 with no specs) with headless Chromium at 1280 and 360 px.
+  - Toggle off: request unchanged, "No Evidence Found".
+  - Toggle on: `allow_general_knowledge: true` sent, label shown, intro switched.
+  - Keyboard Tab and Space work; no horizontal overflow.
+  - Screenshots committed to `frontend/docs/screenshots/gk-*.png`.
+- **Also merged and deployed:**
+  - #191 write-up line → `e66b8aa` ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/41456048319));
+  - #192 Sprint 5 interim metrics, #182 measurement, incident closed → `89b01c6` ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/41456404333)).
+- **Production verification:** deployed smoke passed on `1c844d2` at 21:56 Manila, and the frontend bundle contains the toggle. Ikeee-AI checked the live site and reported it working: box off, answers unchanged; box on, a labelled general-knowledge answer.
+- **#172 closed** with a summary: prompt #173, backend #174, adapter #189, UI #193, and the open follow-ups.
+- **Explained to the owner:** general-knowledge answers come from OpenAI `gpt-5-mini`'s training knowledge through our own API call. They do not come from TechSpecs (disabled, nothing stored) or from a web search.
+- **Day total:** 18 PRs merged and deployed on 2 Nov; none open at 22:47.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `browserType.launch: Executable doesn't exist at ...\chromium_headless_shell-1248\...` | #179 updated Playwright to 1.64.1, which expects a newer Chromium than the one installed locally (1243) | Pointed the check at the installed Chromium with `executablePath`; no download. Local Playwright tests now need `npx playwright install chromium`; CI installs its own browser — worked around |
+| Second Vite start failed with exit 1 (port 5173 in use) | The first check's Vite process (`node ... vite.js`) survived `TaskStop` of its `npx` parent | The surviving server served the same worktree with live reload, so the screenshots show current code. Identified PID 20776 and stopped it; ports 5173 and 8000 confirmed free — fixed |
+| Full-page 360 px screenshots showed the sticky top bar covering the label | Full-page capture of a sticky header | Element screenshots with the header made static; layout itself fine (label 2 lines, no overflow) — fixed |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| The same Pixel 9 question on dev gave "Tensor G4" at about 20:00 and "I don't recognize the Pixel 9 as a confirmed model" at about 21:00 | General-knowledge answers vary by run; gk-v1's unknown-product rule can fire on a real product | UI labelled both correctly; recorded on #193 and #172 as a regression-case candidate — Adrian (S5-AD) — open |
+| Panel intro said "Answers use only the specs saved… instead of guessing" above a general-knowledge answer | Misleading copy | Intro now switches while the toggle is on (`6e96d6b`) — resolved |
+| My earlier "yes" to "did we notify Mika" referred only to an @mention in #186; no direct reminder had been sent | Overstated | Corrected in the same session; Mika then agreed to the takeover — resolved |
+
+**Decisions**
+- Build the UI fallback before Mika's deadline, but keep it local until she agreed — Ikeee-AI.
+- Keep the toggle unsaved between visits (opt-in, unverified answers) — Ikeee-AI.
+- Retake the screenshots after the intro change, accepting one more general-knowledge call (about 0.1 cent), so the evidence matches the merged code — Ikeee-AI.
+- Close #172 once the owner had verified it on production — Ikeee-AI.
+
+**Blockers / risks**
+- General-knowledge answers are non-deterministic and spend the shared $10 OpenAI balance (about 0.1 cent each), and `/query` is public. The toggle is off by default and the rate limit applies; watch spend during the pilot — Ikeee-AI — 4–6 Nov.
+- No scored evaluation of real general-knowledge answers (paid; needs a database without the iPhone 15 / Galaxy S24 specs) — Ikeee-AI / Adrian — Sprint 5, optional.
+
+**Plan alignment**
+- S5-MI: the #172 UI item is **Done by takeover** (reviewed, merged, deployed, verified). Mika's own Sprint 5 tasks (pilot usability fixes, deck archive, component notes) remain hers.
+- #172 overall: **Done** (closed).
+- S5-IK: unchanged since the evening entry; pilot starts Wed 4 Nov 12:00.
+
+**Next**
+- Pilot pre-checks: Actions minutes left after 18 merges, OpenAI starting balance, laptop sleep off — Ikeee-AI — Tue 3 Nov.
+- Ask Adrian for the #168 retro comment; propose the general-knowledge regression case to him — Ikeee-AI — Tue 3 Nov.
+- Freeze 10:00, start the monitor 11:55, pilot 12:00 — Ikeee-AI — Wed 4 Nov.
