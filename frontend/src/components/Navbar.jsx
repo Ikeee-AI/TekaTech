@@ -9,15 +9,18 @@ import logo from '../assets/logo.webp'
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
 
-// Small count bubble. The number is visible; srLabel says what it counts.
+// Small count bubble. The number is visible; srLabel says what it counts. Screen readers
+// get ", 3 pending" instead: a leading space inside the badge is dropped when the link's
+// name is computed, which read "Review Queue3pending" (#207). The comma keeps it apart.
 function CountBadge({ count, srLabel, className = '' }) {
   if (!count) return null
+  const shown = count > 99 ? '99+' : count
   return (
     <span
       className={`inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-700 text-white text-xs font-bold leading-none ${className}`}
     >
-      {count > 99 ? '99+' : count}
-      <span className="sr-only"> {srLabel}</span>
+      <span aria-hidden="true">{shown}</span>
+      <span className="sr-only">{`, ${shown} ${srLabel}`}</span>
     </span>
   )
 }

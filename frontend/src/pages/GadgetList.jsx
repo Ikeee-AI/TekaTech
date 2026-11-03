@@ -673,7 +673,7 @@ function SpecCell({ label, value, sub }) {
   )
 }
 
-function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted, mine, saving, onToggleMine }) {
+export function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted, mine, saving, onToggleMine }) {
   const [imgError, setImgError] = useState(false)
   const showImage = gadget.image_url && !imgError
   const release = formatRelease(gadget.release_date)
@@ -751,19 +751,20 @@ function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted, mine, saving
             type="checkbox"
             checked={selected}
             onChange={onToggle}
+            aria-label={`Compare ${gadget.name}`}
             className="w-5 h-5 rounded border-slate-300 accent-sage-700 focus:outline-none"
           />
-          <span className="text-sm text-slate-800 font-semibold">
-            Compare<span className="sr-only"> {gadget.name}</span>
-          </span>
+          <span className="text-sm text-slate-800 font-semibold">Compare</span>
         </label>
         <div className="flex items-center gap-2">
           <DeleteGadgetButton gadget={gadget} onDeleted={onDeleted} size="sm" iconOnly />
-          <Button variant="subtle" size="sm" icon={Sparkles} onClick={onAsk}>
-            Ask AI<span className="sr-only"> about {gadget.name}</span>
+          {/* aria-label, not an sr-only span: a span's leading space is dropped when the
+              accessible name is computed, so it read "Ask AIabout …" (#207). */}
+          <Button variant="subtle" size="sm" icon={Sparkles} onClick={onAsk} aria-label={`Ask AI about ${gadget.name}`}>
+            Ask AI
           </Button>
-          <Button as={Link} to={`/gadgets/${gadget.id}`} variant="primary" size="sm">
-            Details<span className="sr-only"> for {gadget.name}</span> <ArrowRight size={14} aria-hidden="true" />
+          <Button as={Link} to={`/gadgets/${gadget.id}`} variant="primary" size="sm" aria-label={`Details for ${gadget.name}`}>
+            Details <ArrowRight size={14} aria-hidden="true" />
           </Button>
         </div>
       </div>
