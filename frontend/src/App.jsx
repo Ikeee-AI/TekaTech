@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
 import ServerWakeBanner from './components/ServerWakeBanner'
+import AuthLinkNotice from './components/AuthLinkNotice'
 import RouteErrorBoundary from './components/RouteErrorBoundary'
 import { useRouteFocus } from './hooks/useRouteFocus'
 import GadgetList from './pages/GadgetList'
@@ -39,6 +40,7 @@ function App() {
       </a>
       <Navbar />
       <ServerWakeBanner />
+      <AuthLinkNotice />
       <main
         id="main-content"
         key={location.pathname}

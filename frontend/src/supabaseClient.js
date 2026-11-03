@@ -1,3 +1,5 @@
+// Must be imported before createClient() runs; see utils/authLink.js.
+import './utils/authLink'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
