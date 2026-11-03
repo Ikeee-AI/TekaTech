@@ -209,6 +209,11 @@ function Navbar() {
       <NavLink to="/compare" className={className}>
         Compare
       </NavLink>
+      {user && (
+        <NavLink to="/my-gadgets" className={className}>
+          My Gadgets
+        </NavLink>
+      )}
       {isAdmin && (
         <NavLink to="/corrections" className={className}>
           Review Queue

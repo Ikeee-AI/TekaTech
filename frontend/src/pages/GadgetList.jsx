@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Sparkles,
   SlidersHorizontal,
@@ -12,6 +12,8 @@ import {
   SearchX,
   ImageOff,
   BadgeCheck,
+  BookmarkPlus,
+  BookmarkCheck,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
@@ -112,6 +114,61 @@ export default function GadgetList() {
     setLoading(true)
     setError(null)
     setAttempt((n) => n + 1)
+  }
+
+  // My Gadgets: which catalog gadgets the signed-in user has on their dashboard.
+  // null = not loaded (or signed out); the card buttons wait for it before showing a state.
+  const location = useLocation()
+  const [myIds, setMyIds] = useState(null)
+  const [savingId, setSavingId] = useState(null)
+  const userId = user?.id ?? null
+
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    api
+      .getMyGadgets()
+      .then((items) => !cancelled && setMyIds(new Set(items.map((item) => item.gadget.id))))
+      // The catalog still works without it; the buttons just stay hidden.
+      .catch(() => !cancelled && setMyIds(null))
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+
+  async function toggleMine(gadget) {
+    if (!user) {
+      navigate('/login', { state: { from: location } })
+      return
+    }
+    const inList = myIds?.has(gadget.id)
+    setSavingId(gadget.id)
+    try {
+      if (inList) await api.removeMyGadget(gadget.id)
+      else await api.addMyGadget(gadget.id)
+      setMyIds((prev) => {
+        const next = new Set(prev ?? [])
+        if (inList) next.delete(gadget.id)
+        else next.add(gadget.id)
+        return next
+      })
+      toast.success(
+        inList ? (
+          `Removed ${gadget.name} from My Gadgets`
+        ) : (
+          <span>
+            Added {gadget.name} to{' '}
+            <Link to="/my-gadgets" className="font-semibold underline">
+              My Gadgets
+            </Link>
+          </span>
+        ),
+      )
+    } catch (err) {
+      toast.error(friendlyError(err))
+    } finally {
+      setSavingId(null)
+    }
   }
 
   function handleDeleted(gadget) {
@@ -483,6 +540,10 @@ export default function GadgetList() {
                     onToggle={() => toggleSelect(g.id)}
                     onAsk={() => ask(`What are the key specs of the ${gadgetDisplayName(g)}?`)}
                     onDeleted={handleDeleted}
+                    // Visitors see the button too (it leads to log in); signed-in users once their list loads.
+                    mine={!user ? false : myIds ? myIds.has(g.id) : null}
+                    saving={savingId === g.id}
+                    onToggleMine={() => toggleMine(g)}
                   />
                 ))}
               </div>
@@ -612,7 +673,7 @@ function SpecCell({ label, value, sub }) {
   )
 }
 
-function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted }) {
+function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted, mine, saving, onToggleMine }) {
   const [imgError, setImgError] = useState(false)
   const showImage = gadget.image_url && !imgError
   const release = formatRelease(gadget.release_date)
@@ -667,6 +728,22 @@ function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted }) {
           <SpecCell label="Released" value={release ?? '—'} />
         </div>
       </div>
+
+      {mine !== null && (
+        <Button
+          variant={mine ? 'subtle' : 'outline'}
+          size="sm"
+          icon={mine ? BookmarkCheck : BookmarkPlus}
+          loading={saving}
+          disabled={saving}
+          aria-pressed={mine}
+          onClick={onToggleMine}
+          aria-label={`${gadget.name}: ${mine ? 'in My Gadgets, select to remove' : 'add to My Gadgets'}`}
+          className="w-full mt-5"
+        >
+          {mine ? 'In My Gadgets' : 'Add to My Gadgets'}
+        </Button>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-5 mt-5 border-t border-slate-200">
         <label className="flex items-center gap-2 min-h-9 cursor-pointer select-none rounded-md focus-within:ring-2 focus-within:ring-sage-600 px-1 -mx-1">
