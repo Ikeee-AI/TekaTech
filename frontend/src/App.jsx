@@ -18,6 +18,7 @@ const ComparePage = lazy(() => import('./pages/ComparePage'))
 const AdminCorrections = lazy(() => import('./pages/AdminCorrections'))
 const MySuggestions = lazy(() => import('./pages/MySuggestions'))
 const MyGadgets = lazy(() => import('./pages/MyGadgets'))
+const Account = lazy(() => import('./pages/Account'))
 const ShortLinkRedirect = lazy(() => import('./pages/ShortLinkRedirect'))
 const Login = lazy(() => import('./pages/Login'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
@@ -92,6 +93,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <MyGadgets />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/account"
+                element={
+                  <ProtectedRoute>
+                    <Account />
                   </ProtectedRoute>
                 }
               />
