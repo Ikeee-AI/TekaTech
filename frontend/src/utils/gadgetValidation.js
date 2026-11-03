@@ -9,7 +9,7 @@ export const GADGET_FIELD_LABELS = {
 
 export const EMPTY_GADGET = { name: '', brand: '', category: '', release_date: '', price_php: '', image_url: '' }
 
-function isHttpUrl(value) {
+export function isHttpUrl(value) {
   try {
     const url = new URL(value)
     return url.protocol === 'http:' || url.protocol === 'https:'
@@ -18,8 +18,39 @@ function isHttpUrl(value) {
   }
 }
 
-/** Returns { field: message } for every invalid field; an empty object means valid. */
-export function validateGadget(form) {
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif']
+
+/**
+ * True when the link names an image file: the path ends in an image extension
+ * (`…/poco-x7.png`), or a CDN query asks for an image format (`?fmt=jpeg`, `format=webp`).
+ * Only a hint: the form's live preview is the real check (#202).
+ */
+export function looksLikeImageUrl(value) {
+  let url
+  try {
+    url = new URL(value)
+  } catch {
+    return false
+  }
+  const ext = url.pathname.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1]
+  if (ext && IMAGE_EXTENSIONS.includes(ext)) return true
+  for (const key of ['fmt', 'format']) {
+    if (IMAGE_EXTENSIONS.includes(url.searchParams.get(key)?.toLowerCase())) return true
+  }
+  return false
+}
+
+export const IMAGE_LINK_FAILED =
+  "This link didn't load as an image (it may be a web page). Use a direct image link, or leave it empty."
+export const IMAGE_LINK_UNCHECKED =
+  "This doesn't look like a direct image link (.jpg, .png, .webp, .avif). Wait for the preview to load, or use another link."
+
+/**
+ * Returns { field: message } for every invalid field; an empty object means valid.
+ * `imageStatus` is the form's live preview result for the current image link:
+ * 'loaded', 'failed' or 'pending' (still loading, or no preview yet).
+ */
+export function validateGadget(form, { imageStatus = 'pending' } = {}) {
   const errors = {}
   const name = form.name.trim()
   const brand = form.brand.trim()
@@ -48,8 +79,15 @@ export function validateGadget(form) {
     else if (price > 10_000_000) errors.price_php = 'That price looks too high — check for extra zeros.'
   }
 
-  if (form.image_url.trim() && !isHttpUrl(form.image_url.trim())) {
+  const imageUrl = form.image_url.trim()
+  if (imageUrl && !isHttpUrl(imageUrl)) {
     errors.image_url = 'Enter a full link starting with http:// or https://.'
+  } else if (imageUrl && imageStatus === 'failed') {
+    // The browser couldn't show it, so the catalog card couldn't either (Poco's link returns a web page).
+    errors.image_url = IMAGE_LINK_FAILED
+  } else if (imageUrl && imageStatus !== 'loaded' && !looksLikeImageUrl(imageUrl)) {
+    // A link without an image extension is fine once the preview has loaded it.
+    errors.image_url = IMAGE_LINK_UNCHECKED
   }
 
   return errors
