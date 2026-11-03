@@ -80,3 +80,25 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
   4. Ask the instructor whether the repository may be public: unlimited Actions minutes, and enforced branch protection becomes available on the free plan. The full-history Gitleaks scan on 31 Oct was clean.
   - Follow-up issue: to be opened with the owner's go-ahead.
 - **Lesson:** a $0 budget is a good safety net against surprise charges, but it turns "out of minutes" into a full CI/CD stop. Watch the usage as closely as the deploys.
+
+
+## 2026-11-03: saved questions failed on production (SQL applied to dev only)
+
+**Status: resolved 3 Nov 2026** (about 49 min from deploy to recovery). Partial feature outage on production; answers kept working. Owner: Ikeee-AI (PR author and release; the SQL was applied by the owner).
+
+- **Affected:** #210 (per-gadget AI conversation), merge commit `3986bf1`, [main run 41644306595](https://github.com/Ikeee-AI/TekaTech/actions/runs/41644306595) (all jobs green, deploy job included). The deployed smoke check passed at 13:29:32 UTC (`.local/deployed-smoke-3986bf1.json`, local): it covers `/version`, CORS and readiness, not the new table.
+- **Impact:** for signed-in users, `GET /me/gadgets/{id}/questions` answered 503 and the gadget page showed "Couldn't load your earlier questions right now." Questions asked in that window were answered normally but not saved (the save is wrapped so it never fails `/query`). Anonymous use, the catalog, specs and comparisons were unaffected. No data was lost or exposed.
+- **Timeline (UTC):**
+  - 13:26: #210 merged by the owner after the manual gate; the gate accepted the PR's "applied" note for `backend/sql/user_questions.sql`.
+  - 13:29: deploy live; smoke passed.
+  - About 13:30–13:43: detected during the production browser check (Claude Code in Chrome, test account): the questions request returned 503 on iPhone 15 and Rog Ally. Render logged `Gadget questions read failed: APIError` (seen 13:43–13:49 in the "last hour" view; earlier lines were outside that window).
+  - 13:48: the owner ran `to_regclass('public.user_questions')` in the SQL Editor, which returned the table, but the project was **TekaTech-dev** (`efdgguybkampozuvqjrz`); its own `main` branch shows a "PRODUCTION" badge.
+  - About 14:15: cause found (production uses the live project `lqswcmkzygqmnblaukco`); the owner applied `user_questions.sql` there and ran the PR's checks (RLS on; `authenticated` has no SELECT).
+  - About 14:18: recovered. The page loaded with GET 200; two questions were saved and survived a reload; Regenerate replaced its turn; New Chat cleared the thread (Render logged `status=204` at 14:22:06 and 14:23:13). **Recovery time: about 49 min** from the deploy.
+- **Root cause:** the migration was applied to the dev project only, and #210's description recorded it as "applied" without saying which project. Neither the merge gate nor the smoke check checks the live database for a new table, so nothing caught it before users could.
+- **Fix:** applied `backend/sql/user_questions.sql` to the live project (replay-safe). No code change, revert or redeploy.
+- **Prevention (Ikeee-AI):**
+  1. `pr-gate` now requires a PR with SQL changes to name the project it was applied to, and that project must be the live one (`lqswcmkzygqmnblaukco`), checked before merging (done 3 Nov, with this record).
+  2. Corrected on #210: the SQL reached the live project at about 14:15 UTC, after the merge.
+  - Follow-up issue: none opened; the gate change covers it. Optional later: extend `scripts/deployed_smoke.py` with a signed-in check, which needs a test-account token in CI (not planned).
+- **Lesson:** "applied" means nothing without the project ref. The Supabase "PRODUCTION" badge marks a project's main branch, not the live project.
