@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { UserRound } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import AiAnswerResult from './AiAnswerResult'
 
 function formatAskedAt(iso) {
@@ -7,6 +7,34 @@ function formatAskedAt(iso) {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return null
   return date.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
+/** The user's side of a chat turn: a right-aligned bubble, like ChatGPT/Claude. */
+export function UserBubble({ question, askedAt }) {
+  const when = formatAskedAt(askedAt)
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <div className="max-w-[85%] rounded-3xl rounded-br-lg bg-sage-100 text-slate-900 px-4 py-2.5">
+        <p className="text-[15px] leading-relaxed whitespace-pre-line break-words">{question}</p>
+      </div>
+      {when && <p className="text-[11px] text-slate-500 pr-2">{when}</p>}
+    </div>
+  )
+}
+
+/** The assistant's side of a chat turn: small avatar, answer text without a bubble. */
+export function AssistantMessage({ children }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span
+        className="mt-3 inline-flex items-center justify-center size-7 shrink-0 rounded-full bg-sage-700 text-white"
+        aria-hidden="true"
+      >
+        <Sparkles size={14} />
+      </span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  )
 }
 
 /**
@@ -19,7 +47,6 @@ export default function ThreadTurn({ turn, index, specTargets }) {
   const [sourcesOpen, setSourcesOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(null)
   const sourceRefs = useRef([])
-  const askedAt = formatAskedAt(turn.askedAt)
 
   function handleCiteClick(i) {
     setSourcesOpen(true)
@@ -35,16 +62,9 @@ export default function ThreadTurn({ turn, index, specTargets }) {
   }
 
   return (
-    <li className="space-y-2" aria-label={`Earlier question ${index + 1}: ${turn.question}`}>
-      <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-sage-700 text-white px-4 py-2.5 shadow-xs">
-          <p className="flex items-center gap-1.5 text-xs font-medium text-sage-100 mb-0.5">
-            <UserRound size={12} aria-hidden="true" /> You{askedAt && <span aria-hidden="true">· {askedAt}</span>}
-          </p>
-          <p className="text-[15px] leading-snug break-words">{turn.question}</p>
-        </div>
-      </div>
-      <div className="rounded-2xl rounded-bl-md border border-slate-200 bg-slate-50 px-4 pb-3 pt-1">
+    <li className="space-y-3" aria-label={`Question ${index + 1}: ${turn.question}`}>
+      <UserBubble question={turn.question} askedAt={turn.askedAt} />
+      <AssistantMessage>
         <AiAnswerResult
           compact
           idPrefix={`turn-${index}`}
@@ -58,7 +78,7 @@ export default function ThreadTurn({ turn, index, specTargets }) {
           handleCiteClick={handleCiteClick}
           specTargets={specTargets}
         />
-      </div>
+      </AssistantMessage>
     </li>
   )
 }

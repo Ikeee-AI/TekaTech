@@ -227,6 +227,9 @@ export default function AiAnswerResult({
   // options or buttons. idPrefix keeps each turn's source-list id unique on the page.
   compact = false,
   idPrefix = 'answer',
+  // The gadget chat keeps the answer options in its message box, so the footer only
+  // needs Copy and Regenerate.
+  hideOptions = false,
 }) {
   const missingEvidence = result ? isMissingEvidence(result) : false
   // A general-knowledge answer has no sources by design: amber label, no badge, no sources.
@@ -334,13 +337,17 @@ export default function AiAnswerResult({
           {!compact && <FollowUpQuestions questions={followUps} onSelect={onFollowUp} disabled={loading} />}
 
           {!compact && (
-          <div className="flex items-center justify-between flex-wrap gap-3 pt-3 border-t border-slate-200">
-            <AnswerOptions
-              plainLanguage={plainLanguage}
-              togglePlainLanguage={togglePlainLanguage}
-              allowGeneralKnowledge={allowGeneralKnowledge}
-              setAllowGeneralKnowledge={setAllowGeneralKnowledge}
-            />
+          <div
+            className={`flex items-center flex-wrap gap-3 ${hideOptions ? 'justify-start' : 'justify-between pt-3 border-t border-slate-200'}`}
+          >
+            {!hideOptions && (
+              <AnswerOptions
+                plainLanguage={plainLanguage}
+                togglePlainLanguage={togglePlainLanguage}
+                allowGeneralKnowledge={allowGeneralKnowledge}
+                setAllowGeneralKnowledge={setAllowGeneralKnowledge}
+              />
+            )}
             <div className="flex gap-2">
               {!missingEvidence && (
                 <Button variant="secondary" size="sm" icon={copied ? Check : Copy} onClick={handleCopy}>

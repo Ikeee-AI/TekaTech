@@ -16,8 +16,8 @@ export function toThreadTurn(row) {
  * A signed-in user's earlier questions about one gadget (user_questions.sql). POST /query
  * saves each single-gadget answer on the server; this hook loads them once per gadget/user
  * and lets the panel append the answer on screen when the user moves on to a new question,
- * so the thread grows without re-fetching. Disabled (empty, no requests) when signed out
- * or when the panel covers more than one gadget.
+ * so the thread grows without re-fetching. Signed out (or no gadget), nothing is loaded or
+ * saved: the turns live only in this page view, like an unsaved chat.
  */
 export function useGadgetThread(gadgetId, userId) {
   const enabled = Boolean(gadgetId && userId)
@@ -52,12 +52,15 @@ export function useGadgetThread(gadgetId, userId) {
 
   // The server already saved this answer when it was returned; mirror it locally.
   function appendTurn(question, result) {
-    if (!enabled || !result) return
+    if (!result) return
     setTurns((t) => [...t, { id: `local-${Date.now()}-${t.length}`, question, askedAt: new Date().toISOString(), result }])
   }
 
   async function clear() {
-    if (!enabled) return false
+    if (!enabled) {
+      setTurns([])
+      return true
+    }
     setClearing(true)
     try {
       await api.clearGadgetQuestions(gadgetId)

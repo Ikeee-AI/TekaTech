@@ -104,6 +104,10 @@ class QueryRequest(BaseModel):
     # Optional general-knowledge answer (#172). Only used when retrieval finds no spec chunks;
     # a question that matches specs always gets the grounded, cited answer.
     allow_general_knowledge: bool = False
+    # The gadget chat's Regenerate (user_questions.sql): the new answer replaces the caller's
+    # newest saved turn for this same question and gadget instead of adding a second one.
+    # Ignored when nothing is saved (anonymous, or not exactly one gadget).
+    regenerate: bool = False
 
     @field_validator("question")
     @classmethod
@@ -467,6 +471,8 @@ def _save_thread_turn(request: Request, payload: "QueryRequest", response: Query
         user = get_optional_user(authorization)
         if user is None:
             return
+        if payload.regenerate:
+            _drop_regenerated_turn(str(user.id), str(payload.gadget_ids[0]), payload.question)
         supabase.table("user_questions").insert(
             {
                 "user_id": str(user.id),
@@ -477,6 +483,24 @@ def _save_thread_turn(request: Request, payload: "QueryRequest", response: Query
         ).execute()
     except Exception:
         logger.exception("user_questions insert failed; the answer is returned without saving the turn")
+
+
+def _drop_regenerated_turn(user_id: str, gadget_id: str, question: str) -> None:
+    """Delete the caller's newest saved turn for this exact question and gadget (only that one
+    row), so a regenerated answer takes its place. Runs inside _save_thread_turn's guard."""
+    rows = (
+        supabase.table("user_questions")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("gadget_id", gadget_id)
+        .eq("question", question)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+        .data
+    )
+    if rows:
+        supabase.table("user_questions").delete().eq("id", rows[0]["id"]).eq("user_id", user_id).execute()
 
 
 def _answer_question(request: Request, payload: "QueryRequest") -> QueryResponse:
