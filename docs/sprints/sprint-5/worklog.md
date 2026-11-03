@@ -194,3 +194,64 @@
 - Pilot pre-checks: Actions minutes left after 18 merges, OpenAI starting balance, laptop sleep off — Ikeee-AI — Tue 3 Nov.
 - Ask Adrian for the #168 retro comment; propose the general-knowledge regression case to him — Ikeee-AI — Tue 3 Nov.
 - Freeze 10:00, start the monitor 11:55, pilot 12:00 — Ikeee-AI — Wed 4 Nov.
+
+## 2026-11-03 12:35 Asia/Manila — Pilot on hold; admin-curated catalog (#195); My Gadgets dashboard (#197)
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code) · **Task:** S5-IK; takeovers of Jopher/Manuel (#195) and Manuel/Jopher/Mika (#197) areas at the owner's request · **Branch:** `tekatech/s5-ik-log-2026-11-03`
+
+**Done**
+- **#194 merged and verified** (Sprint 5 log, 2 Nov late evening). Manuel approved on head `713cc4c`, squash-merged as `e6ce641`; [run 41561815091](https://github.com/Ikeee-AI/TekaTech/actions/runs/41561815091) green including the deploy job. Deployed smoke passed on `e6ce641` at 09:48 Manila (readiness, CORS, 4 gadgets).
+- Local checkout: switched from the stale `tekatech/s4-ik-integration` to `main` (116 commits behind; every branch commit had a counterpart on main, checked with `git cherry` plus subject match). Deleted the stale local branch. `uv sync --frozen` and `npm ci` refreshed. The untracked `,txt` (owner's notes) was moved out of the repo to the owner's Documents folder.
+- **#195: admin-curated catalog** ([PR](https://github.com/Ikeee-AI/TekaTech/pull/195)). `POST /gadgets`, `PATCH /gadgets/{id}`, `POST .../specs` and `POST .../specs/{id}/index` are now admin-only. UI controls are hidden for non-admins, and `/add` and `/edit` are `adminOnly`. Docs and the Demo Day script were updated (it now needs an admin demo account).
+  - Manuel approved on `37f2095`. Merged as `158c745`, [run 41573344196](https://github.com/Ikeee-AI/TekaTech/actions/runs/41573344196) green. Smoke passed at 11:40.
+  - Browser check in Chrome on production: the admin sees every control. A regular account sees none, Suggest Correction still opens, and `/add` and `/edit` redirect to the catalog. Recorded in the PR.
+- **Issue #196** ([link](https://github.com/Ikeee-AI/TekaTech/issues/196)) assigned to Jopher: sign-up and first-login gaps (no "email confirmed" notice, silent expired links, no resend, start page lost, sign-up hard to find).
+- **#197: My Gadgets dashboard** ([PR](https://github.com/Ikeee-AI/TekaTech/pull/197)).
+  - New table `user_gadgets` (`backend/sql/user_gadgets.sql`), `/me/gadgets` GET/PUT/DELETE scoped to the session user, a `/my-gadgets` page, and Add to My Gadgets on catalog cards.
+  - Non-admins land on My Gadgets after log-in. Compare & Ask AI works for 2–5 selected gadgets.
+  - Local: pytest 666 passed, vitest 241 passed, eslint clean, build ok. CI database job applied the new SQL twice plus the acceptance checks: green.
+  - The owner applied the SQL in Supabase before the merge. Manuel and Mika approved on `8d06d91`. Merged as `f3c6d69`, [run 41577812337](https://github.com/Ikeee-AI/TekaTech/actions/runs/41577812337) green. Smoke passed at 12:26 (database 155 ms).
+  - Browser check on production with a regular account: empty dashboard → added 2 gadgets from the catalog → listed → Compare & Ask AI opened `/compare` with both (no AI question asked) → removed both → empty again. Recorded in the PR.
+- **Backup coverage for the new table** (this branch, `9397d9f`). `scripts/db_restore_rehearsal.py` now exports and checks `user_gadgets`: composite-key paging, reported (not failed) if the source project lacks the table, and an orphan check. `docs/deploy-runbook.md` updated. Local: compiles and `--help` runs. **The rehearsal itself was not re-run.**
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `billing API unavailable: Expecting value: line 1 column 1 (char 0)` from `gh api /users/Ikeee-AI/settings/billing/usage` | Endpoint not available to this token or account | Owner to read Actions minutes in the GitHub billing page — open |
+| `No matching deferred tools found` for the Claude in Chrome tools | Extension not connected to the session | Owner ran `/chrome`; tools loaded — fixed |
+| Test: `Unable to find role="button" and name /remove phone 1/i` | The accessible name was computed as "RemovePhone 1 from My Gadgets": the leading space inside the `sr-only` span is dropped | New controls use an explicit `aria-label` — fixed in #197 (see contradictions for older controls) |
+| Restore script would page `user_gadgets` with `order=id` (no such column) | New table has a composite key | `ORDER_BY` per table — fixed on this branch, not yet run against a project |
+| `bash: unexpected EOF while looking for matching '` when appending this entry; the first commit on this branch went out without it | Shell quoting in a heredoc | Entry added in a follow-up commit on the same branch — fixed |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| `docs/devops/pilot-plan.md` and the 2 Nov "Next" put the pilot at Wed 4 Nov 12:00; the owner put it on hold on 3 Nov ("so much lacking currently in the system") | The plan's "start by Wednesday noon so fixes fit before Saturday" no longer holds | New date or drop to be decided and recorded in `docs/scope-changes.md` — Ikeee-AI — open |
+| Demo Day script signed in with a non-admin account, but create/specs became admin-only in #195 | Live create step would fail | Script now uses an admin demo account (#195); the account needs `app_metadata.is_admin` — Jopher/Ikeee-AI — open |
+| Jopher's Sprint 4 acceptance evidence shows a new user creating a gadget | Contradicts current behaviour | Kept as history; scope-change rows dated 3 Nov explain it — resolved |
+| Older catalog card controls use the same `sr-only` leading-space pattern ("Ask AI<span> about …", "Details<span> for …") | Screen readers likely read joined words | Not changed in #197 (other owner's area) — Mika — open |
+| Runbook said the backup exports "the five application tables" after `user_gadgets` was added | Backups would miss users' lists | Fixed on this branch — resolved once merged |
+
+**Decisions**
+- Hold the 48-hour pilot until the gaps are fixed — owner's judgement — Ikeee-AI.
+- The catalog is admin-curated, and regular accounts contribute through reviewed corrections (option A) — the original product plan — Ikeee-AI.
+- Build #195 and #197 as Ikeee-AI takeovers and tell the area owners — deadline pressure — Ikeee-AI.
+- My Gadgets includes list, remove, Ask AI (via the gadget page) and Compare & Ask AI (via the Compare page) — reuses existing pages — Ikeee-AI.
+- Non-admins land on My Gadgets after log-in; admins land on the catalog — Ikeee-AI.
+- First-login fixes go to Jopher as issue #196, not a takeover — Ikeee-AI.
+
+**Blockers / risks**
+- The Supabase email sending limit is unchecked. Every new account needs a confirmation email, so several sign-ups at once may fail with "Too many requests" — Ikeee-AI — before any testers are invited.
+- Admin landing after log-in is covered by unit tests only, not clicked through on production — Ikeee-AI — next admin log-in.
+- The backup rehearsal with `user_gadgets` has not been run — Ikeee-AI — Sprint 5.
+- Actions minutes for November are unknown (billing API unavailable) — Ikeee-AI — 3 Nov.
+
+**Plan alignment**
+- S5-IK: pilot **Not started (on hold)**. #194, #195 and #197 are **Done** (reviewed, checks, merged, deployed, verified).
+- #196 (Jopher): **Not started**.
+
+**Next**
+- Merge this log/backup PR after review — Ikeee-AI — 3 Nov.
+- Check Supabase Authentication → Rate Limits (emails) — Ikeee-AI — 3 Nov.
+- Make the Demo Day account an admin; tell Jopher — Ikeee-AI — before Demo Day.
+- Continue the gap review of the remaining journeys (ask, compare/share, corrections, admin) — Ikeee-AI — 3–4 Nov.
+- Decide the pilot date or drop it, and record it — Ikeee-AI — after the gaps are triaged.
