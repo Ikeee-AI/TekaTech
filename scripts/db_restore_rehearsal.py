@@ -25,11 +25,19 @@ import subprocess
 import sys
 import tempfile
 import time
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-# Foreign-key order: spec_documents -> gadgets, spec_corrections -> spec_documents.
-TABLES = ["gadgets", "spec_documents", "spec_corrections", "comparison_links", "query_history"]
+# Foreign-key order: spec_documents -> gadgets, spec_corrections -> spec_documents,
+# user_gadgets -> gadgets (My Gadgets, 3 Nov 2026).
+TABLES = ["gadgets", "spec_documents", "spec_corrections", "comparison_links", "query_history",
+          "user_gadgets"]
+# Stable paging order; user_gadgets has a composite key instead of an id column.
+ORDER_BY = {"user_gadgets": "user_id,gadget_id"}
+# Added after the 31 Oct rehearsal: a source project that has not applied
+# backend/sql/user_gadgets.sql yet is reported, not treated as a failure.
+OPTIONAL_TABLES = {"user_gadgets"}
 PRODUCTION_PROJECT_REF = "lqswcmkzygqmnblaukco"  # docs/devops/environments.md
 PAGE_SIZE = 500
 TIMEOUT_SECONDS = 30
@@ -49,9 +57,15 @@ def export_table(base_url, key, table):
     rows, offset = [], 0
     headers = {"apikey": key, "Authorization": f"Bearer {key}", "Accept": "application/json"}
     while True:
-        url = f"{base_url}/rest/v1/{table}?select=*&order=id&offset={offset}&limit={PAGE_SIZE}"
-        with urlopen(Request(url, headers=headers), timeout=TIMEOUT_SECONDS) as response:
-            page = json.loads(response.read().decode("utf-8"))
+        order = ORDER_BY.get(table, "id")
+        url = f"{base_url}/rest/v1/{table}?select=*&order={order}&offset={offset}&limit={PAGE_SIZE}"
+        try:
+            with urlopen(Request(url, headers=headers), timeout=TIMEOUT_SECONDS) as response:
+                page = json.loads(response.read().decode("utf-8"))
+        except HTTPError as err:
+            if err.code == 404 and table in OPTIONAL_TABLES and offset == 0:
+                return None  # table not in the source project yet
+            raise
         rows.extend(page)
         if len(page) < PAGE_SIZE:
             return rows
@@ -80,6 +94,8 @@ def main():
 
     # 1. Export
     export = {table: export_table(base_url, key, table) for table in TABLES}
+    report["tables_missing_in_source"] = sorted(t for t, rows in export.items() if rows is None)
+    export = {t: rows or [] for t, rows in export.items()}
     (work / "export.json").write_text(json.dumps(export), encoding="utf-8")
     t_export = time.perf_counter()
 
@@ -124,6 +140,9 @@ def main():
         checks["corrections_without_chunk"] = conn.execute(
             "select count(*) from public.spec_corrections c left join public.spec_documents s "
             "on s.id = c.spec_document_id where s.id is null").fetchone()[0]
+        checks["my_gadgets_without_gadget"] = conn.execute(
+            "select count(*) from public.user_gadgets u left join public.gadgets g "
+            "on g.id = u.gadget_id where g.id is null").fetchone()[0]
         checks["embedded_chunks"] = conn.execute(
             "select count(*) from public.spec_documents where embedding is not null").fetchone()[0]
         probe = conn.execute("select embedding from public.spec_documents "
@@ -143,6 +162,7 @@ def main():
         "total": round(t_verify - t0, 2)}
     report["passed"] = (checks["row_counts_match"] and checks["spec_chunks_without_gadget"] == 0
                         and checks["corrections_without_chunk"] == 0
+                        and checks["my_gadgets_without_gadget"] == 0
                         and checks["vector_search_returns_rows"] is not False)
     report["finished_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     report["kept_copy"] = str(work) if args.keep else None

@@ -31,6 +31,16 @@ Owner: Ikeee-AI (DevOps). Prepared 16 October 2026 for Sprint 2 task S2-IK ("est
 | `RENDER_BACKEND_DEPLOY_HOOK`, `RENDER_FRONTEND_DEPLOY_HOOK` | — | repo secrets, main deploy job only | — | Yes |
 | `PRODUCTION_API_URL`, `PRODUCTION_FRONTEND_URL` | — | repo variables | — | No |
 | `OPENAI_SMOKE_API_KEY` | — | repo secret, used only by `ops-ai-smoke.yml` (weekly live check) | — | Yes; separate restricted key, shares the prepaid $10 balance |
+| Supabase Auth custom SMTP (Brevo) | — | — | Production Supabase project, Authentication → SMTP Settings (not an app env var) | Yes: the Brevo SMTP key is stored only in Supabase, never in the repo or Render |
+
+### Auth email (production, since 3 November 2026)
+
+Supabase's built-in email sender allowed **2 emails per hour** for the whole project, covering sign-up confirmations, password resets and resends, and that limit could not be raised. Production now sends auth email through **Brevo** (free plan, 300 emails/day) as custom SMTP:
+
+- **Sender:** `TekaTech <tekatechemail@gmail.com>` (verified in Brevo). **Host/port:** `smtp-relay.brevo.com:587`. The SMTP login and key live only in Supabase (and the key only once in Brevo).
+- **Supabase rate limits:** emails 30/hour (was 2; editable only with custom SMTP), minimum 60 s between emails to the same user. The other limits are unchanged.
+- **Verified 3 Nov 2026, about 13:15 Manila** by Ikeee-AI: a fresh sign-up on production received "Confirm your signup" from TekaTech instantly, in the **inbox** (Gmail), and the link signed the user in.
+- **Known limits:** a free Gmail sender has no custom-domain DKIM/DMARC (Brevo warns "Freemail domain is not recommended"), so some providers may file mail as spam. A sending domain is the fix if that happens. Brevo's 300/day cap is the real ceiling. `TekaTech-dev` still uses Supabase's built-in sender (2/hour).
 
 ## Gaps (honest status)
 
@@ -41,6 +51,7 @@ Owner: Ikeee-AI (DevOps). Prepared 16 October 2026 for Sprint 2 task S2-IK ("est
 | E3 | GitHub environment secrets/protection rules unavailable on this private Free-plan repo | Deploy hooks are repository-scoped; any workflow on main could read them | Accepted constraint; hooks referenced only by the main deploy job |
 | E4 | One OpenAI key used locally and in production | No per-environment spending cap or usage attribution | Partly mitigated 22 Oct 2026 — separate restricted keys for production and development, but one shared Default-project budget; per-environment projects deferred |
 | E5 | Branch protection unavailable (HTTP 403) | Required checks and reviews are not enforced | Recorded; manual `/pr-gate`; raise with instructor |
+| E7 | Auth email limited to 2/hour on Supabase's built-in sender | A third sign-up or password reset in an hour got "Too many requests" and no email | **Fixed 3 November 2026** for production: Brevo custom SMTP, 30/hour (see "Auth email" above) |
 | E6 | Production database (ap-south-1 Mumbai) and API (Render Singapore) are in different regions | Every API request pays a cross-region database round trip; affects Sprint 3–4 latency measurements | Known; measure before deciding (Manuel, Sprint 3). Not a Sprint 2 change |
 
 ## Decision: `POST /query` stays public (#59, 23 October 2026)
