@@ -223,6 +223,10 @@ export default function AiAnswerResult({
   followUps = [],
   onFollowUp,
   specTargets,
+  // An earlier turn in a gadget's conversation: answer and sources only, no follow-ups,
+  // options or buttons. idPrefix keeps each turn's source-list id unique on the page.
+  compact = false,
+  idPrefix = 'answer',
 }) {
   const missingEvidence = result ? isMissingEvidence(result) : false
   // A general-knowledge answer has no sources by design: amber label, no badge, no sources.
@@ -269,14 +273,14 @@ export default function AiAnswerResult({
               <button
                 onClick={() => setSourcesOpen((s) => !s)}
                 aria-expanded={sourcesOpen}
-                aria-controls="answer-sources"
+                aria-controls={`${idPrefix}-sources`}
                 className="inline-flex items-center gap-1 min-h-9 text-sm font-semibold text-slate-700 hover:text-sage-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 rounded"
               >
                 {sourcesOpen ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
                 {result.sources.length} Source{result.sources.length === 1 ? '' : 's'} Retrieved
               </button>
               {sourcesOpen && (
-                <ol id="answer-sources" className="mt-2 space-y-2 animate-fade-in">
+                <ol id={`${idPrefix}-sources`} className="mt-2 space-y-2 animate-fade-in">
                   {result.sources.map((s, i) => (
                     <li
                       key={i}
@@ -327,8 +331,9 @@ export default function AiAnswerResult({
             </div>
           )}
 
-          <FollowUpQuestions questions={followUps} onSelect={onFollowUp} disabled={loading} />
+          {!compact && <FollowUpQuestions questions={followUps} onSelect={onFollowUp} disabled={loading} />}
 
+          {!compact && (
           <div className="flex items-center justify-between flex-wrap gap-3 pt-3 border-t border-slate-200">
             <AnswerOptions
               plainLanguage={plainLanguage}
@@ -347,6 +352,7 @@ export default function AiAnswerResult({
               </Button>
             </div>
           </div>
+          )}
         </div>
       )}
     </div>

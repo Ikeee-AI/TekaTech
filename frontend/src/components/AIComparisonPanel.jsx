@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { MessageSquarePlus, Sparkles } from 'lucide-react'
+import { History, MessageSquarePlus, Sparkles, Trash2 } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
+import { useAuth } from '../hooks/useAuth'
+import { useGadgetThread } from '../hooks/useGadgetThread'
+import { friendlyError } from '../utils/requestErrors'
 import { validateAnswerResponse } from '../utils/aiAnswerState'
 import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { suggestFollowUps } from '../utils/followUps'
 import AiAnswerResult, { AnswerOptions } from './AiAnswerResult'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
+import ThreadTurn from './ThreadTurn'
 
 const DEFAULT_QUESTION = 'Compare these gadgets and highlight the key trade-offs someone should know before buying.'
 const SUGGESTED_QUESTIONS = ['Which offers better value for the price?', 'Compare battery life', 'Compare camera quality']
@@ -72,6 +76,11 @@ export default function AIComparisonPanel({
   }, [gadgetIds.join(',')])
 
   const mode = gadgetIds.length > 1 ? 'comparison' : 'single'
+  // Per-gadget conversation (user_questions.sql): only for a signed-in user asking about
+  // one gadget, which is exactly when POST /query saves the turn on the server.
+  const { user } = useAuth() ?? {}
+  const thread = useGadgetThread(mode === 'single' ? gadgetIds[0] : null, user?.id)
+  const [confirmClear, setConfirmClear] = useState(false)
   // Cheap and deterministic (a short curated list), so it is simply recomputed each render.
   const followUps = suggestFollowUps({ mode, gadgetNames, category, lastQuestion: askedQuestion })
   const specTargets = gadgetIds.map((id, i) => ({ id, name: gadgetNames[i] }))
@@ -79,6 +88,7 @@ export default function AIComparisonPanel({
   async function handleAsk(questionOverride) {
     const q = questionOverride ?? question
     if (loading) return
+    archiveAnswer()
     setAskedQuestion(q)
     setLoading(true)
     setError(null)
@@ -94,8 +104,22 @@ export default function AIComparisonPanel({
     }
   }
 
+  // The answer on screen joins the thread above once the user moves on (a new question,
+  // a follow-up chip or "Ask Another Question"); it was saved server-side when returned.
+  function archiveAnswer() {
+    if (!thread.enabled || !result || error) return
+    thread.appendTurn(askedQuestion, result)
+    setResult(null)
+  }
+
+  async function handleClearThread() {
+    setConfirmClear(false)
+    await thread.clear()
+  }
+
   // Back to the question box, keeping the last question there to edit.
   function handleAskAnother() {
+    archiveAnswer()
     resetAnswer()
     requestAnimationFrame(() => questionRef.current?.focus())
   }
@@ -138,6 +162,47 @@ export default function AIComparisonPanel({
           indexed specs yet — the AI won&apos;t be able to say anything grounded about {missingSpecs.length === 1 ? 'it' : 'them'}.
           Add specs and index them on the gadget page.
         </Alert>
+      )}
+
+      {thread.enabled && (thread.loading || thread.error || thread.turns.length > 0) && (
+        <div className="mb-5">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+            <h3 id="gadget-thread-title" className="flex items-center gap-1.5 text-sm font-semibold text-slate-800">
+              <History size={15} aria-hidden="true" className="text-slate-500" /> Your Earlier Questions
+            </h3>
+            {thread.turns.length > 0 &&
+              (confirmClear ? (
+                <div className="flex items-center gap-2" role="group" aria-label="Confirm clearing your questions">
+                  <span className="text-sm text-slate-700">Clear all your questions about this gadget?</span>
+                  <Button variant="dangerSolid" size="sm" onClick={handleClearThread} loading={thread.clearing}>
+                    Clear
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setConfirmClear(false)} disabled={thread.clearing}>
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setConfirmClear(true)} disabled={loading}>
+                  Clear Conversation
+                </Button>
+              ))}
+          </div>
+          {thread.loading && (
+            <p role="status" className="text-sm text-slate-500">Loading your earlier questions…</p>
+          )}
+          {thread.error && (
+            <Alert tone="warning" className="mb-3">
+              {friendlyError(thread.error)}
+            </Alert>
+          )}
+          {thread.turns.length > 0 && (
+            <ol aria-labelledby="gadget-thread-title" className="space-y-4">
+              {thread.turns.map((turn, i) => (
+                <ThreadTurn key={turn.id} turn={turn} index={i} specTargets={specTargets} />
+              ))}
+            </ol>
+          )}
+        </div>
       )}
 
       {!result && !loading && (

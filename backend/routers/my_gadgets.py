@@ -98,3 +98,51 @@ def remove_my_gadget(request: Request, gadget_id: UUID, user=Depends(get_current
         logger.warning("My gadgets delete failed: %s", type(exc).__name__, exc_info=True)
         raise HTTPException(status_code=503, detail=DETAIL_SAVE_FAILED) from None
     return Response(status_code=204)
+
+
+# --- Per-gadget AI conversation (user_questions.sql, 3 Nov 2026) ---------------------------
+# POST /query saves a signed-in user's single-gadget questions (routers/query.py,
+# _save_thread_turn). These routes let the gadget page show and clear that user's thread.
+THREAD_TURNS_SHOWN = 20
+
+
+@router.get("/{gadget_id}/questions")
+def list_my_gadget_questions(gadget_id: UUID, user=Depends(get_current_user)):
+    """The caller's latest questions about one gadget, oldest first (chat order), at most 20:
+    [{"id", "question", "asked_at", "response": QueryResponse}]."""
+    try:
+        rows = (
+            supabase.table("user_questions")
+            .select("id, question, response, created_at")
+            .eq("user_id", str(user.id))
+            .eq("gadget_id", str(gadget_id))
+            .order("created_at", desc=True)
+            .limit(THREAD_TURNS_SHOWN)
+            .execute()
+            .data
+        )
+    except Exception as exc:
+        logger.warning("Gadget questions read failed: %s", type(exc).__name__, exc_info=True)
+        raise HTTPException(status_code=503, detail="Couldn't load your earlier questions right now.") from None
+    return [
+        {"id": row["id"], "question": row["question"], "asked_at": row["created_at"], "response": row["response"]}
+        for row in reversed(rows)
+    ]
+
+
+@router.delete("/{gadget_id}/questions", status_code=204)
+@limiter.limit("60/hour")
+def clear_my_gadget_questions(request: Request, gadget_id: UUID, user=Depends(get_current_user)):
+    """Delete the caller's saved questions about one gadget (their thread only). Idempotent."""
+    try:
+        (
+            supabase.table("user_questions")
+            .delete()
+            .eq("user_id", str(user.id))
+            .eq("gadget_id", str(gadget_id))
+            .execute()
+        )
+    except Exception as exc:
+        logger.warning("Gadget questions delete failed: %s", type(exc).__name__, exc_info=True)
+        raise HTTPException(status_code=503, detail="Couldn't clear your questions right now.") from None
+    return Response(status_code=204)

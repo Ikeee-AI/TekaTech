@@ -195,6 +195,8 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/me/gadgets` | GET | logged-in | none (always the session user) | 200 list, newest first, max 50: `{"added_at", "gadget": GadgetResponse}` | 401, 503 |
 | `/me/gadgets/{gadget_id}` | PUT | logged-in | path `gadget_id` (a catalog gadget) | 204; already in the list is a no-op. 120/hour | 401, 404 (no such gadget), 409 (list full, 50), 422, 429, 503 |
 | `/me/gadgets/{gadget_id}` | DELETE | logged-in | path `gadget_id` | 204, removes it from the caller's list only (idempotent). 120/hour | 401, 422, 429, 503 |
+| `/me/gadgets/{gadget_id}/questions` | GET | logged-in | path `gadget_id` | 200 list, oldest first, the caller's latest 20 questions about that gadget: `{"id", "question", "asked_at", "response": QueryResponse}`. `POST /query` saves them (signed-in, exactly one gadget) | 401, 422, 503 |
+| `/me/gadgets/{gadget_id}/questions` | DELETE | logged-in | path `gadget_id` | 204, deletes the caller's saved questions about that gadget only (idempotent). 60/hour | 401, 422, 429, 503 |
 | `/corrections/mine` | GET | logged-in | none (always the session user; no user-id parameter) | 200 list, newest first, max 50: `{"id", "status", "suggested_content", "created_at", "reviewed_at", "spec_id", "spec_excerpt", "gadget": {"id", "name", "brand"} \| null}` | 401, 503 (`"Couldn't load your suggestions right now."`) |
 | `/corrections/pending-count` | GET | admin | none | 200 `{"count": N}` | 401, 403, 503 |
 | `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}`; only `pending` corrections can be resolved | 200 | 400, 401, 403, 404, 409 (`"Correction was already approved"` / `rejected`), 503 |

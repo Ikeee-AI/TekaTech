@@ -442,9 +442,44 @@ def ask_question(request: Request, payload: QueryRequest):
     simulated = _requested_simulation(request)
     if simulated:
         # Returns or raises before the cache is read or written, so a drill always shows the
-        # failure it asked for and never leaves a cached answer behind.
+        # failure it asked for and never leaves a cached answer behind (or a saved thread turn).
         return _simulated_failure(simulated)
+    response = _answer_question(request, payload)
+    _save_thread_turn(request, payload, response)
+    return response
 
+
+
+def _save_thread_turn(request: Request, payload: "QueryRequest", response: QueryResponse) -> None:
+    """Per-gadget conversation (user_questions.sql): a signed-in user's question about exactly
+    one gadget is saved with its full answer, so the gadget page can show the thread later.
+
+    Only answers that reached this point are saved (errors and cut-off answers raised above).
+    The route stays public: no session means nothing is saved. Like _record_query, this can
+    never fail the request: the OpenAI calls are already billed by the time it runs.
+    """
+    if not payload.gadget_ids or len(payload.gadget_ids) != 1:
+        return
+    authorization = request.headers.get("authorization")
+    if not authorization:
+        return
+    try:
+        user = get_optional_user(authorization)
+        if user is None:
+            return
+        supabase.table("user_questions").insert(
+            {
+                "user_id": str(user.id),
+                "gadget_id": str(payload.gadget_ids[0]),
+                "question": payload.question,
+                "response": response.model_dump(mode="json"),
+            }
+        ).execute()
+    except Exception:
+        logger.exception("user_questions insert failed; the answer is returned without saving the turn")
+
+
+def _answer_question(request: Request, payload: "QueryRequest") -> QueryResponse:
     # 0. The same question in the same scope (gadgets, plain-language flag, prompt version,
     #    models) is answered from answer_cache without any OpenAI call. The generation is
     #    read first, so an answer built from specs that change mid-request is not stored.

@@ -30,14 +30,14 @@ from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 # Foreign-key order: spec_documents -> gadgets, spec_corrections -> spec_documents,
-# user_gadgets -> gadgets (My Gadgets, 3 Nov 2026).
+# user_gadgets and user_questions -> gadgets (My Gadgets and per-gadget AI threads, 3 Nov 2026).
 TABLES = ["gadgets", "spec_documents", "spec_corrections", "comparison_links", "query_history",
-          "user_gadgets"]
+          "user_gadgets", "user_questions"]
 # Stable paging order; user_gadgets has a composite key instead of an id column.
 ORDER_BY = {"user_gadgets": "user_id,gadget_id"}
 # Added after the 31 Oct rehearsal: a source project that has not applied
 # backend/sql/user_gadgets.sql yet is reported, not treated as a failure.
-OPTIONAL_TABLES = {"user_gadgets"}
+OPTIONAL_TABLES = {"user_gadgets", "user_questions"}
 PRODUCTION_PROJECT_REF = "lqswcmkzygqmnblaukco"  # docs/devops/environments.md
 PAGE_SIZE = 500
 TIMEOUT_SECONDS = 30

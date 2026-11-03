@@ -60,6 +60,7 @@ The catalog is curated by the TekaTech team: only admin accounts see **Add Gadge
 - After you log in you land on **My Gadgets**. It's empty at first.
 - In the **Catalog**, click **Add to My Gadgets** on any gadget card. Click it again (**In My Gadgets**) to take it off.
 - On **My Gadgets**: **Ask AI** opens the gadget's page with its question box, and **Remove** takes it off your list (the catalog is unchanged). Tick 2–5 gadgets and click **Compare & Ask AI** to compare them side by side and ask about all of them at once.
+- When you're logged in, the questions you ask on a gadget's page are kept with their answers. Come back later (on any device) and **Your Earlier Questions** shows them above the question box, citations included. **Clear Conversation** deletes them for that gadget. Questions asked while logged out, and comparison questions, are not kept.
 
 ### Suggest a correction
 1. On any spec card, click **Suggest Correction**, write the corrected text, and **Submit for Review**.
