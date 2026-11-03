@@ -84,8 +84,8 @@ export default function Login() {
         </h1>
         <p className="text-sm text-gray-500 mb-4">
           {mode === 'login'
-            ? 'Needed to add gadgets or submit corrections.'
-            : 'Browsing and AI questions never require an account — this is only for contributing.'}
+            ? 'Needed to suggest corrections to specs and follow their review.'
+            : 'Browsing, comparing and AI questions never require an account — it is only for suggesting corrections.'}
         </p>
         {/* key={mode} remounts the inputs so browser autofill state from the other mode can't leak in. */}
         <form key={mode} onSubmit={handleSubmit} className="space-y-4">

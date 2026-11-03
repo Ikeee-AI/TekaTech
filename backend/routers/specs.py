@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 
 import answer_cache
 import cache
-from auth import get_current_admin_user, get_current_user
+from auth import get_current_admin_user
 from embeddings import chunk_text, embed_texts
 from rate_limit import limiter
 from schemas import clean_http_url
@@ -56,7 +56,7 @@ class SpecDocumentResponse(BaseModel):
 
 @router.post("", status_code=201)
 @limiter.limit("20/hour")
-def ingest_spec_text(request: Request, gadget_id: UUID, payload: SpecIngestRequest, user=Depends(get_current_user)):
+def ingest_spec_text(request: Request, gadget_id: UUID, payload: SpecIngestRequest, user=Depends(get_current_admin_user)):
     if not gadget_exists(gadget_id):
         raise HTTPException(status_code=404, detail="Gadget not found")
     return save_spec_text(gadget_id, payload)
@@ -107,7 +107,7 @@ def list_specs(gadget_id: UUID):
 
 @router.post("/{spec_id}/index")
 @limiter.limit("20/hour")
-def index_spec(request: Request, gadget_id: UUID, spec_id: UUID, user=Depends(get_current_user)):
+def index_spec(request: Request, gadget_id: UUID, spec_id: UUID, user=Depends(get_current_admin_user)):
     """Index an existing chunk; failures leave the saved text pending."""
     result = (supabase.table("spec_documents").select("id, content, indexing_status")
               .eq("id", str(spec_id)).eq("gadget_id", str(gadget_id)).execute())

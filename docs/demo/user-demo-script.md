@@ -15,7 +15,7 @@ Goal: show real CRUD that persists, related data, and grounded AI with citations
 ## Before the session (T-15 min)
 
 - [ ] **Warm both services** about 2 minutes before Part 1: open https://tekatech-api.onrender.com/health and then the site. Cold start was measured at 42–55 s.
-- [ ] **Sign in** on the demo browser with a **non-admin demo account**, so the navbar doesn't show a personal email or admin links. Check the account works the day before.
+- [ ] **Sign in** on the demo browser with an **admin demo account** (not a personal email). Since 3 Nov 2026 the catalog is admin-curated, so a non-admin account has no **Add Gadget**, **Add Specs** or **Index for AI** and the Create steps below would fail. The navbar will also show **Review Queue**; that's expected. Check the account works the day before.
 - [ ] Browser: zoom **125%**, notifications off, bookmarks bar hidden, other tabs closed. Two tabs: **catalog** and a blank one (for the share link).
 - [ ] **Spec text in the clipboard** (copy from the box below).
 - [ ] Check "Demo Day Phone" does **not** already exist. If it does, delete it, or use "Demo Day Phone 2".

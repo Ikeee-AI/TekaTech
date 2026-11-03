@@ -73,7 +73,7 @@ Each entry: **what was chosen**, **why**, **the alternative**, **what it costs**
 ### D5. Ground, cite, then validate the output
 - **Chosen:** the prompt tells the model to answer only from numbered snippets and cite `[1]`, `[2]`. Snippets are framed as untrusted data. After the model answers, `citations.py` removes any `[n]` that points outside the snippets that were sent, and `/query` reports how many it removed (`invalid_citations_removed`). The frontend renders exactly three things: citations, bold and bullets, and the prompt's formatting rules are tied to that.
 - **Why:** the course asks that the backend validate or act on AI output, and a pass-through chatbot is not enough. A dead citation would look like evidence that doesn't exist.
-- **Accepted risk (stated in `CLAUDE.md`, do not "fix" silently):** spec text from any logged-in user goes into the model's context. This is a known, accepted stored-prompt-injection surface. The prompt's untrusted-data framing is the mitigation, and an override test case (TC-20) checks it.
+- **Reduced risk (stated in `CLAUDE.md`):** spec text goes into the model's context. Since 3 Nov 2026 only admins add specs, and user corrections reach it only after admin approval, so this stored-prompt-injection surface is admin-reviewed input. The prompt's untrusted-data framing is the mitigation, and an override test case (TC-20) checks it.
 - **Cost:** the prompt and the renderer must change together or markup shows as literal text with no error.
 - **Check:** `backend/prompts.py`, `backend/citations.py`, `docs/ai-feature-writeup.md`.
 

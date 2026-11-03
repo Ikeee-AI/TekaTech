@@ -45,11 +45,12 @@ The AI panel always tells you what happened and keeps the question you typed:
 - Click **Log In** (top right) → **Don't have an account? Sign Up**. Enter your email and a password, then open the confirmation link sent to your email before logging in.
 - Forgot your password? On the log-in page, click **Forgot password?** and follow the emailed link.
 
-### Add or edit a gadget
+### Add or edit a gadget (admins only)
+The catalog is curated by the TekaTech team: only admin accounts see **Add Gadget**, **Edit**, **Add Specs** and **Index for AI**. A regular account contributes through **Suggest a correction** below.
 - **Add Gadget** (top bar): name, brand and category are required; price, release date and image link are optional. Then **Save Gadget**.
 - On a gadget's page, **Edit** lets you change any field (**Save Changes**). Emptying an optional field, such as price, clears it.
 
-### Add specs, then index them for the AI
+### Add specs, then index them for the AI (admins only)
 1. On a gadget's page, click **Add Specs**.
 2. Paste the spec text. Separate facts with blank lines; short blocks are grouped into snippets of about 300 tokens, so a short spec sheet may become a single card. Add the **Source URL** you copied it from, then **Save Specs**.
 3. New specs show **Pending AI Indexing**. They're saved and readable straight away, but the AI can't use them yet.

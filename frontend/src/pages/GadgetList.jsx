@@ -21,6 +21,7 @@ import Button from '../components/ui/Button'
 import DeleteGadgetButton from '../components/DeleteGadgetButton'
 import { CatalogSkeleton } from '../components/Skeleton'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { useAuth } from '../hooks/useAuth'
 import AIAnswerPanel from '../components/AIAnswerPanel'
 import TrendingQuestions from '../components/TrendingQuestions'
 import { friendlyError } from '../utils/requestErrors'
@@ -75,6 +76,8 @@ function toggleInSet(set, value) {
 
 export default function GadgetList() {
   useDocumentTitle('Catalog')
+  const { user } = useAuth()
+  const isAdmin = Boolean(user?.app_metadata?.is_admin)
   const [gadgets, setGadgets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -224,6 +227,17 @@ export default function GadgetList() {
           onRetry={retryLoad}
         />
       </div>
+    )
+  }
+
+  // Admin-curated catalog (scope change, 3 Nov 2026): only admins can add the first gadget.
+  if (gadgets.length === 0 && !isAdmin) {
+    return (
+      <EmptyState
+        icon={PackagePlus}
+        title="Welcome to TekaTech"
+        description="The TekaTech team is adding gadgets and their sourced specs. Check back soon to browse, ask questions and compare devices."
+      />
     )
   }
 
