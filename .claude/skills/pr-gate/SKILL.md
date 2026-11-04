@@ -13,5 +13,6 @@ For PR `<n>` (or each open PR from `gh pr list --repo Ikeee-AI/TekaTech`):
    - Changed files map to one owner per `docs/sprints-2-to-5.md`; otherwise recommend splitting.
    - No `.env`/account files; invoke the `pre-reviewer` agent for a deeper read if useful.
    - SQL changes include manual application instructions.
+   - SQL changes are applied to the **live** project (`lqswcmkzygqmnblaukco`) before merging, because a merge deploys straight away. "Applied" without a project ref, or applied only to TekaTech-dev (`efdgguybkampozuvqjrz`), is BLOCKED. Ask the owner to confirm the live project's ref in the SQL Editor URL and to run the PR's check queries there. Supabase's "PRODUCTION" badge marks a project's main branch, not the live project (incident 3 Nov 2026, `docs/devops/incidents.md`).
 3. Print a PASS/BLOCKED table with the reason per item.
 4. Merging is outward-facing: only after PASS **and** the user explicitly says to merge, run `gh pr merge <n> --squash --repo Ikeee-AI/TekaTech`, then run the `verify-deploy` skill for the merge commit. Never merge on a BLOCKED gate, and never approve PRs yourself.

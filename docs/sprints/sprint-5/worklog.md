@@ -302,3 +302,112 @@
 
 **Next**
 - Get reviews on #210 and #211, merge, then do the production check (chat: ask two questions, reload, New Chat; specs: cards and dropdown) and record it in each PR — Ikeee-AI — after approval.
+
+## 2026-11-03 19:11 Asia/Manila — Evening: six PRs merged and verified (#200, #208, #198, #209, #211, #212); #210 review answered
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code). The owner ran every merge command; Claude Code ran the gate and the production checks. · **Task:** S5-IK (integration, release checks); S5-JO PRs merged as integrator · **Branch:** `main`, `tekatech/s5-ik-gadget-ai-thread`, `tekatech/s5-ik-spec-source-cards`
+
+**Done**
+- **Merged and verified, one at a time.** Each PR passed the manual `pr-gate` first (approval from another teammate on the head commit, the required checks green, one owner, no secret files). After each merge: the `main` CI run, including the deploy job, passed, and `scripts/deployed_smoke.py` confirmed production served that commit (CORS and readiness passed, 4 gadgets). Reports are in `.local/deployed-smoke-<sha>.json` (local, untracked).
+
+  | PR | Owner | Merge commit | CI run | Smoke (UTC) |
+  | --- | --- | --- | --- | --- |
+  | [#200](https://github.com/Ikeee-AI/TekaTech/pull/200) admin Index All Pending, Compare back, catalog guide | Ikeee-AI | `2f90f26` | [41615341534](https://github.com/Ikeee-AI/TekaTech/actions/runs/41615341534) | passed 10:01 |
+  | [#208](https://github.com/Ikeee-AI/TekaTech/pull/208) image link preview/validation | Jopher | `966ac86` | [41619766929](https://github.com/Ikeee-AI/TekaTech/actions/runs/41619766929) | passed 10:32 |
+  | [#198](https://github.com/Ikeee-AI/TekaTech/pull/198) sign-up confirmation feedback | Jopher | `7e3d88a` | [41621671556](https://github.com/Ikeee-AI/TekaTech/actions/runs/41621671556) | passed 10:46 |
+  | [#209](https://github.com/Ikeee-AI/TekaTech/pull/209) account page | Jopher | `bb86491` | [41622757236](https://github.com/Ikeee-AI/TekaTech/actions/runs/41622757236) | passed 10:54 |
+  | [#211](https://github.com/Ikeee-AI/TekaTech/pull/211) specs grouped by source | Ikeee-AI | `60d3e92` | [41624275236](https://github.com/Ikeee-AI/TekaTech/actions/runs/41624275236) | passed 11:05 |
+  | [#212](https://github.com/Ikeee-AI/TekaTech/pull/212) worklog (afternoon) | Ikeee-AI | `b017915` | [41624831143](https://github.com/Ikeee-AI/TekaTech/actions/runs/41624831143) | passed 11:09 |
+- **Combined pre-merge check for Jopher's three PRs.** Their CI had run before `main` moved, and #198 and #209 both edit `App.jsx`. So #198, #208 and #209 were trial-merged onto `main` (`2f90f26`) in a throwaway worktree, which was removed afterwards. Result: no conflicts; eslint clean, vitest 299 passed, build ok, Playwright failure drill 8/8 (local).
+- **#211 rebased onto #200.** Both PRs changed `SpecManager.jsx` and both added an "Index All". #200's gadget-level **Index All Pending** was kept, because it shows progress and stops at the rate limit. #211's per-card "Index All for AI" was removed. Force-pushed as `02eeb58`; Mika re-approved the rebased commit before the merge.
+- **#210 review answered.** Jopher requested changes. His blocking point (the failure-drill browser check) was already fixed in `f7cd23c`. His notes 4 (out-of-date wording) and 5 (put a failed question back in the message box) were done in `f1dbf10`, and the e2e check now uses his suggested latest-message locator. The PR description was rewritten for the chat UI, and each note got a reply in [the PR](https://github.com/Ikeee-AI/TekaTech/pull/210#issuecomment-6600564526). CI on `f1dbf10` is green ([41615153627](https://github.com/Ikeee-AI/TekaTech/actions/runs/41615153627)).
+- **Overlap comment on Manuel's issue [#205](https://github.com/Ikeee-AI/TekaTech/issues/205#issuecomment-6602277151).** #210 already links signed-in single-gadget questions to the user in `user_questions`. Suggested narrowing #205 to a cross-gadget "Recent questions" panel on that table; the decision is Manuel's.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `gh pr merge 200 --squash` from Claude Code: "Permission for this action was denied by the Claude Code auto mode classifier" | The session's permission settings don't let the assistant merge | The owner ran each merge as `! gh pr merge <n> --squash` — resolved (by design) |
+| Rebase of #211: conflicts in `frontend/src/components/SpecManager.jsx` and `docs/quick-start.md` | #200 and #211 both rewrote the indexing code | Resolved in #200's favour (see Done); `waitFor` unused-import lint error fixed; checks re-run green — fixed |
+| Playwright, after the #210 note-5 change: strict mode violation, `getByText('What chip does the iPhone 15 use?')` resolved to 2 elements | The question is now both the chat's latest message and back in the box | Assert the box value plus the `listitem` "Latest question: …" — fixed in `f1dbf10` |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #200 and #211 each added an "Index All" to the spec section | Two buttons doing the same job | #211 dropped its per-card version — resolved |
+| Issue #205 (Manuel) planned `query_history.user_id` and `/me/questions`; #210 stores signed-in questions in `user_questions` | Two designs for one feature | Comment posted; Manuel to narrow or close #205 — open |
+| Main CI shows `Main guard (reviewed PR required)` as a job, yet the repo has no enforced branch protection | A reader could take the job for enforcement; the merges still relied on the manual gate | Unchanged; `pr-gate` reports say "not enforced" — open (known) |
+
+**Decisions**
+- Merge one PR at a time and verify production after each, instead of a batch, so a failure points to one change — Ikeee-AI.
+- Keep #200's Index All Pending over #211's per-card version — Ikeee-AI.
+- Jopher's non-blocking #210 notes 1–3 (save after the response, delete-then-insert on Regenerate, FK to `auth.users`) deferred until after the pilot / to #204 — Ikeee-AI, agreed in the #210 reply.
+
+**Blockers / risks**
+- #210 needs Jopher's re-review to clear "Changes requested" — Jopher — 4 Nov.
+- #211's new spec cards: **not yet checked in a browser on production** (the smoke check covers API, CORS and DB only) — Ikeee-AI — 3–4 Nov.
+- The UI of #208, #198 and #209 was not clicked through on production by Ikeee-AI. Jopher's PRs include screenshots from his local runs — Jopher/Ikeee-AI — before the pilot.
+
+**Plan alignment**
+- #200, #211: **Done** for merge/deploy/smoke; #211's browser check on production is pending, so strictly **Partial** until recorded.
+- #198, #208, #209 (S5-JO): merged, deployed, smoke-checked — **Partial** until a production click-through is recorded.
+- #210: **Partial** (green, awaiting re-review).
+- Pilot: **Not started (on hold)**.
+
+**Next**
+- Owner checks #211's spec cards on production; record it in #211 — Ikeee-AI — 3 Nov.
+- After Jopher re-approves #210: check it still merges, merge, check it on production (ask two questions, reload, Regenerate, New Chat), record it in the PR — Ikeee-AI — 4 Nov.
+- Production click-through of the account page, sign-up feedback and image-link check — Jopher (Ikeee-AI to confirm) — 4 Nov.
+- Manuel to decide on #205 — Manuel — after #210 merges.
+
+## 2026-11-03 23:04 Asia/Manila — Late evening: #210 merged; production check found the SQL on dev only (incident, fixed)
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code). The owner ran the merge and the SQL; Claude Code ran the gate, smoke and browser checks. · **Task:** S5-IK (#210 release, production checks) · **Branch:** `main`, `tekatech/s5-ik-log-2026-11-03-eve`
+
+**Done**
+- **Entry above re-checked against GitHub.** All six merges, commits, CI runs and smoke reports match. Jopher re-approved #210 on `f1dbf10` at 19:15, four minutes after the entry was written, so its "awaiting re-review" lines went out of date.
+- **#210 gate: PASS (manual, not enforced protection).** Approved on head `f1dbf10` by Manuel (`s2302827-byte`) and Jopher (`s2100932`); the three required checks plus the failure drill were green. The head was behind `main`, so it was trial-merged onto `b017915` in a throwaway worktree (removed): no conflicts, secret guard passed, pytest 679 passed, app import ok, eslint clean, vitest 315 passed, build ok.
+- **Merged** by the owner at 21:26 as `3986bf1`. [main run 41644306595](https://github.com/Ikeee-AI/TekaTech/actions/runs/41644306595): all jobs passed, deploy included. `deployed_smoke.py` passed at 13:29:32 UTC on the first attempt (commit match, CORS and readiness passed, database 299 ms, 4 gadgets); report in `.local/deployed-smoke-3986bf1.json`.
+- **Production browser check (Claude Code in Chrome, test account, iPhone 15)**, after the SQL fix below:
+
+  | Step | Result |
+  | --- | --- |
+  | Load earlier questions | GET 200, empty thread |
+  | Ask 2 questions, reload | Both answered with a citation (`/query` 200) and both came back after reload |
+  | Ask a 3rd, Regenerate, reload | 3 turns, not 4: the saved turn was replaced. Saved turns show no Regenerate/Copy (by design) |
+  | New Chat, reload | Thread empty; Render logged `status=204` at 22:22:06 and 22:23:13 |
+
+  6 paid `/query` calls in total. The test account's iPhone 15 thread was cleared at the end.
+- **#211 browser check on production (light):** iPhone 15 shows one collapsible card for support.apple.com with the date, "Ready for AI", Hide/Show and Suggest Correction. No gadget on production has more than one source, so several cards side by side were not seen.
+- **Incident recorded** in [incidents.md](../../devops/incidents.md) (2026-11-03, SQL applied to dev only). `pr-gate` now requires SQL to be applied to the live project (`lqswcmkzygqmnblaukco`), named by its ref, before merging. A correction was posted on #210.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Gadget page: "Couldn't load your earlier questions right now."; `GET /me/gadgets/{id}/questions` 503; Render: `Gadget questions read failed: APIError` | `user_questions.sql` had been applied to TekaTech-dev only; the live project had no table | Owner applied it to the live project at about 22:15 and ran the PR's checks — fixed (incident) |
+| Chrome extension: "Browser extension is not connected" | The extension was not connected to this session | Owner ran `/chrome` — fixed |
+| Read-only probe of `user_questions` from the local backend: "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Production Reads]" | The session may not read production data | Diagnosed in the SQL Editor (owner) and the Render logs instead — by design |
+| Chrome network capture showed `DELETE …/questions` as 503 twice | The capture tool reported a wrong status; the app logged 204 for both and the rows were deleted | Not an app bug; withdrawn. Confirm statuses in the Render log before reporting one |
+| Render search for `Gadget questions delete failed` on the Deploys page: "No matching results" | That box searches deploys, not logs | Searched Logs (`method=DELETE`) — resolved |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #210's description said the SQL was "applied"; it was applied to TekaTech-dev, not the live project | Saved questions failed on production for about 49 min | Correction comment on #210; gate rule added — resolved |
+| Supabase shows a "PRODUCTION" badge on TekaTech-dev's `main` branch | Easy to take dev for the live project | Gate now asks for the project ref from the SQL Editor URL — resolved |
+
+**Decisions**
+- Fix forward (apply the SQL), no revert: the deploy was healthy and the failure was one feature with a visible notice — Ikeee-AI.
+- Statuses seen in the browser extension are confirmed in the Render log before being reported as a bug — Ikeee-AI.
+
+**Blockers / risks**
+- `deployed_smoke.py` doesn't check signed-in routes or new tables, so a missing migration only shows in a browser check — Ikeee-AI — open (not planned; the gate covers it).
+- The UI of #208, #198 and #209 still hasn't been clicked through on production — Jopher/Ikeee-AI — 4 Nov.
+
+**Plan alignment**
+- #210: **Done** (reviewed, merged, deployed, checked on production; incident recovered).
+- #211: **Done** (browser check recorded above).
+- #198, #208, #209 (S5-JO): **Partial** until a production click-through is recorded.
+- Pilot: **Not started (on hold)**.
+
+**Next**
+- Production click-through of the account page, sign-up feedback and image-link check — Jopher (Ikeee-AI to confirm) — 4 Nov.
+- Manuel to decide on #205 now that #210 is live — Manuel — 4 Nov.
+- Clean up the old worktrees whose branches are merged — Ikeee-AI — when convenient.
