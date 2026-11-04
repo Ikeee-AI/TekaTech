@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom'
 import { X, Sparkles, ImageOff, Trophy, Share2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -82,6 +82,16 @@ export default function ComparePage() {
   const idsKey = ids.join(',')
   const [share, setShare] = useState(null)
   const shareUrl = share?.key === idsKey ? share.url : null
+  // After an add the page swaps to its loading skeleton, so focus would fall to <body>.
+  // Once it has reloaded, put focus back on Add Gadget (or the heading at the 5-gadget limit).
+  const focusAfterAdd = useRef(false)
+  const addButtonRef = useRef(null)
+  const headingRef = useRef(null)
+  useEffect(() => {
+    if (loading || !focusAfterAdd.current) return
+    focusAfterAdd.current = false
+    ;(addButtonRef.current ?? headingRef.current)?.focus()
+  }, [loading])
 
   useEffect(() => {
     if (ids.length === 0) {
@@ -147,6 +157,7 @@ export default function ComparePage() {
   // so the share link and the AI panel follow the new set; the toast is announced.
   function addGadget(gadget) {
     if (ids.includes(gadget.id) || ids.length >= MAX_COMPARE_GADGETS) return
+    focusAfterAdd.current = true
     setSearchParams({ ids: [...ids, gadget.id].join(',') }, { state: location.state })
     toast.success(`${gadget.name} added to the comparison`)
   }
@@ -210,7 +221,7 @@ export default function ComparePage() {
       <BackLink to={back.to}>{back.label}</BackLink>
 
       <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
-        <h1 className="font-display text-xl sm:text-2xl font-medium text-gray-900 tracking-tight">
+        <h1 ref={headingRef} tabIndex={-1} className="font-display text-xl sm:text-2xl font-medium text-gray-900 tracking-tight focus:outline-none">
           Comparing {gadgets.length} Gadgets
         </h1>
         <button
@@ -226,7 +237,7 @@ export default function ComparePage() {
       <p className="text-sm text-gray-500 mb-4">Side-by-side spec comparison.</p>
       <div className="mb-6">
         {ids.length < MAX_COMPARE_GADGETS ? (
-          <CompareAddGadget excludeIds={ids} onAdd={addGadget} />
+          <CompareAddGadget excludeIds={ids} onAdd={addGadget} buttonRef={addButtonRef} />
         ) : (
           <p className="text-sm text-slate-600">
             {MAX_COMPARE_GADGETS} gadgets is the most you can compare. Remove one (×) to add another.
