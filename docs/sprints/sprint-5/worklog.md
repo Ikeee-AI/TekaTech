@@ -412,8 +412,8 @@
 - Manuel to decide on #205 now that #210 is live — Manuel — 4 Nov.
 - Clean up the old worktrees whose branches are merged — Ikeee-AI — when convenient.
 
-## 2026-11-05 01:39 Asia/Manila — 4 Nov: Mika's #214 and #216 merged; PR-policy diff fixed (#218); #217 and #219 merged; #215 waiting on fixes
-**Who:** Ikeee-AI (AI-assisted: yes, Claude Code). The owner ran every merge; Claude Code ran the gates, pre-reviews and smoke checks. · **Task:** S5-IK (gate, release, pipeline), with S5-MI and S5-JO merges · **Branch:** `main`, `tekatech/s5-ik-policy-three-dot`, `tekatech/s5-ik-log-2026-11-04`
+## 2026-11-05 01:39 Asia/Manila (updated 02:45) — 4 Nov: Mika's #214 and #216 merged; PR-policy diff fixed (#218); #217, #219, #220 merged; #215 fixes taken over (#222)
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code). The owner ran every merge; Claude Code ran the gates, pre-reviews and smoke checks. · **Task:** S5-IK (gate, release, pipeline), with S5-MI and S5-JO merges · **Branch:** `main`, `tekatech/s5-ik-policy-three-dot`, `tekatech/s5-ik-log-2026-11-04`, `tekatech/s5-takeover-mika-215`
 
 **Done**
 - **Pre-review of Mika's #214, #215, #216** (AI-assisted, not a teammate review; Jopher's approvals are the reviews that count). Scorecards in [reviews/](reviews/): #214 Accept, #216 Accept, #215 Changes requested (Close button 32 px → 40 px and `min-h-10` on Try Again; focus lost after picking a gadget, plus a test). A trial merge of all three onto `3986bf1` had no conflicts: eslint clean, 322 vitest tests passed, build ok. The owner posted the #215 comment at 00:09.
@@ -422,7 +422,8 @@
 - **#218, PR policy uses a three-dot diff** (`.github/workflows/pr-review.yml:48`). The two-dot diff also listed files that `main` changed after a branch started, so #215 was flagged for #210's SQL. Approved by Manuel and Jopher; merged at 13:43 as `8141b35`; [main run 41781030716](https://github.com/Ikeee-AI/TekaTech/actions/runs/41781030716) passed; smoke passed at 13:50 (database 279 ms, 4 gadgets).
 - **#217, 3 Nov evening log, incident and gate rule.** Approved by Manuel and Jopher; merged at 17:52 as `bd2393d`; [main run 41810408566](https://github.com/Ikeee-AI/TekaTech/actions/runs/41810408566) passed; smoke passed at 17:55 (355 ms).
 - **#219, Jopher's demo script update.** Approved by Manuel; gate PASS; merged at 00:04 on 5 Nov as `a6b8392`; [main run 41863926579](https://github.com/Ikeee-AI/TekaTech/actions/runs/41863926579) passed (deploy finished 00:08); smoke passed at 00:29 on the 3rd attempt (database 1,017 ms after the free API slept).
-- **#220, Manuel's troubleshooting guide:** gate PASS (Jopher approved `de5dea8` after following section 1 with only the guide). Not merged yet.
+- **#220, Manuel's troubleshooting guide.** Gate PASS (Jopher approved `de5dea8` after following section 1 with only the guide). Merged by the owner at 01:44 on 5 Nov as `ad7e566`; [main run 41880077701](https://github.com/Ikeee-AI/TekaTech/actions/runs/41880077701) passed (deploy finished 01:47); smoke passed at 01:50 on the first attempt (database 451 ms, 4 gadgets).
+- **#215 fixes taken over (owner's decision: Mika is busy with other work this week).** [#222](https://github.com/Ikeee-AI/TekaTech/pull/222) keeps Mika's commit `563f737` unchanged, merges current `main`, and adds Ikeee-AI's commit `732b369` (AI-assisted): Close 32 → 40 px and `min-h-10` on Try Again; focus back on Add Gadget after the page reloads, or on the heading at the 5-gadget limit; two tests that fail without the fix. eslint clean, vitest 31 files / 324 tests passed, build ok. The owner approved the comment on #215 (posted 02:01) and the PR. CI on #222 passed, **PR policy included**: the #218 fix confirmed on a branch that started before #210. Reviewers: Jopher, Manuel.
 - **Old worktrees cleaned up:** 40 worktrees whose branches were merged were removed with their local branches. Their SHAs are saved, so each can be restored with `git branch <name> <sha>`.
 - **Dependabot alert #28** (dev-only, waiting for eslint to allow minimatch 11) was left open by the owner. On 5 Nov the API answers `410 Alert number 28 has been withdrawn`: the advisory itself was withdrawn, so nothing is left to do.
 
@@ -434,28 +435,35 @@
 | Main run for #219 still showed `queued` at 00:15 (10+ min) | githubstatus.com: Actions "degraded_performance". The jobs had actually run 00:04–00:08; only the shown status lagged | Waited; the run finished green. Not an incident |
 | `gh pr comment … --body-file -`: "Body cannot be blank" | The `!` prompt does not pass stdin | Comment saved to a file and posted with `--body-file <path>` |
 | Removing worktrees: "Filename too long" (5 folders) | Deep `node_modules` paths on Windows | Removed with literal paths in Git Bash |
-| `gh pr merge 220` by Claude Code: "Permission … denied by the Claude Code auto mode classifier. Reason: [Unrequested Commit in a Connected App]" | Merges are run by the owner | Owner to run the merge — by design |
+| `gh pr merge 220` by Claude Code: "Permission … denied by the Claude Code auto mode classifier. Reason: [Unrequested Commit in a Connected App]" | Merges are run by the owner | Owner ran the merge at 01:44 — by design |
+| No CI run appeared for #222 for a few minutes after it was opened | githubstatus.com: Actions "partial_outage" | Runs started at 02:03; all passed. Not an incident |
+| #220 main run: two jobs showed no result after the run had finished | Same Actions status lag | The deploy job only runs when every check passes, and it passed — display only |
 
 **Conflicts and contradictions**
 | What conflicts | Impact | Resolution / owner / status |
 | --- | --- | --- |
-| #220's title says "draft", but the body says the open check isn't a merge blocker and Jopher has done it | Unclear whether it's ready | Treated as ready; the owner may ask Manuel to drop "(draft…)" before the squash merge — Ikeee-AI — open |
+| #220's title says "draft", but the body says the open check isn't a merge blocker and Jopher has done it | Unclear whether it's ready | Treated as ready and merged with the title unchanged — Ikeee-AI — resolved |
 
 **Decisions**
 - Dependabot #28 stays open, not dismissed (dev-only; the fix waits on eslint). Now withdrawn upstream — Ikeee-AI.
 - The smoke check is always given the full commit SHA — Ikeee-AI.
+- Take over the two #215 fixes instead of waiting for Mika; her feature stays hers and she is co-author on the squash merge — Ikeee-AI (owner).
+
+**Takeovers**
+| Item | Original owner | Taken over by | Time | Reason | PR | What the owner delivered |
+| --- | --- | --- | --- | --- | --- | --- |
+| #215 fixes: 40 px touch targets; focus after adding a gadget, with tests | Mika (S5-MI) | Ikeee-AI (AI-assisted, Claude Code) | 5 Nov 02:01 | Mika busy with other work this week; S5-MI due Sat 7 Nov 15:00 | #222 | The whole Add Gadget feature (`563f737`): search panel, `?ids=` update, dedupe, 5-gadget limit, Escape/Close focus, 4 tests |
 
 **Blockers / risks**
-- #215 has had no push since 3 Nov; due Sat 7 Nov 15:00 — Mika — open (nudge 5 Nov).
+- #222 needs a teammate approval on `732b369` before Sat 7 Nov 15:00 — Jopher (or Manuel) — open.
 - The production click-through of #198, #208, #209 and Manuel's decision on #205 were not recorded on 4 Nov — Jopher, Manuel — open.
 
 **Plan alignment**
-- #214, #216 (S5-MI): **Done**. #215 (S5-MI): **Partial**, changes requested.
+- #214, #216 (S5-MI): **Done**. #215 / #203 (S5-MI): **Partial**. Mika delivered the feature; the two fixes are an Ikeee-AI takeover in #222, awaiting review.
 - #218 (S5-IK pipeline fix): **Done**. #217 log: **Done**.
-- #219 (S5-JO demo script): **Done**. #220 (S5-MA troubleshooting guide): **Partial**, gate passed, not merged.
+- #219 (S5-JO demo script): **Done**. #220 (S5-MA troubleshooting guide): **Done**.
 - Pilot: **Not started (on hold)**.
 
 **Next**
-- Merge #220 and check the deploy — Ikeee-AI — 5 Nov.
-- Nudge Mika on #215; once she pushes and Jopher re-approves: gate, merge, smoke and browser check — Mika, Jopher, Ikeee-AI — by Sat 7 Nov 15:00.
+- Review #222 — Jopher (or Manuel) — 5 Nov. Then gate, merge with Mika as co-author, smoke check, keyboard-only browser check at 360 px and 1280 px, and close #215 — Ikeee-AI — by Sat 7 Nov 15:00.
 - Click-through of #198, #208, #209 and a #205 decision — Jopher, Manuel — 5 Nov.
