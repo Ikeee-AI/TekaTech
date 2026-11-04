@@ -111,10 +111,25 @@ The details of a provider failure go to the log, never to the user.
 | Display, accessibility, citation rendering | Mika |
 | A user journey that breaks end to end | Jopher |
 
-## 6. Versioning
+## 6. First run, 4 Nov 2026
+
+One real run of section 1, from the author's laptop at 11:31 UTC (19:31 Manila), about 7 hours into the pilot window. Public GET requests only. No AI calls, no writes.
+
+| Step | Result |
+| --- | --- |
+| 1. `/health` | 200, **42.7 s** (cold start, in the 42-55 s range above), second call fast |
+| 2. `/health/ready` | 200, database ok, 1049 ms on the first call after waking |
+| 3. `/version` | 200, commit `bd2393d`, equal to the tip of `main` |
+| 4. `deployed_smoke.py` | passed: exact version, 4 gadgets, CORS, readiness; database latency 257 ms |
+| 5. `uv run pytest -q` | 679 passed |
+
+Reading it: the slow first `/health` and the 1049 ms readiness are the same wake-up, not a fault. The 257 ms in the smoke run is the normal figure once awake. Also checked the same day: `python scripts/check_secrets.py` passed, and `render.yaml` has no `FAILURE_SIMULATION_ENABLED`. This is one run from one laptop on a free host; treat the numbers as a range.
+
+## 7. Versioning
 
 | Date | Commit | Change |
 | --- | --- | --- |
 | 4 Nov 2026 | `bd2393d` | First draft. Not yet followed by a second person. |
+| 4 Nov 2026 | `bd2393d` | Added section 6, the first diagnostic run. |
 
 **Last checked against `main` at `bd2393d` on 4 Nov 2026.** Not yet covered: results from the pilot itself (Wed 4 Nov 12:00 → Fri 6 Nov 12:00 Manila). Add real cases here as they happen.
