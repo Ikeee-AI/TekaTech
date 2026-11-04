@@ -411,3 +411,51 @@
 - Production click-through of the account page, sign-up feedback and image-link check — Jopher (Ikeee-AI to confirm) — 4 Nov.
 - Manuel to decide on #205 now that #210 is live — Manuel — 4 Nov.
 - Clean up the old worktrees whose branches are merged — Ikeee-AI — when convenient.
+
+## 2026-11-05 01:39 Asia/Manila — 4 Nov: Mika's #214 and #216 merged; PR-policy diff fixed (#218); #217 and #219 merged; #215 waiting on fixes
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code). The owner ran every merge; Claude Code ran the gates, pre-reviews and smoke checks. · **Task:** S5-IK (gate, release, pipeline), with S5-MI and S5-JO merges · **Branch:** `main`, `tekatech/s5-ik-policy-three-dot`, `tekatech/s5-ik-log-2026-11-04`
+
+**Done**
+- **Pre-review of Mika's #214, #215, #216** (AI-assisted, not a teammate review; Jopher's approvals are the reviews that count). Scorecards in [reviews/](reviews/): #214 Accept, #216 Accept, #215 Changes requested (Close button 32 px → 40 px and `min-h-10` on Try Again; focus lost after picking a gadget, plus a test). A trial merge of all three onto `3986bf1` had no conflicts: eslint clean, 322 vitest tests passed, build ok. The owner posted the #215 comment at 00:09.
+- **#214 merged** at 00:31 as `4301d28`; [main run 41675006592](https://github.com/Ikeee-AI/TekaTech/actions/runs/41675006592) passed and the smoke check passed at 00:34. The new accessible names were checked on production.
+- **#216 merged** at 00:51 as `814ef00`; [main run 41678490521](https://github.com/Ikeee-AI/TekaTech/actions/runs/41678490521) passed and the smoke check passed at 00:54. The 96 px `object-cover` preview box is in the deployed `GadgetForm` bundle.
+- **#218, PR policy uses a three-dot diff** (`.github/workflows/pr-review.yml:48`). The two-dot diff also listed files that `main` changed after a branch started, so #215 was flagged for #210's SQL. Approved by Manuel and Jopher; merged at 13:43 as `8141b35`; [main run 41781030716](https://github.com/Ikeee-AI/TekaTech/actions/runs/41781030716) passed; smoke passed at 13:50 (database 279 ms, 4 gadgets).
+- **#217, 3 Nov evening log, incident and gate rule.** Approved by Manuel and Jopher; merged at 17:52 as `bd2393d`; [main run 41810408566](https://github.com/Ikeee-AI/TekaTech/actions/runs/41810408566) passed; smoke passed at 17:55 (355 ms).
+- **#219, Jopher's demo script update.** Approved by Manuel; gate PASS; merged at 00:04 on 5 Nov as `a6b8392`; [main run 41863926579](https://github.com/Ikeee-AI/TekaTech/actions/runs/41863926579) passed (deploy finished 00:08); smoke passed at 00:29 on the 3rd attempt (database 1,017 ms after the free API slept).
+- **#220, Manuel's troubleshooting guide:** gate PASS (Jopher approved `de5dea8` after following section 1 with only the guide). Not merged yet.
+- **Old worktrees cleaned up:** 40 worktrees whose branches were merged were removed with their local branches. Their SHAs are saved, so each can be restored with `git branch <name> <sha>`.
+- **Dependabot alert #28** (dev-only, waiting for eslint to allow minimatch 11) was left open by the owner. On 5 Nov the API answers `410 Alert number 28 has been withdrawn`: the advisory itself was withdrawn, so nothing is left to do.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| #215 `PR policy` failed: SQL changed without notes | Two-dot diff in `pr-review.yml` (see #218) | Fixed in #218. #215's check runs again on Mika's next push; a re-run would reuse the old workflow |
+| `deployed_smoke.py` for #218: "Both hosts must serve the expected commit" after 12 attempts | I passed the short SHA `8141b35`; the script compares the full SHA | Re-ran with the full SHA, passed first time. Not a deploy problem |
+| Main run for #219 still showed `queued` at 00:15 (10+ min) | githubstatus.com: Actions "degraded_performance". The jobs had actually run 00:04–00:08; only the shown status lagged | Waited; the run finished green. Not an incident |
+| `gh pr comment … --body-file -`: "Body cannot be blank" | The `!` prompt does not pass stdin | Comment saved to a file and posted with `--body-file <path>` |
+| Removing worktrees: "Filename too long" (5 folders) | Deep `node_modules` paths on Windows | Removed with literal paths in Git Bash |
+| `gh pr merge 220` by Claude Code: "Permission … denied by the Claude Code auto mode classifier. Reason: [Unrequested Commit in a Connected App]" | Merges are run by the owner | Owner to run the merge — by design |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #220's title says "draft", but the body says the open check isn't a merge blocker and Jopher has done it | Unclear whether it's ready | Treated as ready; the owner may ask Manuel to drop "(draft…)" before the squash merge — Ikeee-AI — open |
+
+**Decisions**
+- Dependabot #28 stays open, not dismissed (dev-only; the fix waits on eslint). Now withdrawn upstream — Ikeee-AI.
+- The smoke check is always given the full commit SHA — Ikeee-AI.
+
+**Blockers / risks**
+- #215 has had no push since 3 Nov; due Sat 7 Nov 15:00 — Mika — open (nudge 5 Nov).
+- The production click-through of #198, #208, #209 and Manuel's decision on #205 were not recorded on 4 Nov — Jopher, Manuel — open.
+
+**Plan alignment**
+- #214, #216 (S5-MI): **Done**. #215 (S5-MI): **Partial**, changes requested.
+- #218 (S5-IK pipeline fix): **Done**. #217 log: **Done**.
+- #219 (S5-JO demo script): **Done**. #220 (S5-MA troubleshooting guide): **Partial**, gate passed, not merged.
+- Pilot: **Not started (on hold)**.
+
+**Next**
+- Merge #220 and check the deploy — Ikeee-AI — 5 Nov.
+- Nudge Mika on #215; once she pushes and Jopher re-approves: gate, merge, smoke and browser check — Mika, Jopher, Ikeee-AI — by Sat 7 Nov 15:00.
+- Click-through of #198, #208, #209 and a #205 decision — Jopher, Manuel — 5 Nov.
