@@ -164,11 +164,19 @@ export default function AdminCorrections() {
                   loading={resolvingId === c.id}
                   disabled={resolvingId !== null}
                   onClick={() => resolve(c, 'approve')}
+                  aria-label={`Approve correction for ${c.spec_documents?.gadgets?.name ?? 'this spec'}`}
                 >
-                  Approve<span className="sr-only"> correction for {c.spec_documents?.gadgets?.name ?? 'this spec'}</span>
+                  Approve
                 </Button>
-                <Button variant="danger" size="sm" icon={X} disabled={resolvingId !== null} onClick={() => resolve(c, 'reject')}>
-                  Reject<span className="sr-only"> correction for {c.spec_documents?.gadgets?.name ?? 'this spec'}</span>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  icon={X}
+                  disabled={resolvingId !== null}
+                  onClick={() => resolve(c, 'reject')}
+                  aria-label={`Reject correction for ${c.spec_documents?.gadgets?.name ?? 'this spec'}`}
+                >
+                  Reject
                 </Button>
               </div>
             </article>

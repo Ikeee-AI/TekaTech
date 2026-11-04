@@ -99,7 +99,20 @@ begin
   if not (select relrowsecurity from pg_class where oid = 'public.user_gadgets'::regclass) then
     raise exception 'user_gadgets must enable RLS';
   end if;
+  -- Per-gadget AI threads: private to the backend, removed with the gadget.
+  insert into user_questions(user_id, gadget_id, question, response)
+    values ('00000000-0000-0000-0000-0000000000a1', gadget_a, 'What chip?', '{"answer": "A [1]", "sources": []}'::jsonb);
+  if has_table_privilege('anon', 'public.user_questions', 'SELECT') or
+     has_table_privilege('authenticated', 'public.user_questions', 'INSERT') then
+    raise exception 'Browser roles must not access user_questions directly';
+  end if;
+  if not (select relrowsecurity from pg_class where oid = 'public.user_questions'::regclass) then
+    raise exception 'user_questions must enable RLS';
+  end if;
   delete from gadgets where id = gadget_a;
+  if exists (select 1 from user_questions where gadget_id = gadget_a) then
+    raise exception 'Deleting a gadget must delete its saved questions';
+  end if;
   if exists (select 1 from user_gadgets where gadget_id = gadget_a) then
     raise exception 'Deleting a gadget must remove it from every user''s list';
   end if;
@@ -113,6 +126,7 @@ $$;
 set local role service_role;
 select id from public.gadgets limit 1;
 select user_id from public.user_gadgets limit 1;
+select user_id from public.user_questions limit 1;
 select * from public.match_spec_documents(
   ('[' || '1,' || repeat('0,', 1534) || '0]')::vector, 0, 0.5
 );

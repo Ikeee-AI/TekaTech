@@ -45,7 +45,9 @@ jobs:
           if (( changed > 600 )); then
             echo "::warning title=Large PR::$changed changed lines. Consider splitting by task or owner; reviewers should allow extra time."
           fi
-          files=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          # Three dots: only what this PR changed since it branched. Two dots also
+          # listed files that main changed later (#215 was flagged for #210's SQL).
+          files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
           # 3. Pipeline, hosting and secret-handling changes need the DevOps owner's review.
           if [[ "$AUTHOR" != "Ikeee-AI" ]] && grep -Eq '^(\.github/|render\.yaml|scripts/check_secrets\.py|scripts/deployed_smoke\.py)' <<< "$files"; then
             echo "::warning title=Pipeline change::This PR changes CI/CD, hosting or secret checks. Request a review from Ikeee-AI (DevOps) before merging."
