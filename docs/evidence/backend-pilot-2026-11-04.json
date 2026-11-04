@@ -1,0 +1,1960 @@
+{
+ "api": "https://tekatech-api.onrender.com",
+ "date_utc": "2026-11-04T11:39:54Z",
+ "method": "urllib, one request at a time, new connection each, from the owner's laptop in Manila",
+ "samples_per_route": 60,
+ "rows": [
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.341,
+   "phase": "warm-up",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.119,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.141,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.127,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.133,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.147,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.133,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.127,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.131,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.122,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.122,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.121,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.132,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.146,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.116,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.152,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.124,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.129,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.175,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.131,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.31,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.126,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.118,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.128,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.145,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.132,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.131,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.12,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.106,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.108,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.116,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.13,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.119,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.128,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.113,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.187,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.108,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.133,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.108,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.12,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/health",
+   "status": 200,
+   "x_cache": null,
+   "seconds": 0.143,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "MISS",
+   "seconds": 1.265,
+   "phase": "warm-up",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.119,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.132,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.186,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.12,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.133,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.119,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.131,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.134,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.135,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.137,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.126,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.135,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.134,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.105,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.213,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.134,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.132,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.127,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.137,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.117,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.138,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.142,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.145,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.13,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.127,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.184,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.108,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.145,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.108,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/gadgets",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "MISS",
+   "seconds": 0.595,
+   "phase": "warm-up",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.133,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.199,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.124,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.12,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.152,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.126,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.136,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.123,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.108,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.185,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.119,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.121,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.137,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.153,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.123,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.128,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.121,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.124,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.148,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.12,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.132,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.137,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.133,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.144,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.28,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.123,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.124,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.147,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.132,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.135,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.169,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.139,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.144,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.122,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/spec-coverage",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "MISS",
+   "seconds": 0.326,
+   "phase": "warm-up",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.184,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.107,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.134,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.145,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.121,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.106,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.161,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.122,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.118,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.155,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.137,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.14,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.133,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.137,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.233,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.129,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.106,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.113,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.135,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.116,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.11,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.107,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.132,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.135,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.107,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.149,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.134,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.127,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.133,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.115,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.186,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.114,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.112,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.132,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.126,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.133,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.111,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.109,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.128,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.131,
+   "phase": "sample",
+   "error": null
+  },
+  {
+   "path": "/stats/trending-questions",
+   "status": 200,
+   "x_cache": "HIT",
+   "seconds": 0.133,
+   "phase": "sample",
+   "error": null
+  }
+ ]
+}
