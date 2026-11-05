@@ -2,7 +2,7 @@
 
 Prepared 5 Nov 2026 (Asia/Manila) by Ikeee-AI, **taking over S5-AD** from Adrian (AI Developer, inactive since 31 Oct). AI-assisted (Claude Code). For whoever owns TekaTech's prompts and evaluation after the course.
 
-**State described here.** This document describes the repository **after three open takeover PRs are merged**: #224 (evaluator `--rules s5`), #225 (regression cases TC-21..TC-24, GK-07, datasets v3, `should_not_refuse`) and #226 (5 Nov score report). At the time of writing none of them is on `main`. Until they are, `main` has datasets `s3-ad-cases-v2` (20 cases) / `gk-cases-v2` (6 cases), only `--rules s3|s4`, and no `docs/evidence/eval-s5-2026-11-05.md`.
+**State described here.** `main` as of 5 Nov 2026: the takeover PRs #224 (evaluator `--rules s5`), #225 (regression cases TC-21..TC-24, GK-07, datasets v3, `should_not_refuse`), #226 (5 Nov score report) and #228 (`eval_adapter --scope`) are merged, with prompts `v1` (grounded) and `gk-v2` (general knowledge).
 
 Field-level detail (case format, runner options, report keys) is in [`prompts/README.md`](README.md); this file does not repeat it. The answer rules and the verified source pack are in [`S2-AD-prompt-spec.md`](S2-AD-prompt-spec.md). Measured results and limitations are in [`docs/ai-feature-writeup.md`](../docs/ai-feature-writeup.md).
 
