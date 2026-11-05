@@ -268,5 +268,7 @@ def test_gk_output_feeds_the_scorer_and_a_grounded_reply_fails_on_basis(tmp_path
                  http=FakeApi([], replies), sleep=lambda _s: None)
     saved = json.loads(out.read_text(encoding="utf-8"))
     report = runner.evaluate_gk(cases, saved["answers"], saved["invalid_citations_removed"], saved["answer_basis"])
-    assert report["metrics"]["basis_general_knowledge"] == {"passed": 5, "total": 6, "rate": 0.833}
+    total = len(ids)
+    assert report["metrics"]["basis_general_knowledge"] == {
+        "passed": total - 1, "total": total, "rate": round((total - 1) / total, 3)}
     assert not report["targets_met"]

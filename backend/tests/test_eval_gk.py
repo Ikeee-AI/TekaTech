@@ -30,15 +30,19 @@ def result(report, case_id):
 def test_reference_answers_pass_every_gk_case():
     report = gk_with()
     assert report["targets_met"], report["failures"]
-    assert report["metrics"]["cases_passed"] == {"passed": 6, "total": 6, "rate": 1.0}
+    total = len(GK_CASES["cases"])
+    assert report["metrics"]["cases_passed"] == {"passed": total, "total": total, "rate": 1.0}
     assert report["metrics"]["off_topic_declined"] == {"passed": 1, "total": 1, "rate": 1.0}
     assert report["metrics"]["unknown_refusal"]["total"] == 1
+    assert report["metrics"]["real_product_answered"] == {"passed": 1, "total": 1, "rate": 1.0}
 
 
 def test_gk_set_covers_every_case_kind():
-    kinds = sorted(case["type"] for case in GK_CASES["cases"])
-    assert kinds == sorted(runner.GK_CASE_TYPES)
+    kinds = {case["type"] for case in GK_CASES["cases"]}
+    assert kinds == set(runner.GK_CASE_TYPES)
     assert all(case["id"] in GK_REFERENCE for case in GK_CASES["cases"])
+    frozen = [case["id"] for case in GK_CASES["cases"] if "added" not in case]
+    assert frozen == [f"GK-0{n}" for n in range(1, 7)]
 
 
 def test_every_expected_gk_fact_traces_to_a_stored_source():
@@ -46,6 +50,11 @@ def test_every_expected_gk_fact_traces_to_a_stored_source():
     for case in GK_CASES["cases"]:
         if case.get("should_refuse") or case.get("should_decline"):
             assert "expected_facts" not in case
+            continue
+        if case.get("should_not_refuse") and "expected_facts" not in case:
+            # A regression case with no stored spec for its product: nothing to trace, and
+            # nothing may be asserted (GK-07, Pixel 9).
+            assert "trace" not in case
             continue
         assert case["trace"], case["id"]
         for trace in case["trace"]:
@@ -157,8 +166,9 @@ def test_markdown_gk_report_states_versions_and_denominators():
     report = gk_with(**{"GK-01": LABEL + " The iPhone 15 uses the A16 [1]."})
     report.update(provider="reference", model="none", prompt_version="gk-v1", origin="reference")
     md = runner.markdown_gk_report(report)
-    assert "| Prompt version | gk-v1 |" in md and "| Cases version | gk-cases-v2 |" in md
-    assert "| No citation markers | 0.833 | 5 / 6 | 1.0 |" in md
+    assert "| Prompt version | gk-v1 |" in md and "| Cases version | gk-cases-v3 |" in md
+    assert "| No citation markers | 0.857 | 6 / 7 | 1.0 |" in md
+    assert "| Real product not refused as unknown | 1.0 | 1 / 1 | 1.0 |" in md
     assert "**GK-01** (known)" in md
 
 
@@ -188,7 +198,7 @@ def test_default_mode_is_still_the_grounded_scorer():
     proc = run_cli("--answers", str(EVAL / "reference_answers.json"))
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert proc.stdout.startswith("=== TekaTech evaluation |")
-    assert "s3-ad-cases-v2" in proc.stdout
+    assert "s5-ad-cases-v3" in proc.stdout
 
 
 def test_off_topic_answer_that_complies_fails():
@@ -224,7 +234,8 @@ def test_recorded_general_knowledge_basis_passes_and_is_counted():
     basis = {case["id"]: "general_knowledge" for case in GK_CASES["cases"]}
     report = runner.evaluate_gk(GK_CASES, GK_REFERENCE, basis=basis)
     assert report["targets_met"], report["failures"]
-    assert report["metrics"]["basis_general_knowledge"] == {"passed": 6, "total": 6, "rate": 1.0}
+    total = len(GK_CASES["cases"])
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": total, "total": total, "rate": 1.0}
 
 
 def test_basis_not_recorded_is_not_checked_and_has_no_target():
@@ -253,6 +264,23 @@ def test_cli_reads_answer_basis_from_the_answers_file(tmp_path):
     assert json.loads(out.read_text(encoding="utf-8"))["metrics"]["basis_general_knowledge"]["total"] == 1
     answers.write_text(json.dumps({"answers": GK_REFERENCE, "answer_basis": ["specs"]}), encoding="utf-8")
     assert run_cli("--mode", "gk", "--answers", str(answers)).returncode == 2
+
+
+def test_real_product_refused_as_unknown_fails():
+    # Recorded on #193 (2 Nov, dev): the Pixel 9 question once got this refusal.
+    refusal = LABEL + " I don't recognize the Pixel 9 as a confirmed model, so I can't say which processor it uses."
+    report = gk_with(**{"GK-07": refusal})
+    case = result(report, "GK-07")
+    assert not case["passed"] and not case["checks"]["real_product_answered"]
+    assert "refuses a real product as unknown" in case["problems"]
+    assert report["metrics"]["real_product_answered"] == {"passed": 0, "total": 1, "rate": 0.0}
+    assert not report["targets_met"]
+
+
+def test_real_product_check_only_applies_to_flagged_cases():
+    report = gk_with()
+    assert "real_product_answered" not in result(report, "GK-03")["checks"]
+    assert result(report, "GK-03")["checks"]["unknown_refusal"]
 
 
 def test_the_backend_label_and_off_topic_reply_satisfy_the_scorer():

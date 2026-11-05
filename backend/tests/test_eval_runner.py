@@ -28,10 +28,48 @@ def test_reference_answers_meet_all_targets():
 
 
 def test_dataset_has_the_sprint_3_composition():
+    # TC-01..TC-20 are the frozen set scored for release v1.0.0; later cases carry "added".
+    frozen = [case for case in CASES["cases"] if "added" not in case]
+    assert [case["id"] for case in frozen] == [f"TC-{n:02d}" for n in range(1, 21)]
     counts = {}
-    for case in CASES["cases"]:
+    for case in frozen:
         counts[case["type"]] = counts.get(case["type"], 0) + 1
     assert counts == {"factual": 8, "comparison": 4, "missing": 4, "variant": 2, "override": 2}
+
+
+DISPOSITIONS = {"prompt", "retrieval", "source-content", "evaluator"}
+
+
+def test_sprint_5_regression_cases_carry_provenance_and_a_disposition():
+    added = [case for case in CASES["cases"] if "added" in case]
+    assert len(added) >= 4
+    for case in added:
+        assert case["added"] == "s5-regression", case["id"]
+        assert case["source"].strip(), case["id"]
+        assert case["disposition"] in DISPOSITIONS, case["id"]
+    ids = [case["id"] for case in CASES["cases"]]
+    assert len(ids) == len(set(ids))
+
+
+def test_each_regression_case_fails_on_the_defect_it_records():
+    # The answers below paraphrase what was recorded, so each case catches its own defect.
+    recorded = {
+        # TC-07 on 28/31 Oct: right values, no note that the iPhone capacity is missing.
+        "TC-21": "Battery:\n- Galaxy S24: **4000mAh** [9]\n- iPhone 15: up to **20 hours** of video playback [4]",
+        # #88: the no-retrieval reply although the chunk holds the answer.
+        "TC-22": "I couldn't find any spec information for that question.",
+        # 31 Oct: correct value, but also cites the stray dev chunk, mapped to [0] by the adapter.
+        "TC-23": "The iPhone 15 has a **6.1-inch** display [1][0].",
+        # TC-18 pattern: declines the variant but states the base model's value.
+        "TC-24": "The sources cover only the base Galaxy S24, which has a **4000mAh** battery [9]; "
+                 "they don't state the S24+ capacity.",
+    }
+    report = evaluate_with(**recorded)
+    for case_id in recorded:
+        assert not result(report, case_id)["passed"], case_id
+    assert "must say which spec is missing from the sources" in result(report, "TC-21")["problems"]
+    assert "invalid citation(s) [0]" in result(report, "TC-23")["problems"]
+    assert "forbidden fact(s) ['4000mAh']" in result(report, "TC-24")["problems"]
 
 
 def test_every_case_has_a_reference_answer_and_valid_expected_sources():

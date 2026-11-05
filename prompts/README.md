@@ -5,7 +5,7 @@ This directory contains the prompt specification, the verified gadget source pac
 ## Files
 - **`S2-AD-prompt-spec.md`**: answer rules (grounding, `[n]` citations, formatting for `AnswerText.jsx`, comparisons, abstention, untrusted snippets, one variant per gadget), the verified source pack for **Apple iPhone 15** and **Samsung Galaxy S24 (PH, Exynos 2400)**, and the 10 initial cases.
 - **`eval/sources.json`**: the source pack as numbered snippets `[1]`–`[10]`, with source URLs and access dates.
-- **`eval/cases.json`**: the 10 cases with expected facts, supporting snippets and abstention flags.
+- **`eval/cases.json`**: the cases with expected facts, supporting snippets and abstention flags (TC-01 to TC-20 frozen for release v1.0.0, plus Sprint 5 regression cases TC-21 to TC-24; see below).
 - **`eval/reference_answers.json`**: hand-written answers that validate the scorer. **Not model output.**
 - **`eval/gk_cases.json`** and **`eval/gk_reference_answers.json`**: the separate set for the optional general-knowledge mode (see below). The reference answers are hand-written too, **not model output**.
 
@@ -19,7 +19,7 @@ It prints PASS/FAIL per case and three metrics with denominators — factual cas
 
 `backend/tests/test_eval_runner.py` runs in CI and checks that the scorer rejects invented facts, citations outside the pack, uncited facts, wrong values and incomplete comparisons.
 
-## Case format (`eval/cases.json`, version `s3-ad-cases-v1`)
+## Case format (`eval/cases.json`, version `s5-ad-cases-v3`)
 
 Each case has an `id`, a `type`, a `query`, and either expected facts or an abstention flag:
 
@@ -30,8 +30,13 @@ Each case has an `id`, a `type`, a `query`, and either expected facts or an abst
 | `expected_sources` | factual, comparison | snippet ids; at least one must be cited |
 | `should_abstain` | `missing` | the answer must decline and cite nothing |
 | `requires_missing_note`, `comparison` | comparison | the answer must say when one gadget's spec is not stated |
+| `added`, `source`, `disposition` | provenance only (not scored) | Sprint 5 regression cases: `added` is `s5-regression`, `source` says where the defect was recorded, `disposition` routes it to `prompt`, `retrieval`, `source-content` or `evaluator` |
 
 The runner reports pass/total per `type` and scores `override` cases as override resistance (see below).
+
+### Sprint 5 regression cases (`s5-ad-cases-v3`, `gk-cases-v3`)
+
+Added on 5 Nov 2026 by Ikeee-AI, taking over S5-AD from Adrian (AI-assisted). TC-01 to TC-20 and GK-01 to GK-06 are unchanged; release v1.0.0 was scored on `s3-ad-cases-v2` and its report (`docs/evidence/eval-s4-2026-10-31.md`) stays as it is. Each new case reproduces a recorded defect: TC-21 (comparison omits the "not stated" note, from TC-07), TC-22 (#88 narrow question dropped by retrieval), TC-23 (stray dev test chunk cited as `[0]`), TC-24 (a variant refusal states the base model's value, from TC-18) and GK-07 (gk-v1 refused the real Pixel 9 as unknown, #193). The defect register, evidence and routing are in [`docs/evidence/s5-regression-cases.md`](../docs/evidence/s5-regression-cases.md). The targets are the Sprint 3 ones, unchanged; the expanded set now has 16 factual/comparison cases and 8 abstention cases, so a score on v3 is not comparable one-to-one with a v2 score. No model output has been scored on v3 yet.
 
 ## Runner options and report (PR 3)
 
@@ -65,4 +70,4 @@ python scripts/eval_runner.py --mode gk --answers prompts/eval/gk_reference_answ
     --report .local/gk-report.json --markdown .local/gk-report.md
 ```
 
-`gk_cases.json` (`gk-cases-v2`) has 6 cases: a known product (`known`), a `comparison`, a made-up product (`unknown`), a question that asks for `[1]` citations and a link (`citation_bait`), a `plain`-language question and an `off_topic` request (a poem) that must be declined with `prompts.GK_OFF_TOPIC`, so the public `/query` can't be used as a free general chatbot. Each answer must open with the label; have no citation marker of any style (and no marker stripped by the backend, which counts as a failure); make no "verified" or "from TekaTech's data" claim; contain no URL or price; use only `**bold**` and `- ` bullets (comparisons as bullets with at most one lead-in line); and hedge any spec number. The unknown-product case must refuse and state no spec value; the off-topic case must decline in at most three sentences. Optional `expected_facts` trace to a snippet in `sources.json`. Targets are 100% on every metric, reported as passed/total. The answers file may also carry `answer_basis` (`{"GK-01": "general_knowledge"}`, as `POST /query` returns it); when a case has one, anything but `general_knowledge` fails it, because a grounded reply or the canned no-match reply is not a GK answer. Without it that check is skipped and reported as `0 / 0` (added in the S4-AD takeover by Ikeee-AI; `backend/tests/test_eval_gk_query.py` scores the 6 cases through a mocked `/query`). The default mode (`--mode grounded`) and the prompt-evaluation workflow, which scores only `reference_answers.json` and `answers/*.json`, are unchanged. No GK model output has been scored yet.
+`gk_cases.json` (`gk-cases-v3`) has 7 cases. The first 6 are a known product (`known`), a `comparison`, a made-up product (`unknown`), a question that asks for `[1]` citations and a link (`citation_bait`), a `plain`-language question and an `off_topic` request (a poem) that must be declined with `prompts.GK_OFF_TOPIC`, so the public `/query` can't be used as a free general chatbot. GK-07 (Sprint 5 regression) is a real product, the Google Pixel 9, flagged `should_not_refuse`: the answer fails if it uses a refusal phrase ("I don't recognize…"), reported as "Real product not refused as unknown". It has no `expected_facts`, because no Pixel 9 spec is stored in `sources.json`. Each answer must open with the label; have no citation marker of any style (and no marker stripped by the backend, which counts as a failure); make no "verified" or "from TekaTech's data" claim; contain no URL or price; use only `**bold**` and `- ` bullets (comparisons as bullets with at most one lead-in line); and hedge any spec number. The unknown-product case must refuse and state no spec value; the off-topic case must decline in at most three sentences. Optional `expected_facts` trace to a snippet in `sources.json`. Targets are 100% on every metric, reported as passed/total. The answers file may also carry `answer_basis` (`{"GK-01": "general_knowledge"}`, as `POST /query` returns it); when a case has one, anything but `general_knowledge` fails it, because a grounded reply or the canned no-match reply is not a GK answer. Without it that check is skipped and reported as `0 / 0` (added in the S4-AD takeover by Ikeee-AI; `backend/tests/test_eval_gk_query.py` scores the 6 cases through a mocked `/query`). The default mode (`--mode grounded`) and the prompt-evaluation workflow, which scores only `reference_answers.json` and `answers/*.json`, are unchanged. No GK model output has been scored yet.
