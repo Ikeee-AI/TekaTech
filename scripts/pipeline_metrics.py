@@ -11,19 +11,42 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 DEPLOY_JOB = "Deploy main after checks"
 CHECK_CONCLUSIONS = {"success", "failure", "timed_out", "startup_failure"}
 
+# One window makes 100+ sequential API calls, so a single dropped connection or GitHub 5xx
+# used to abort the whole report (5 Nov 2026: TLS handshake timeouts, one HTTP 502).
+# Transient failures are retried with a short backoff; auth/permission/not-found are not.
+RETRY_DELAYS = (2, 5, 10)
+TRANSIENT_MARKERS = ("timeout", "timed out", "tls handshake", "connection reset", "connection refused",
+                     "error connecting", "eof", "http 500", "http 502", "http 503", "http 504",
+                     "server error", "bad gateway", "temporarily unavailable")
 
-def gh_api(path, jq=None, paginate=False):
+
+def is_transient(stderr):
+    text = (stderr or "").lower()
+    return any(marker in text for marker in TRANSIENT_MARKERS)
+
+
+def gh_api(path, jq=None, paginate=False, sleep=time.sleep):
     command = ["gh", "api", path]
     if paginate:
         command.append("--paginate")
     if jq:
         command += ["--jq", jq]
-    output = subprocess.check_output(command, text=True, encoding="utf-8")
-    return [json.loads(line) for line in output.splitlines() if line.strip()] if jq else json.loads(output)
+    for attempt, delay in enumerate((*RETRY_DELAYS, None), start=1):
+        result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8")
+        if result.returncode == 0:
+            output = result.stdout
+            return [json.loads(line) for line in output.splitlines() if line.strip()] if jq else json.loads(output)
+        if delay is None or not is_transient(result.stderr):
+            if result.stderr:
+                sys.stderr.write(result.stderr)
+            raise subprocess.CalledProcessError(result.returncode, command, result.stdout, result.stderr)
+        sys.stderr.write(f"gh api {path}: transient error (attempt {attempt}), retrying in {delay} s\n")
+        sleep(delay)
 
 
 def parse_time(value):
