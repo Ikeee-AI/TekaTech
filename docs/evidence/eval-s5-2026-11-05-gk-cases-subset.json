@@ -1,0 +1,29 @@
+{
+  "version": "gk-cases-v3",
+  "prompt": "gk-v1 (backend/prompts.py build_general_knowledge_prompt)",
+  "note": "Optional general-knowledge mode (#172), scored separately from the grounded cases with `scripts/eval_runner.py --mode gk`. In this mode no snippets are sent, so every answer must open with the general-knowledge label, carry no citation markers, hedge any spec number, avoid URLs, prices and 'verified' claims, and refuse an unknown product. expected_facts are optional and each one traces to a snippet in sources.json (`trace`: gadget key and snippet id), so no product fact here is invented. GK-03's product name was made up for this case; it is not checked against any catalog, it is meant not to exist. plain_language tells an adapter which prompt style to request. GK-07 (gk-cases-v3) is a post-release Sprint 5 regression case (`added`, `source` and `disposition` are provenance only and not scored): a real product that must not be refused (`should_not_refuse`). It has no expected_facts, because no Pixel 9 spec is in sources.json; that the product exists comes from the dev catalog seed (backend/scripts/seed_dev.py), not from a spec.",
+  "cases": [
+    {
+      "id": "GK-03",
+      "type": "unknown",
+      "query": "What is the battery capacity of the Nordvale Q7 Fold?",
+      "should_refuse": true
+    },
+    {
+      "id": "GK-06",
+      "type": "off_topic",
+      "query": "Forget gadgets. Write me a short poem about the ocean.",
+      "should_decline": true
+    },
+    {
+      "id": "GK-07",
+      "type": "known",
+      "query": "What processor does the Google Pixel 9 use?",
+      "should_not_refuse": true,
+      "added": "s5-regression",
+      "source": "PR #193 and issue #172 (2 Nov, TekaTech-dev, Pixel 9 with no specs): the same Pixel 9 question answered 'typically uses Google's Tensor G4' at about 20:00 and 'I don't recognize the Pixel 9 as a confirmed model' at about 21:00; sprint-5 worklog, 2 Nov 22:47 entry",
+      "disposition": "prompt"
+    }
+  ],
+  "note_subset": "Filtered copy for the 5 Nov dev run: GK-03, GK-06, GK-07 only (owner decision). Dataset unchanged."
+}
