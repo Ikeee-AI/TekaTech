@@ -509,3 +509,51 @@
 - Remove the `tekatech-takeover-215` worktree now that #222 is merged (`git worktree remove`, using literal paths in Git Bash if Windows reports "Filename too long") — Ikeee-AI — 5 Nov.
 - Click-through of #198, #208, #209 and a #205 decision — Jopher, Manuel — 5 Nov.
 - Optional: Add Gadget at 40 px on desktop — Mika — her call.
+
+## 2026-11-05 15:50 Asia/Manila — S5-AD taken over from Adrian (four PRs: #224, #225, #226, #227)
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code `ai-engineer` agent for each task, reviewed by Ikeee-AI) · **Task:** S5-AD takeover · **Branch:** `tekatech/s5-takeover-adrian-evaluator-66`, `-regression-cases`, `-score-report`, `-handover`
+
+**Done**
+- Evaluator follow-up #66: a new labelled `--rules s5` profile (narrower abstention detection, leaked-fact check, a fix for "6.7" being split at the decimal point, non-ASCII hyphens). The default stays `s3`, so the v1.0.0 report reproduces; a guard test checks this — evidence: https://github.com/Ikeee-AI/TekaTech/pull/224
+- Five regression cases from recorded defects: TC-21, TC-22, TC-23, TC-24 and GK-07; dataset `s5-ad-cases-v3` / `gk-cases-v3`; register in `docs/evidence/s5-regression-cases.md` — evidence: https://github.com/Ikeee-AI/TekaTech/pull/225
+- Post-fix score report: a real run at 15:34–15:39 on a local API against the **dev** database, `gpt-5-mini`, prompts `v1` / `gk-v1`. Measured spend about **$0.02**, against the $0.30 cap the owner approved directly. Official result (s3): supported 14/16, valid references 59/64, abstention 0/8, override 1/2. **Targets not met.** Labelled rescorings: s4 abstention 2/8; s5 5/8 and 2/2. General-knowledge subset GK-03/06/07 (owner's choice): 1/3 — evidence: https://github.com/Ikeee-AI/TekaTech/pull/226
+- Prompt and evaluation handover: `prompts/prompt-eval-handover.md` — evidence: https://github.com/Ikeee-AI/TekaTech/pull/227
+- Locally, each PR's tests passed; with #224 and #225 combined, the full backend suite passed (697). CI on #224, #225 and #226 passed; #227's checks were still running when this entry was written.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| With #224 and #225 combined: `FAILED tests/test_eval_runner.py::test_committed_release_report_still_reproduces_under_s3` (`factual_denominator 16 != 13`) | The guard test scored the 31 Oct answers (20 cases) against all 24 cases | The test now scores only the frozen TC-01..TC-20 (cases without `added`); commit `ca98cb2` on #224. Combined suite: 697 passed |
+| T3 agent stopped before spending: approval relayed by Claude Code isn't the owner's consent | Safety rule for paid calls | The owner approved directly through a question prompt ("Yes, up to $0.30"), and the run continued |
+| GK-03 and GK-07 were answered from stored specs, not general knowledge | Unscoped retrieval returns iPhone 15 / S24 chunks for questions about other phones when dev has specs | Not fixed. The Pixel 9 refusal defect (#193) remains **untested**. Retrieval question for Manuel — open |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| s5 rules were written after reading the recorded answers, and on them they're more lenient than s4 | s5 can't be an independent measure | s3 stays the official result; s4/s5 are reported only as labelled rescorings — Ikeee-AI — resolved |
+| GK-06 passes but repeats a `gk-v1` instruction sentence in its answer | The scorer misses prompt text leaking into answers | Recorded as a prompt defect in #226/#227; no prompt change made — prompt owner (now Ikeee-AI) — open |
+
+**Decisions**
+- Ikeee-AI takes over all of Adrian's remaining S5-AD work from 5 Nov, because Adrian has been inactive since 31 Oct (no PRs or comments). No announcement posted on GitHub, per the owner's decision. Adrian's earlier PRs stay credited to him — Ikeee-AI (owner).
+- Paid eval spend approved up to $0.30; GK subset limited to GK-03/06/07 because dev has the phone pack seeded — Ikeee-AI (owner).
+- The prompt was not tuned to pass the targets — Ikeee-AI.
+- The stray "Test Test" QA chunk on dev stays until the owner decides; it was only read — Ikeee-AI.
+
+**Takeovers**
+| Item | Original owner | Taken over by | Time | Reason | PR | What the owner delivered |
+| --- | --- | --- | --- | --- | --- | --- |
+| #66 evaluator follow-up | Adrian (S5-AD) | Ikeee-AI (AI-assisted, Claude Code) | 5 Nov 15:20 | Adrian inactive since 31 Oct | #224 | Numeric-leak check (#90), removed-citation count (#89), s4 profile (#166) |
+| ≥5 regression cases | Adrian (S5-AD) | Ikeee-AI (AI-assisted) | 5 Nov 15:20 | Same | #225 | TC-01..TC-20 (#81), GK-01..06 |
+| Post-fix score report | Adrian (S5-AD) | Ikeee-AI (AI-assisted) | 5 Nov 15:34 | Same | #226 | Earlier scored runs (#112, #166) |
+| Prompt/eval handover | Adrian (S5-AD) | Ikeee-AI (AI-assisted) | 5 Nov 15:45 | Same | #227 | None for Sprint 5 |
+
+**Blockers / risks**
+- #224, #225, #226 and #227 need a teammate approval; merge in that order. #226's scores need #224 and #225 to reproduce — Manuel (or Jopher) — by Sat 7 Nov 15:00.
+- Open defects: TC-24 (prompt), GK-06 instruction leak (prompt), GK mode not reached for unrelated phones (retrieval, Manuel), stray dev chunk (owner decision) — open.
+
+**Plan alignment**
+- S5-AD: **Partial**. Regression cases, evaluator and score report are reviewable as Ikeee-AI takeover PRs, not merged yet. The prompt handover is open as #227. The pilot-failure review is not done (pilot on hold since 3 Nov). The expanded set does not meet the Sprint 3 thresholds under s3. Adrian's own Sprint 5 contribution: none.
+
+**Next**
+- Review #224 → #225 → #226 → #227 — Manuel (or Jopher) — 5–6 Nov. Then gate, merge in order, and add the handover link to `prompts/README.md` — Ikeee-AI.
+- Decide on the stray dev chunk and whether to fix the TC-24/GK-06 prompt defects in Sprint 5 (new `v2`/`gk-v2` label plus a ~$0.02 rerun) — Ikeee-AI (owner).
