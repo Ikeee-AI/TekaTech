@@ -113,7 +113,7 @@ The details of a provider failure go to the log, never to the user.
 
 ## 6. First run, 4 Nov 2026
 
-One real run of section 1, from the author's laptop at 11:31 UTC (19:31 Manila), about 7 hours into the pilot window. Public GET requests only. No AI calls, no writes.
+One real run of section 1, from the author's laptop at 11:31 UTC (19:31 Manila), before the pilot started (the owner's log of 5 Nov says it was on hold). Public GET requests only. No AI calls, no writes.
 
 | Step | Result |
 | --- | --- |
@@ -131,5 +131,6 @@ Reading it: the slow first `/health` and the 1049 ms readiness are the same wake
 | --- | --- | --- |
 | 4 Nov 2026 | `bd2393d` | First draft. Not yet followed by a second person. |
 | 4 Nov 2026 | `bd2393d` | Added section 6, the first diagnostic run. |
+| 5 Nov 2026 | `bd2393d` | Section 6 and this line no longer say the pilot had started. |
 
-**Last checked against `main` at `bd2393d` on 4 Nov 2026.** Not yet covered: results from the pilot itself (Wed 4 Nov 12:00 → Fri 6 Nov 12:00 Manila). Add real cases here as they happen.
+**Last checked against `main` at `bd2393d` on 4 Nov 2026.** Not yet covered: results from the pilot itself, which had not started when this was written. Add real cases here as they happen.
