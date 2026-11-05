@@ -2,6 +2,8 @@
 
 This directory contains the prompt specification, the verified gadget source pack and the evaluation set for TekaTech.
 
+**New maintainer? Start with [`prompt-eval-handover.md`](prompt-eval-handover.md)**: prompt versions, how to run and score an evaluation safely, open defects and their owners, and the maintenance checklist.
+
 ## Files
 - **`S2-AD-prompt-spec.md`**: answer rules (grounding, `[n]` citations, formatting for `AnswerText.jsx`, comparisons, abstention, untrusted snippets, one variant per gadget), the verified source pack for **Apple iPhone 15** and **Samsung Galaxy S24 (PH, Exynos 2400)**, and the 10 initial cases.
 - **`eval/sources.json`**: the source pack as numbered snippets `[1]`–`[10]`, with source URLs and access dates.
