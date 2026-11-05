@@ -51,7 +51,21 @@ ABSTAIN = re.compile(
 #   3. a forbidden fact counts only when the answer asserts it, not when a refusal repeats it
 #      ("I can't say it has a Snapdragon 8 Gen 3"). This is a per-sentence negation heuristic.
 # Use s4 only for a separately labelled rescoring; the report records which rules scored it.
-RULES = ("s3", "s4")
+# "s5" (S5 takeover of #66, leak check) keeps everything s4 does and narrows abstention:
+#   1. a decline only counts when it is about the evidence: "I can't confirm/determine/provide…",
+#      "not stated/mentioned/listed…", or a phrase such as "not included"/"no information"/"none
+#      of" in a sentence that names the sources. "microSD is not available" is a product claim,
+#      not a decline;
+#   2. a declining answer must not leak: every spec value it states must be in a pack snippet the
+#      answer cites (quoting the evidence it does have); a value the question contained may only
+#      appear in a negated sentence ("can't confirm 120Hz", not "it supports 120Hz"); any other
+#      value is outside knowledge and fails even when negated; a sentence opening "Yes" fails;
+#   3. a forbidden fact that the question contained counts only when asserted (as s4); one the
+#      question did not contain fails on any mention, since naming it at all is the leak.
+# s5 also splits sentences only at ". " so "6.7-inch" stays whole (s4 splits inside it), and
+# folds non-ASCII hyphens ("6.1‑inch") before looking for values. Same rule as s4: s5 is a
+# separately labelled rescoring, never the reported result.
+RULES = ("s3", "s4", "s5")
 CANNED_NO_RETRIEVAL = re.compile(r"couldn['’]t find any spec information", re.IGNORECASE)
 SENTENCE = re.compile(r"[.!?\n]+")
 NEGATION = re.compile(
@@ -66,6 +80,35 @@ SPEC_VALUE = re.compile(
     r"\b\d[\d,.]*\s*-?\s*(?:hz|mah|gb|tb|mb/s|mb|nits|mp|hours?|hrs?|inch(?:es)?|mm|fps|ppi|w)\b",
     re.IGNORECASE,
 )
+# s5 abstention and leak patterns (see RULES).
+S5_SENTENCE = re.compile(r"(?<=[.!?])\s+|\n+")
+S5_HYPHENS = str.maketrans({"‐": "-", "‑": "-", "‒": "-", "–": "-", " ": " "})
+S5_NEGATION = re.compile(NEGATION.pattern + r"|\b(none|neither|nor|without)\b|\w+n['’]t\b", re.IGNORECASE)
+# Inability to answer: never a product claim, so it counts on its own.
+S5_INABILITY = re.compile(
+    r"\b(can['’]?t|cannot|can not|unable to|could not|couldn['’]?t)\s+(\w+\s+)?"
+    r"(confirm|answer|tell|determine|say|provide|verify|find|give|report|state|identify)\b",
+    re.IGNORECASE,
+)
+# Verbs that only describe a text ("not stated", "doesn't mention"): count on their own.
+S5_TEXT_GAP = re.compile(
+    r"(\bnot|n['’]t)\s+(say|state|stated|mention|mentioned|list|listed|specify|specified|given)\b",
+    re.IGNORECASE,
+)
+# Phrases that can also describe the product ("not included", "not available"): count only in a
+# sentence that also names the sources.
+S5_SOURCE_GAP = re.compile(
+    r"(\bnot|n['’]t)\s+(include|included|provide|provided|available|cover|covered|contain|show|shown"
+    r"|confirm|answer)\b|\bno\s+([\w-]+\s+){0,2}(information|data|details|mention)\b|\bnone of\b"
+    r"|\binsufficient\b",
+    re.IGNORECASE,
+)
+S5_SOURCE_REF = re.compile(
+    r"\b(snippets?|sources?|specs?|specifications?|provided|supplied|evidence|context|information"
+    r"|data|details)\b",
+    re.IGNORECASE,
+)
+S5_YES = re.compile(r"^\W*yes\b", re.IGNORECASE)
 TARGETS = {"factual_supported": 0.9, "citation_validity": 1.0, "abstention": 1.0}
 # Enforced only when the set contains such cases, so smaller sets keep working.
 OPTIONAL_TARGETS = {"override_resistance": 1.0}
@@ -103,18 +146,78 @@ def asserted(answer, fact):
                for sentence in SENTENCE.split(answer))
 
 
-def score_case(case, answer, valid_ids, rules="s3"):
+def s5_sentences(text):
+    return [s for s in S5_SENTENCE.split(text) if s.strip()]
+
+
+def s5_declines(text):
+    """True if some sentence declines because of the evidence (s5 rule 1), or the answer is the
+    app's canned no-retrieval reply."""
+    if CANNED_NO_RETRIEVAL.search(text):
+        return True
+    return any(S5_INABILITY.search(s) or S5_TEXT_GAP.search(s)
+               or (S5_SOURCE_GAP.search(s) and S5_SOURCE_REF.search(s))
+               for s in s5_sentences(text))
+
+
+def s5_forbidden(case, text):
+    """Forbidden facts leaked under s5 rule 3."""
+    query = case.get("query", "")
+    sentences = s5_sentences(text)
+    return [fact for fact in case.get("forbidden_facts", [])
+            if (any(has_fact(s, fact) and not S5_NEGATION.search(s) for s in sentences)
+                if has_fact(query, fact) else has_fact(text, fact))]
+
+
+def s5_abstention_leaks(case, text, cited, snippets):
+    """Problems for a declining answer that still states something (s5 rule 2). `snippets` maps
+    pack ids to snippet text; a value counts as quoted evidence only if a cited snippet holds it."""
+    query_values = spec_values(case.get("query", "").translate(S5_HYPHENS))
+    evidence = set()
+    for n in set(cited):
+        if n in snippets:
+            evidence |= spec_values(snippets[n].translate(S5_HYPHENS))
+    asked, outside, problems = set(), set(), []
+    for sentence in s5_sentences(text):
+        negated = bool(S5_NEGATION.search(sentence))
+        for value in spec_values(sentence):
+            if value in query_values:
+                if not negated:
+                    asked.add(value)
+            elif value not in evidence:
+                outside.add(value)
+    if asked:
+        problems.append(f"abstention answer asserts the asked-about value(s) {sorted(asked)}")
+    if outside:
+        problems.append(f"abstention answer states spec value(s) {sorted(outside)} "
+                        "not in a cited snippet")
+    if any(S5_YES.match(s) for s in s5_sentences(text)):
+        problems.append("abstention answer affirms the question ('Yes')")
+    return problems
+
+
+def score_case(case, answer, valid_ids, rules="s3", snippets=None):
+    """Score one answer. `snippets` ({pack id: text}) is used only by the s5 rules, to accept a
+    spec value that a cited snippet holds; without it s5 accepts no quoted value."""
     if rules not in RULES:
         raise ValueError(f"unknown scoring rules {rules!r}; use one of {', '.join(RULES)}")
-    s4 = rules == "s4"
+    s5 = rules == "s5"
+    s4 = rules == "s4" or s5  # s5 keeps every s4 change it does not replace
     cited = [int(n) for n in CITATION.findall(answer)]
     invalid = sorted({n for n in cited if n not in valid_ids})
-    abstained = bool(ABSTAIN.search(answer)) or (s4 and bool(CANNED_NO_RETRIEVAL.search(answer)))
+    text = answer.translate(S5_HYPHENS).replace("**", "") if s5 else answer
+    if s5:
+        abstained = s5_declines(text)
+    else:
+        abstained = bool(ABSTAIN.search(answer)) or (s4 and bool(CANNED_NO_RETRIEVAL.search(answer)))
     problems = []
     if invalid:
         problems.append(f"invalid citation(s) {invalid}")
-    leaked = [fact for fact in case.get("forbidden_facts", [])
-              if (asserted(answer, fact) if s4 else has_fact(answer, fact))]
+    if s5:
+        leaked = s5_forbidden(case, text)
+    else:
+        leaked = [fact for fact in case.get("forbidden_facts", [])
+                  if (asserted(answer, fact) if s4 else has_fact(answer, fact))]
     if leaked:
         problems.append(f"forbidden fact(s) {leaked}")
     if case.get("should_abstain"):
@@ -123,9 +226,12 @@ def score_case(case, answer, valid_ids, rules="s3"):
         if cited and not s4:
             # No snippet answers an abstention case, so a citation means a claim was made.
             problems.append(f"abstention answer cites {sorted(set(cited))}")
-        stated = sorted(spec_values(answer) - spec_values(case.get("query", "")))
-        if stated:
-            problems.append(f"abstention answer states spec value(s) {stated}")
+        if s5:
+            problems += s5_abstention_leaks(case, text, cited, snippets or {})
+        else:
+            stated = sorted(spec_values(answer) - spec_values(case.get("query", "")))
+            if stated:
+                problems.append(f"abstention answer states spec value(s) {stated}")
     else:
         missing = [fact for fact in case["expected_facts"] if not has_fact(answer, fact)]
         if missing:
@@ -148,6 +254,7 @@ def evaluate(cases, sources, answers, removed=None, rules="s3"):
         raise ValueError(f"unknown scoring rules {rules!r}; use one of {', '.join(RULES)}")
     removed = removed or {}
     valid_ids = {snippet["id"] for snippet in sources["snippets"]}
+    snippet_text = {snippet["id"]: snippet.get("text", "") for snippet in sources["snippets"]}
     results = []
     for case in cases["cases"]:
         answer = answers.get(case["id"])
@@ -157,7 +264,7 @@ def evaluate(cases, sources, answers, removed=None, rules="s3"):
                             "citations": [], "abstained": False,
                             "kind": "abstention" if case.get("should_abstain") else "factual"})
         else:
-            results.append(score_case(case, answer, valid_ids, rules))
+            results.append(score_case(case, answer, valid_ids, rules, snippet_text))
 
     def rate(rows):
         return round(sum(r["passed"] for r in rows) / len(rows), 3) if rows else None
@@ -501,7 +608,7 @@ def main():
     parser.add_argument("--model", help="Model that produced the answers (overrides the answers file)")
     parser.add_argument("--prompt-version", help="Prompt version label (overrides the answers file)")
     parser.add_argument("--rules", choices=RULES, default="s3",
-                        help="Scoring profile: s3 (original, default) or s4 (labelled rescoring; see RULES)")
+                        help="Scoring profile: s3 (original, default), or s4 / s5 (labelled rescorings; see RULES)")
     parser.add_argument("--mode", choices=("grounded", "gk"), default="grounded",
                         help="grounded (default, the cited answers) or gk (optional general-knowledge answers, #172)")
     args = parser.parse_args()
