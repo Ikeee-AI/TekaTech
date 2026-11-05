@@ -467,3 +467,45 @@
 **Next**
 - Review #222 — Jopher (or Manuel) — 5 Nov. Then gate, merge with Mika as co-author, smoke check, keyboard-only browser check at 360 px and 1280 px, and close #215 — Ikeee-AI — by Sat 7 Nov 15:00.
 - Click-through of #198, #208, #209 and a #205 decision — Jopher, Manuel — 5 Nov.
+
+## 2026-11-05 14:45 Asia/Manila — #222 merged, deployed and checked; #215 closed; #221 merged
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code) · **Task:** S5-MI takeover (#215/#203), S5-IK · **Branch:** tekatech/s5-ik-log-2026-11-05
+
+**Done**
+- #222 (takeover of the #215 fixes) merged by the owner at 13:53 as `aa230a1`, with Mika (`meka-moka`) as co-author on the squash commit. Approvals were on the head commit `732b369` by s2302827-byte (Manuel) and s2100932 — evidence: https://github.com/Ikeee-AI/TekaTech/pull/222
+- Main run for `aa230a1`: all six jobs passed, including the main guard, and the deploy job finished at 13:56:21 — evidence: https://github.com/Ikeee-AI/TekaTech/actions/runs/41976820274
+- Deployed smoke check passed at 13:56:40 on the first attempt: production serves `aa230a1`, readiness and the database path pass (260 ms), CORS passes, 4 gadgets — evidence: `scripts/deployed_smoke.py`, report kept locally in `.local/deployed-smoke-aa230a1.json` (not committed)
+- #215 closed at 14:27 with a comment pointing to #222 and `aa230a1`. Issue #203 was closed automatically by the #222 merge at 13:53 — evidence: https://github.com/Ikeee-AI/TekaTech/pull/215
+- Keyboard-only browser check of Compare → Add Gadget on production passed 22 of 22 steps at 14:32. It was a headless Playwright/Chromium script using only Tab, Shift+Tab, Enter, Escape and typing, at 360 px and 1280 px. At both widths: no sideways scrolling; Add Gadget reachable with a visible focus ring; Enter opens the panel with focus in the search box; Escape and Close both return focus to Add Gadget; **Close is 40×40**; **Try Again is 40 px tall** and Enter reloads the list; a search result is reached with one Tab (52 px tall); Enter adds the gadget to `?ids=`; **focus returns to Add Gadget after the page reloads**. Read-only: no share link and no AI question. The Try Again state was produced by blocking one `GET /gadgets` inside the headless browser only — evidence: the script and screenshots are in the session scratchpad (not committed)
+- #221 (4 Nov log) merged by the owner at 14:39 as `e3852b9` — evidence: https://github.com/Ikeee-AI/TekaTech/pull/221 · main run https://github.com/Ikeee-AI/TekaTech/actions/runs/41981907637: all six jobs passed, including deploy (docs-only change, so no smoke check needed)
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| The owner reported #222 as merged twice, but GitHub showed it `open`, `merged: false`, and main was still `ad7e566` | The first two merge attempts didn't complete. No error output was captured, so the exact cause is unknown | Claude Code checked the state through the API before each smoke check; none ran against the wrong commit. `! gh pr merge 222 --squash` from the terminal worked. Resolved |
+| #221 reported as merged but still `open` at 14:33 | Same as above | Merged by `! gh pr merge 221 --squash` at 14:39. Resolved. The terminal command is the reliable way to merge |
+| Claude in Chrome: "Browser extension is not connected" | The extension wasn't running or connected in Chrome | Used the repo's own Playwright (1.64.1) and installed Chromium, headless, instead |
+| First keyboard-check run: 10/22 passed | Bugs in Claude Code's script, not the app: the Escape check matched another `role="group"` on the page; the Close search tabbed forward (Close comes before the search box) and pressed Enter on unrelated buttons, which only changed the page address — no data was written | Script fixed: the panel is found by its label, Close is reached with Shift+Tab, and Enter is pressed only when focus is on the expected element. Rerun 22/22 |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| The Add Gadget button is 36 px tall at 1280 px but 40 px at 360 px, while #222 set 40 px for Close and Try Again | Still above the WCAG 2.2 AA 24 px minimum; only a consistency question | Mika's decision whether to make it 40 px everywhere — Mika — open (not a blocker) |
+
+**Decisions**
+- Production checks after a merge start only once the GitHub API reports `merged: true` and `origin/main` has moved, not when someone says it's merged — reason: twice today the merge hadn't gone through — Ikeee-AI.
+- The keyboard-only check was run headlessly because the Chrome extension wasn't available. This counts as the browser check for #222 — Ikeee-AI.
+
+**Blockers / risks**
+- The production click-through of #198, #208, #209 and Manuel's #205 decision were still open in the 4 Nov entry; not rechecked this session — Jopher, Manuel — open.
+- Pilot: still on hold by the owner's decision (3 Nov).
+
+**Plan alignment**
+- #215 / #203 (S5-MI Compare add gadget): **Done**. Reviewed, checks pass, merged (`aa230a1`), deployed, smoke-checked and browser-checked on production. Mika delivered the feature; Ikeee-AI took over the two review fixes (#222). Done ahead of the Sat 7 Nov 15:00 deadline.
+- #221 (4 Nov log): **Done** (merged, main run and deploy green).
+- Pilot: **Not started (on hold)**.
+
+**Next**
+- Remove the `tekatech-takeover-215` worktree now that #222 is merged (`git worktree remove`, using literal paths in Git Bash if Windows reports "Filename too long") — Ikeee-AI — 5 Nov.
+- Click-through of #198, #208, #209 and a #205 decision — Jopher, Manuel — 5 Nov.
+- Optional: Add Gadget at 40 px on desktop — Mika — her call.
