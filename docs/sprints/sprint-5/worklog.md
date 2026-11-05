@@ -557,3 +557,70 @@
 **Next**
 - Review #224 → #225 → #226 → #227 — Manuel (or Jopher) — 5–6 Nov. Then gate, merge in order, and add the handover link to `prompts/README.md` — Ikeee-AI.
 - Decide on the stray dev chunk and whether to fix the TC-24/GK-06 prompt defects in Sprint 5 (new `v2`/`gk-v2` label plus a ~$0.02 rerun) — Ikeee-AI (owner).
+
+## 2026-11-05 18:35 Asia/Manila — Evening: ten PRs merged and deployed (#223–#232); #205 and #118 closed; click-through record corrected
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code). The owner ran every merge command except the #230 retry; Claude Code ran the gates, merge checks, smoke checks and issue closes. · **Task:** S5-IK (gate, release, verification), S5-AD takeover merges, S5-MA and S5-JO merges · **Branch:** `main`, `tekatech/s5-ik-log-2026-11-05-eve`
+
+**Done**
+- S5-AD takeover PRs merged in order:
+
+  | PR | Merged | Commit | Main run |
+  | --- | --- | --- | --- |
+  | #224 | 16:50 | `d4079b6` | https://github.com/Ikeee-AI/TekaTech/actions/runs/41997599629 |
+  | #225 | 16:52 | `9530aaa` | https://github.com/Ikeee-AI/TekaTech/actions/runs/41997829088 |
+  | #226 | 17:00 | `34935e8` | https://github.com/Ikeee-AI/TekaTech/actions/runs/41998902192 |
+  | #227 | 17:55 | `8a9f803` | https://github.com/Ikeee-AI/TekaTech/actions/runs/42006445901 |
+
+  Each was approved by Manuel on its head commit, and all four main runs passed.
+- #223 (5 Nov log plus the S5-AD takeover entry) merged at 17:56 as `644b1c4`; main run https://github.com/Ikeee-AI/TekaTech/actions/runs/42006586119 passed. **Smoke check passed** at 18:01:44 against `644b1c4`: readiness and database path pass (188 ms), CORS passes, 4 gadgets.
+- Gated #229–#232 and then #228. All **PASS**; this is the manual gate, not enforced branch protection. Each had an approval from someone other than the author on its head commit, all required checks passed, and each merged cleanly onto the current main. The evidence JSON in #230 was scanned: no keys, tokens or emails.
+
+  | PR | Owner | Approved by | Merged | Commit | Main run |
+  | --- | --- | --- | --- | --- | --- |
+  | #229 questions for the owner | Manuel | Jopher | 18:03 | `51f2eec` | https://github.com/Ikeee-AI/TekaTech/actions/runs/42007515740 |
+  | #230 latency and error samples (read-only) | Manuel | Jopher | 18:14 | `ee101c9` | https://github.com/Ikeee-AI/TekaTech/actions/runs/42009081104 |
+  | #231 quick-start and feature-maintenance notes | Jopher | Mika | 18:15 | `dd69ec5` | https://github.com/Ikeee-AI/TekaTech/actions/runs/42009190651 |
+  | #232 fresh-checkout record and README | Jopher | Manuel | 18:18 | `023edce` | https://github.com/Ikeee-AI/TekaTech/actions/runs/42009653864 |
+  | #228 `eval_adapter --scope` | Manuel | Jopher | 18:27 | `c88d32f` | https://github.com/Ikeee-AI/TekaTech/actions/runs/42010807870 |
+
+  #228's CI ran before #224/#225 landed, so it was also tested locally merged onto `023edce`: 704 passed, reference answers meet the targets, secret check passed. All main runs passed, including deploy. **Smoke checks passed** at 18:23:34 against `023edce` (114 ms) and at 18:30:28 against `c88d32f` (242 ms), both on the first attempt.
+- #205 closed as "not planned", per Manuel's decision (#210 already covers it) — https://github.com/Ikeee-AI/TekaTech/issues/205
+- #118 closed as completed: #151 (dev) and #153 (production drill on 28 Oct) are merged, and Manuel rechecked on 4 Nov. The live Render dashboard check is still pending (#229, question 3) — https://github.com/Ikeee-AI/TekaTech/issues/118
+- This PR adds the handover link to the top of `prompts/README.md`, as #227 promised.
+- Removed the four agent worktrees; all their branches were merged.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| The owner reported "merged all five" twice, but GitHub had `merged: false` for #224–#227 and #223, and the repo events showed no merge action at all | The merge commands weren't run from this session's prompt; the cause outside the session wasn't captured | Each PR was merged with `! gh pr merge <n> --squash` at the prompt, one at a time, and checked through the API after each. Resolved |
+| `gh pr merge 226`: `Post "https://api.github.com/graphql": read tcp …: wsarecv: An established connection was aborted by the software in your host machine.` | Home internet outage | The API showed #226 merged at 17:00 anyway (the request reached GitHub). Resolved |
+| `gh pr merge 230`: `error connecting to api.github.com` | Same outage | At the owner's "retry", Claude Code ran `gh pr merge 230 --squash --match-head-commit <gated head>`. Merged at 18:14. Resolved |
+| GitHub showed `mergeable: UNKNOWN` on #228–#232 after main moved | GitHub recalculates mergeability after main moves | Checked locally with `git merge-tree` against the current main before each merge; all clean |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| The 4 Nov and 5 Nov entries said the production click-through of #198, #208 and #209 was "not recorded", but Jopher had posted it on each PR on **4 Nov at 11:58–12:00** against `814ef00`: https://github.com/Ikeee-AI/TekaTech/pull/198#issuecomment-6622170868, https://github.com/Ikeee-AI/TekaTech/pull/209#issuecomment-6622145873, https://github.com/Ikeee-AI/TekaTech/pull/208#issuecomment-6622143831 | Two log entries understated Jopher's work | **Corrected here.** Those entries missed the PR comments. #198 and #209 pass (Jopher rechecked #198 on 5 Nov on `ad7e566`); summary on #196. #208 needs an admin — Ikeee-AI — resolved for #198/#209 |
+
+**Decisions**
+- #205 closed per its owner's decision (Manuel) — Ikeee-AI (owner) approved the close.
+- #118 closed with the dashboard check still open in #229 — Ikeee-AI (owner).
+- Merges happen one PR at a time, each confirmed through the API before the next — Ikeee-AI.
+
+**Blockers / risks**
+- Manuel's #229 questions are unanswered: the performance budget; a paid `/query` sample (~$0.05); whether `FAILURE_SIMULATION_ENABLED` is still unset in Render; the pilot start; and deleting the #210 test threads from the production database — Ikeee-AI — by Fri 6 Nov so S5-MA can finish.
+- #208 image-link check needs an admin on production (it changes the Poco X7 Pro card) — Ikeee-AI — by Sat 7 Nov 15:00.
+- Prompt defects TC-24 and GK-06 and the stray dev chunk: owner decisions pending — Ikeee-AI.
+
+**Plan alignment**
+- S5-AD (takeover): regression cases, evaluator, score report and handover are **Done** (reviewed, checks, merged, deployed; docs and dev tools only). Row overall **Partial**: targets not met under s3; pilot-failure review not done (pilot on hold).
+- S5-MA: troubleshooting guide (#220) and latency/error samples (#230) **Done**. #228 merged. "Budget held" can't be stated until the owner answers #229.
+- S5-JO: #198 and #209 **Done** (click-through on 4 Nov). #208 **Partial** (admin check). User guide (#231) and fresh-checkout record (#232) **Done**.
+- S5-MI: #214, #216 and #215/#222 **Done**; deck archive and component notes not seen yet.
+- S5-IK: gate, merges and verification today **Done**. Pilot **Not started (on hold)**. Stable release record, support/maintenance checklist, second-member deploy/rollback demonstration, Week 5 packet and retrospective still open.
+
+**Next**
+- Answer #229 (Ikeee-AI decides; Claude Code posts the answers) — Ikeee-AI — 6 Nov.
+- #208 admin check on production — Ikeee-AI — 6 Nov.
+- Pilot decision and scope-change entry; stable release record, support/maintenance checklist; book the deploy/rollback demonstration with Manuel or Jopher — Ikeee-AI — 6 Nov.
+- Mika: deck archive and component handover notes — Mika — Sat 7 Nov 15:00.
