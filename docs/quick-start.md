@@ -16,7 +16,7 @@ The free server sleeps when nobody uses it, so the **first** request after a qui
 
 ### Ask the AI about one gadget
 1. Open a gadget's page.
-2. In **Ask About …**, click a suggested question or type your own (up to 150 characters) and press **Ask**.
+2. In **Ask About …**, click a suggested question or type your own (up to 150 characters) in the message box at the bottom and press **Enter** (or the round ↑ **Send** button).
 3. Read the answer. Each number like **[1]** is a source: click it to jump to the spec snippet it came from.
    - **Answer based on N cited specs** tells you how many saved specs back the answer.
    - **No supporting source cited** means nothing in the answer is backed by a saved spec, so treat it as unverified.
@@ -42,12 +42,20 @@ The AI panel always tells you what happened and keeps the question you typed:
 ## With an account
 
 ### Sign up, log in, reset your password
-- Click **Log In** (top right) → **Don't have an account? Sign Up**. Enter your email and a password, then open the confirmation link sent to your email before logging in.
+- Click **Log In** (top right) → **Don't have an account? Sign Up**. Enter your email and a password (at least 6 characters), then open the confirmation link sent to your email before logging in. When the link works, TekaTech shows **Email Confirmed** and you're signed in.
+- **The link says "This Email Link Has Expired or Was Already Used"?** Email links work once and expire after a while. If you already confirmed, just **Log In**. Otherwise click **Send a New Link**, enter your email and **Send Confirmation Email**, then use the link in the **newest** email.
+- **Logging in says "This email isn't confirmed yet"?** Click **Resend Confirmation Email** under the message, then open the new link.
 - Forgot your password? On the log-in page, click **Forgot password?** and follow the emailed link.
+
+### Your account
+- Click the round **avatar** at the top right (**Account** in the phone menu) to open **Your Account**: your email, the date you joined, your role (Member or Admin) and links to **My Gadgets** and **My Suggestions**.
+- **Change Password:** enter your **current password**, then the new one twice (at least 6 characters, and different from the current one) → **Update Password**. TekaTech checks your current password first, so nobody can change it from a computer you left signed in. **Password Updated** means it's done; you stay signed in. If it says **Your current password is incorrect.**, nothing was changed.
+- Deleting your account isn't available yet (planned after the pilot, #213).
 
 ### Add or edit a gadget (admins only)
 The catalog is curated by the TekaTech team: only admin accounts see **Add Gadget**, **Edit**, **Add Specs** and **Index for AI**. A regular account contributes through **Suggest a correction** below.
 - **Add Gadget** (top bar): name, brand and category are required; price, release date and image link are optional. Then **Save Gadget**.
+- **Image URL:** use a *direct* image link: opening it in a new tab shows only the picture. As soon as you paste a link, the form previews it the way the catalog card will. **Image found** means it's fine. **Couldn't load an image from this link** usually means it's a web page, not a picture, and the form won't save until you fix the link or leave the field empty.
 - On a gadget's page, **Edit** lets you change any field (**Save Changes**). Emptying an optional field, such as price, clears it.
 
 ### Add specs, then index them for the AI (admins only)
