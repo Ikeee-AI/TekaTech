@@ -49,7 +49,13 @@ Merged since `v1.0.0`: 55 commits on `main` (as of `1170d19`). Takeovers this sp
 
 **Pipeline changes this sprint (live):** fewer jobs per PR (#182, 8 → 6 job starts per opened PR, measured); owner-area labels match the real layout (#190); PR policy lists only the PR's own files (#218); `pr-gate` requires SQL on the live project ref first (after the 3 Nov incident). From 5 Nov, small Ikeee-AI doc changes are batched on one branch without a PR to save Actions minutes.
 
-**Metrics:** **pending.** `python scripts/pipeline_metrics.py --label "Sprint 5 interim 2" --since 2026-11-01 --until 2026-11-05 --workflow ci.yml` failed twice on 5 Nov at about 22:20 with `net/http: TLS handshake timeout` (home internet outage). Rerun it before the review, and take the final row on Sat 7 Nov. The interim row (1–2 Nov) is in [`metrics.md`](../../devops/metrics.md): PR 0.96 min (16 runs), main 2.50 min, 100% (32/32), 16 deploys, merge-to-live 2.54 min, 0 failed deploys.
+**Metrics** (`python scripts/pipeline_metrics.py --label "Sprint 5 interim 2" --since 2026-11-01 --until 2026-11-05 --workflow ci.yml`, cut-off 5 Nov 23:55 Manila; [report](../../evidence/sprint5-metrics-interim-2026-11-05.json)):
+
+| PR pipeline avg | Main pipeline avg | Success | Deploys | Merge-to-live avg | Failed deploys |
+| --- | --- | --- | --- | --- | --- |
+| 1.21 min (60 runs) | 3.23 min (50 runs) | 99.1% (109/110) | 50 | 2.80 min (50 samples) | 0 |
+
+The one failed run was a PR run on the #210 branch (3 Nov), fixed before merge; main had no CI failure. Pipeline times rose against Sprint 4 (PR 0.72 → 1.21 min, main 2.78 → 3.23 min). The likely causes are GitHub Actions degradation on 4–5 Nov and the browser-check job; that hasn't been measured separately. The first four attempts on 5 Nov failed on single `gh api` errors (TLS handshake timeouts, one HTTP 502); `pipeline_metrics.py` now retries transient errors. Take the final row on Sat 7 Nov.
 
 **Incidents:** [incidents.md](../../devops/incidents.md). 31 Oct to 1 Nov: Actions stopped for 18 h 19 min (minutes used up), no production impact. 3 Nov: saved questions failed on production because `user_questions.sql` was applied to dev only; recovered in about 49 min, and the gate rule was added.
 
