@@ -652,7 +652,7 @@ None.
 - The #229 answers above — Ikeee-AI (owner).
 
 **Blockers / risks**
-- Delete the #210 test threads from the production database (live project `lqswcmkzygqmnblaukco`) — Ikeee-AI — before Sat 7 Nov 15:00.
+- ~~Delete the #210 test threads from the production database~~ **Resolved 5 Nov:** the owner ran a read-only query on the live project (`lqswcmkzygqmnblaukco`): `user_questions` has 0 rows, so there was nothing to delete. The 3 Nov local tests ran against TekaTech-dev (the live table only existed from about 22:15 that night), and the production check cleared its own thread with New Chat. Reported on #229 — Ikeee-AI — done.
 - #208 admin image-link check on production — Ikeee-AI — before Sat 7 Nov 15:00.
 - Manuel's paid `/query` sample and "budget held" write-up — Manuel — Sat 7 Nov 15:00.
 
