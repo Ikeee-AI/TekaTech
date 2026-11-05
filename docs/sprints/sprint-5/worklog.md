@@ -624,3 +624,42 @@
 - #208 admin check on production — Ikeee-AI — 6 Nov.
 - Pilot decision and scope-change entry; stable release record, support/maintenance checklist; book the deploy/rollback demonstration with Manuel or Jopher — Ikeee-AI — 6 Nov.
 - Mika: deck archive and component handover notes — Mika — Sat 7 Nov 15:00.
+
+## 2026-11-05 21:05 Asia/Manila — Night: #233 merged; #229 answered; Render check; pilot moved past Sprint 5; batched-PR rule
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code). The owner made the decisions, ran the #233 merge and did the Render check; Claude Code ran the gate and smoke check and posted the comments. · **Task:** S5-IK, S5-MA support · **Branch:** `tekatech/s5-ik-wrapup` (pushed, no PR)
+
+**Done**
+- #233 (Manuel, failure-drill controls check on production) gated **PASS** (manual gate, not enforced protection) after Jopher approved head `71d70b7`. Merged by the owner at 19:40 as `1170d19`; main run passed, including deploy — https://github.com/Ikeee-AI/TekaTech/actions/runs/42020894921. **Smoke check passed** at 19:43:21 against `1170d19`: readiness and database path pass (236 ms), CORS passes, 4 gadgets.
+- Owner's answers to Manuel's #229 questions posted — https://github.com/Ikeee-AI/TekaTech/pull/229#issuecomment-6657262505:
+  1. Performance budget accepted as proposed: cached median ≤ 0.5 s, any miss ≤ 1.5 s, 0 errors in ≥ 50 requests, cold start disclosed.
+  2. Paid production `/query` sample approved: ≤ 10 questions, ≤ $0.10, run once, before Sat 15:00.
+  3. Render dashboard check by the owner (below).
+  4. Pilot moved past Sprint 5.
+  5. The owner deletes the #210 test threads.
+- **Render check** (owner, 21:01, read-only, dashboard `tekatech-api` → Environment): `FAILURE_SIMULATION_ENABLED` is **not set**. Keys present: `CORS_ORIGINS`, `OPENAI_API_KEY`, `PYTHON_VERSION`, `RATE_LIMIT_STORAGE_URI`, `SUPABASE_KEY`, `SUPABASE_URL`. No environment group is linked. No values were revealed. The screenshot is kept locally, not committed. Reported on #229 — https://github.com/Ikeee-AI/TekaTech/pull/229#issuecomment-6658866476
+- Scope change recorded: the pilot is moved past Sprint 5 (`docs/scope-changes.md`), with a status note on `docs/devops/pilot-plan.md` — commit `daf6c12` on this branch.
+
+**Errors and fixes**
+None.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #233 made a paid production `/query` request (about 1 US cent) before the owner had answered the paid-sample question in #229 | Small unapproved spend from the shared balance | Noted to the owner. The owner then approved a ≤ $0.10 sample. No further action — Ikeee-AI — resolved |
+
+**Decisions**
+- From 5 Nov, Ikeee-AI's small changes (log entries, doc fixes) are batched on one pushed branch with no PR, and go into one PR when there is real progress or something must reach production. Reason: save GitHub Actions minutes (every PR runs CI on open, on each push and again on merge; minutes ran out on 31 Oct). Pushing a branch without a PR triggers no workflows. Teammates' PRs are gated as usual — Ikeee-AI (owner).
+- The #229 answers above — Ikeee-AI (owner).
+
+**Blockers / risks**
+- Delete the #210 test threads from the production database (live project `lqswcmkzygqmnblaukco`) — Ikeee-AI — before Sat 7 Nov 15:00.
+- #208 admin image-link check on production — Ikeee-AI — before Sat 7 Nov 15:00.
+- Manuel's paid `/query` sample and "budget held" write-up — Manuel — Sat 7 Nov 15:00.
+
+**Plan alignment**
+- S5-MA: failure-drill controls **Done** (tests, `render.yaml`, an anonymous request on production in #233, and the dashboard check). Performance budget now accepted, so "budget held" can be reported from his samples.
+- Pilot: **moved past Sprint 5** (scope change); its parts of each S5 row stay Partial.
+
+**Next**
+- One wrap-up PR from this branch before Sat 15:00: these log entries, the stable release record and changelog, the support/maintenance checklist, the Week 5 packet and the retrospective — Ikeee-AI — Sat 7 Nov.
+- Book the second-member deploy/rollback demonstration (Manuel or Jopher) — Ikeee-AI — 6 Nov.
