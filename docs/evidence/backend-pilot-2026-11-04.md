@@ -1,9 +1,9 @@
-# Backend latency and error sample, pilot day 1 (4 Nov 2026, S5-MA)
+# Backend latency and error sample, before the pilot (4 Nov 2026, S5-MA)
 
 First of the S5-MA "measured latency/error results". Raw samples: `backend-pilot-2026-11-04.json`. **This is the free, read-only part.** The paid `POST /query` sample is not in this file; it needs Ikeee-AI's approval and is planned for after the pilot window.
 
 ## What was measured
-Production API (`https://tekatech-api.onrender.com`), read-only `GET` requests, from the owner's laptop in Manila, at 11:39 UTC (19:39 Manila) on Wed 4 Nov, about 8 hours into the pilot window. Same method as `backend-performance-2026-10-30.md`: one request at a time, a new connection each, wall-clock time. One warm-up request per route, then **60 samples per route**. No `/query` calls, no writes, no login.
+Production API (`https://tekatech-api.onrender.com`), read-only `GET` requests, from the owner's laptop in Manila, at 11:39 UTC (19:39 Manila) on Wed 4 Nov, while the pilot was still on hold (Ikeee-AI's log of 5 Nov: pilot not started). Same method as `backend-performance-2026-10-30.md`: one request at a time, a new connection each, wall-clock time. One warm-up request per route, then **60 samples per route**. No `/query` calls, no writes, no login.
 
 | Route | n | Errors | Median | Cache HIT (n) | Cache MISS on warm-up | Fastest / slowest |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -34,10 +34,10 @@ The budget is **my proposal and has not been accepted** by Ikeee-AI (`backend-pe
 | Cached reads | 0.217-0.238 s | 0.114-0.116 s | 0.116-0.120 s |
 | Errors | 0 of 200 | 0 of 80 | 0 of 240 |
 
-The 4 Nov numbers match 30 Oct, so there is no sign of a backend latency regression during the pilot so far. The 23 Oct figures were taken on a slower network, so compare cached reads with the `/health` floor, not with the old absolute numbers.
+The 4 Nov numbers match 30 Oct, so there is no sign of a backend latency regression so far. The 23 Oct figures were taken on a slower network, so compare cached reads with the `/health` floor, not with the old absolute numbers.
 
 ## Limits
 - All 180 sampled reads on the three data routes were cache hits, because the one warm-up request filled the cache. **The miss figure rests on 3 requests**, one per route. It is weak evidence; the 1.265 s on `/gadgets` is a single read.
 - One laptop, one network, one evening, a free host. Treat it as a range.
 - It says nothing about `POST /query` latency, which is where a regression would cost money. That sample is still to do.
-- It covers pilot day 1 only. Repeat once on Thursday and once after Fri 12:00 to cover the window.
+- It is a pre-pilot sample. Repeat it once the pilot has actually started and again at the end of the window.
