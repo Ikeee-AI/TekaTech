@@ -477,7 +477,9 @@ def test_committed_release_report_still_reproduces_under_s3():
     adding s5 must not change it."""
     answers = json.loads((ROOT / "docs/evidence/eval-s4-2026-10-31-answers.json").read_text(encoding="utf-8"))
     committed = json.loads((ROOT / "docs/evidence/eval-s4-2026-10-31-report.json").read_text(encoding="utf-8"))
-    report = runner.evaluate(CASES, SOURCES, answers["answers"], answers.get("invalid_citations_removed", {}))
+    # The release was scored on dataset v2 (TC-01..TC-20); later regression cases carry "added".
+    frozen = {**CASES, "cases": [c for c in CASES["cases"] if "added" not in c]}
+    report = runner.evaluate(frozen, SOURCES, answers["answers"], answers.get("invalid_citations_removed", {}))
     assert report["metrics"] == committed["metrics"]
     assert report["failures"] == committed["failures"]
 
