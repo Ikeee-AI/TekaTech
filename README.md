@@ -48,10 +48,10 @@ All data and AI calls go through FastAPI. The browser talks to Supabase for auth
 
 ## Run locally
 
-Checked from a fresh clone on Windows 10 on 29 Oct 2026 ([evidence](docs/evidence/fresh-checkout-2026-10-29.md)). First setup takes about 5 minutes, most of it `npm ci`.
+Checked from a fresh clone on Windows 10 on 29 Oct and again on 5 Nov 2026 ([evidence](docs/evidence/fresh-checkout-2026-11-05.md)). First setup takes about 5 minutes, most of it installing uv, `npm ci` and the Playwright browser.
 
 **Prerequisites**
-- Git and Node.js 22+ (Node 24 also works).
+- Git and Node.js **22.22.2+ or 24.15+**. Slightly older 22.x/24.x versions still work, but `npm ci` prints `EBADENGINE` warnings for two test-only packages.
 - [uv](https://docs.astral.sh/uv/getting-started/installation/). On Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`, then open a new terminal.
 - Python 3.12+. You don't have to install it yourself: `uv sync` finds or downloads a matching Python, even if the system one is older (the check machine had 3.11).
 - The **TekaTech-dev** values for both `.env` files, from Ikeee-AI. Never put production keys in a local `.env`.
@@ -134,7 +134,7 @@ cd frontend
 npm run lint
 npm test                             # Vitest unit tests
 npm run build
-npx playwright install chromium      # first time only
+npx playwright install chromium      # first time, and again after Playwright is updated
 npm run test:e2e                     # failure-drill browser checks on a faked API (frontend/e2e/README.md)
 ```
 
