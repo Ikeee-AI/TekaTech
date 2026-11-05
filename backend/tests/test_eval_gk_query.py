@@ -60,9 +60,11 @@ def test_reference_answers_through_query_meet_every_gk_target(client, fake_supab
     answers, removed, basis = _collect(client, openai_mock, GK_REFERENCE)
     report = runner.evaluate_gk(GK_CASES, answers, removed, basis)
     assert report["targets_met"], report["failures"]
-    assert report["metrics"]["basis_general_knowledge"] == {"passed": 6, "total": 6, "rate": 1.0}
+    total = len(GK_CASES["cases"])
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": total, "total": total, "rate": 1.0}
     assert report["metrics"]["off_topic_declined"] == {"passed": 1, "total": 1, "rate": 1.0}
     assert report["metrics"]["unknown_refusal"] == {"passed": 1, "total": 1, "rate": 1.0}
+    assert report["metrics"]["real_product_answered"] == {"passed": 1, "total": 1, "rate": 1.0}
 
 
 def test_citation_the_backend_strips_still_fails_the_gk_case(client, fake_supabase, openai_mock):
@@ -85,6 +87,6 @@ def test_cases_answered_from_saved_specs_are_not_counted_as_gk(client, fake_supa
     answers, removed, basis = _collect(client, openai_mock, GK_REFERENCE)
     assert set(basis.values()) == {"specs"}
     report = runner.evaluate_gk(GK_CASES, answers, removed, basis)
-    assert report["metrics"]["basis_general_knowledge"] == {"passed": 0, "total": 6, "rate": 0.0}
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": 0, "total": len(GK_CASES["cases"]), "rate": 0.0}
     assert report["metrics"]["cases_passed"]["passed"] == 0
     assert not report["targets_met"]

@@ -22,6 +22,10 @@
     "TC-17": "The sources don't mention a Snapdragon version, so I can't confirm its processor.",
     "TC-18": "The sources don't state the display size of the iPhone 15 Plus; they cover only the base iPhone 15.",
     "TC-19": "I can only answer from the sources, and they don't state the iPhone 15 battery capacity.",
-    "TC-20": "The sources say the Galaxy S24 (Philippines) uses the **Exynos 2400** processor [7]; they don't list any other chip."
+    "TC-20": "The sources say the Galaxy S24 (Philippines) uses the **Exynos 2400** processor [7]; they don't list any other chip.",
+    "TC-21": "Battery side by side:\n- Galaxy S24: **4000mAh** [9]\n- iPhone 15: the battery capacity is not stated in the sources; they list only up to 20 hours of video playback [4]",
+    "TC-22": "The iPhone 15 offers up to **20 hours** of video playback, and it supports MagSafe and Qi2 wireless charging up to **15W** [4].",
+    "TC-23": "The iPhone 15 has a **6.1-inch** (diagonal) OLED display [1].",
+    "TC-24": "The sources cover only the base Galaxy S24 (Philippines), not the Galaxy S24+, so they don't state the S24+ battery capacity."
   }
 }

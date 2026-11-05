@@ -287,7 +287,7 @@ GK_HEDGE = re.compile(
 GK_BAD_MARKUP = re.compile(r"^\s*(#|\||\d+[.)]\s)", re.MULTILINE)
 GK_TARGETS = {"cases_passed": 1.0, "no_citations": 1.0, "labelled": 1.0,
               "unknown_refusal": 1.0, "no_verified_claims": 1.0, "off_topic_declined": 1.0,
-              "basis_general_knowledge": 1.0}
+              "basis_general_knowledge": 1.0, "real_product_answered": 1.0}
 # POST /query labels every reply with answer_basis ("specs", "general_knowledge" or "none").
 # A GK case only scores the general-knowledge path when the reply says it took that path: a
 # grounded answer (retrieval found specs) or the canned no-match reply is not a GK answer, even
@@ -359,6 +359,12 @@ def score_gk_case(case, answer, removed=0, basis=None):
             problems.append(f"declines but still answers the off-topic request ({len(sentences)} sentences)")
     elif stated and not GK_HEDGE.search(text):
         problems.append(f"states spec value(s) {stated} without hedging")
+    if case.get("should_not_refuse"):
+        # A real product (S5 regression GK-07, Pixel 9 on #193): gk-v1's unknown-product rule
+        # must not fire on it. Structural only: the refusal phrases, not the facts, are checked.
+        checks["real_product_answered"] = not GK_REFUSAL.search(text)
+        if GK_REFUSAL.search(text):
+            problems.append("refuses a real product as unknown")
     missing = [fact for fact in case.get("expected_facts", []) if not has_fact(text, fact)]
     if missing:
         problems.append(f"missing fact(s) {missing}")
@@ -383,6 +389,8 @@ def evaluate_gk(cases, answers, removed=None, basis=None):
                 checks["unknown_refusal"] = False
             if case.get("should_decline"):
                 checks["off_topic_declined"] = False
+            if case.get("should_not_refuse"):
+                checks["real_product_answered"] = False
             if "expected_facts" in case:
                 checks["known_facts"] = False
             if case["id"] in basis:
@@ -400,7 +408,7 @@ def evaluate_gk(cases, answers, removed=None, basis=None):
 
     metrics = {"cases_passed": metric(r["passed"] for r in results)}
     for key in ("no_citations", "labelled", "unknown_refusal", "no_verified_claims", "off_topic_declined",
-                "known_facts", "basis_general_knowledge"):
+                "known_facts", "basis_general_knowledge", "real_product_answered"):
         metrics[key] = metric(r["checks"][key] for r in results if key in r["checks"])
     by_type = {}
     for kind in GK_CASE_TYPES:
@@ -436,6 +444,7 @@ def markdown_gk_report(report):
     rows = [("Cases passed", "cases_passed"), ("No citation markers", "no_citations"),
             ("Opens with the general-knowledge label", "labelled"),
             ("Unknown product refused", "unknown_refusal"),
+            ("Real product not refused as unknown", "real_product_answered"),
             ("Off-topic request declined", "off_topic_declined"),
             ("No 'verified' or TekaTech-data claims", "no_verified_claims"),
             ("Expected facts present (traced to sources.json)", "known_facts"),
@@ -481,7 +490,7 @@ def run_gk(args, answers_file):
     print(" | ".join(f"{key}: {m[key]['passed']} of {m[key]['total']}"
                      for key in ("cases_passed", "no_citations", "labelled", "unknown_refusal",
                                  "no_verified_claims", "off_topic_declined", "known_facts",
-                                 "basis_general_knowledge")))
+                                 "basis_general_knowledge", "real_product_answered")))
     print("Targets met" if report["targets_met"] else "Targets NOT met")
     if args.report:
         args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")
