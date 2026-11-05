@@ -663,3 +663,35 @@ None.
 **Next**
 - One wrap-up PR from this branch before Sat 15:00: these log entries, the stable release record and changelog, the support/maintenance checklist, the Week 5 packet and the retrospective — Ikeee-AI — Sat 7 Nov.
 - Book the second-member deploy/rollback demonstration (Manuel or Jopher) — Ikeee-AI — 6 Nov.
+
+## 2026-11-05 21:50 Asia/Manila — #208 admin check on production; Poco x7 Pro image fixed
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code guided step by step; the owner did every click with the admin account) · **Task:** S5-JO acceptance (#208), catalog content · **Branch:** `tekatech/s5-ik-wrapup` (pushed, no PR)
+
+**Done**
+- **#208 admin check on production: pass.**
+  - Poco x7 Pro → Edit with the existing web-page link (`us.smartprix.com/mobiles/…`): the preview showed "Couldn't load an image from this link".
+  - **Save Changes was blocked**, with "Please fix this field: Image URL: This link didn't load as an image (it may be a web page)…".
+  - With a direct image link, the preview loaded and the save went through at 21:44:45 (API `updated_at` 2026-11-05T13:44:45Z). The API returns the new `image_url`, and the catalog card shows the photo (owner's screenshot, kept locally because it shows an account email).
+  - Reported to Jopher — https://github.com/Ikeee-AI/TekaTech/pull/208#issuecomment-6659603110
+- Production data change: Poco x7 Pro `image_url` replaced with a direct X7 Pro photo (`pinoytechnoguide.com/…/POCO-X7-Pro.jpg`). Before saving, Claude Code checked it was a real image (`image/jpeg`, 640×480) and that it showed the X7 Pro. A first candidate (`POCO-X7.jpg.webp`) was rejected because it showed the non-Pro POCO X7.
+
+**Errors and fixes**
+None.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Poco x7 Pro release date on production is `2026-10-12` ("Rel. Oct 2026" on the card), but the phone has been on sale since early 2025 (not verified against a source here) | Wrong catalog fact shown to users | Catalog content fix by an admin, with #201 — Ikeee-AI — open |
+| The new image is hotlinked from a third-party blog | The picture disappears if the blog removes or blocks it | Accepted for now; replace with an official image or upload when image upload exists (#202 "later image upload") — Ikeee-AI — open |
+
+**Decisions**
+- Saved the X7 Pro photo instead of only testing and cancelling, so the check also fixes the card — Ikeee-AI (owner).
+
+**Blockers / risks**
+None new.
+
+**Plan alignment**
+- S5-JO: #198, #208 and #209 all **Done** (deployed, checked on production). #202 stays open for its "later image upload" part.
+
+**Next**
+- Fix the Poco x7 Pro release date with the #201 catalog work — Ikeee-AI — when doing #201.
