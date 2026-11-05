@@ -27,6 +27,13 @@ only when retrieval finds no specs, so run it against a database WITHOUT the iPh
 specs: a gadget that has them is answered grounded, and the scorer then fails that case on
 answer_basis instead of crediting it.
 
+Scoped questions (#66): a question that carries "gadget_ids" (the gadget page, the compare page)
+takes a different retrieval path from an unscoped one (nearest chunks whatever their score, instead
+of the 0.5 threshold). `--scope prompts/eval/scope.json` makes the run follow that path: the file
+names each case's gadgets, they are looked up by name in GET /gadgets, and the ids are sent as
+"gadget_ids". Cases the file does not list stay unscoped. A name that matches no gadget, or more than
+one, stops the run before any question is asked.
+
 The output also carries "invalid_citations_removed" per case: the backend strips citation markers
 that point outside the retrieved snippets, so an evaluator must count those removals itself or
 the valid-citation rate would be 100% by construction.
@@ -109,6 +116,49 @@ def rewrite_citations(answer, source_contents, snippets):
     return MARKER.sub(replace, answer)
 
 
+class ScopeError(Exception):
+    pass
+
+
+def load_scope(path):
+    """Read a scope file: {"gadgets": {key: gadget name}, "cases": {case id: [key, ...]}}."""
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    names, cases = data.get("gadgets"), data.get("cases")
+    if not isinstance(names, dict) or not isinstance(cases, dict):
+        raise ScopeError('Scope file needs a "gadgets" object (key -> name) and a "cases" object (case id -> [keys]).')
+    for case_id, keys in cases.items():
+        if not isinstance(keys, list) or not keys or any(key not in names for key in keys):
+            raise ScopeError(f"Scope for {case_id} must be a non-empty list of keys from \"gadgets\".")
+    return names, cases
+
+
+def resolve_scope(names, cases, gadgets, wanted_ids):
+    """Map each wanted case id to the ids of its gadgets, matching names case-insensitively.
+
+    Raises ScopeError if a name matches no gadget or more than one: a wrong scope would quietly
+    change which chunks are retrieved, so it must never be guessed."""
+    by_name = {}
+    for gadget in gadgets:
+        by_name.setdefault(str(gadget.get("name", "")).strip().lower(), []).append(gadget["id"])
+    resolved, problems = {}, []
+    for case_id in wanted_ids:
+        keys = cases.get(case_id)
+        if not keys:
+            continue
+        ids = []
+        for key in keys:
+            found = by_name.get(names[key].strip().lower(), [])
+            if len(found) != 1:
+                problems.append(f'"{names[key]}" ({"no match" if not found else f"{len(found)} matches"})')
+            else:
+                ids.append(found[0])
+        resolved[case_id] = ids
+    if problems:
+        raise ScopeError("Scope names not resolved in this API: " + ", ".join(sorted(set(problems))) +
+                         ". Edit the names in the scope file to match the catalog.")
+    return resolved
+
+
 def stored_chunks(api_base, http=http_json):
     chunks = []
     for gadget in http("GET", f"{api_base}/gadgets"):
@@ -127,9 +177,10 @@ def default_prompt_version(name="PROMPT_VERSION"):
 
 
 def collect(api_base, cases, snippets, http=http_json, sleep=time.sleep, delay=QUERY_DELAY_SECONDS,
-            gk=False, basis=None):
+            gk=False, basis=None, scope=None):
     """Ask every case. In gk mode the request opts in to general knowledge, citations are left
-    alone and each reply's answer_basis is stored in `basis` (a dict the caller passes in)."""
+    alone and each reply's answer_basis is stored in `basis` (a dict the caller passes in).
+    `scope` maps case id -> gadget ids; those cases are sent with "gadget_ids"."""
     answers, removed, errors, models = {}, {}, {}, set()
     for index, case in enumerate(cases):
         if index:
@@ -138,6 +189,8 @@ def collect(api_base, cases, snippets, http=http_json, sleep=time.sleep, delay=Q
         if gk:
             payload["allow_general_knowledge"] = True
             payload["plain_language"] = bool(case.get("plain_language"))
+        if scope and scope.get(case["id"]):
+            payload["gadget_ids"] = list(scope[case["id"]])
         try:
             try:
                 reply = http("POST", f"{api_base}/query", payload)
@@ -171,6 +224,7 @@ def main(argv=None, http=http_json, sleep=time.sleep):
     parser.add_argument("--mode", choices=("grounded", "gk"), default="grounded",
                         help="grounded (default, cited answers) or gk (optional general-knowledge answers, #172)")
     parser.add_argument("--cases", type=Path, help="Cases file (default: cases.json, or gk_cases.json with --mode gk)")
+    parser.add_argument("--scope", type=Path, help="Scope file: send each listed case with gadget_ids (see the docstring)")
     parser.add_argument("--sources", type=Path, default=EVAL_DIR / "sources.json")
     parser.add_argument("--out", type=Path, default=Path(".local/answers.json"))
     parser.add_argument("--prompt-version", help="Default: PROMPT_VERSION, or GK_PROMPT_VERSION with --mode gk")
@@ -197,6 +251,17 @@ def main(argv=None, http=http_json, sleep=time.sleep):
     if args.limit:
         cases = cases[: args.limit]
 
+    scope, scope_error = {}, None
+    if args.scope:
+        try:
+            names, scope_cases = load_scope(args.scope)
+            scope = resolve_scope(names, scope_cases, http("GET", f"{api_base}/gadgets"), [c["id"] for c in cases])
+        except (ScopeError, OSError, ValueError, KeyError) as exc:
+            scope_error = exc
+    if scope_error:
+        print(f"Cannot use --scope: {scope_error}", file=sys.stderr)
+        return 2
+
     missing, merged = [], []
     if not gk:  # GK sends no snippets, so there is no pack to check
         try:
@@ -215,13 +280,14 @@ def main(argv=None, http=http_json, sleep=time.sleep):
         return 2
 
     print(("General-knowledge mode: no pack check. " if gk else "Pack check passed. ") + f"{len(cases)} question(s) would be asked of {api_base} "
-          f"(~${len(cases) * 0.005:.2f}, about {len(cases) * QUERY_DELAY_SECONDS / 60:.1f} min).")
+          f"(~${len(cases) * 0.005:.2f}, about {len(cases) * QUERY_DELAY_SECONDS / 60:.1f} min)."
+          + (f" {len(scope)} of them are scoped to their gadgets." if args.scope else ""))
     if not args.yes:
         print("Plan only. Re-run with --yes to ask them.")
         return 0
 
     basis = {}
-    answers, removed, errors, models = collect(api_base, cases, snippets, http, sleep, gk=gk, basis=basis)
+    answers, removed, errors, models = collect(api_base, cases, snippets, http, sleep, gk=gk, basis=basis, scope=scope)
     model = args.model or ", ".join(sorted(m for m in models if m)) or "unknown"
     report = {
         "provider": f"TekaTech POST /query ({api_base})",
@@ -235,6 +301,9 @@ def main(argv=None, http=http_json, sleep=time.sleep):
         "errors": errors,
         "answers": answers,
     }
+    if scope:
+        report["scoped_cases"] = sorted(scope)
+        report["note"] += " Scoped cases were sent with gadget_ids (nearest chunks of those gadgets, any score)."
     if gk:
         report["answer_basis"] = basis
         report["note"] = ("Real /query output with allow_general_knowledge on; citations not rewritten. "

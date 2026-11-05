@@ -1,0 +1,73 @@
+{
+  "note": "Case -> gadgets, for scripts/eval_adapter.py --scope. Names must match the target catalog (case-insensitive, exact); edit them if your gadgets are named differently. Cases not listed are asked unscoped.",
+  "gadgets": {
+    "iphone-15": "iPhone 15",
+    "galaxy-s24-ph": "Galaxy S24"
+  },
+  "cases": {
+    "TC-01": [
+      "iphone-15"
+    ],
+    "TC-02": [
+      "galaxy-s24-ph"
+    ],
+    "TC-03": [
+      "iphone-15"
+    ],
+    "TC-04": [
+      "galaxy-s24-ph"
+    ],
+    "TC-05": [
+      "iphone-15"
+    ],
+    "TC-06": [
+      "galaxy-s24-ph"
+    ],
+    "TC-07": [
+      "iphone-15",
+      "galaxy-s24-ph"
+    ],
+    "TC-08": [
+      "iphone-15"
+    ],
+    "TC-09": [
+      "galaxy-s24-ph"
+    ],
+    "TC-10": [
+      "iphone-15"
+    ],
+    "TC-11": [
+      "iphone-15"
+    ],
+    "TC-12": [
+      "galaxy-s24-ph"
+    ],
+    "TC-13": [
+      "iphone-15",
+      "galaxy-s24-ph"
+    ],
+    "TC-14": [
+      "iphone-15",
+      "galaxy-s24-ph"
+    ],
+    "TC-15": [
+      "iphone-15",
+      "galaxy-s24-ph"
+    ],
+    "TC-16": [
+      "galaxy-s24-ph"
+    ],
+    "TC-17": [
+      "galaxy-s24-ph"
+    ],
+    "TC-18": [
+      "iphone-15"
+    ],
+    "TC-19": [
+      "iphone-15"
+    ],
+    "TC-20": [
+      "galaxy-s24-ph"
+    ]
+  }
+}

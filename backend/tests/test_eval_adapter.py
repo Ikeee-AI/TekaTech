@@ -270,3 +270,92 @@ def test_gk_output_feeds_the_scorer_and_a_grounded_reply_fails_on_basis(tmp_path
     report = runner.evaluate_gk(cases, saved["answers"], saved["invalid_citations_removed"], saved["answer_basis"])
     assert report["metrics"]["basis_general_knowledge"] == {"passed": 5, "total": 6, "rate": 0.833}
     assert not report["targets_met"]
+
+
+# --- --scope: per-case gadget_ids (#66) ---
+
+class NamedGadgetsApi(FakeApi):
+    """FakeApi whose catalogue lists named gadgets, so --scope can look them up."""
+
+    def __init__(self, replies, gadgets):
+        super().__init__(ONE_PER_CHUNK, replies)
+        self.gadgets = gadgets
+
+    def __call__(self, method, url, body=None):
+        if method == "GET" and url.endswith("/gadgets"):
+            self.calls.append((method, url))
+            return self.gadgets
+        if method == "GET" and "/gadgets/" in url and url.endswith("/specs"):
+            self.calls.append((method, url))
+            return [{"content": text, "indexing_status": "indexed"} for text in self.chunks] if "/p1/" in url else []
+        return super().__call__(method, url, body)
+
+
+CATALOG = [{"id": "p1", "name": "iPhone 15"}, {"id": "s1", "name": "Galaxy S24"}]
+
+
+def write_scope(tmp_path, cases):
+    path = tmp_path / "scope.json"
+    path.write_text(json.dumps({"gadgets": {"iphone": "iphone 15", "s24": "Galaxy S24"}, "cases": cases}),
+                    encoding="utf-8")
+    return path
+
+
+def test_scoped_cases_send_gadget_ids_and_others_stay_unscoped(tmp_path):
+    api = NamedGadgetsApi([reply("a [1]", ["A16 Bionic chip."]), reply("b [1]", ["A16 Bionic chip."])], CATALOG)
+    scope = write_scope(tmp_path, {"T-1": ["iphone", "s24"]})
+    code, out, _ = run_cli(tmp_path, api, "--yes", "--scope", str(scope))
+    saved = json.loads(out.read_text(encoding="utf-8"))
+    assert code == 0
+    assert api.bodies[0] == {"question": CASES[0]["query"], "gadget_ids": ["p1", "s1"]}  # names matched ignoring case
+    assert api.bodies[1] == {"question": CASES[1]["query"]}  # not listed: unchanged request
+    assert saved["scoped_cases"] == ["T-1"]
+
+
+def test_without_scope_requests_are_unchanged(tmp_path):
+    api = NamedGadgetsApi([reply("a [1]", ["A16 Bionic chip."]), reply("b [1]", ["A16 Bionic chip."])], CATALOG)
+    code, out, _ = run_cli(tmp_path, api, "--yes")
+    assert code == 0
+    assert all("gadget_ids" not in body for body in api.bodies)
+    assert "scoped_cases" not in json.loads(out.read_text(encoding="utf-8"))
+
+
+def test_unknown_gadget_name_stops_the_run_before_any_question(tmp_path, capsys):
+    api = NamedGadgetsApi([], [{"id": "p1", "name": "iPhone 15"}])  # no Galaxy S24 in this catalogue
+    scope = write_scope(tmp_path, {"T-1": ["iphone", "s24"]})
+    code, _, _ = run_cli(tmp_path, api, "--yes", "--scope", str(scope))
+    assert code == 2
+    assert "Galaxy S24" in capsys.readouterr().err
+    assert api.query_calls() == []
+
+
+def test_ambiguous_gadget_name_is_refused_not_guessed(tmp_path, capsys):
+    api = NamedGadgetsApi([], [{"id": "p1", "name": "iPhone 15"}, {"id": "p2", "name": "iphone 15"}])
+    scope = write_scope(tmp_path, {"T-1": ["iphone"]})
+    code, _, _ = run_cli(tmp_path, api, "--yes", "--scope", str(scope))
+    assert code == 2
+    assert "2 matches" in capsys.readouterr().err
+    assert api.query_calls() == []
+
+
+def test_a_scope_naming_a_key_that_does_not_exist_is_refused(tmp_path, capsys):
+    api = NamedGadgetsApi([], CATALOG)
+    scope = write_scope(tmp_path, {"T-1": ["nokia"]})
+    code, _, _ = run_cli(tmp_path, api, "--yes", "--scope", str(scope))
+    assert code == 2 and "non-empty list of keys" in capsys.readouterr().err
+
+
+def test_a_case_missing_from_the_run_does_not_need_its_gadgets(tmp_path):
+    # --limit 1 asks only T-1, so a scope entry for T-2 naming an absent gadget must not block the run.
+    api = NamedGadgetsApi([reply("a [1]", ["A16 Bionic chip."])], [{"id": "p1", "name": "iPhone 15"}])
+    scope = write_scope(tmp_path, {"T-1": ["iphone"], "T-2": ["s24"]})
+    code, _, _ = run_cli(tmp_path, api, "--yes", "--limit", "1", "--scope", str(scope))
+    assert code == 0
+    assert api.bodies == [{"question": CASES[0]["query"], "gadget_ids": ["p1"]}]
+
+
+def test_shipped_scope_file_covers_only_known_cases_and_known_keys():
+    names, cases = adapter.load_scope(adapter.EVAL_DIR / "scope.json")
+    known = {c["id"] for c in json.loads((adapter.EVAL_DIR / "cases.json").read_text(encoding="utf-8"))["cases"]}
+    assert set(cases) <= known and cases
+    assert set(names) == {"iphone-15", "galaxy-s24-ph"}
