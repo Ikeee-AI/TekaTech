@@ -701,7 +701,7 @@ None new.
 
 **Done**
 - Open-PR review check: #235, #236 (Ikeee-AI) and #239 (Jopher) had no reviews at first; all checks green.
-- Added Jopher (`s2100932`) as reviewer on #235 and #236 at the owner's request. Manuel's approvals landed at about the same time (06:35–06:36 UTC), so Jopher's review was not needed for the gate; his request is still open on both merged PRs.
+- Added Jopher (`s2100932`) as reviewer on #235 and #236 at the owner's request. Manuel's approvals landed at about the same time (06:35–06:36 UTC), so Jopher's review was not needed for the gate. His request was removed from both merged PRs afterwards at the owner's request (no review requests left on either).
 - `pr-gate` **PASS** on both (manual gate; branch protection is not enforced on this private repo):
   - #235: Manuel `APPROVED` on head `1cb998a`; Backend, Frontend and Database checks green; DevOps docs only (one owner); no SQL, no env files; mergeable.
   - #236: Manuel `APPROVED` on head `d944d6a`; same three checks green plus offline prompt evaluation; prompts/eval only (S5-AD takeover by Ikeee-AI); no SQL, no env files; mergeable.
@@ -731,4 +731,3 @@ None.
 **Next**
 - Get #239 reviewed, then gate and merge it — Manuel/Mika review, Ikeee-AI merges — before Sat 7 Nov 15:00.
 - Decide on tagging v1.1.0 and finalise its release record — Ikeee-AI — before Sat 7 Nov 15:00.
-- Remove Jopher's leftover review request on #235/#236 if wanted (optional) — Ikeee-AI.
