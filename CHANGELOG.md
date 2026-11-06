@@ -4,7 +4,7 @@ Stable releases of TekaTech, newest first. The frozen course submission is `v1.0
 
 ## v1.1.0 — Sprint 5 stable release (`db49bc2`, tagged 2026-11-06)
 
-**Target commit `db49bc2` (6 Nov 2026); the tag `v1.1.0` isn't created yet.** All changes below are merged to `main`, deployed, and passed the deployed smoke check on `db49bc2` (6 Nov, 07:23 UTC). The record, its verification, security checks and the full list of 58 PRs are in [`docs/releases/v1.1.0.md`](docs/releases/v1.1.0.md).
+**Tagged `v1.1.0` on `db49bc2`, 6 Nov 2026 15:36 Manila — [GitHub Release](https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.1.0).** All changes below are merged to `main`, deployed, and passed the deployed smoke check on `db49bc2` (6 Nov, 07:23 UTC). The record, its verification, security checks and the full list of 58 PRs are in [`docs/releases/v1.1.0.md`](docs/releases/v1.1.0.md).
 
 ### Added
 - **My Gadgets dashboard.** Signed-in users build their own list from the catalog, then open, remove or compare 2–5 gadgets and ask the AI across them. New table `user_gadgets` (#197, #200).
