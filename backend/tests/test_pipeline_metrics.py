@@ -45,3 +45,59 @@ def test_empty_window_reports_unknown_not_zero():
     assert result["success_rate_pct"] is None
     assert result["pr_pipeline_avg_min"] is None
     assert "N/A (0 runs)" in row
+
+
+class _Result:
+    def __init__(self, returncode, stdout="", stderr=""):
+        self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
+
+
+def _fake_run(results, calls):
+    def fake(command, **kwargs):
+        calls.append(command)
+        return results.pop(0)
+    return fake
+
+
+def test_gh_api_retries_transient_errors_then_succeeds(monkeypatch):
+    calls, sleeps = [], []
+    results = [_Result(1, stderr="net/http: TLS handshake timeout"),
+               _Result(1, stderr="gh: Server Error (HTTP 502)"),
+               _Result(0, stdout='{"ok": true}')]
+    monkeypatch.setattr(metrics.subprocess, "run", _fake_run(results, calls))
+    assert metrics.gh_api("repos/x/y", sleep=sleeps.append) == {"ok": True}
+    assert len(calls) == 3
+    assert sleeps == list(metrics.RETRY_DELAYS[:2])
+
+
+def test_gh_api_does_not_retry_permanent_errors(monkeypatch):
+    calls, sleeps = [], []
+    results = [_Result(1, stderr="gh: Not Found (HTTP 404)")]
+    monkeypatch.setattr(metrics.subprocess, "run", _fake_run(results, calls))
+    try:
+        metrics.gh_api("repos/x/missing", sleep=sleeps.append)
+        raise AssertionError("expected CalledProcessError")
+    except metrics.subprocess.CalledProcessError:
+        pass
+    assert len(calls) == 1 and sleeps == []
+
+
+def test_gh_api_gives_up_after_the_last_retry(monkeypatch):
+    calls, sleeps = [], []
+    attempts = len(metrics.RETRY_DELAYS) + 1
+    results = [_Result(1, stderr="error connecting to api.github.com") for _ in range(attempts)]
+    monkeypatch.setattr(metrics.subprocess, "run", _fake_run(results, calls))
+    try:
+        metrics.gh_api("repos/x/y", sleep=sleeps.append)
+        raise AssertionError("expected CalledProcessError")
+    except metrics.subprocess.CalledProcessError:
+        pass
+    assert len(calls) == attempts
+    assert sleeps == list(metrics.RETRY_DELAYS)
+
+
+def test_gh_api_parses_jq_lines(monkeypatch):
+    calls = []
+    results = [_Result(0, stdout='{"a": 1}\n{"a": 2}\n')]
+    monkeypatch.setattr(metrics.subprocess, "run", _fake_run(results, calls))
+    assert metrics.gh_api("repos/x/y", jq=".[]") == [{"a": 1}, {"a": 2}]

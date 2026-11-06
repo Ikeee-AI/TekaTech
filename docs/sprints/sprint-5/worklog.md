@@ -695,3 +695,105 @@ None new.
 
 **Next**
 - Fix the Poco x7 Pro release date with the #201 catalog work — Ikeee-AI — when doing #201.
+
+## 2026-11-06 14:53 Asia/Manila — #235 and #236 gated, merged and verified on production; #239 review ping
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code ran the gate, merges and smoke check at the owner's request) · **Task:** S5-IK (release/wrap-up), S5-AD takeover (gk-v2 prompt) · **Branch:** `tekatech/s5-ik-6nov`
+
+**Done**
+- Open-PR review check: #235, #236 (Ikeee-AI) and #239 (Jopher) had no reviews at first; all checks green.
+- Added Jopher (`s2100932`) as reviewer on #235 and #236 at the owner's request. Manuel's approvals landed at about the same time (06:35–06:36 UTC), so Jopher's review was not needed for the gate. His request was removed from both merged PRs afterwards at the owner's request (no review requests left on either).
+- `pr-gate` **PASS** on both (manual gate; branch protection is not enforced on this private repo):
+  - #235: Manuel `APPROVED` on head `1cb998a`; Backend, Frontend and Database checks green; DevOps docs only (one owner); no SQL, no env files; mergeable.
+  - #236: Manuel `APPROVED` on head `d944d6a`; same three checks green plus offline prompt evaluation; prompts/eval only (S5-AD takeover by Ikeee-AI); no SQL, no env files; mergeable.
+- Squash-merged at the owner's instruction: #235 → `6d8c5d5` (06:44:27 UTC), #236 → `a7c5c46` (06:44:31 UTC) — https://github.com/Ikeee-AI/TekaTech/pull/235, https://github.com/Ikeee-AI/TekaTech/pull/236
+- Main CI for `a7c5c46` succeeded, every job including "Main guard" and "Deploy main after checks" (finished 06:49:41 UTC) — https://github.com/Ikeee-AI/TekaTech/actions/runs/42176368163 . The `6d8c5d5` run also succeeded (run 42176362114).
+- Deployed smoke **passed** at 06:50:28 UTC (14:50 Manila) on commit `a7c5c46`: first attempt, readiness passed, CORS passed, 4 gadgets, database latency 942.5 ms — evidence: `.local/deployed-smoke-a7c5c46.json` (local, not committed).
+- Asked Manuel and Mika to review #239 — https://github.com/Ikeee-AI/TekaTech/pull/239#issuecomment-6679005522
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `read tcp …->20.205.243.168:443: wsarecv: An existing connection was forcibly closed by the remote host.` on `gh pr list --state merged` | Transient network drop to GitHub | Re-ran the same command; succeeded. Closed |
+
+**Conflicts and contradictions**
+None.
+
+**Decisions**
+- Merge #235 and #236 on Manuel's approval without waiting for Jopher's extra review — the gate needs one other-teammate approval — Ikeee-AI (owner).
+
+**Blockers / risks**
+- #239 (S5-JO Max Price slider) has no review yet — Manuel or Mika — before the Sat 7 Nov 15:00 deadline. *(Wrong when written: Manuel had approved at 14:38. Corrected in the 15:22 entry.)*
+
+**Plan alignment**
+- S5-IK wrap-up (#235): **Done** for the docs it carries (reviewed, checks green, merged, deployed, production verified). The v1.1.0 release record is still a draft; the tag is not created.
+- S5-AD takeover gk-v2 (#236): **Done** (reviewed, checks green, merged, deployed, production verified on `a7c5c46`).
+
+**Next**
+- Get #239 reviewed, then gate and merge it — Manuel/Mika review, Ikeee-AI merges — before Sat 7 Nov 15:00.
+- Decide on tagging v1.1.0 and finalise its release record — Ikeee-AI — before Sat 7 Nov 15:00.
+
+## 2026-11-06 15:22 Asia/Manila — #239 approved, gated and merged; correction to the 14:53 entry
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code ran the checks, gate and merge at the owner's request) · **Task:** S5-JO (Max Price slider fix, merged by Ikeee-AI) · **Branch:** `tekatech/s5-ik-6nov`
+
+**Done**
+- #239 reviews, both on head `acb304a`: Manuel (`s2302827-byte`) `APPROVED` at 14:38, after reading the diff, running it locally and confirming the new test fails against the old `GadgetList.jsx`; Mika (`meka-moka`) `APPROVED` at 14:55, no comment — https://github.com/Ikeee-AI/TekaTech/pull/239
+- `pr-gate` **PASS** (manual gate; branch protection is not enforced): two other-teammate approvals on the head commit; Backend, Frontend and Database checks green; files `frontend/src/pages/GadgetList.jsx` and `GadgetList.priceFilter.test.jsx` only (Jopher's filter logic, one owner); no SQL, no env files; mergeable.
+- Squash-merged at the owner's instruction: #239 → `db49bc2` (07:20:04 UTC, 15:20 Manila).
+- Main CI for `db49bc2` succeeded, every job including "Main guard" and "Deploy main after checks" (finished 07:23:07 UTC) — https://github.com/Ikeee-AI/TekaTech/actions/runs/42180181404 (added after the entry was first written, when the run finished).
+- Deployed smoke **passed** at 07:23:39 UTC (15:23 Manila) on commit `db49bc2`: first attempt, readiness passed, CORS passed, 4 gadgets, database latency 505.9 ms — evidence: `.local/deployed-smoke-db49bc2.json` (local, not committed).
+- Slider checked on production by Claude Code in the owner's Chrome (catalog page, no data changed): dragged to the middle → label "Php 26,399", "Showing 1–2 of 2 devices"; dragged fully right → label "Php 45,000", **"Showing 1–4 of 4 devices"**, no "Up to" chip, Rog Ally and the unpriced iPhone 15 back in the list. Screenshots kept locally (they show the signed-in account email).
+
+**Errors and fixes**
+None.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| The 14:53 entry says #239 had no review and lists it as a blocker, but Manuel approved at 14:38. The 14:47 ping to Manuel and Mika was posted without rechecking the PR first (Claude Code's miss) | Log showed a blocker that didn't exist; one unneeded ping on #239 | Old blocker line marked as wrong, with a pointer to this entry; the ping stays on the PR. Closed |
+
+**Decisions**
+- Merge #239 on Manuel's and Mika's approvals — Ikeee-AI (owner).
+
+**Blockers / risks**
+None new.
+
+**Plan alignment**
+- S5-JO Max Price slider (#239): **Done** (reviewed, checks green, merged, deployed, production smoke passed on `db49bc2`).
+
+**Next**
+- Decide on tagging v1.1.0 and finalise its release record — Ikeee-AI — before Sat 7 Nov 15:00.
+
+## 2026-11-06 15:40 Asia/Manila — v1.1.0 record finalised and tagged on db49bc2
+**Who:** Ikeee-AI (AI-assisted: yes; Claude Code's devops-engineer agent finalised the record and ran the security checks, Claude Code reviewed and pushed the tag at the owner's request) · **Task:** S5-IK (stable release) · **Branch:** `tekatech/s5-ik-6nov`
+
+**Done**
+- `docs/releases/v1.1.0.md` finalised for `db49bc2`: verification on the target commit, security table, checklist, corrected limitations, all 58 PRs in `v1.0.0..db49bc2` with authors/approvers; `CHANGELOG.md` v1.1.0 adds #236, #239, #171 and the docs/log PRs — evidence: commit `8a8bdc6` and this commit.
+- Security on `db49bc2`: secret guard passed; CI Gitleaks 8.30.1 full history no leaks (188 commits, run 42180181404); pip-audit 2.10.1 no known vulnerabilities; `npm audit --omit=dev` 0 vulnerabilities; Dependabot 0 open. Local Gitleaks N/A (not installed).
+- Annotated tag `v1.1.0` (`a38976f`) on `db49bc2` pushed 15:36:43 Manila. `release.yml` passed and created the GitHub Release at 07:36:51 UTC — https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.1.0 , run https://github.com/Ikeee-AI/TekaTech/actions/runs/42182018494
+
+**Errors and fixes**
+None.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Draft record said "no prompt change" and GK-06 open; #236 shipped gk-v2, which fixes GK-06 | Record would have understated the release | Corrected in the record. Closed |
+| Draft said the Poco x7 Pro would be fixed with #201; the image was fixed 5 Nov, only the release date is still wrong (#201 open) | Limitation misstated | Corrected in the record. Closed |
+| Gitleaks commit counts differ (CI 188, local `rev-list` 223, v1.0.0 local all-refs 307) | Counts can't be compared across releases | Not investigated — Ikeee-AI — open |
+| Tagged before the second-member rollback demonstration, which is listed earlier in the checklist | Stable release exists before its rollback item is proven by a second member | Owner approved tagging on 6 Nov; demo still to be booked — Ikeee-AI with Manuel or Jopher — open |
+
+**Decisions**
+- Tag v1.1.0 on `db49bc2` now — Ikeee-AI (owner).
+
+**Blockers / risks**
+- Second-member deploy/rollback demonstration not done — Ikeee-AI with Manuel or Jopher — before Sat 7 Nov 15:00.
+
+**Plan alignment**
+- S5-IK stable release: **Partial** — tagged, released and verified; rollback demo, known-limitations paste into the release body and final metrics row still open.
+
+**Next**
+- Paste "Known limitations" into the GitHub Release body — Ikeee-AI — 6 Nov.
+- Second-member rollback demonstration — Ikeee-AI + Manuel/Jopher — before Sat 7 Nov 15:00.
+- Final metrics row (`pipeline-metrics`) — Ikeee-AI — before Sat 7 Nov 15:00.
+- One PR for `tekatech/s5-ik-6nov` (6 Nov logs and the v1.1.0 record) — Ikeee-AI — before Sat 7 Nov 15:00.
+- Update `docs/sprints/sprint-5/consultation.md` (lines 42, 86 still say draft) — Ikeee-AI — with that PR.

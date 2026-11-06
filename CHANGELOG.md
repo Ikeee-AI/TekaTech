@@ -2,9 +2,9 @@
 
 Stable releases of TekaTech, newest first. The frozen course submission is `v1.0.0`; later entries are post-release (Sprint 5) work, kept separate from it. Each line links its reviewed PR. Full per-release records are in [`docs/releases/`](docs/releases/).
 
-## v1.1.0 — Sprint 5 stable release (planned, Sat 7 Nov 2026)
+## v1.1.0 — Sprint 5 stable release (`db49bc2`, tagged 2026-11-06)
 
-**Status: draft, not tagged yet.** The record, its verification and the tag commit are in [`docs/releases/v1.1.0.md`](docs/releases/v1.1.0.md). Changes below are merged to `main` and deployed (as of `1170d19`, 5 Nov).
+**Target commit `db49bc2` (6 Nov 2026); the tag `v1.1.0` isn't created yet.** All changes below are merged to `main`, deployed, and passed the deployed smoke check on `db49bc2` (6 Nov, 07:23 UTC). The record, its verification, security checks and the full list of 58 PRs are in [`docs/releases/v1.1.0.md`](docs/releases/v1.1.0.md).
 
 ### Added
 - **My Gadgets dashboard.** Signed-in users build their own list from the catalog, then open, remove or compare 2–5 gadgets and ask the AI across them. New table `user_gadgets` (#197, #200).
@@ -21,12 +21,15 @@ Stable releases of TekaTech, newest first. The frozen course submission is `v1.0
 ### Changed
 - **The catalog is admin-curated.** Creating/editing gadgets and adding/indexing specs are admin-only; regular users browse, ask, compare, share and suggest corrections (#195). Scope change in [`docs/scope-changes.md`](docs/scope-changes.md).
 - Compare returns to My Gadgets when opened from there (#200).
+- **General-knowledge prompt `gk-v2`:** replies no longer repeat the prompt's own rules (GK-06). The grounded prompt stays `v1`; a grounded v2 attempt scored lower and was not shipped (#236, S5-AD takeover by Ikeee-AI).
+- Catalog tagline from the live deploy challenge (#171).
 - Screen readers read names as separate words (#214).
 - CI uses fewer Actions minutes: labels and reviewer in one job, ruff inside the PR-policy job (#182); owner-area labels match the real file layout (#190); PR policy lists only the PR's own files (#218).
 
 ### Fixed
 - Acceptance defects D1, D3 and D6; acceptance rows 19–20 pass on production (#176).
 - Compare page touch targets are 40 px, and focus returns after adding a gadget (#222).
+- **Max Price slider:** its last stop now means "no limit". It used to stop one step short of the top price and hide the top-priced and unpriced gadgets (#239).
 
 ### Security and operations
 - Failure-drill controls stay off for normal users: an anonymous header request on production gets a normal answer (#233); the Render dashboard has no `FAILURE_SIMULATION_ENABLED` (5 Nov).
@@ -37,6 +40,9 @@ Stable releases of TekaTech, newest first. The frozen course submission is `v1.0
 - Post-release score report (`docs/evidence/eval-s5-2026-11-05.md`, #226) and prompt/evaluation handover (`prompts/prompt-eval-handover.md`, #227).
 - User quick-start and feature-maintenance notes (#231); demo script updated (#219).
 - Deploy-challenge rehearsal and timer (#170, #177); malformed-request demo (#175); pilot plan and health sampler (#183).
+- `v1.0.0` release records: rollback and restore rehearsals, Sprint 4 final metrics, submission manifest (#167). AI demo cases, limitations, speaker notes and release AI-quality report (#186, S4-AD takeover).
+- Incident record for the 31 Oct Actions usage limit (#178); open questions for the owner (#229); release record draft, support checklist, Week 5 packet, retrospective and pilot scope change (#235).
+- Work logs and consultation packet: #184, #185, #188, #191, #192, #194, #199, #212, #217, #221, #223, #234.
 
 ### Database (apply by hand before deploying; deploys never change the database)
 - `backend/sql/user_gadgets.sql` (#197) and `backend/sql/user_questions.sql` (#210). Both are applied to the live project `lqswcmkzygqmnblaukco` (3 Nov; `user_questions` after the SQL-on-dev incident, `docs/devops/incidents.md`).
