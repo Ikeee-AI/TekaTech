@@ -1,5 +1,7 @@
 # Sprint 5 operational pilot plan
 
+> **Status (5 Nov 2026): not run in Sprint 5.** Put on hold by the owner on 3 Nov; moved past Sprint 5 on 5 Nov because a 48-hour window could no longer finish before Sat 7 Nov 15:00. See [scope-changes.md](../scope-changes.md). The plan below is kept for when the pilot runs; its dates are the original ones.
+
 Owner: Ikeee-AI (S5-IK, `docs/sprints-2-to-5.md`). Prepared 31 October 2026. This is a plan; results go in the pilot report.
 
 ## Window and freeze
