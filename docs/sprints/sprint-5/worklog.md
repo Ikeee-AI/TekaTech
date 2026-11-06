@@ -740,7 +740,8 @@ None.
 - `pr-gate` **PASS** (manual gate; branch protection is not enforced): two other-teammate approvals on the head commit; Backend, Frontend and Database checks green; files `frontend/src/pages/GadgetList.jsx` and `GadgetList.priceFilter.test.jsx` only (Jopher's filter logic, one owner); no SQL, no env files; mergeable.
 - Squash-merged at the owner's instruction: #239 → `db49bc2` (07:20:04 UTC, 15:20 Manila).
 - Main CI for `db49bc2` succeeded, every job including "Main guard" and "Deploy main after checks" (finished 07:23:07 UTC) — https://github.com/Ikeee-AI/TekaTech/actions/runs/42180181404 (added after the entry was first written, when the run finished).
-- Deployed smoke **passed** at 07:23:39 UTC (15:23 Manila) on commit `db49bc2`: first attempt, readiness passed, CORS passed, 4 gadgets, database latency 505.9 ms — evidence: `.local/deployed-smoke-db49bc2.json` (local, not committed). The slider itself was not clicked through on production.
+- Deployed smoke **passed** at 07:23:39 UTC (15:23 Manila) on commit `db49bc2`: first attempt, readiness passed, CORS passed, 4 gadgets, database latency 505.9 ms — evidence: `.local/deployed-smoke-db49bc2.json` (local, not committed).
+- Slider checked on production by Claude Code in the owner's Chrome (catalog page, no data changed): dragged to the middle → label "Php 26,399", "Showing 1–2 of 2 devices"; dragged fully right → label "Php 45,000", **"Showing 1–4 of 4 devices"**, no "Up to" chip, Rog Ally and the unpriced iPhone 15 back in the list. Screenshots kept locally (they show the signed-in account email).
 
 **Errors and fixes**
 None.
