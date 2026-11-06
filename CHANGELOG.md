@@ -2,7 +2,7 @@
 
 Stable releases of TekaTech, newest first. The frozen course submission is `v1.0.0`; later entries are post-release (Sprint 5) work, kept separate from it. Each line links its reviewed PR. Full per-release records are in [`docs/releases/`](docs/releases/).
 
-## v1.1.0 — Sprint 5 stable release (target `db49bc2`, tag pending)
+## v1.1.0 — Sprint 5 stable release (`db49bc2`, tagged 2026-11-06)
 
 **Target commit `db49bc2` (6 Nov 2026); the tag `v1.1.0` isn't created yet.** All changes below are merged to `main`, deployed, and passed the deployed smoke check on `db49bc2` (6 Nov, 07:23 UTC). The record, its verification, security checks and the full list of 58 PRs are in [`docs/releases/v1.1.0.md`](docs/releases/v1.1.0.md).
 

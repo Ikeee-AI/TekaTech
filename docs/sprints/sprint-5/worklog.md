@@ -762,3 +762,38 @@ None new.
 
 **Next**
 - Decide on tagging v1.1.0 and finalise its release record — Ikeee-AI — before Sat 7 Nov 15:00.
+
+## 2026-11-06 15:40 Asia/Manila — v1.1.0 record finalised and tagged on db49bc2
+**Who:** Ikeee-AI (AI-assisted: yes; Claude Code's devops-engineer agent finalised the record and ran the security checks, Claude Code reviewed and pushed the tag at the owner's request) · **Task:** S5-IK (stable release) · **Branch:** `tekatech/s5-ik-6nov`
+
+**Done**
+- `docs/releases/v1.1.0.md` finalised for `db49bc2`: verification on the target commit, security table, checklist, corrected limitations, all 58 PRs in `v1.0.0..db49bc2` with authors/approvers; `CHANGELOG.md` v1.1.0 adds #236, #239, #171 and the docs/log PRs — evidence: commit `8a8bdc6` and this commit.
+- Security on `db49bc2`: secret guard passed; CI Gitleaks 8.30.1 full history no leaks (188 commits, run 42180181404); pip-audit 2.10.1 no known vulnerabilities; `npm audit --omit=dev` 0 vulnerabilities; Dependabot 0 open. Local Gitleaks N/A (not installed).
+- Annotated tag `v1.1.0` (`a38976f`) on `db49bc2` pushed 15:36:43 Manila. `release.yml` passed and created the GitHub Release at 07:36:51 UTC — https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.1.0 , run https://github.com/Ikeee-AI/TekaTech/actions/runs/42182018494
+
+**Errors and fixes**
+None.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Draft record said "no prompt change" and GK-06 open; #236 shipped gk-v2, which fixes GK-06 | Record would have understated the release | Corrected in the record. Closed |
+| Draft said the Poco x7 Pro would be fixed with #201; the image was fixed 5 Nov, only the release date is still wrong (#201 open) | Limitation misstated | Corrected in the record. Closed |
+| Gitleaks commit counts differ (CI 188, local `rev-list` 223, v1.0.0 local all-refs 307) | Counts can't be compared across releases | Not investigated — Ikeee-AI — open |
+| Tagged before the second-member rollback demonstration, which is listed earlier in the checklist | Stable release exists before its rollback item is proven by a second member | Owner approved tagging on 6 Nov; demo still to be booked — Ikeee-AI with Manuel or Jopher — open |
+
+**Decisions**
+- Tag v1.1.0 on `db49bc2` now — Ikeee-AI (owner).
+
+**Blockers / risks**
+- Second-member deploy/rollback demonstration not done — Ikeee-AI with Manuel or Jopher — before Sat 7 Nov 15:00.
+
+**Plan alignment**
+- S5-IK stable release: **Partial** — tagged, released and verified; rollback demo, known-limitations paste into the release body and final metrics row still open.
+
+**Next**
+- Paste "Known limitations" into the GitHub Release body — Ikeee-AI — 6 Nov.
+- Second-member rollback demonstration — Ikeee-AI + Manuel/Jopher — before Sat 7 Nov 15:00.
+- Final metrics row (`pipeline-metrics`) — Ikeee-AI — before Sat 7 Nov 15:00.
+- One PR for `tekatech/s5-ik-6nov` (6 Nov logs and the v1.1.0 record) — Ikeee-AI — before Sat 7 Nov 15:00.
+- Update `docs/sprints/sprint-5/consultation.md` (lines 42, 86 still say draft) — Ikeee-AI — with that PR.
