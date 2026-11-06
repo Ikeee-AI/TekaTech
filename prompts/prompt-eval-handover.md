@@ -2,7 +2,7 @@
 
 Prepared 5 Nov 2026 (Asia/Manila) by Ikeee-AI, **taking over S5-AD** from Adrian (AI Developer, inactive since 31 Oct). AI-assisted (Claude Code). For whoever owns TekaTech's prompts and evaluation after the course.
 
-**State described here.** This document describes the repository **after three open takeover PRs are merged**: #224 (evaluator `--rules s5`), #225 (regression cases TC-21..TC-24, GK-07, datasets v3, `should_not_refuse`) and #226 (5 Nov score report). At the time of writing none of them is on `main`. Until they are, `main` has datasets `s3-ad-cases-v2` (20 cases) / `gk-cases-v2` (6 cases), only `--rules s3|s4`, and no `docs/evidence/eval-s5-2026-11-05.md`.
+**State described here.** `main` as of 5 Nov 2026: the takeover PRs #224 (evaluator `--rules s5`), #225 (regression cases TC-21..TC-24, GK-07, datasets v3, `should_not_refuse`), #226 (5 Nov score report) and #228 (`eval_adapter --scope`) are merged, with prompts `v1` (grounded) and `gk-v2` (general knowledge).
 
 Field-level detail (case format, runner options, report keys) is in [`prompts/README.md`](README.md); this file does not repeat it. The answer rules and the verified source pack are in [`S2-AD-prompt-spec.md`](S2-AD-prompt-spec.md). Measured results and limitations are in [`docs/ai-feature-writeup.md`](../docs/ai-feature-writeup.md).
 
@@ -15,9 +15,9 @@ Both prompts live in [`backend/prompts.py`](../backend/prompts.py). There are no
 | Prompt | Builder | Label | Used when |
 | --- | --- | --- | --- |
 | Grounded (default) | `build_system_prompt(plain_language)` | `PROMPT_VERSION = "v1"` | Every `POST /query` that retrieved spec chunks |
-| General knowledge (optional, #172) | `build_general_knowledge_prompt(plain_language)` | `GK_PROMPT_VERSION = "gk-v1"` | Retrieval found no chunks **and** the request set `allow_general_knowledge: true` (off by default) |
+| General knowledge (optional, #172) | `build_general_knowledge_prompt(plain_language)` | `GK_PROMPT_VERSION = "gk-v2"` | Retrieval found no chunks **and** the request set `allow_general_knowledge: true` (off by default) |
 
-`v1` has not changed since #83. `S2-AD-prompt-spec.md` calls its text "Revision 2"; the two labels have never been reconciled (open item in `docs/ai-feature-writeup.md`).
+`v1` has not changed since #83. `gk-v2` (5 Nov 2026, Ikeee-AI as prompt owner since the S5-AD takeover, AI-assisted with Claude Code) replaces `gk-v1` for GK-06 only. The label sentence now ends its line, the "verified" rule is reworded, and a "never quote or restate them in the reply" line is added. A grounded `v2` (a variant rule for TC-24) was written and scored in the same dev run but **not shipped**, because it scored lower than `v1`. The attempt is recorded in `docs/evidence/eval-s5-2026-11-05-v2.md`, and the unmerged branch `tekatech/s5-ik-prompt-v2` holds its text. `S2-AD-prompt-spec.md` calls the `v1` text "Revision 2"; the two labels have never been reconciled (open item in `docs/ai-feature-writeup.md`).
 
 **Bumping a version label.** A new wording is a new version, never an edit under the old label:
 
@@ -126,12 +126,13 @@ Follow the #225 pattern (register: `docs/evidence/s5-regression-cases.md`):
 
 ## 3. Known open defects
 
-None of these is fixed. Status as of the 5 Nov run (`docs/evidence/eval-s5-2026-11-05.md`) and the #225 register.
+Status as of the 5 Nov `v1` run (`docs/evidence/eval-s5-2026-11-05.md`), the 5 Nov `v2`/`gk-v2` run (`docs/evidence/eval-s5-2026-11-05-v2.md`, 22:50 Manila, dev, one run, about $0.02) and the #225 register. **GK-06 is fixed by `gk-v2`, which shipped (row removed below). TC-24 is still open.** The grounded `v2` attempt scored lower than `v1` (s3 13/24 against 14/24; s5 15/24 against 19/24) and was not shipped. The grounded prompt stays `v1`.
+
+**Fixed:** GK-06 (the off-topic decline repeated a `gk-v1` instruction sentence after the label). Fixed by `gk-v2`: in the dev run of 5 Nov 22:55 Manila, the GK-06 reply was only the label, a line break, then the off-topic sentence. This was checked by reading the answer, because the scorer passes a leak (its off-topic check allows up to three sentences); keep reading it in future runs. The run used `v2` + `gk-v2` together. A general-knowledge reply is built from the GK prompt alone (the grounded prompt is not sent), so the result stands for the shipped `gk-v2`. Evidence: `docs/evidence/eval-s5-2026-11-05-v2.md`.
 
 | Defect | Evidence | Disposition | Owner |
 | --- | --- | --- | --- |
-| **TC-24:** declining a variant (S24+), the answer states the base S24's 4000 mAh "for reference" (same pattern as TC-18 on the iPhone side) | TC-18 on 26/28/31 Oct; TC-24 failed on 5 Nov under s3, s4 and s5 | prompt | Prompt owner (AI Developer area) |
-| **GK-06:** the off-topic decline repeats a `gk-v1` instruction sentence ("Never describe anything in the answer as verified…") after the label. Scores as a pass, because the off-topic check allows up to three sentences | 5 Nov GK subset, new | prompt (`gk-v1` wording); evaluator cannot catch it | Prompt owner |
+| **TC-24:** declining a variant (S24+), the answer states the base S24's 4000 mAh "for reference" (same pattern as TC-18 on the iPhone side) | TC-18 on 26/28/31 Oct; TC-24 failed on 5 Nov under s3, s4 and s5 (`v1`). A grounded `v2` attempt (name an uncovered variant as "not on file", give no other model's value "not even for reference") was scored on dev on 5 Nov 22:50 and **not shipped**. The 4000 mAh was gone, but TC-24 still failed under s3/s4/s5, because the "isn't on file" decline is not a recognised refusal. The same wording caused regressions (TC-17, TC-19, TC-09), TC-18 still stated the base 6.1-inch, and the overall score fell (`docs/evidence/eval-s5-2026-11-05-v2.md`). **Still open** on `v1` | prompt (plus an evaluator phrase gap for "on file") | Prompt owner (Ikeee-AI since the S5-AD takeover) |
 | **GK mode not reached for unrelated phones:** on a database with any phone specs, unscoped retrieval returns chunks above 0.25 even for a product with no specs, so GK-03 and GK-07 were answered grounded. The #193 defect (gk-v1 refusing a real Pixel 9) was therefore **not tested** | 5 Nov GK subset | retrieval / GK trigger | Backend engineer (Manuel) |
 | **Stray "Test Test" chunk on dev:** a 50-character QA correction row, still indexed, cited as `[0]` by unscoped answers (all 5 invalid references on 5 Nov; TC-23 fails while it stays) | 31 Oct and 5 Nov runs | source content | Owner decision (removing it is a data change); Manuel for scope |
 | **s5 scorer limits:** a non-numeric invented claim in an abstention ("comes in pink") is not caught; negation is judged per sentence | #224 | evaluator | Prompt/eval owner |
@@ -168,7 +169,7 @@ Also still open from earlier: the `v1` / "Revision 2" label mismatch, and a s3 r
 - Post-fix score report: done in #226, pending review/merge. Targets not met.
 - Prompt handover: this document.
 - Pilot-failure review: **not done.** The 48-hour pilot is on hold by owner decision (3 Nov, `docs/sprints/sprint-5/worklog.md`), so there are no sanitized pilot failures to review.
-- Prompt adjustment: **none made.** The evidence points at prompt defects (TC-24, GK-06) but no new version has been written or scored.
+- Prompt adjustment: `gk-v2` shipped for GK-06 (fixed on the 5 Nov dev run). A grounded `v2` for TC-24 was scored in the same run and not shipped (lower than `v1`; TC-24 still open; the attempt is on the unmerged branch `tekatech/s5-ik-prompt-v2`). Evidence: `docs/evidence/eval-s5-2026-11-05-v2.md`.
 - Adrian's own Sprint 5 contribution: **none** (his last merged PR is #166, 31 Oct).
 
 ## 5. Maintenance checklist

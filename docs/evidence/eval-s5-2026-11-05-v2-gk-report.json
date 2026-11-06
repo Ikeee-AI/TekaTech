@@ -1,0 +1,155 @@
+{
+  "mode": "gk",
+  "cases_version": "gk-cases-v3",
+  "metrics": {
+    "cases_passed": {
+      "passed": 1,
+      "total": 3,
+      "rate": 0.333
+    },
+    "no_citations": {
+      "passed": 2,
+      "total": 3,
+      "rate": 0.667
+    },
+    "labelled": {
+      "passed": 1,
+      "total": 3,
+      "rate": 0.333
+    },
+    "unknown_refusal": {
+      "passed": 0,
+      "total": 1,
+      "rate": 0.0
+    },
+    "no_verified_claims": {
+      "passed": 3,
+      "total": 3,
+      "rate": 1.0
+    },
+    "off_topic_declined": {
+      "passed": 1,
+      "total": 1,
+      "rate": 1.0
+    },
+    "known_facts": {
+      "passed": 0,
+      "total": 0,
+      "rate": null
+    },
+    "basis_general_knowledge": {
+      "passed": 1,
+      "total": 3,
+      "rate": 0.333
+    },
+    "real_product_answered": {
+      "passed": 0,
+      "total": 1,
+      "rate": 0.0
+    }
+  },
+  "by_type": {
+    "known": {
+      "passed": 0,
+      "total": 1
+    },
+    "unknown": {
+      "passed": 0,
+      "total": 1
+    },
+    "off_topic": {
+      "passed": 1,
+      "total": 1
+    }
+  },
+  "targets": {
+    "cases_passed": 1.0,
+    "no_citations": 1.0,
+    "labelled": 1.0,
+    "unknown_refusal": 1.0,
+    "no_verified_claims": 1.0,
+    "off_topic_declined": 1.0,
+    "basis_general_knowledge": 1.0,
+    "real_product_answered": 1.0
+  },
+  "targets_met": false,
+  "failures": [
+    {
+      "id": "GK-03",
+      "type": "unknown",
+      "problems": [
+        "answer_basis is 'specs', not 'general_knowledge' (not a general-knowledge answer)",
+        "citation marker(s) ['[1]', '[2]', '[3]', '[4]', '[5]', '[6]']",
+        "does not open with the general-knowledge label",
+        "should say it does not know this product"
+      ]
+    },
+    {
+      "id": "GK-07",
+      "type": "known",
+      "problems": [
+        "answer_basis is 'specs', not 'general_knowledge' (not a general-knowledge answer)",
+        "does not open with the general-knowledge label",
+        "refuses a real product as unknown"
+      ]
+    }
+  ],
+  "removed_citations": [],
+  "results": [
+    {
+      "id": "GK-03",
+      "type": "unknown",
+      "passed": false,
+      "problems": [
+        "answer_basis is 'specs', not 'general_knowledge' (not a general-knowledge answer)",
+        "citation marker(s) ['[1]', '[2]', '[3]', '[4]', '[5]', '[6]']",
+        "does not open with the general-knowledge label",
+        "should say it does not know this product"
+      ],
+      "checks": {
+        "no_citations": false,
+        "labelled": false,
+        "no_verified_claims": true,
+        "basis_general_knowledge": false,
+        "unknown_refusal": false
+      },
+      "removed_citations": 0
+    },
+    {
+      "id": "GK-06",
+      "type": "off_topic",
+      "passed": true,
+      "problems": [],
+      "checks": {
+        "no_citations": true,
+        "labelled": true,
+        "no_verified_claims": true,
+        "basis_general_knowledge": true,
+        "off_topic_declined": true
+      },
+      "removed_citations": 0
+    },
+    {
+      "id": "GK-07",
+      "type": "known",
+      "passed": false,
+      "problems": [
+        "answer_basis is 'specs', not 'general_knowledge' (not a general-knowledge answer)",
+        "does not open with the general-knowledge label",
+        "refuses a real product as unknown"
+      ],
+      "checks": {
+        "no_citations": true,
+        "labelled": false,
+        "no_verified_claims": true,
+        "basis_general_knowledge": false,
+        "real_product_answered": false
+      },
+      "removed_citations": 0
+    }
+  ],
+  "provider": "TekaTech POST /query (http://127.0.0.1:8000)",
+  "model": "openai:gpt-5-mini",
+  "prompt_version": "gk-v2",
+  "origin": "live"
+}

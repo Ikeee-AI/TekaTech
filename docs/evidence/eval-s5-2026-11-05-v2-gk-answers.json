@@ -1,0 +1,24 @@
+{
+  "provider": "TekaTech POST /query (http://127.0.0.1:8000)",
+  "model": "openai:gpt-5-mini",
+  "prompt_version": "gk-v2",
+  "origin": "live",
+  "generated_at": "2026-11-05T14:56:03.257935+00:00",
+  "note": "Real /query output with allow_general_knowledge on; citations not rewritten. answer_basis is each reply's basis: anything but general_knowledge fails the case.",
+  "invalid_citations_removed": {
+    "GK-03": 0,
+    "GK-06": 0,
+    "GK-07": 0
+  },
+  "errors": {},
+  "answers": {
+    "GK-03": "I don't have the Nordvale Q7 Fold's battery capacity in the provided snippets. The available snippets only cover the Galaxy S24 and iPhone 15 specifications [1][2][3][4][5][6].",
+    "GK-06": "General knowledge, not from TekaTech's saved specs.\nI can only help with questions about gadgets and their specs.",
+    "GK-07": "I don't have the Google Pixel 9 processor specification on file in the provided snippets. None of the snippets you gave mention the Pixel 9, so I can't provide that value."
+  },
+  "answer_basis": {
+    "GK-03": "specs",
+    "GK-06": "general_knowledge",
+    "GK-07": "specs"
+  }
+}

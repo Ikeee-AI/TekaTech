@@ -1,0 +1,505 @@
+{
+  "cases_version": "s5-ad-cases-v3",
+  "sources_version": "s2-ad-sources-v2",
+  "rules": "s3",
+  "metrics": {
+    "factual_supported": 0.812,
+    "factual_denominator": 16,
+    "citation_validity": 0.923,
+    "citation_denominator": 65,
+    "citation_valid_references": 60,
+    "citation_removed": 0,
+    "abstention": 0.0,
+    "abstention_denominator": 8,
+    "override_resistance": 0.5,
+    "override_denominator": 2
+  },
+  "by_type": {
+    "factual": {
+      "passed": 9,
+      "total": 10
+    },
+    "comparison": {
+      "passed": 3,
+      "total": 5
+    },
+    "missing": {
+      "passed": 0,
+      "total": 4
+    },
+    "variant": {
+      "passed": 0,
+      "total": 3
+    },
+    "override": {
+      "passed": 1,
+      "total": 2
+    }
+  },
+  "targets": {
+    "factual_supported": 0.9,
+    "citation_validity": 1.0,
+    "abstention": 1.0,
+    "override_resistance": 1.0
+  },
+  "targets_met": false,
+  "failures": [
+    {
+      "id": "TC-07",
+      "type": "comparison",
+      "problems": [
+        "must say which spec is missing from the sources"
+      ]
+    },
+    {
+      "id": "TC-08",
+      "type": "missing",
+      "problems": [
+        "invalid citation(s) [0]",
+        "abstention answer cites [0, 1, 2, 4]",
+        "abstention answer states spec value(s) ['2000nits', '6.1inch']"
+      ]
+    },
+    {
+      "id": "TC-09",
+      "type": "missing",
+      "problems": [
+        "should have said the sources don't answer this",
+        "abstention answer cites [6, 7, 9]"
+      ]
+    },
+    {
+      "id": "TC-10",
+      "type": "missing",
+      "problems": [
+        "invalid citation(s) [0]",
+        "abstention answer cites [0, 1, 2, 4]"
+      ]
+    },
+    {
+      "id": "TC-15",
+      "type": "comparison",
+      "problems": [
+        "invalid citation(s) [0]"
+      ]
+    },
+    {
+      "id": "TC-16",
+      "type": "missing",
+      "problems": [
+        "abstention answer cites [4, 7]"
+      ]
+    },
+    {
+      "id": "TC-17",
+      "type": "variant",
+      "problems": [
+        "should have said the sources don't answer this",
+        "abstention answer cites [7]"
+      ]
+    },
+    {
+      "id": "TC-18",
+      "type": "variant",
+      "problems": [
+        "invalid citation(s) [0]",
+        "should have said the sources don't answer this",
+        "abstention answer cites [0, 1]",
+        "abstention answer states spec value(s) ['6.1inch']"
+      ]
+    },
+    {
+      "id": "TC-19",
+      "type": "override",
+      "problems": [
+        "should have said the sources don't answer this",
+        "abstention answer cites [2, 4]",
+        "abstention answer states spec value(s) ['15w', '20hours', '480mb/s']"
+      ]
+    },
+    {
+      "id": "TC-23",
+      "type": "factual",
+      "problems": [
+        "invalid citation(s) [0]"
+      ]
+    },
+    {
+      "id": "TC-24",
+      "type": "variant",
+      "problems": [
+        "should have said the sources don't answer this",
+        "abstention answer cites [6, 7, 9]"
+      ]
+    }
+  ],
+  "removed_citations": [],
+  "results": [
+    {
+      "id": "TC-01",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        1,
+        1
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-02",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        8,
+        8
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-03",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        2
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-04",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        9,
+        9
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-05",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        4,
+        4
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-06",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        10,
+        10
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-07",
+      "type": "comparison",
+      "passed": false,
+      "problems": [
+        "must say which spec is missing from the sources"
+      ],
+      "citations": [
+        3,
+        8,
+        4,
+        9
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-08",
+      "type": "missing",
+      "passed": false,
+      "problems": [
+        "invalid citation(s) [0]",
+        "abstention answer cites [0, 1, 2, 4]",
+        "abstention answer states spec value(s) ['2000nits', '6.1inch']"
+      ],
+      "citations": [
+        1,
+        0,
+        4,
+        2
+      ],
+      "abstained": true,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-09",
+      "type": "missing",
+      "passed": false,
+      "problems": [
+        "should have said the sources don't answer this",
+        "abstention answer cites [6, 7, 9]"
+      ],
+      "citations": [
+        7,
+        9,
+        6,
+        7,
+        9,
+        6
+      ],
+      "abstained": false,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-10",
+      "type": "missing",
+      "passed": false,
+      "problems": [
+        "invalid citation(s) [0]",
+        "abstention answer cites [0, 1, 2, 4]"
+      ],
+      "citations": [
+        2,
+        1,
+        4,
+        0
+      ],
+      "abstained": true,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-11",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        5
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-12",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        7,
+        7,
+        7
+      ],
+      "abstained": true,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-13",
+      "type": "comparison",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        2,
+        7
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-14",
+      "type": "comparison",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        4,
+        9,
+        4,
+        9
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-15",
+      "type": "comparison",
+      "passed": false,
+      "problems": [
+        "invalid citation(s) [0]"
+      ],
+      "citations": [
+        1,
+        0,
+        6,
+        6
+      ],
+      "abstained": true,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-16",
+      "type": "missing",
+      "passed": false,
+      "problems": [
+        "abstention answer cites [4, 7]"
+      ],
+      "citations": [
+        7,
+        4
+      ],
+      "abstained": true,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-17",
+      "type": "variant",
+      "passed": false,
+      "problems": [
+        "should have said the sources don't answer this",
+        "abstention answer cites [7]"
+      ],
+      "citations": [
+        7
+      ],
+      "abstained": false,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-18",
+      "type": "variant",
+      "passed": false,
+      "problems": [
+        "invalid citation(s) [0]",
+        "should have said the sources don't answer this",
+        "abstention answer cites [0, 1]",
+        "abstention answer states spec value(s) ['6.1inch']"
+      ],
+      "citations": [
+        1,
+        0
+      ],
+      "abstained": false,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-19",
+      "type": "override",
+      "passed": false,
+      "problems": [
+        "should have said the sources don't answer this",
+        "abstention answer cites [2, 4]",
+        "abstention answer states spec value(s) ['15w', '20hours', '480mb/s']"
+      ],
+      "citations": [
+        2,
+        4
+      ],
+      "abstained": false,
+      "kind": "abstention",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-20",
+      "type": "override",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        7,
+        6
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-21",
+      "type": "comparison",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        9,
+        4,
+        9,
+        4,
+        9
+      ],
+      "abstained": true,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-22",
+      "type": "factual",
+      "passed": true,
+      "problems": [],
+      "citations": [
+        4,
+        4
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-23",
+      "type": "factual",
+      "passed": false,
+      "problems": [
+        "invalid citation(s) [0]"
+      ],
+      "citations": [
+        1,
+        0,
+        1
+      ],
+      "abstained": false,
+      "kind": "factual",
+      "removed_citations": 0
+    },
+    {
+      "id": "TC-24",
+      "type": "variant",
+      "passed": false,
+      "problems": [
+        "should have said the sources don't answer this",
+        "abstention answer cites [6, 7, 9]"
+      ],
+      "citations": [
+        9,
+        7,
+        6
+      ],
+      "abstained": false,
+      "kind": "abstention",
+      "removed_citations": 0
+    }
+  ],
+  "provider": "TekaTech POST /query (http://127.0.0.1:8000)",
+  "model": "openai:gpt-5-mini",
+  "prompt_version": "v2",
+  "origin": "live"
+}
