@@ -1,6 +1,6 @@
 # Plan: move the backend API from Render to Railway
 
-**Status: plan only, 6 Nov 2026 (draft for the owner).** Nothing has been signed up for, paid for, created or changed. Every step that spends money, creates an account, adds a secret or changes production waits for Ikeee-AI's explicit go. The frontend stays on Render (`tekatech-web`). The database stays on Supabase.
+**Status: approved by Ikeee-AI on Sat 7 Nov 2026 00:52 Manila ("yes we go for it, later this Saturday"). Work starts after the Sprint 5 review (Sat 7 Nov 15:00), with step 1 on the Free Trial.** Hobby ($5/month) is only needed when the trial ends, about 30 days later; confirm it then. As of this update, nothing has been signed up for, paid for, created or changed. Every step that spends money, creates an account, adds a secret or changes production waits for Ikeee-AI's explicit go. The frontend stays on Render (`tekatech-web`). The database stays on Supabase.
 
 Owner: Ikeee-AI (hosting, CI/CD, secrets). Backend code change: Manuel (one small change in `backend/main.py`, see step 3). Review: one other teammate per PR, as usual.
 
@@ -16,7 +16,7 @@ So the move is optional. Reasons that could still justify it:
 | Frontend and backend on different providers, if the instructor or team wants that. | Work and risk close to Demo Day: 2 workflows, 1 backend change, about 40 doc mentions of the Render URL, a new secret, and a cutover. |
 | Railway lets you choose the Singapore region (`asia-southeast1-eqsg3a`), the same region as today. | Rollback to commits from before the cutover needs a different path (section 6). |
 
-**Owner decision needed:** (a) go ahead anyway, (b) go ahead only after Sprint 5 is reviewed, or (c) don't move, and fix cold starts another way, for example the existing warm-up step before demos. This plan assumes (b).
+**Owner decision needed:** (a) go ahead anyway, (b) go ahead only after Sprint 5 is reviewed, or (c) don't move, and fix cold starts another way, for example the existing warm-up step before demos. This plan assumes (b). **Decided 7 Nov 00:52 Manila: (b), starting later on Sat 7 Nov.**
 
 ## 1. Cost (Railway pricing page, read 6 Nov 2026)
 
@@ -122,7 +122,7 @@ No data moves, so there is nothing to restore.
 
 ## 8. Open questions for the owner
 
-1. Move or not (section 0)? If yes, when? This plan assumes after the Sprint 5 review.
+1. ~~Move or not (section 0)? If yes, when?~~ **Answered 7 Nov: yes, after the Sprint 5 review on Sat 7 Nov.**
 2. Approve Hobby at $5/month from the end of the trial, with a usage limit of about $10?
 3. Custom domain (for example `api.<domain>`), or the free `*.up.railway.app` URL?
 4. Who reviews the workflow PR: Manuel (backend) or Jopher?
