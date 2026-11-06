@@ -739,7 +739,8 @@ None.
 - #239 reviews, both on head `acb304a`: Manuel (`s2302827-byte`) `APPROVED` at 14:38, after reading the diff, running it locally and confirming the new test fails against the old `GadgetList.jsx`; Mika (`meka-moka`) `APPROVED` at 14:55, no comment — https://github.com/Ikeee-AI/TekaTech/pull/239
 - `pr-gate` **PASS** (manual gate; branch protection is not enforced): two other-teammate approvals on the head commit; Backend, Frontend and Database checks green; files `frontend/src/pages/GadgetList.jsx` and `GadgetList.priceFilter.test.jsx` only (Jopher's filter logic, one owner); no SQL, no env files; mergeable.
 - Squash-merged at the owner's instruction: #239 → `db49bc2` (07:20:04 UTC, 15:20 Manila).
-- Main CI run for `db49bc2` started — https://github.com/Ikeee-AI/TekaTech/actions/runs/42180181404 — **deploy and production check still running when this entry was written** (result to be added below).
+- Main CI for `db49bc2` succeeded, every job including "Main guard" and "Deploy main after checks" (finished 07:23:07 UTC) — https://github.com/Ikeee-AI/TekaTech/actions/runs/42180181404 (added after the entry was first written, when the run finished).
+- Deployed smoke **passed** at 07:23:39 UTC (15:23 Manila) on commit `db49bc2`: first attempt, readiness passed, CORS passed, 4 gadgets, database latency 505.9 ms — evidence: `.local/deployed-smoke-db49bc2.json` (local, not committed). The slider itself was not clicked through on production.
 
 **Errors and fixes**
 None.
@@ -756,8 +757,7 @@ None.
 None new.
 
 **Plan alignment**
-- S5-JO Max Price slider (#239): reviewed, checks green, merged; **Partial** until deploy and production check pass.
+- S5-JO Max Price slider (#239): **Done** (reviewed, checks green, merged, deployed, production smoke passed on `db49bc2`).
 
 **Next**
-- Add the deploy and production check result for `db49bc2` — Ikeee-AI — 6 Nov.
 - Decide on tagging v1.1.0 and finalise its release record — Ikeee-AI — before Sat 7 Nov 15:00.
