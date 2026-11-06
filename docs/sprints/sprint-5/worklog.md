@@ -808,7 +808,8 @@ None.
 - #240 opened with Manuel and Jopher as reviewers; its body asks either of them for a time for the second-member rollback demonstration — https://github.com/Ikeee-AI/TekaTech/pull/240
 - Manuel `APPROVED` #240 on head `8dba2c9` at 16:14 (ran the tests and secret guard; checked the metrics row against the evidence file). Non-blocking note: `CHANGELOG.md` line 7 still said the tag wasn't created.
 - `pr-gate` **PASS** on #240 (manual gate; branch protection not enforced): Manuel's approval on the head commit, three required checks green, one owner (DevOps docs/metrics/script), no SQL, no env files, mergeable. Squash-merged at the owner's instruction → `3d9be35` (08:31:08 UTC, 16:31 Manila).
-- Main CI and deploy for `3d9be35` — https://github.com/Ikeee-AI/TekaTech/actions/runs/42188253567 — **still running when this entry was written** (result to be added below).
+- Main CI for `3d9be35` succeeded, every job including deploy (finished 08:41:34 UTC) — https://github.com/Ikeee-AI/TekaTech/actions/runs/42188253567 (added after the entry was first written). Deployed smoke **passed** at 08:41:47 UTC (16:41 Manila) on `3d9be35`: first attempt, readiness and CORS passed, 4 gadgets, database 452.7 ms — `.local/deployed-smoke-3d9be35.json` (local). `v1.1.0` stays on `db49bc2`; `3d9be35` adds docs and the metrics script only.
+- 16:34 follow-up comment on #240 asking Manuel and Jopher again for a demo time — https://github.com/Ikeee-AI/TekaTech/pull/240#issuecomment-6680735822 . No reply by 16:41.
 - Manuel's CHANGELOG note fixed on this branch (`0b587f0`): line 7 now says tagged 6 Nov 15:36 with the release link. Left out of #240 so his approval stayed on the head commit.
 
 **Errors and fixes**
@@ -833,5 +834,4 @@ None.
 - S5-IK stable release: **Partial** — tag, release notes, record on `main` and final metrics row done; second-member rollback demonstration open.
 
 **Next**
-- Add the deploy and production check result for `3d9be35` — Ikeee-AI — 6 Nov.
 - Rollback demonstration with Manuel or Jopher, then record it and open the follow-up PR from this branch — before Sat 7 Nov 15:00.
