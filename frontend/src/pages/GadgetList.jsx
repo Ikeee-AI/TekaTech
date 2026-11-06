@@ -196,6 +196,14 @@ export default function GadgetList() {
     return { min, max, bins, peak: Math.max(...bins) }
   }, [gadgets])
 
+  // The slider moves in steps counted from the lowest price, so its top stop can fall just short of
+  // the highest price (14,999 + 100 × 300 = 44,999 when the top is 45,000). The last stop therefore
+  // means "no price limit"; otherwise the far right would still hide the most expensive gadget.
+  const priceStep = priceStats ? Math.max(1, Math.round((priceStats.max - priceStats.min) / 100)) : 1
+  function setPriceFromSlider(value) {
+    updateFilter(setMaxPrice)(value + priceStep > priceStats.max ? null : value)
+  }
+
   const priceLimit = maxPrice ?? priceStats?.max ?? null
   const priceFilterActive = priceStats && maxPrice != null && maxPrice < priceStats.max
 
@@ -405,9 +413,9 @@ export default function GadgetList() {
                     aria-valuetext={formatPrice(priceLimit)}
                     min={priceStats.min}
                     max={priceStats.max}
-                    step={Math.max(1, Math.round((priceStats.max - priceStats.min) / 100))}
+                    step={priceStep}
                     value={priceLimit}
-                    onChange={(e) => updateFilter(setMaxPrice)(Number(e.target.value))}
+                    onChange={(e) => setPriceFromSlider(Number(e.target.value))}
                     className="w-full accent-sage-700"
                   />
                   <div className="flex justify-between font-mono text-[11px] text-slate-600">
