@@ -695,3 +695,40 @@ None new.
 
 **Next**
 - Fix the Poco x7 Pro release date with the #201 catalog work — Ikeee-AI — when doing #201.
+
+## 2026-11-06 14:53 Asia/Manila — #235 and #236 gated, merged and verified on production; #239 review ping
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code ran the gate, merges and smoke check at the owner's request) · **Task:** S5-IK (release/wrap-up), S5-AD takeover (gk-v2 prompt) · **Branch:** `tekatech/s5-ik-6nov`
+
+**Done**
+- Open-PR review check: #235, #236 (Ikeee-AI) and #239 (Jopher) had no reviews at first; all checks green.
+- Added Jopher (`s2100932`) as reviewer on #235 and #236 at the owner's request. Manuel's approvals landed at about the same time (06:35–06:36 UTC), so Jopher's review was not needed for the gate; his request is still open on both merged PRs.
+- `pr-gate` **PASS** on both (manual gate; branch protection is not enforced on this private repo):
+  - #235: Manuel `APPROVED` on head `1cb998a`; Backend, Frontend and Database checks green; DevOps docs only (one owner); no SQL, no env files; mergeable.
+  - #236: Manuel `APPROVED` on head `d944d6a`; same three checks green plus offline prompt evaluation; prompts/eval only (S5-AD takeover by Ikeee-AI); no SQL, no env files; mergeable.
+- Squash-merged at the owner's instruction: #235 → `6d8c5d5` (06:44:27 UTC), #236 → `a7c5c46` (06:44:31 UTC) — https://github.com/Ikeee-AI/TekaTech/pull/235, https://github.com/Ikeee-AI/TekaTech/pull/236
+- Main CI for `a7c5c46` succeeded, every job including "Main guard" and "Deploy main after checks" (finished 06:49:41 UTC) — https://github.com/Ikeee-AI/TekaTech/actions/runs/42176368163 . The `6d8c5d5` run also succeeded (run 42176362114).
+- Deployed smoke **passed** at 06:50:28 UTC (14:50 Manila) on commit `a7c5c46`: first attempt, readiness passed, CORS passed, 4 gadgets, database latency 942.5 ms — evidence: `.local/deployed-smoke-a7c5c46.json` (local, not committed).
+- Asked Manuel and Mika to review #239 — https://github.com/Ikeee-AI/TekaTech/pull/239#issuecomment-6679005522
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `read tcp …->20.205.243.168:443: wsarecv: An existing connection was forcibly closed by the remote host.` on `gh pr list --state merged` | Transient network drop to GitHub | Re-ran the same command; succeeded. Closed |
+
+**Conflicts and contradictions**
+None.
+
+**Decisions**
+- Merge #235 and #236 on Manuel's approval without waiting for Jopher's extra review — the gate needs one other-teammate approval — Ikeee-AI (owner).
+
+**Blockers / risks**
+- #239 (S5-JO Max Price slider) has no review yet — Manuel or Mika — before the Sat 7 Nov 15:00 deadline.
+
+**Plan alignment**
+- S5-IK wrap-up (#235): **Done** for the docs it carries (reviewed, checks green, merged, deployed, production verified). The v1.1.0 release record is still a draft; the tag is not created.
+- S5-AD takeover gk-v2 (#236): **Done** (reviewed, checks green, merged, deployed, production verified on `a7c5c46`).
+
+**Next**
+- Get #239 reviewed, then gate and merge it — Manuel/Mika review, Ikeee-AI merges — before Sat 7 Nov 15:00.
+- Decide on tagging v1.1.0 and finalise its release record — Ikeee-AI — before Sat 7 Nov 15:00.
+- Remove Jopher's leftover review request on #235/#236 if wanted (optional) — Ikeee-AI.
