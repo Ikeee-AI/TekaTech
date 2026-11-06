@@ -6,14 +6,14 @@
 
 **Status cut-off: Thursday 5 November 2026, about 22:30 Manila (draft).** Production serves `1170d19` (current `main`); the deployed smoke check passed at 19:43:21 (exact commit, readiness, database path 236 ms, CORS, 4 gadgets). Refresh this packet before the Saturday review.
 
-**Sprint 5 gate** ("stable within measured pilot conditions, with documented limits, support ownership and recovery capability"): **partly met.** The pilot did not run (scope change below). Limits, support ownership and recovery are documented; the second-member rollback demonstration is still to come.
+**Sprint 5 gate** ("stable within measured pilot conditions, with documented limits, support ownership and recovery capability"): **partly met.** The pilot did not run (scope change below). Limits, support ownership and recovery are documented; the second-member rollback demonstration was done by Jopher on 6 Nov (twice, including a rollback to the tagged `v1.1.0`).
 
 | Gate condition | Evidence | Status |
 | --- | --- | --- |
 | Measured pilot (≥ 48 h) | **Not run.** On hold since 3 Nov; moved past Sprint 5 on 5 Nov (`docs/scope-changes.md`). Pre-pilot measurements only: read-route latency/errors (#230), failure-drill controls (#233), fresh checkout (#232) | ❌ Moved |
 | Documented limits | `docs/releases/v1.1.0.md` "Known limitations"; `CHANGELOG.md` | ✅ (released `v1.1.0`, 6 Nov) |
 | Support ownership | `docs/devops/support-and-maintenance.md`: owners and backups per area, severity and response, maintenance checklist | ✅ (in this branch, not merged yet) |
-| Recovery capability | `rollback.yml` rehearsed on production 31 Oct (1 min 35 s); restore rehearsal on dev (31 Oct, before `user_gadgets`/`user_questions`). **Second-member deploy/rollback demonstration not done yet** | ⚠️ Partial |
+| Recovery capability | `rollback.yml` rehearsed on production 31 Oct (1 min 35 s); restore rehearsal on dev (31 Oct, before `user_gadgets`/`user_questions`). **Second-member demonstration done by Jopher, 6 Nov** (four `rollback.yml` runs, 1 min 33 s – 1 min 41 s, all green; #237, #240) | ✅ |
 | Final deployed revision passes smoke | Passing on every merge this week; final candidate on Sat 7 Nov | ⏳ Sat |
 | No unresolved critical/high incident | No production incident in Sprint 5 so far. One on 3 Nov (SQL applied to dev only, 49 min) was resolved (`docs/devops/incidents.md`) | ✅ |
 
@@ -41,7 +41,7 @@ Status uses the Definition of Done: reviewed, checks passed, merged, deployed an
 | **S5-MI** | Mika | Screen-reader names (#214), image preview matches the card (#216), Compare add gadget (#215; fixes taken over in #222) | **Partial** | Pilot usability findings (no pilot); deck archive and component/style handover notes not seen |
 | **S5-MA** | Manuel | Troubleshooting guide (#220), GK eval adapter (#189), latency/error samples (#230), `eval_adapter --scope` (#228), failure-drill controls check (#233); #205 decided and closed; reviewed #221–#227, #232, #234 | **Partial** (pilot parts only) | Paid `/query` sample (approved ≤ $0.10) and the "budget held" write-up; "budgets hold during the measured pilot" can't be shown without a pilot |
 | **S5-JO** | Jopher | Image-link check (#208), sign-up feedback (#198), account page (#209), demo script (#219), quick-start and feature-maintenance notes (#231), fresh-checkout record (#232); production click-through 4 Nov; reviewed #222, #229, #230, #233 | **Done** except pilot journeys | Pilot journeys (no pilot) |
-| **S5-IK** | Ikeee-AI | Pilot plan and sampler (#183); Actions-minutes cut (#182); admin-curated catalog (#195), My Gadgets (#197), spec cards (#211), gadget chat (#210); GK UI takeover (#193); gates, merges and smoke checks for every PR above; Render check; #208 admin check; release record, changelog, support checklist (#235); gk-v2 prompt (#236, S5-AD takeover); **`v1.1.0` tagged on `db49bc2` (6 Nov)**; Sprint 5 final metrics row (6 Nov) | **Partial** | 48-hour observation report (no pilot); second-member rollback demonstration; retrospective |
+| **S5-IK** | Ikeee-AI | Pilot plan and sampler (#183); Actions-minutes cut (#182); admin-curated catalog (#195), My Gadgets (#197), spec cards (#211), gadget chat (#210); GK UI takeover (#193); gates, merges and smoke checks for every PR above; Render check; #208 admin check; release record, changelog, support checklist (#235); gk-v2 prompt (#236, S5-AD takeover); **`v1.1.0` tagged on `db49bc2` (6 Nov)**; Sprint 5 final metrics row (6 Nov) | **Partial** | 48-hour observation report (no pilot); retrospective |
 
 Merged since `v1.0.0`: 55 commits on `main` (as of `1170d19`); 58 at the `v1.1.0` tag (`db49bc2`), adding #235, #236 and #239 (Jopher's Max Price slider fix, approved by Manuel and Mika). Takeovers this sprint are recorded in the Sprint 5 worklog "Takeovers" tables (S5-MI #172 UI, S5-MI #215 fixes, S5-AD).
 
@@ -70,7 +70,7 @@ The one failed run was a PR run on the #210 branch (3 Nov), fixed before merge; 
 | Risk | Mitigation | Owner | Date |
 | --- | --- | --- | --- |
 | The pilot didn't run, so the Sprint 5 gate can't be met as written | Disclosed as a scope change; pre-pilot evidence labelled as such; run the pilot after the course if the team continues | Ikeee-AI | Disclosed 5 Nov |
-| Rollback not yet demonstrated by a second member | Book Manuel or Jopher for a supervised `rollback.yml` run on a docs-only pair of commits, following the runbook | Ikeee-AI + Manuel/Jopher | Fri 6 Nov |
+| Rollback not yet demonstrated by a second member | **Closed 6 Nov:** Jopher ran it twice (docs-only pairs, the second back to `v1.1.0`) | Jopher | Done |
 | AI quality targets missed; prompt defects TC-24, GK-06 | Owner decides whether to bump to `v2`/`gk-v2` with a ~$0.02 dev rerun, or disclose and defer | Ikeee-AI (prompt owner) | Fri 6 Nov |
 | GitHub Actions minutes run out again | Batch small changes (5 Nov rule); check billing usage before release day | Ikeee-AI | Sat 7 Nov |
 | Home internet drops (merges and metrics failed on 5 Nov) | Confirm every merge through the API before the next; rerun metrics when stable | Ikeee-AI | Ongoing |
@@ -90,6 +90,6 @@ The one failed run was a PR run on the #210 branch (3 Nov), fixed before merge; 
 - [ ] Adrian's Sprint 4 retro comment on #168 (still missing; Jopher, Mika and Manuel commented).
 - [ ] Mika: deck archive (versioned) and component/style handover notes (S5-MI), or a status comment.
 - [ ] Manuel: paid `/query` sample (≤ 10 questions, ≤ $0.10) and the "budget held" write-up.
-- [ ] Manuel or Jopher: second-member deploy/rollback demonstration.
+- [x] Manuel or Jopher: second-member deploy/rollback demonstration (Jopher, 6 Nov, #237 and #240).
 - [x] Ikeee-AI: rerun the metrics; final metrics row; tag `v1.1.0`; final smoke check (all 6 Nov: smoke 15:23, tag 15:36, metrics row 15:45).
 - [ ] Standups: none recorded this sprint; write "missing" in the final report rather than reconstructing them.

@@ -70,6 +70,10 @@ For an urgent outage, the DevOps Engineer may redeploy the last known good commi
 
 Rollback rehearsal status: **RUN on production, 31 October 2026** ([evidence](evidence/rollback-rehearsal-2026-10-31.md)). `rollback.yml` restored `7d2ab44` in 1 min 35 s and rolled forward to `5aa4635` in 1 min 45 s, both smoke-tested. The two commits differed only in docs/evaluation files, so the rehearsal had no user impact; a rollback across a code or schema change has not been rehearsed.
 
+Second-member demonstration: **done by Jopher, 6 November 2026.** Jopher (`s2100932`) ran `rollback.yml` on production twice on 6 Nov: (1) 11:10–11:17 Manila, back to `e22758b` in 1 min 37 s ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/42154924236)) and forward to `1170d19` in 1 min 41 s ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/42155490274)), results on [#237](https://github.com/Ikeee-AI/TekaTech/issues/237) at 11:22; (2) 16:35–16:39 Manila, back to the tagged `db49bc2` (`v1.1.0`) in 1 min 39 s ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/42188771228)) and forward to `3d9be35` in 1 min 33 s ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/42189100078)), results on [#240](https://github.com/Ikeee-AI/TekaTech/pull/240). All four runs succeeded with their built-in smoke checks; each pair differed only in docs/script files, so users saw no change. A rollback across a code or schema change is still not rehearsed.
+
+Tips from that demonstration: the **Run workflow** button only appears after you open **Rollback production** in the Actions workflow list; and the job stays yellow (running) for about a minute while the website rebuilds, which is normal.
+
 ## Database backup and restore
 
 Production runs on the Supabase free plan, which has no point-in-time recovery or downloadable scheduled backups. The team's backup method is a logical export of the six application tables (the original five plus `user_gadgets`, My Gadgets, since 3 Nov 2026) through the REST API, restored into a disposable PostgreSQL + pgvector built from the tracked SQL:
