@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { LogIn, Mail, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { initialAuthLink, initialPathname } from '../utils/authLink'
+import { takeReturnPath } from '../utils/returnPath'
 import Alert from './ui/Alert'
 import Button from './ui/Button'
 
@@ -20,15 +21,26 @@ function clearLinkErrorFromUrl() {
  * - a working link: "Email Confirmed", once supabase-js has signed the user in;
  * - an expired or used link: a plain message, plus a way to get a new link.
  * A bad password-reset link is left to ResetPassword, which has its own message.
+ * After a working link, the user is taken back to the page they signed up from, if this
+ * browser remembers one (utils/returnPath.js); the notice stays on top of that page.
  * `link` and `pathname` default to what the URL held when the app loaded (utils/authLink.js).
  */
 export default function AuthLinkNotice({ link = initialAuthLink, pathname = initialPathname }) {
   const { user, loading } = useAuth()
+  const navigate = useNavigate()
   const [notice, setNotice] = useState(() => (pathname === '/reset-password' ? null : link))
+  const returned = useRef(false)
 
   useEffect(() => {
     if (notice?.kind === 'error') clearLinkErrorFromUrl()
   }, [notice])
+
+  useEffect(() => {
+    if (returned.current || notice?.kind !== 'confirmed' || loading || !user) return
+    returned.current = true
+    const path = takeReturnPath()
+    if (path) navigate(path, { replace: true })
+  }, [notice, loading, user, navigate])
 
   if (!notice) return null
   // Wait for the session supabase-js creates from the link before saying who is signed in.

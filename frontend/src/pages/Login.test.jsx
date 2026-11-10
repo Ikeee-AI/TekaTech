@@ -3,12 +3,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { AuthContext } from '../context/authContextValue'
+import { takeReturnPath } from '../utils/returnPath'
 import Login from './Login'
 
 const notConfirmed = () =>
   Object.assign(new Error('Email not confirmed'), { code: 'email_not_confirmed', status: 400 })
 
-function renderLogin({ url = '/login', auth = {} } = {}) {
+function renderLogin({ url = '/login', auth = {}, from } = {}) {
   const value = {
     signIn: vi.fn().mockResolvedValue(undefined),
     signUp: vi.fn(),
@@ -16,7 +17,7 @@ function renderLogin({ url = '/login', auth = {} } = {}) {
     ...auth,
   }
   render(
-    <MemoryRouter initialEntries={[url]}>
+    <MemoryRouter initialEntries={[from ? { pathname: url.split('?')[0], search: url.includes('?') ? `?${url.split('?')[1]}` : '', state: { from } } : url]}>
       <AuthContext.Provider value={value}>
         <Login />
       </AuthContext.Provider>
@@ -27,7 +28,41 @@ function renderLogin({ url = '/login', auth = {} } = {}) {
 
 const type = (label, text) => fireEvent.change(screen.getByLabelText(label), { target: { value: text } })
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  window.localStorage.clear()
+})
+
+describe('Sign up remembers the starting page (#196 item 4)', () => {
+  const FROM = { pathname: '/gadgets/42', search: '?ask=chip', hash: '' }
+  const signUpSent = () => vi.fn().mockResolvedValue({ user: { identities: [{}] }, session: null })
+
+  it('saves the page the user came from when the confirmation email is sent', async () => {
+    renderLogin({ url: '/login?mode=signup', from: FROM, auth: { signUp: signUpSent() } })
+    type(/email/i, 'new.user@example.com')
+    type(/password/i, 'long-enough-1')
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Up' }))
+    await screen.findByText('Account Created')
+    expect(takeReturnPath()).toBe('/gadgets/42?ask=chip')
+  })
+
+  it('saves it again when a new confirmation email is requested', async () => {
+    renderLogin({ url: '/login?mode=resend', from: FROM })
+    type(/email/i, 'new.user@example.com')
+    fireEvent.click(screen.getByRole('button', { name: /send confirmation email/i }))
+    await screen.findByText('Check Your Email')
+    expect(takeReturnPath()).toBe('/gadgets/42?ask=chip')
+  })
+
+  it('saves nothing when the user opened Log In directly', async () => {
+    renderLogin({ url: '/login?mode=signup', auth: { signUp: signUpSent() } })
+    type(/email/i, 'new.user@example.com')
+    type(/password/i, 'long-enough-1')
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Up' }))
+    await screen.findByText('Account Created')
+    expect(window.localStorage.length).toBe(0)
+  })
+})
 
 describe('Login modes from the URL', () => {
   it('opens Sign Up with ?mode=signup', () => {

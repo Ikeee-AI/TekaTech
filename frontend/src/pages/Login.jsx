@@ -9,6 +9,7 @@ import Alert from '../components/ui/Alert'
 import Button from '../components/ui/Button'
 import BackLink from '../components/ui/BackLink'
 import { authErrorMessage, isEmailNotConfirmed, MIN_PASSWORD_LENGTH } from '../utils/authErrors'
+import { saveReturnPath } from '../utils/returnPath'
 
 // ?mode=signup or ?mode=resend opens the page in that mode (#196); anything else is Log In.
 const LINK_MODES = ['signup', 'resend']
@@ -70,6 +71,8 @@ export default function Login() {
   // Neutral on purpose: the same message whether or not the address has an account.
   async function sendConfirmation() {
     await resendConfirmation(email)
+    // The new link should bring the user back to the page they came from too (#196).
+    if (from) saveReturnPath(from)
     setError(null)
     setUnconfirmed(false)
     setNotice('resent')
@@ -110,6 +113,9 @@ export default function Login() {
           toast.success('Account created')
           navigate(landing(data.user), { replace: true })
         } else {
+          // Confirmation email sent: remember where the user came from, so the link
+          // brings them back there (AuthLinkNotice) instead of the catalog (#196).
+          if (from) saveReturnPath(from)
           switchMode('login')
           setNotice('confirm')
         }
