@@ -28,8 +28,8 @@ def _blocks():
 
 def test_pack_is_not_empty_and_names_are_unique():
     keys = [g["key"] for g in DATA["gadgets"]]
-    assert len(keys) == len(set(keys)) >= 10
-    assert sum(1 for g in DATA["gadgets"] if g["action"] == "add") == 6
+    assert len(keys) == len(set(keys)) >= 24
+    assert sum(1 for g in DATA["gadgets"] if g["action"] == "add") == 20
 
 
 @pytest.mark.parametrize("gadget", DATA["gadgets"], ids=lambda g: g["key"])

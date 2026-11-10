@@ -158,6 +158,345 @@
       ]
     },
     {
+      "key": "iphone-16",
+      "action": "add",
+      "name": "iPhone 16",
+      "brand": "Apple",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on Apple's tech-specs page.",
+      "release_date": null,
+      "release_note": "Year introduced: 2024. Apple's page gives only 'Year introduced', so no full date is entered.",
+      "image_url": "https://cdsassets.apple.com/live/7WUAS350/images/tech-specs/iphone-16.png",
+      "image_note": "Checked 10 Nov: HTTP 200, image/png, viewed, no Cross-Origin-Resource-Policy header.",
+      "specs": [
+        {
+          "source_url": "https://support.apple.com/en-ph/121029",
+          "extraction": "page text as returned by the fetch tool (full page); key values re-checked in the page HTML",
+          "text": "Year introduced: 2024\n\nChip: A18 chip\nCPU: 6-core CPU with 2 performance and 4 efficiency cores\nGPU: 5-core GPU\nNeural Engine: 16-core Neural Engine\nStorage: 128GB, 256GB, 512GB\n\nDisplay: Super Retina XDR, 6.1-inch (diagonal) all-screen OLED\nResolution: 2556-by-1179-pixel resolution at 460 ppi\nBrightness: 1000 nits max (typical); 1600 nits peak (HDR); 2000 nits peak (outdoor)\nContrast ratio: 2,000,000:1 (typical)\n\nVideo playback: up to 22 hours\nVideo playback (streamed): up to 18 hours\nAudio playback: up to 80 hours\nFast charge: up to 50% in 30 minutes with a 20W adapter or higher (USB-C) or a 30W adapter or higher (MagSafe)\nMagSafe wireless charging: up to 25W\nQi2 wireless charging: up to 25W\n\nRear camera: 48MP Fusion Main, 26 mm, f/1.6, sensor-shift optical image stabilization\nRear camera: 12MP Ultra Wide, 13 mm, f/2.2, 120 degree field of view\nZoom: 2x optical zoom in, 2x optical zoom out; 4x optical zoom range; digital zoom up to 10x\nFront camera: TrueDepth, 12MP, f/1.9\nVideo: 4K Dolby Vision recording at 24, 25, 30 or 60 fps\n\nWidth: 71.6 mm\nHeight: 147.6 mm\nDepth: 7.80 mm\nWeight: 170 grams\nWater resistance: IP68 (maximum depth of 6 meters up to 30 minutes) under IEC standard 60529\n\nCellular: 5G sub-6 GHz and mmWave with 4x4 MIMO; Gigabit LTE with 4x4 MIMO\nWi-Fi: Wi-Fi 7 (802.11be) with 2x2 MIMO\nBluetooth: 5.3\nUltra Wideband: second-generation chip\nNFC: with reader mode\nConnector: USB-C (charging, DisplayPort, USB 2 up to 480Mb/s)\nSIM: dual eSIM; iPhone 16 uses eSIM technology and is not compatible with physical SIM cards"
+        }
+      ],
+      "gaps": [
+        "No iOS version in the spec list.",
+        "Price is not on the page."
+      ]
+    },
+    {
+      "key": "iphone-16-pro",
+      "action": "add",
+      "name": "iPhone 16 Pro",
+      "brand": "Apple",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on Apple's tech-specs page.",
+      "release_date": null,
+      "release_note": "Year introduced: 2024. Apple's page gives only 'Year introduced', so no full date is entered.",
+      "image_url": "https://cdsassets.apple.com/live/7WUAS350/images/tech-specs/121031-iphone-16-pro.png",
+      "image_note": "Checked 10 Nov: HTTP 200, image/png, viewed, no Cross-Origin-Resource-Policy header.",
+      "specs": [
+        {
+          "source_url": "https://support.apple.com/en-ph/121031",
+          "extraction": "page text as returned by the fetch tool (full page); key values re-checked in the page HTML",
+          "text": "Year introduced: 2024\n\nChip: A18 Pro chip\nCPU: 6-core CPU with 2 performance and 4 efficiency cores\nGPU: 6-core GPU\nNeural Engine: 16-core Neural Engine\nStorage: 128GB, 256GB, 512GB, 1TB\n\nDisplay: 6.3-inch (diagonal) all-screen OLED\nResolution: 2622-by-1206-pixel resolution at 460 ppi\nRefresh rate: ProMotion with adaptive refresh rates up to 120Hz\nBrightness: 1000 nits max (typical); 1600 nits peak (HDR); 2000 nits peak (outdoor)\n\nVideo playback: up to 27 hours\nVideo playback (streamed): up to 22 hours\nAudio playback: up to 85 hours\nBattery: built-in rechargeable lithium-ion\nMagSafe wireless charging: up to 25W with a 30W adapter or higher\nQi2 wireless charging: up to 15W\nQi wireless charging: up to 7.5W\nFast charge: up to 50% in around 30 minutes with a 20W adapter or higher and USB-C cable, or a 30W adapter or higher with MagSafe\nConnector: USB-C (charging, DisplayPort, USB 3 up to 10Gb/s)\n\nMain camera: 48MP Fusion, 24 mm, f/1.78, second-generation sensor-shift optical image stabilization\nTelephoto: 12MP 5x Telephoto, 120 mm, f/2.8, 20 degree field of view\nUltra Wide: 48MP, 13 mm, f/2.2, 120 degree field of view\nOptical zoom: 5x in, 2x out; 10x optical zoom range\nDigital zoom: up to 25x (photo); up to 15x (video)\nFront camera: 12MP, f/1.9\nVideo: 4K Dolby Vision recording at 24, 25, 30, 60, 100 (Fusion) or 120 fps (Fusion)\n\nWidth: 71.5 mm\nHeight: 149.6 mm\nDepth: 8.25 mm\nWeight: 199 grams\nWater resistance: IP68 (maximum depth of 6 meters up to 30 minutes) under IEC standard 60529\n\nCellular: 5G (sub-6 GHz and mmWave) with 4x4 MIMO\nWi-Fi: Wi-Fi 7 (802.11be) with 2x2 MIMO\nBluetooth: 5.3\nUltra Wideband: second-generation chip\nNFC: with reader mode\nSIM: dual eSIM; not compatible with physical SIM cards"
+        }
+      ],
+      "gaps": [
+        "No iOS version in the spec list.",
+        "Price is not on the page."
+      ]
+    },
+    {
+      "key": "iphone-16e",
+      "action": "add",
+      "name": "iPhone 16e",
+      "brand": "Apple",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on Apple's tech-specs page.",
+      "release_date": null,
+      "release_note": "Year introduced: 2025. Apple's page gives only 'Year introduced', so no full date is entered.",
+      "image_url": "https://cdsassets.apple.com/live/7WUAS350/images/tech-specs/122208-iphone-16e.png",
+      "image_note": "Checked 10 Nov: HTTP 200, image/png, viewed, no Cross-Origin-Resource-Policy header.",
+      "specs": [
+        {
+          "source_url": "https://support.apple.com/en-ph/122208",
+          "extraction": "page text as returned by the fetch tool; key values re-checked in the page HTML",
+          "text": "Year introduced: 2025\n\nChip: A18 chip\nCPU: 6-core CPU with 2 performance and 4 efficiency cores\nGPU: 4-core GPU\nNeural Engine: 16-core Neural Engine\nStorage: 128GB, 256GB, 512GB\n\nDisplay: Super Retina XDR, 6.1-inch (diagonal) all-screen OLED\nResolution: 2532-by-1170-pixel resolution at 460 ppi\nBrightness: 800 nits max (typical); 1200 nits peak (HDR)\nContrast ratio: 2,000,000:1 (typical)\n\nVideo playback: up to 26 hours\nVideo playback (streamed): up to 21 hours\nAudio playback: up to 90 hours\nBattery: built-in rechargeable lithium-ion\nFast charge: up to 50% in 30 minutes with a 20W adapter or higher (sold separately) and USB-C cable\nWireless charging: works with Qi chargers (sold separately)\n\nRear camera: 2-in-1 system; 48MP Fusion Main, 26 mm, f/1.6; 12MP 2x Telephoto, 52 mm, f/1.6\nDigital zoom: up to 10x\nFront camera: TrueDepth, 12MP, f/1.9\nVideo: 4K Dolby Vision recording at 24, 25, 30 or 60 fps\n\nWidth: 71.5 mm\nHeight: 146.7 mm\nDepth: 7.80 mm\nWeight: 167 grams\nWater resistance: IP68 (maximum depth of 6 meters up to 30 minutes) under IEC standard 60529\n\nModem: Apple C1 cellular modem\nWi-Fi: Wi-Fi 6 (802.11ax) with 2x2 MIMO\nBluetooth: 5.3\nNFC: with reader mode\nConnector: USB-C, USB 2 (up to 480Mb/s)\nSIM: dual eSIM; iPhone 16e uses eSIM technology and is not compatible with physical SIM cards"
+        }
+      ],
+      "gaps": [
+        "No iOS version in the spec list.",
+        "Price is not on the page."
+      ]
+    },
+    {
+      "key": "galaxy-s25",
+      "action": "add",
+      "name": "Galaxy S25",
+      "brand": "Samsung",
+      "category": "Smartphone",
+      "price_php": 51990,
+      "price_note": "Samsung PH spec page: S25 256GB ₱51,990; 512GB ₱60,990. The 256GB price is used.",
+      "release_date": null,
+      "release_note": "Not on the spec page.",
+      "image_url": null,
+      "image_note": "No product image URL on the page (only footer badges).",
+      "specs": [
+        {
+          "source_url": "https://www.samsung.com/ph/smartphones/galaxy-s25/specs/",
+          "extraction": "the page's summary block and FAQ as returned by the fetch tool (its main table did not come through); key values re-checked in the page HTML. S25 values only.",
+          "text": "Chipset: Snapdragon 8 Elite\nRAM: 12GB\nStorage options: 256GB, 512GB\n\nDisplay size: 6.2\" full rectangle (6\" with rounded corners)\nResolution: 2340 x 1080\nDisplay protection: Corning Gorilla Glass Victus 2\n\nBattery capacity: 4,000mAh\nPlayback: up to 29 hours (video and audio)\n\nRear cameras: 50MP main (F1.8), 10MP telephoto (F2.4), 12MP ultra-wide (F2.2)\nFront camera: 12MP (F2.2)\nZoom: AI enhanced Nightography zoom\n\nDimensions: 146.9 x 70.5 x 7.2 mm\nWeight: 162 g\nWater resistance: IP68"
+        }
+      ],
+      "gaps": [
+        "Charging wattage, OS version, connectivity and SIM are not in the text I received. The page's FAQ is about Galaxy AI and cooling.",
+        "Only the spec page's S25 values are used; a different Samsung page was reported to contradict the chipset, so it is not used.",
+        "Release date is not on the page."
+      ]
+    },
+    {
+      "key": "galaxy-a36-5g",
+      "action": "add",
+      "name": "Galaxy A36 5G",
+      "brand": "Samsung",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "The page shows 'Not for sale' and unrendered price placeholders.",
+      "release_date": null,
+      "release_note": "Not on the page.",
+      "image_url": null,
+      "image_note": "No image URL in the page text.",
+      "specs": [
+        {
+          "source_url": "https://www.samsung.com/ph/smartphones/galaxy-a/galaxy-a36-5g-awesome-black-256gb-sm-a366bzktphl/",
+          "extraction": "specification section of the page, verbatim part of the fetch; key values re-checked in the page HTML",
+          "text": "Model: Galaxy A36 5G (SM-A366BZKTPHL)\n\nCPU type: Octa-Core\nCPU speed: 2.4 GHz, 1.8 GHz\nMemory: 8 GB\nStorage: 256 GB (233.4 GB available)\n\nDisplay size: 6.7\" full rectangle (6.5\" with rounded corners)\nDisplay technology: Super AMOLED\nResolution: 1080 x 2340 (FHD+)\nMaximum refresh rate: 120 Hz\nBrightness: increased brightness of 1,200 nits\n\nBattery capacity (typical): 5000 mAh\nVideo playback time: up to 29 hours\nBattery: not removable\n\nRear cameras: 50.0 MP + 8.0 MP + 5.0 MP (F1.8, F2.2, F2.4), auto focus, OIS\nFront camera: 12.0 MP, F2.2\nZoom: digital zoom up to 10x\nVideo recording: UHD 4K (3840 x 2160) at 30fps\nSlow motion: 240fps at HD\n\nDimensions: 162.9 x 78.2 x 7.4 mm\nWeight: 195 g\nOperating system: Android\nSoftware support: 6 generations of OS upgrades and 6 years of security updates; security updates valid until 31 March 2031\nWater resistance: IP67\n\nWi-Fi: 802.11a/b/g/n/ac/ax 2.4GHz+5GHz\nBluetooth: v5.4\nUSB: Type-C, USB 2.0\nSIM: dual SIM; Nano-SIM and embedded SIM"
+        }
+      ],
+      "gaps": [
+        "Samsung's PH page names no chipset, so none is claimed.",
+        "Charging wattage and NFC are not in the spec table. Price and release date are not on the page.",
+        "The tool's own summary of the end of this page contradicted the spec table (battery, OS version); it was not used."
+      ]
+    },
+    {
+      "key": "reno14-5g",
+      "action": "add",
+      "name": "Reno14 5G",
+      "brand": "OPPO",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on the page.",
+      "release_date": null,
+      "release_note": "Not stated by the page.",
+      "image_url": "https://www.oppo.com/content/dam/oppo/common/mkt/v2-2/reno14-series/specs/reno14/white-green.png",
+      "image_note": "Checked 10 Nov: HTTP 200, image/png, viewed, no Cross-Origin-Resource-Policy header.",
+      "specs": [
+        {
+          "source_url": "https://www.oppo.com/ph/smartphones/series-reno/reno14/specs/",
+          "extraction": "page text as returned by the fetch tool; key values re-checked in the page HTML",
+          "text": "Model: OPPO Reno14 5G (CPH2737)\n\nSoC: MediaTek Dimensity 8350\nCPU: 8 cores\nGPU: ARM G615 MC6 at 1400MHz\nRAM and storage: 12GB + 512GB and 12GB + 256GB\nRAM type: LPDDR5X\nStorage type: UFS 3.1\n\nDisplay: 6.59 inches AMOLED (flexible)\nResolution: 1256 x 2760 pixels\nRefresh rate: maximum 120Hz (60/90/120Hz)\nTouch sampling rate: maximum 240Hz\nBrightness: 600 nits (typical); 1200 nits (typical, HBM)\nCover glass: Corning Gorilla Glass 7i\n\nBattery: 6000mAh/23.52Wh (typical); 5840mAh/22.90Wh (rated)\nFast charging: 80W SUPERVOOC (11V/7.3A), plus VOOC 3.0, PD and PPS\n\nRear cameras: 50MP wide f/1.8 with 2-axis OIS; 8MP ultra-wide f/2.2; 50MP telephoto f/2.8 with 2-axis OIS\nFront camera: 50MP f/2.0\nZoom: optical up to 3.5X (video), digital up to 18X\nVideo: rear up to 4K at 60fps or 30fps\n\nDimensions: about 157.90 mm x 74.73 mm x 7.42 mm\nWeight: about 187 g (varies by configuration)\nOperating system: ColorOS 15.0\n\nWi-Fi: Wi-Fi 6 (802.11ax), 2x2 MIMO\nBluetooth: 5.4, Low Energy\nNFC: Supported (depends on region)\nUSB: Type-C\nSIM: Nano-SIM plus eSIM"
+        }
+      ],
+      "gaps": [
+        "No IP rating is listed on the page.",
+        "Price and release date are not on the page."
+      ]
+    },
+    {
+      "key": "reno14-f-5g",
+      "action": "add",
+      "name": "Reno14 F 5G",
+      "brand": "OPPO",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on the page.",
+      "release_date": null,
+      "release_note": "Not stated by the page.",
+      "image_url": "https://www.oppo.com/content/dam/oppo/common/mkt/v2-2/reno14-series/specs/reno14-f/blue-green.png",
+      "image_note": "Checked 10 Nov: HTTP 200, image/png, viewed, no Cross-Origin-Resource-Policy header.",
+      "specs": [
+        {
+          "source_url": "https://www.oppo.com/ph/smartphones/series-reno/reno14-f-5g/specs/",
+          "extraction": "MODEL-EXTRACTED pass over the page (not verbatim); 9 key values re-checked in the page HTML. Skim the rest against the live page.",
+          "text": "Model: OPPO Reno14 F 5G (CPH2743)\n\nSoC: Qualcomm Snapdragon 6 Gen 1 Mobile Platform\nCPU: 8 cores\nGPU: Adreno 710@676MHz\nRAM and storage: 8GB + 256GB; 12GB + 256GB; 12GB + 512GB\nRAM type: LPDDR4X\nStorage type: UFS 3.1\nStorage card: Supported\n\nDisplay: 6.57 inches AMOLED (flexible)\nResolution: 2372 x 1080 pixels\nRefresh rate: maximum 120Hz (60/90/120Hz)\nTouch sampling rate: maximum 240Hz\nBrightness: 600 nits (typical); 1400 nits (typical, HBM)\nPixel density: 397 PPI\n\nBattery: 6000mAh/23.52Wh (typical); 5830mAh/22.86Wh (rated)\nFast charging: 45W SUPERVOOC, 33W SUPERVOOC, 15W VOOC, 45W PPS\n\nRear cameras: 50MP wide f/1.8 with OIS; 8MP ultra-wide f/2.2; 2MP macro f/2.4\nFront camera: 32MP f/2.0 with AF\n\nDimensions: about 158.12 mm x 74.97 mm x 7.78 mm (Opal Blue) or 7.74 mm (Luminous Green)\nWeight: about 180 g\nOperating system: ColorOS 15.0\n\nWi-Fi: Wi-Fi 5 (802.11ac), 802.11b/g/a/n\nBluetooth: 5.1, Low Energy\nNFC: Supported\nUSB: Type-C\nSIM: Nano-SIM"
+        }
+      ],
+      "gaps": [
+        "No IP rating is listed on the page.",
+        "Price and release date are not on the page.",
+        "The first read of this page was a summary, not page text; only 9 values were re-checked."
+      ]
+    },
+    {
+      "key": "find-x8",
+      "action": "add",
+      "name": "Find X8",
+      "brand": "OPPO",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on the page.",
+      "release_date": null,
+      "release_note": "Not stated by the page.",
+      "image_url": "https://www.oppo.com/content/dam/oppo/common/mkt/v2-2/find-x8-series-en/find-x8/products/black-pink-titanium.png",
+      "image_note": "Checked 10 Nov: HTTP 200, image/png, viewed, no Cross-Origin-Resource-Policy header.",
+      "specs": [
+        {
+          "source_url": "https://www.oppo.com/ph/smartphones/series-find-x/find-x8/specs/",
+          "extraction": "page text as returned by the fetch tool (full page); key values re-checked in the page HTML",
+          "text": "Model: OPPO Find X8 (CPH2651)\n\nSoC: MediaTek Dimensity 9400\nCPU: 8 cores\nGPU: Immortalis G925 MC12\nRAM and storage: 12GB + 256GB\nRAM type: LPDDR5X\nStorage type: UFS 4.0\n\nDisplay: 6.59 inches (diagonal) AMOLED (flexible)\nResolution: FHD+ (2760 x 1256 pixels)\nRefresh rate: maximum 120Hz\nTouch sampling rate: maximum 240Hz\nBrightness: 800 nits (typical); HBM 1600 nits (typical); peak 4500 nits (typical, 1% APL)\nPixel density: 460 PPI\nCover glass: Corning Gorilla Glass 7i\n\nBattery: 5630mAh/21.79Wh (typical); 5490mAh/21.25Wh (rated)\nFast charging: 80W SUPERVOOC 2.0, SUPERVOOC, VOOC 4.0, PD (9V/1.3A); wireless 50W AIRVOOC\n\nRear cameras: 50MP ultra-wide f/2.0 (120 degrees); 50MP wide f/1.8 with 2-axis OIS; 50MP telephoto f/2.6 with 2-axis OIS\nFront camera: 32MP f/2.4\nZoom: optical up to 3X, digital up to 18X\n\nDimensions: about 157.35 mm x 74.33 mm x 7.85 mm (Space Black, Star Grey) or 7.95 mm (Shell Pink)\nWeight: about 193 g\nOperating system: ColorOS 15.0\n\nWi-Fi: Wi-Fi 6 (802.11ax), Wi-Fi 5 (802.11ac), 802.11a/b/g/n\nBluetooth: 5.4, Low Energy\nUSB: Type-C\nNFC: supported (HCE payment supported)\nSIM: Nano-SIM plus eSIM"
+        }
+      ],
+      "gaps": [
+        "No IP rating is listed on the page.",
+        "Price and release date are not on the page."
+      ]
+    },
+    {
+      "key": "vivo-x200",
+      "action": "add",
+      "name": "X200",
+      "brand": "vivo",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on the param page (a shop listing outside this pack was out of stock and is not used).",
+      "release_date": null,
+      "release_note": "Not stated by the page.",
+      "image_url": "https://asia-exstatic-vivofs.vivo.com/PSee2l50xoirPK7y/1733828737707/14b9be8a31647955186b0468a125106d.png",
+      "image_note": "Checked 10 Nov: HTTP 200, image/png, viewed, no Cross-Origin-Resource-Policy header. Listed on the page as the Green colour image.",
+      "specs": [
+        {
+          "source_url": "https://www.vivo.com/ph/products/param/x200",
+          "extraction": "page text as returned by the fetch tool (full page); key values re-checked in the page HTML",
+          "text": "Processor: Dimensity 9400\nCPU core count: Octa-core\nProcess node: 3 nm\nCPU clock speed: 1 x 3.626 GHz + 3 x 3.3 GHz + 4 x 2.4 GHz\n\nRAM + ROM: 12 GB + 256 GB / 16 GB + 512 GB\nRAM type: LPDDR5X\nExpandable RAM capacity: 16 GB\nExpandable ROM capacity: Not supported\n\nDisplay size: 6.67\"\nResolution: 2800 x 1260\nDisplay type: AMOLED\nRefresh rate: 120 Hz\nPixel density: 460 PPI\nLocal peak brightness: 4500 nits\n\nBattery: single cell, typical capacity 5800 mAh (3.84V), typical energy 22.28 Wh, rated capacity 5695 mAh\nCharging power: 90W\nBattery type: Li-ion\n\nCameras: front 32 MP; rear 50 MP + 50 MP + 50 MP\nAperture: front f/2.0; rear f/1.57 (50 MP) + f/2.0 (50 MP) + f/2.57 (50 MP)\n\nDimensions: 160.27 x 74.81 x 7.99 mm\nWeight: 202 g (Green)\nBack cover: glass (Green)\nFingerprint sensor: in-display optical\nOperating system: Funtouch OS 15 (Android 15)\nIngress protection: IP68 and IP69\n\nWi-Fi: Wi-Fi 6; Wi-Fi 7; 2x2 MIMO\nBluetooth: 5.4\nUSB: USB 2.0\nNFC: Supported\nSIM: 2 nano SIMs, dual SIM dual standby"
+        }
+      ],
+      "gaps": [
+        "The page's own text is inconsistent in places (a footnote mentions the X200 Pro; another gives the screen as 6.78 inches measured in the full rectangle). The spec value is used.",
+        "Price and release date are not on the page."
+      ]
+    },
+    {
+      "key": "vivo-x200-fe",
+      "action": "add",
+      "name": "X200 FE",
+      "brand": "vivo",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on the param page.",
+      "release_date": null,
+      "release_note": "Not stated by the page.",
+      "image_url": "https://asia-exstatic-vivofs.vivo.com/PSee2l50xoirPK7y/1752464603123/b22b7ebd75d204183fc0fa67b211be44.png",
+      "image_note": "Checked 10 Nov: HTTP 200, image/png, viewed, no Cross-Origin-Resource-Policy header. Listed on the page as the Blue colour image.",
+      "specs": [
+        {
+          "source_url": "https://www.vivo.com/ph/products/param/x200-fe",
+          "extraction": "page text as returned by the fetch tool (full page); key values re-checked in the page HTML",
+          "text": "Processor: Dimensity 9300+\nCPU core count: 8\nProcess node: 4 nm\nCPU clock speed: 1 x 3.4 GHz + 3 x 2.85 GHz + 4 x 2.0 GHz\n\nRAM + ROM: 12 GB + 512 GB\nRAM type: LPDDR5X\nROM type: UFS 3.1\nExpandable RAM capacity: 16 GB\nExpandable ROM capacity: Not supported\n\nDisplay size: 6.31\"\nResolution: 2640 x 1216\nDisplay type: AMOLED\nRefresh rate: LTPO adaptive (120/90/72/60 Hz)\nPixel density: 460 PPI\nLocal peak brightness: 5000 nits\n\nBattery: single cell, typical capacity 6500 mAh (3.83V), typical energy 24.9 Wh, rated capacity 6340 mAh\nCharging power: 90W FlashCharge\nBattery type: Li-ion\n\nCameras: front 50 MP; rear 50 MP + 8 MP + 50 MP\nAperture: front f/2.0; rear f/1.88 (50 MP) + f/2.2 (8 MP) + f/2.65 (50 MP)\n\nDimensions: 150.83 x 71.76 x 7.99 mm\nWeight: 186 g\nBack cover: glass\nFingerprint sensor: in-display optical\nOperating system: Funtouch OS 15 (Android 15)\nIngress protection: IP68 and IP69\n\nWi-Fi: Wi-Fi 6; Wi-Fi 7; 2x2 MIMO\nBluetooth: 5.4\nUSB: USB 2.0\nNFC: reader/writer mode; card emulation mode\nSIM: 2 nano SIMs, dual SIM dual standby"
+        }
+      ],
+      "gaps": [
+        "Price and release date are not on the page."
+      ]
+    },
+    {
+      "key": "vivo-x200-pro",
+      "action": "add",
+      "name": "X200 Pro",
+      "brand": "vivo",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on the param page.",
+      "release_date": null,
+      "release_note": "Not stated by the page.",
+      "image_url": null,
+      "image_note": "The only image URL on the param page is a site header image, not a product photo.",
+      "specs": [
+        {
+          "source_url": "https://www.vivo.com/ph/products/param/x200-pro",
+          "extraction": "page text as returned by the fetch tool (full page); key values re-checked in the page HTML",
+          "text": "Processor: Dimensity 9400\nCPU core count: Octa-core\nProcess node: 3 nm\nCPU clock speed: 1 x 3.626 GHz + 3 x 3.3 GHz + 4 x 2.4 GHz\n\nRAM + ROM: 16 GB + 512 GB\nRAM type: LPDDR5X\nExpandable RAM capacity: 16 GB\nExpandable ROM capacity: Not supported\n\nDisplay size: 6.78\"\nResolution: 2800 x 1260\nDisplay type: AMOLED\nRefresh rate: 0.1 to 120 Hz\nPixel density: 452 PPI\nLocal peak brightness: 4500 nits\n\nBattery: single cell, typical capacity 6000 mAh (3.84V), typical energy 23.04 Wh, rated capacity 5865 mAh\nCharging power: 90W FlashCharge; 30W wireless charging\nBattery type: Li-ion\n\nCameras: front 32 MP; rear 50 MP + 50 MP + 200 MP\nAperture: front f/2.0; rear f/1.57 (50 MP) + f/2.0 (50 MP) + f/2.67 (200 MP)\n\nDimensions: 162.36 x 75.95 x 8.49 mm (Titanium)\nWeight: 228 g (Titanium)\nBack cover: glass (Titanium)\nFingerprint sensor: 3D ultrasonic single-point\nOperating system: Funtouch OS 15 (Android 15)\nIngress protection: IP68 and IP69\n\nWi-Fi: Wi-Fi 6; Wi-Fi 7; 2x2 MIMO\nBluetooth: 5.4\nUSB: USB 3.2 Gen 1\nNFC: Supported (the sensing area is in the middle of the back of the phone)\nSIM: 2 nano SIMs plus eSIM, dual SIM dual standby"
+        }
+      ],
+      "gaps": [
+        "Price, release date and a product image are not on the page."
+      ]
+    },
+    {
+      "key": "realme-14-pro-5g",
+      "action": "add",
+      "name": "14 Pro 5G",
+      "brand": "realme",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on the spec page (the only price on it belongs to a different phone).",
+      "release_date": null,
+      "release_note": "Not stated by the page.",
+      "image_url": null,
+      "image_note": "The only image URLs on the page are colour swatches, not product photos.",
+      "specs": [
+        {
+          "source_url": "https://www.realme.com/ph/realme-14-pro-5g/specs",
+          "extraction": "page text as returned by the fetch tool; values kept close to the page wording; key values re-checked in the page HTML",
+          "text": "Chipset: MediaTek Dimensity 7300 Energy (5G; 4nm)\nCPU: octa-core; 4x ARM Cortex-A78 at up to 2.5GHz; 4x ARM Cortex-A55 at up to 2.0GHz\nGPU: Arm Mali-G615\n\nRAM: 12GB (up to 14GB dynamic RAM expansion)\nStorage: 256GB\n\nDisplay: 6.77\" curved OLED\nResolution: 2392x1080 (FHD+)\nPeak brightness: 4,500 nits\nPWM dimming: 3840Hz\nRefresh rate: 120Hz\nTouch sampling rate: up to 180Hz\nContrast ratio: 5,000,000:1\nColor gamut: 100% DCI-P3\n\nBattery: 6000mAh (typ.); 5860mAh (rated)\nCharging adapter: 45W SUPERVOOC charging adapter (included in the box, per the page's charging line)\nPacking list: the page's package list says 80W SUPERVOOC charging adapter x1 (the page contradicts itself)\nCharging port: USB Type-C\n\nMain rear camera: 50MP Sony IMX882, OIS, f/1.8\nRear monochrome camera: 2MP, f/2.4\nFront camera: 16MP Sony IMX480, f/2.4\nRear video: 4K at 30fps\n\nDimensions: length 162.75 mm, width 74.92 mm, depth approx. 7.55 mm (Pearl White) or 7.79 mm (Suede Grey)\nWeight: approx. 179 g (Pearl White); 181.5 g (Suede Grey)\nOperating system: realme UI 6.0, Android 15\nWater and dust resistance: IP69, IP68, IP66 rated\n\nNetwork: 5G supported, dual standby, SA/NSA\nWi-Fi: Wi-Fi 6 (802.11ax), Wi-Fi 5 (802.11ac)\nBluetooth: 5.4\nUSB: Type-C with OTG\nSIM: 2 nano SIM slots"
+        }
+      ],
+      "gaps": [
+        "The page lists a 45W adapter in one place and an 80W adapter in another; both are quoted as printed.",
+        "Price and release date are not on the page."
+      ]
+    },
+    {
+      "key": "realme-13-pro-plus-5g",
+      "action": "add",
+      "name": "13 Pro+ 5G",
+      "brand": "realme",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "Not on the spec page (the only price on it belongs to a different phone).",
+      "release_date": null,
+      "release_note": "Not stated by the page.",
+      "image_url": null,
+      "image_note": "The only image URL found is a colour swatch, not a product photo.",
+      "specs": [
+        {
+          "source_url": "https://www.realme.com/ph/more-products/realme-13-pro-plus-5g/specs",
+          "extraction": "page text as returned by the fetch tool; values kept close to the page wording; key values re-checked in the page HTML",
+          "text": "Chipset: Snapdragon 7s Gen 2\nCPU: 4nm process, octa-core, up to 2.4GHz\nGPU: Adreno 710\n\nRAM: 12GB (up to 12GB + 12GB dynamic RAM)\nStorage: 256GB / 512GB\n\nDisplay: 6.7 inches OLED\nResolution: 2412 x 1080 (FHD+)\nScreen ratio: 93%\nContrast ratio: 5000000:1\nColor gamut: 100% DCI-P3\nRefresh rate: up to 120Hz\nBrightness: typical 600nits, global maximum 1200nits, local peak 2000nits\n\nBattery: 5200mAh (typ); 5050mAh (min)\nCharging: 80W SUPERVOOC, with an 80W adapter included; USB Type-C\n\nRear cameras: 50MP Sony LYT-600 periscope (f/2.65, OIS); 50MP Sony LYT-701 OIS main (f/1.88); 8MP ultra-wide (f/2.2)\nFront camera: 32MP Sony selfie camera (f/2.45)\nRear video: 4K at 30fps\n\nDimensions: length 161.34 mm, width 73.91 mm; depth approx. 8.41 mm (leather) or 8.23 mm (glass)\nWeight: approx. 185.5 g (leather); 190 g (glass)\nOperating system: realme UI 5.0 based on Android 14\n\nCellular: 5G + 5G dual mode, SA/NSA\nWi-Fi: Wi-Fi 6 (802.11a/b/g/n/ac/ax)\nBluetooth: 5.2\nNFC: supported\nSIM: 2 nano SIM slots"
+        }
+      ],
+      "gaps": [
+        "No IP rating is on the page.",
+        "Price and release date are not on the page.",
+        "This phone's page sits under 'more products' on realme PH, so it may be an older model."
+      ]
+    },
+    {
+      "key": "rog-phone-9-pro",
+      "action": "add",
+      "name": "ROG Phone 9 Pro",
+      "brand": "ASUS",
+      "category": "Smartphone",
+      "price_php": null,
+      "price_note": "The ASUS PH page says 'estore price starting at' with no amount.",
+      "release_date": null,
+      "release_note": "Not stated by the page.",
+      "image_url": null,
+      "image_note": "Only extension-less 250px thumbnails (dlcdnwebimgs.asus.com .../w250/fwebp), too small to use.",
+      "specs": [
+        {
+          "source_url": "https://rog.asus.com/ph/phones/rog-phone-9-pro/spec/",
+          "extraction": "page text as returned by the fetch tool (passed through a small model, so not character-exact); key values re-checked in the page HTML",
+          "text": "Model: ROG Phone 9 Pro (page lists two models: ROG Phone 9 Pro Edition and ROG Phone 9 Pro)\n\nProcessor: Qualcomm Snapdragon 8 Elite Mobile Platform 4.3GHz, 64-bit, octa-core\nGPU: Qualcomm Adreno 830\nMemory (ROG Phone 9 Pro Edition): LPDDR5X 24GB\nMemory (ROG Phone 9 Pro): LPDDR5X 16GB\nStorage (ROG Phone 9 Pro Edition): UFS 4.0 1TB\nStorage (ROG Phone 9 Pro): UFS 4.0 512GB\n\nDisplay: 6.78 inch FHD+ 2400 x 1080\n\nWired charging: output 3.3-21V at 3.25A, compatible with 65W chargers, supports QC5.0 / PD 3.0\nWireless charging: output up to 15W, compatible with Qi 1.3\n\nVideo recording: 8K UHD (7680 x 4320) at 30 fps from the main rear camera; 4K UHD at 30 / 60 fps from the main rear camera\nRear cameras: 50MP main and 13MP ultra-wide (named in the video recording line)\n\nOperating system: Android 15\nWater resistance: IP68\n\nWireless: 802.11 be/ax/ac/a/b/g/n; 2.4GHz / 5GHz / 6GHz Wi-Fi; Bluetooth 5.4 with aptX Adaptive and aptX Lossless; Wi-Fi Direct; NFC\nNavigation: GPS (L1/L5), Glonass, Galileo, BeiDou, QZSS and NavIC\nAudio: multi-magnet dual stereo speakers; 3.5mm headphone jack"
+        }
+      ],
+      "gaps": [
+        "Battery capacity, camera details beyond the video line, dimensions, weight and SIM are not on the page.",
+        "Price and release date are not on the page.",
+        "The page lists two memory and storage configurations side by side; both are given."
+      ]
+    },
+    {
       "key": "iphone-15",
       "action": "fix",
       "name": "iPhone 15",
@@ -253,6 +592,18 @@
     {
       "name": "Redmi Note 14 Pro+ 5G",
       "reason": "Both official Xiaomi pages (mi.com PH and global) returned HTTP 403 to the fetch tool, so no value could be read from a real page. Replaced by the Reno13 F 5G."
+    },
+    {
+      "name": "HONOR 400",
+      "reason": "The honor.com PH spec page loaded but every spec row was empty (the values are filled in by the browser), so nothing could be read. Replaced by the iPhone 16e."
+    },
+    {
+      "name": "Google Pixel 9",
+      "reason": "Google Store's spec page returned no text without a browser. Replaced by the OPPO Reno14 F 5G."
+    },
+    {
+      "name": "Nothing Phone (3a)",
+      "reason": "The Nothing PH product page has marketing taglines but no specification text. Replaced by the vivo X200 Pro."
     }
   ]
 }
