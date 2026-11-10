@@ -1,6 +1,6 @@
 # Plan: move the backend API from Render to Railway
 
-**Status: approved by Ikeee-AI on Sat 7 Nov 2026 00:52 Manila ("yes we go for it, later this Saturday"). Work starts after the Sprint 5 review (Sat 7 Nov 15:00), with step 1 on the Free Trial.** Hobby ($5/month) is only needed when the trial ends, about 30 days later; confirm it then. As of this update, nothing has been signed up for, paid for, created or changed. Every step that spends money, creates an account, adds a secret or changes production waits for Ikeee-AI's explicit go. The frontend stays on Render (`tekatech-web`). The database stays on Supabase.
+**Status: approved by Ikeee-AI on Sat 7 Nov 2026 00:52 Manila ("yes we go for it, later this Saturday"). Work starts after the Sprint 5 review (Sat 7 Nov 15:00), with step 1 on the Free Trial.** Hobby ($5/month) is only needed when the trial ends, about 30 days later; confirm it then. **Update Wed 11 Nov 2026 03:13 Manila: Ikeee-AI reports the $5 Railway purchase is done (owner's statement; plan, billing date and usage limit not yet checked in this repo).** Nothing else in the repo, CI or production has changed for Railway yet. Every step that spends money, creates an account, adds a secret or changes production waits for Ikeee-AI's explicit go. The frontend stays on Render (`tekatech-web`). The database stays on Supabase.
 
 Owner: Ikeee-AI (hosting, CI/CD, secrets). Backend code change: Manuel (one small change in `backend/main.py`, see step 3). Review: one other teammate per PR, as usual.
 
@@ -123,7 +123,7 @@ No data moves, so there is nothing to restore.
 ## 8. Open questions for the owner
 
 1. ~~Move or not (section 0)? If yes, when?~~ **Answered 7 Nov: yes, after the Sprint 5 review on Sat 7 Nov.**
-2. Approve Hobby at $5/month from the end of the trial, with a usage limit of about $10?
+2. ~~Approve Hobby at $5/month from the end of the trial, with a usage limit of about $10?~~ **Answered 11 Nov: the owner purchased $5 of Railway.** Still to confirm: that it is the Hobby plan, and that a usage limit (about $10) is set in Railway billing.
 3. Custom domain (for example `api.<domain>`), or the free `*.up.railway.app` URL?
 4. Who reviews the workflow PR: Manuel (backend) or Jopher?
 
