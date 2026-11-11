@@ -1,0 +1,8 @@
+# Never upload local secrets or machine-specific files with `railway up`.
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc

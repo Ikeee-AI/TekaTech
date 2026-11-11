@@ -1,7 +1,9 @@
 name: Rollback production
 
-# Emergency redeploy of a known-good main commit to both Render services,
-# followed by the same smoke checks as a normal release. Afterwards main must
+# Emergency redeploy of a known-good main commit: API to Railway, frontend to
+# Render (and the Render API fallback while it exists), followed by the same smoke
+# checks as a normal release. Only commits that contain backend/railway.json can go
+# to Railway; for older ones use Railway's dashboard rollback (docs/deploy-runbook.md). Afterwards main must
 # be reconciled with a reviewed revert PR (docs/deploy-runbook.md), otherwise
 # the next merge redeploys the broken code.
 
@@ -33,7 +35,8 @@ jobs:
     env:
       SHA: ${{ inputs.sha }}
       REASON: ${{ inputs.reason }}
-      BACKEND_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RENDER_API_FALLBACK_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
       FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
       API_URL: ${{ vars.PRODUCTION_API_URL }}
       FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
@@ -60,13 +63,26 @@ jobs:
               echo "::error::$SHA has no successful '$check' check run; refusing to deploy it."; exit 1
             fi
           done
-          if [[ -z "$BACKEND_HOOK" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
-            echo "::error::Deploy hooks or production URL variables are not configured."; exit 1
+          if [[ -z "$RAILWAY_TOKEN" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
+            echo "::error::RAILWAY_TOKEN, the frontend deploy hook or production URL variables are not configured."; exit 1
           fi
-      - name: Trigger Render deployments of the target commit
+          if ! git cat-file -e "$SHA:backend/railway.json" 2>/dev/null; then
+            echo "::error::$SHA predates the Railway API (no backend/railway.json). Roll the API back in the Railway dashboard instead (docs/deploy-runbook.md)."; exit 1
+          fi
+      - name: Check out the target commit
+        run: git checkout --detach "$SHA"
+      - name: Trigger Render frontend deployment of the target commit
+        run: curl --fail --silent --show-error --request POST "$FRONTEND_HOOK&ref=$SHA" > /dev/null
+      - name: Deploy the target commit's backend to Railway
+        timeout-minutes: 15
         run: |
-          curl --fail --silent --show-error --request POST "$BACKEND_HOOK&ref=$SHA" > /dev/null
-          curl --fail --silent --show-error --request POST "$FRONTEND_HOOK&ref=$SHA" > /dev/null
+          npm install --global @railway/cli@5.71.0
+          railway variable set "APP_COMMIT=$SHA" --service tekatech-api --environment production --skip-deploys
+          railway up backend --path-as-root --service tekatech-api --environment production --ci
+      - name: Keep the Render API fallback in step
+        if: env.RENDER_API_FALLBACK_HOOK != ''
+        continue-on-error: true
+        run: curl --fail --silent --show-error --request POST "$RENDER_API_FALLBACK_HOOK&ref=$SHA" > /dev/null
       - name: Verify live commit, database path and CORS
         run: |
           python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" \

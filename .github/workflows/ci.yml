@@ -236,8 +236,12 @@ jobs:
     runs-on: ubuntu-latest
     # Repository-level production hooks support this private repository on GitHub Free.
     # Environment secrets on private repositories require an eligible paid GitHub plan.
+    # Backend: Railway (since 12 Nov 2026, docs/devops/railway-migration-plan.md).
+    # Frontend: Render. The Render API hook only keeps the old Render API current as a
+    # fallback until it is retired; it is optional and can't fail the deploy.
     env:
-      BACKEND_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RENDER_API_FALLBACK_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
       FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
       API_URL: ${{ vars.PRODUCTION_API_URL }}
       FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
@@ -246,19 +250,30 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - name: Trigger Render deployments
+      - name: Check deployment configuration
         shell: bash
         run: |
-          if [[ -z "$BACKEND_HOOK" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
-            echo "Deployment is not configured: add both Render deploy hooks as repository Actions secrets and public URLs as repository Actions variables." >> "$GITHUB_STEP_SUMMARY"
+          if [[ -z "$RAILWAY_TOKEN" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
+            echo "Deployment is not configured: needs secrets RAILWAY_TOKEN and RENDER_FRONTEND_DEPLOY_HOOK, and variables PRODUCTION_API_URL and PRODUCTION_FRONTEND_URL." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          curl --fail --silent --show-error --request POST "$BACKEND_HOOK&ref=${{ github.sha }}" > /dev/null
-          curl --fail --silent --show-error --request POST "$FRONTEND_HOOK&ref=${{ github.sha }}" > /dev/null
-          echo "Deployment requested for commit ${{ github.sha }}. Confirm both Render deploys are live before consultation." >> "$GITHUB_STEP_SUMMARY"
+      - name: Trigger Render frontend deployment
+        run: curl --fail --silent --show-error --request POST "$FRONTEND_HOOK&ref=${{ github.sha }}" > /dev/null
+      - name: Deploy backend to Railway
+        timeout-minutes: 15
+        run: |
+          npm install --global @railway/cli@5.71.0
+          railway variable set "APP_COMMIT=${{ github.sha }}" --service tekatech-api --environment production --skip-deploys
+          railway up backend --path-as-root --service tekatech-api --environment production --ci
+      - name: Keep the Render API fallback current
+        if: env.RENDER_API_FALLBACK_HOOK != ''
+        continue-on-error: true
+        run: curl --fail --silent --show-error --request POST "$RENDER_API_FALLBACK_HOOK&ref=${{ github.sha }}" > /dev/null
       - name: Verify live commit, database path and CORS
         timeout-minutes: 12
-        run: python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" --commit "${{ github.sha }}" --attempts 30 --delay 10 --report /tmp/deployed-smoke.json
+        run: |
+          python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" --commit "${{ github.sha }}" --attempts 30 --delay 10 --report /tmp/deployed-smoke.json
+          echo "Deployed ${{ github.sha }}: API on Railway ($API_URL), frontend on Render ($FRONTEND_URL)." >> "$GITHUB_STEP_SUMMARY"
       - name: Save deployment verification evidence
         if: always()
         uses: actions/upload-artifact@v7
