@@ -115,5 +115,7 @@ async def readiness_check(request: Request, response: Response):
 
 @app.get("/version")
 def deployed_version():
-    # Render provides the repository SHA; no credentials or environment dump.
-    return {"commit": os.environ.get("RENDER_GIT_COMMIT", "local")}
+    # APP_COMMIT is set by the CI Railway deploy (CLI deploys get no Git SHA);
+    # Render provides RENDER_GIT_COMMIT. No credentials or environment dump.
+    commit = os.environ.get("APP_COMMIT") or os.environ.get("RENDER_GIT_COMMIT") or "local"
+    return {"commit": commit}

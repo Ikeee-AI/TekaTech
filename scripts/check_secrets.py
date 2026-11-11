@@ -16,6 +16,7 @@ PATTERNS = (
     re.compile(rb"\bgh[pousr]_[A-Za-z0-9]{30,}"),
     re.compile(rb"\bgithub_pat_[A-Za-z0-9_]{30,}"),
     re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    re.compile(rb"\brlwy_[A-Za-z0-9_]{30,}"),  # Railway project token (seen 11 Nov 2026)
     re.compile(rb"api\.render\.com/deploy/[^\s\"']+\?key=[A-Za-z0-9_-]{16,}"),
 )
 

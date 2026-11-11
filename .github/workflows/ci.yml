@@ -241,6 +241,8 @@ jobs:
       FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
       API_URL: ${{ vars.PRODUCTION_API_URL }}
       FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
+      RAILWAY_API_URL: ${{ vars.RAILWAY_API_URL }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -259,11 +261,30 @@ jobs:
       - name: Verify live commit, database path and CORS
         timeout-minutes: 12
         run: python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" --commit "${{ github.sha }}" --attempts 30 --delay 10 --report /tmp/deployed-smoke.json
+      # Railway parallel run (docs/devops/railway-migration-plan.md step 4): the same SHA
+      # also goes to the Railway API, which production does not use yet. Non-blocking
+      # until cutover, so a Railway problem cannot fail a Render release.
+      - name: Deploy backend to Railway (parallel run)
+        id: railway
+        if: env.RAILWAY_TOKEN != ''
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          npm install --global @railway/cli@5.71.0
+          railway variable set "APP_COMMIT=${{ github.sha }}" --service tekatech-api --environment production --skip-deploys
+          railway up backend --path-as-root --service tekatech-api --environment production --ci
+      - name: Verify Railway API (parallel run)
+        if: steps.railway.outcome == 'success' && env.RAILWAY_API_URL != ''
+        continue-on-error: true
+        timeout-minutes: 12
+        run: python scripts/deployed_smoke.py --api-url "$RAILWAY_API_URL" --frontend-url "$FRONTEND_URL" --commit "${{ github.sha }}" --attempts 30 --delay 10 --report /tmp/railway-smoke.json
       - name: Save deployment verification evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: deployed-smoke-${{ github.sha }}
-          path: /tmp/deployed-smoke.json
+          path: |
+            /tmp/deployed-smoke.json
+            /tmp/railway-smoke.json
           if-no-files-found: ignore
           retention-days: 30
