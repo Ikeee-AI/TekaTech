@@ -780,13 +780,13 @@ None.
 | Draft record said "no prompt change" and GK-06 open; #236 shipped gk-v2, which fixes GK-06 | Record would have understated the release | Corrected in the record. Closed |
 | Draft said the Poco x7 Pro would be fixed with #201; the image was fixed 5 Nov, only the release date is still wrong (#201 open) | Limitation misstated | Corrected in the record. Closed |
 | Gitleaks commit counts differ (CI 188, local `rev-list` 223, v1.0.0 local all-refs 307) | Counts can't be compared across releases | Not investigated — Ikeee-AI — open |
-| Tagged before the second-member rollback demonstration, which is listed earlier in the checklist | Stable release exists before its rollback item is proven by a second member | Owner approved tagging on 6 Nov; demo still to be booked — Ikeee-AI with Manuel or Jopher — open |
+| Tagged before the second-member rollback demonstration, which is listed earlier in the checklist | Stable release exists before its rollback item is proven by a second member | Owner approved tagging on 6 Nov; demo still to be booked — Ikeee-AI with Manuel or Jopher — open *(Wrong: Jopher had done it at 11:10–11:17 and posted it on #237 at 11:22. Corrected in the 16:50 entry.)* |
 
 **Decisions**
 - Tag v1.1.0 on `db49bc2` now — Ikeee-AI (owner).
 
 **Blockers / risks**
-- Second-member deploy/rollback demonstration not done — Ikeee-AI with Manuel or Jopher — before Sat 7 Nov 15:00.
+- Second-member deploy/rollback demonstration not done — Ikeee-AI with Manuel or Jopher — before Sat 7 Nov 15:00. *(Wrong: Jopher had done it at 11:10–11:17 and posted it on #237 at 11:22. Corrected in the 16:50 entry.)*
 
 **Plan alignment**
 - S5-IK stable release: **Partial** — tagged, released and verified; rollback demo, known-limitations paste into the release body and final metrics row still open.
@@ -797,3 +797,79 @@ None.
 - Final metrics row (`pipeline-metrics`) — Ikeee-AI — before Sat 7 Nov 15:00.
 - One PR for `tekatech/s5-ik-6nov` (6 Nov logs and the v1.1.0 record) — Ikeee-AI — before Sat 7 Nov 15:00.
 - Update `docs/sprints/sprint-5/consultation.md` (lines 42, 86 still say draft) — Ikeee-AI — with that PR.
+
+## 2026-11-06 16:32 Asia/Manila — release notes, Sprint 5 final metrics, #240 merged
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code edited the release notes, ran the metrics, opened, gated and merged #240 at the owner's request) · **Task:** S5-IK (stable release) · **Branch:** `tekatech/s5-ik-6nov-2`
+
+**Done**
+- GitHub Release `v1.1.0` body: added a production-verified line, database notes (nothing to apply) and the full "Known limitations" section above the generated PR list (15:45). After #240 merged, its record/changelog links were changed from the branch to `main` (16:32) — https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.1.0
+- Sprint 5 final metrics row (1–6 Nov UTC): PR 1.21 min (61 runs), main 3.25 min (53 runs), success 99.1 % (113/114), 53 deploys, merge-to-live 2.85 min (53 samples), 0 failed deploys — `docs/devops/metrics.md`, `docs/evidence/sprint5-metrics-final.json`. Window overlaps interim 2 almost entirely, so not an independent comparison.
+- Found that two 5 Nov commits never reached `main`: `1eee327` (`pipeline_metrics.py` retries transient `gh api` errors, with tests) and `c05b934` (interim-2 metrics row). They were committed after #235's reviewed head `1cb998a`, so the squash left them out. Cherry-picked into #240 (`607eb44`, `a2f27d8`); `test_pipeline_metrics.py` 6 passed (local).
+- #240 opened with Manuel and Jopher as reviewers; its body asks either of them for a time for the second-member rollback demonstration — https://github.com/Ikeee-AI/TekaTech/pull/240
+- Manuel `APPROVED` #240 on head `8dba2c9` at 16:14 (ran the tests and secret guard; checked the metrics row against the evidence file). Non-blocking note: `CHANGELOG.md` line 7 still said the tag wasn't created.
+- `pr-gate` **PASS** on #240 (manual gate; branch protection not enforced): Manuel's approval on the head commit, three required checks green, one owner (DevOps docs/metrics/script), no SQL, no env files, mergeable. Squash-merged at the owner's instruction → `3d9be35` (08:31:08 UTC, 16:31 Manila).
+- Main CI for `3d9be35` succeeded, every job including deploy (finished 08:41:34 UTC) — https://github.com/Ikeee-AI/TekaTech/actions/runs/42188253567 (added after the entry was first written). Deployed smoke **passed** at 08:41:47 UTC (16:41 Manila) on `3d9be35`: first attempt, readiness and CORS passed, 4 gadgets, database 452.7 ms — `.local/deployed-smoke-3d9be35.json` (local). `v1.1.0` stays on `db49bc2`; `3d9be35` adds docs and the metrics script only.
+- 16:34 follow-up comment on #240 asking Manuel and Jopher again for a demo time — https://github.com/Ikeee-AI/TekaTech/pull/240#issuecomment-6680735822 . No reply by 16:41.
+- Manuel's CHANGELOG note fixed on this branch (`0b587f0`): line 7 now says tagged 6 Nov 15:36 with the release link. Left out of #240 so his approval stayed on the head commit.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Two commits missing from `main` after #235 (no error shown) | Pushed to `tekatech/s5-ik-wrapup` after the reviewed head; the squash only took what was reviewed | Cherry-picked into #240 and reviewed there. Closed. Check `git log <reviewed head>..<branch>` before merging batched branches |
+| A two-dot diff of `tekatech/s5-ik-6nov` against `origin/main` showed #239's files as removed | Branch cut before #239 merged; the PR's three-dot diff was not affected | Merged `origin/main` into the branch before opening #240. Closed |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| `CHANGELOG.md` heading said tagged, line 7 said the tag wasn't created (Manuel's review) | Contradiction on `main` until the fix merges | Fixed on this branch (`0b587f0`), goes in the follow-up PR — Ikeee-AI — open |
+
+**Decisions**
+- Merge #240 before the rollback demonstration; record the demo in a follow-up PR — Ikeee-AI (owner).
+- Merge #240 on Manuel's approval; keep the CHANGELOG fix for the follow-up so the approval isn't made stale — Ikeee-AI (owner).
+
+**Blockers / risks**
+- Second-member deploy/rollback demonstration: no reply from Manuel or Jopher on #240 yet (16:32) — Ikeee-AI with Manuel/Jopher — before Sat 7 Nov 15:00. *(Wrong: Jopher had done it at 11:10–11:17 and posted it on #237 at 11:22. Corrected in the 16:50 entry.)*
+
+**Plan alignment**
+- S5-IK stable release: **Partial** — tag, release notes, record on `main` and final metrics row done; second-member rollback demonstration open.
+
+**Next**
+- Rollback demonstration with Manuel or Jopher, then record it and open the follow-up PR from this branch — before Sat 7 Nov 15:00.
+
+## 2026-11-06 16:50 Asia/Manila — second-member rollback demonstration found done (Jopher); records corrected
+**Who:** Jopher ran the rollbacks (AI-assisted: not stated); Ikeee-AI recorded them (AI-assisted: yes, Claude Code checked the runs and wrote this) · **Task:** S5-IK (stable release), S5-JO · **Branch:** `tekatech/s5-ik-6nov-2`
+
+**Done**
+- **Second-member deploy/rollback demonstration: done by Jopher (`s2100932`)**, `rollback.yml`, every run started and run by `s2100932` (checked with the GitHub API):
+  | When (Manila) | Step | Target | Run | Duration | Result |
+  | --- | --- | --- | --- | --- | --- |
+  | 11:10 | Roll back | `e22758b` (#234) | https://github.com/Ikeee-AI/TekaTech/actions/runs/42154924236 | 1 min 37 s | success |
+  | 11:16 | Roll forward | `1170d19` (#233) | https://github.com/Ikeee-AI/TekaTech/actions/runs/42155490274 | 1 min 41 s | success |
+  | 16:35 | Roll back | `db49bc2` (`v1.1.0`) | https://github.com/Ikeee-AI/TekaTech/actions/runs/42188771228 | 1 min 39 s | success |
+  | 16:38 | Roll forward | `3d9be35` (#240) | https://github.com/Ikeee-AI/TekaTech/actions/runs/42189100078 | 1 min 33 s | success |
+- Jopher's results: https://github.com/Ikeee-AI/TekaTech/issues/237 (11:22) and https://github.com/Ikeee-AI/TekaTech/pull/240 (16:41). The second pair was done at the owner's request in the group chat. Production checked at 16:43: API `/version` and frontend `/version.json` both `3d9be35`.
+- Recorded: `docs/releases/v1.1.0.md` checklist ticked (the last open box), `docs/deploy-runbook.md` demonstration status and Jopher's two tips, Week 5 packet updated.
+- Manuel has not run a rollback (the `rollback.yml` history has only Ikeee-AI on 31 Oct and Jopher on 6 Nov). Not required: the item asks for one of Manuel or Jopher.
+
+**Errors and fixes**
+None.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| The v1.1.0 record (15:33), the 15:40 and 16:32 entries and both pings said the demonstration was not done, but Jopher had posted it on #237 at 11:22. Claude Code checked only for replies, not #237, and saw the 11:10/11:16 runs in a `main` run list without checking what they were | Two unneeded pings; records understated Jopher's work for about 5 hours | Old lines marked as wrong with a pointer here; record and packet corrected. Closed. Check the linked issue for a task before saying it isn't done |
+| Production was on `db49bc2` from about 16:37 to 16:39 during Jopher's second demonstration, between the #240 deploy and the 16:41 smoke check | None for users (docs/script-only difference); the 16:41 smoke result on `3d9be35` stands | Recorded here. Closed |
+
+**Decisions**
+None.
+
+**Blockers / risks**
+None for the release.
+
+**Plan alignment**
+- S5-IK stable release (`v1.1.0`): **Done** — tagged, released, verified on production, record complete, second-member rollback demonstrated.
+- S5-JO: rollback demonstration delivered (beyond his own row).
+
+**Next**
+- Follow-up PR from this branch (this entry, the record tick, runbook tips, CHANGELOG fix) — Ikeee-AI, review by Manuel/Jopher — before Sat 7 Nov 15:00.
+- Retrospective comments on #238 from Manuel, Mika, Adrian and Ikeee-AI (Jopher's is in); Manuel's paid `/query` sample; Mika's deck archive and handover notes — each owner — before Sat 7 Nov 15:00.
