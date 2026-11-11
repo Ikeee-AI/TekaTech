@@ -24,7 +24,7 @@ import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-API_URL = "https://tekatech-api.onrender.com"
+API_URL = "https://tekatech-api-production-549b48c9.up.railway.app"
 FRONTEND_URL = "https://tekatech-web.onrender.com"
 TIMEOUT_SECONDS = 90  # a cold Render free instance has taken 42–55 s to answer
 COLD_START_SECONDS = 10.0  # a first response slower than this is counted as a cold start

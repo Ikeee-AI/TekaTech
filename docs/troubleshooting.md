@@ -4,7 +4,7 @@ Owner: Manuel Mirasol (S5-MA, `docs/sprints-2-to-5.md`). **Draft, 4 Nov 2026**, 
 
 Who it is for: a teammate who sees an error during or after the Sprint 5 pilot and has **no production secrets**. Everything in sections 1–3 works with public URLs and the mocked test suite only. Anything that needs a dashboard or a key says who to ask.
 
-Production URLs (from the README, check them if in doubt): API `https://tekatech-api.onrender.com`, site `https://tekatech-web.onrender.com`.
+Production URLs (from the README, check them if in doubt): API `https://tekatech-api-production-549b48c9.up.railway.app` (Railway since 12 Nov 2026; before that `https://tekatech-api.onrender.com`), site `https://tekatech-web.onrender.com`.
 
 ---
 
@@ -14,10 +14,10 @@ Do these in order. Stop at the first one that fails and go to section 3.
 
 | Step | Command | Healthy result |
 | --- | --- | --- |
-| 1 | `curl -s https://tekatech-api.onrender.com/health` | `{"status":"ok"}`. This only proves the process is up. The first call after idle can take **42–55 s** (free-host cold start, measured). That is waiting, not a fault. |
-| 2 | `curl -s https://tekatech-api.onrender.com/health/ready` | `{"status":"ok","database":"ok","latency_ms":…}`. `503` with `"database":"error"` means the API cannot reach Supabase (section 3, "Database"). Limit: 30 per minute. |
-| 3 | `curl -s https://tekatech-api.onrender.com/version` | `{"commit":"<sha>"}`. Compare with the latest commit on `main` to see what is deployed. `local` means it is not a Render deploy. |
-| 4 | `python scripts/deployed_smoke.py --api-url https://tekatech-api.onrender.com --frontend-url https://tekatech-web.onrender.com --commit <sha from step 3>` | Public checks only (version, frontend page, one database read, CORS). No AI calls. It is the same script CI runs after a deploy. |
+| 1 | `curl -s https://tekatech-api-production-549b48c9.up.railway.app/health` | `{"status":"ok"}`. This only proves the process is up. (On the old free Render host the first call after idle took 42–55 s; Railway Hobby doesn't sleep.) |
+| 2 | `curl -s https://tekatech-api-production-549b48c9.up.railway.app/health/ready` | `{"status":"ok","database":"ok","latency_ms":…}`. `503` with `"database":"error"` means the API cannot reach Supabase (section 3, "Database"). Limit: 30 per minute. |
+| 3 | `curl -s https://tekatech-api-production-549b48c9.up.railway.app/version` | `{"commit":"<sha>"}`. Compare with the latest commit on `main` to see what is deployed. `local` means no deploy commit was set (Railway: `APP_COMMIT`; Render: `RENDER_GIT_COMMIT`). |
+| 4 | `python scripts/deployed_smoke.py --api-url https://tekatech-api-production-549b48c9.up.railway.app --frontend-url https://tekatech-web.onrender.com --commit <sha from step 3>` | Public checks only (version, frontend page, one database read, CORS). No AI calls. It is the same script CI runs after a deploy. |
 | 5 | `cd backend && uv run pytest -q` | All tests pass. They mock Supabase and OpenAI, so this proves the code, not production. |
 | 6 | `python scripts/pilot_monitor.py summary --samples .local/pilot/samples.jsonl` | Summary of the pilot samples Ikeee-AI is collecting. Read-only. Ask for the samples file. |
 
@@ -44,7 +44,7 @@ The details of a provider failure go to the log, never to the user.
 ## 3. Symptom → cause → check → fix
 
 ### Cold start or "site is slow the first time"
-- **Cause:** Render free services sleep when idle. Measured cold start: 42–55 s.
+- **Cause:** Render free services sleep when idle. Measured cold start: 42–55 s. Since 12 Nov 2026 the API is on Railway Hobby, which doesn't sleep; this now applies only to the Render fallback API and the static frontend's first load.
 - **Check:** run step 1 twice; the second call is fast.
 - **Fix:** none needed. Warm `/health` and then the site 2 minutes before a demo. Record cold starts separately from latency in any report.
 

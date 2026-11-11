@@ -5,7 +5,7 @@ deployment and costs nothing: bad input is a 422 before the route runs, a missin
 401, an unknown id or link is a 404 (a read). Nothing is created, changed or deleted.
 
     python scripts/demo_malformed_requests.py                              # local API on :8000
-    python scripts/demo_malformed_requests.py --api-base https://tekatech-api.onrender.com
+    python scripts/demo_malformed_requests.py --api-base https://tekatech-api-production-549b48c9.up.railway.app
 
 For each request it prints what was sent, the status and the message the user would see, and it
 checks three things about every answer: the status is the expected one (never a 5xx), the body holds

@@ -2,6 +2,18 @@
 
 Owner: project owner (the team's DevOps Engineer, also contributing full-stack code). Chosen baseline: GitHub Actions + free Render API/static frontend + existing Supabase database. The private remote repository, Sprint 1 PR #15 and 13 issues are created. PR checks pass. Both services are linked to main with Render auto-deploy off; GitHub deploy hooks are configured. Main run 38174257006 deployed commit 53f62e9, and exact version, database, CORS and direct-login checks passed; see `docs/evidence/sprint1-main-deployment.json`. Initial provisioning is recorded separately.
 
+## API host: Railway (since 12 Nov 2026)
+
+The API moved from Render to Railway on 12 Nov 2026 ~00:33 Manila ([plan and record](devops/railway-migration-plan.md)). Project `tekatech`, service `tekatech-api`, environment `production`, Singapore, Hobby plan, replica cap 1 vCPU / 1 GB, compute usage limit $10. URL: https://tekatech-api-production-549b48c9.up.railway.app. Build and start come from `backend/railway.json`; `backend/.railwayignore` keeps `.env` out of uploads.
+
+- **Variables** are set in the Railway dashboard (service → Variables) with the same names as before (`devops/environments.md`). A dashboard change is only *staged* until you click **Deploy** on the banner; until then the running app doesn't see it.
+- **Deploys** come only from CI (`railway up` with the `RAILWAY_TOKEN` repo secret). Don't connect Railway's GitHub autodeploy.
+- **Manual deploy** (owner, CLI signed in with `railway login` and linked with `railway link --project tekatech --service tekatech-api --environment production`): from a clean checkout of the SHA, `railway variable set APP_COMMIT=<sha> --skip-deploys`, then `railway up backend --path-as-root --ci`.
+- **Logs**: `railway logs --service tekatech-api --environment production`.
+- **Undo the host move** (until the Render API is retired, about 19 Nov): Render `tekatech-web` → Environment → `VITE_API_BASE_URL` = `https://tekatech-api.onrender.com` → Save, rebuild and deploy; set the `PRODUCTION_API_URL` variable back. No data moves.
+
+The setup steps below are the original Render setup and stay as history.
+
 ## First-time setup
 
 1. GitHub is connected as Ikeee-AI. [TekaTech](https://github.com/Ikeee-AI/TekaTech) is private, both branches are pushed, and [merged PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15) introduced the application/foundation work. Main has the deployed application. The owner-directed initial merge lacked another teammate review; require real review before subsequent merges.
@@ -38,6 +50,8 @@ Wake a sleeping API before consultation. Confirm current free-plan limits on the
 
 ## Rate-limit buckets behind the proxy
 
+> **Railway (since 12 Nov 2026):** proxy trust stays **off** (`TRUST_PROXY_HEADERS=false`). The steps below were written for Render (`Rndr-Id`, Render logs); redo the hop-count check against the Railway URL and `railway logs` before turning it on.
+
 Status: **UNVERIFIED** until the steps below are run against production and recorded. Unit tests prove the key function's logic, not Render's actual header behavior.
 
 Why: Render's proxy is the socket peer of the API, so with the default key every visitor shares one bucket (for example one site-wide 10/minute on `/query`). With `TRUST_PROXY_HEADERS=true` the API keys on the `X-Forwarded-For` entry counted `TRUSTED_PROXY_HOPS` from the right (default 1 = rightmost). Proxies append to this header, so entries a client sends itself are always further left and are ignored; an entry that is missing or not an IP falls back to the socket peer, never to a left-hand entry. IPv6 clients are bucketed per /64. Render's docs do not state the exact `X-Forwarded-For` layout (checked 2026-10-27: [web services](https://render.com/docs/web-services), [logging / `Rndr-Id`](https://render.com/docs/logging#tracing-with-requestid-and-rndr-id), [DDoS protection via Cloudflare](https://render.com/docs/ddos-protection)), so the hop count must be confirmed from real traffic. Uvicorn's own proxy-header rewriting stays off (no `--forwarded-allow-ips`), because trusting every forwarded value would let clients pick their own bucket.
@@ -66,7 +80,7 @@ Preferred code rollback preserves the reviewed history:
 4. Open a PR, get another teammate review and passing checks, then merge. The pipeline deploys the reverted main state.
 5. Check `/health`, `/health/ready` (404 is expected if the restored release predates it), `/gadgets`, frontend/API wiring and affected behavior. Record time to recover and an incident postmortem.
 
-For an urgent outage, the DevOps Engineer may redeploy the last known good commit. Preferred: **Actions → Rollback production → Run workflow** with the full 40-character SHA and the reason (incident issue). The workflow (`.github/workflows/rollback.yml`) refuses commits that are not on main or lack successful `Backend tests`, `Frontend lint and build` and `Database migrations` checks, triggers both Render hooks for that exact SHA, and runs the same smoke checks as a release; its summary and artifact are the recovery evidence. Fallback: Render's deploy controls. Immediately reconcile main with a reviewed revert PR so automatic deployment does not restore the broken code. Record the emergency action. Never roll schema backward by dropping tables; inspect compatibility and restore data from backups only with explicit team approval.
+For an urgent outage, the DevOps Engineer may redeploy the last known good commit. Preferred: **Actions → Rollback production → Run workflow** with the full 40-character SHA and the reason (incident issue). The workflow (`.github/workflows/rollback.yml`) refuses commits that are not on main or lack successful `Backend tests`, `Frontend lint and build` and `Database migrations` checks, deploys that exact SHA's backend to Railway and its frontend through the Render hook (plus the Render API fallback hook while it exists), and runs the same smoke checks as a release. Commits from before the Railway move (no `backend/railway.json`) are refused: roll the API back in Railway instead (service → Deployments → three dots on an earlier deployment → **Redeploy**), and the frontend with Render's deploy controls; its summary and artifact are the recovery evidence. Fallback: Railway's and Render's dashboard deploy controls. Immediately reconcile main with a reviewed revert PR so automatic deployment does not restore the broken code. Record the emergency action. Never roll schema backward by dropping tables; inspect compatibility and restore data from backups only with explicit team approval.
 
 Rollback rehearsal status: **RUN on production, 31 October 2026** ([evidence](evidence/rollback-rehearsal-2026-10-31.md)). `rollback.yml` restored `7d2ab44` in 1 min 35 s and rolled forward to `5aa4635` in 1 min 45 s, both smoke-tested. The two commits differed only in docs/evaluation files, so the rehearsal had no user impact; a rollback across a code or schema change has not been rehearsed.
 
