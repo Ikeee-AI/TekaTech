@@ -92,8 +92,8 @@ Deploying from CI with `railway up` keeps today's rules: deploy only after the t
 
 ## 5. Verification (what "done" means)
 
-- The CI deploy on a new main commit succeeds, and `deployed_smoke.py` passes against the Railway URL for that SHA.
-- A `rollback.yml` rehearsal on a docs-only pair passes on Railway, as on 31 Oct and 6 Nov.
+- The CI deploy on a new main commit succeeds, and `deployed_smoke.py` passes against the Railway URL for that SHA. **Done 12 Nov 2026:** runs 43068554699 (`3658c58`) and 43070610868 (`f836e3b`).
+- A `rollback.yml` rehearsal on a docs-only pair passes on Railway, as on 31 Oct and 6 Nov. **Done 12 Nov 2026:** 1 min 17 s back to `3658c58`, 1 min 16 s forward to `f836e3b`, both smoke-tested ([evidence](../evidence/rollback-rehearsal-2026-11-12-railway.md)).
 - The first request after 30+ min idle answers in under 5 s. The Render baseline is 42.7 s.
 - Railway usage after 7 days, extrapolated to a month, is at most $5, or the owner accepts the measured figure.
 - The scope-change entry and docs are merged.
