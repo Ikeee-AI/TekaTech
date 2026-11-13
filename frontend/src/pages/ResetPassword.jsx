@@ -14,7 +14,7 @@ function Card({ title, children }) {
   return (
     <div className="max-w-sm mx-auto">
       <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h1 className="font-display text-xl font-bold text-gray-900 mb-1">{title}</h1>
+        <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900 mb-1">{title}</h1>
         {children}
       </div>
       <div className="text-center mt-4">

@@ -6,7 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wdth,wght@75,300..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#09090b" />
+    <script>
+      // Apply the saved theme before first paint (dark is the default). See src/hooks/useTheme.js.
+      try {
+        if (localStorage.getItem('tekatech:theme') === 'light') document.documentElement.dataset.theme = 'light'
+      } catch { /* storage blocked: stay dark */ }
+    </script>
     <title>TekaTech — Gadget Spec Assistant</title>
   </head>
   <body>
