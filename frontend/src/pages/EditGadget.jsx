@@ -50,7 +50,7 @@ export default function EditGadget() {
 
   if (state.status === 'error') {
     return (
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <BackLink to="/">Back to Catalog</BackLink>
         <ErrorState
           title="Couldn't Load This Gadget"
@@ -69,10 +69,10 @@ export default function EditGadget() {
   const { gadget } = state
 
   return (
-    <div className="max-w-xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <BackLink to={`/gadgets/${id}`}>Back to Gadget</BackLink>
       <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs">
-        <h1 className="text-2xl font-bold text-slate-900">Edit Gadget</h1>
+        <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900">Edit Gadget</h1>
         <p className="text-sm text-slate-600 mt-1 mb-6">
           Update the catalog details for <strong className="text-slate-800">{gadget.name}</strong>.
         </p>
