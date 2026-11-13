@@ -12,7 +12,11 @@ export default function ProductImage({ src, alt = '', className = '', glyphClass
   const [failedSrc, setFailedSrc] = useState(null)
   const showImage = src && failedSrc !== src
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-slate-100 flex items-center justify-center ${className}`}>
+    // `relative` only when the caller doesn't position the frame itself: both utilities set
+    // `position`, and in Tailwind's CSS order `relative` would win over a caller's `absolute`.
+    <div
+      className={`${/(^|\s)(absolute|fixed|sticky)(\s|$)/.test(className) ? '' : 'relative'} overflow-hidden rounded-2xl bg-slate-100 flex items-center justify-center ${className}`}
+    >
       {showImage ? (
         <img
           src={src}
