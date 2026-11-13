@@ -978,3 +978,35 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — No change: Railway plan section 5 is still Partial until #252 merges; Render API retirement is not started (~19 Nov).
 
 **Next** — Same as the 10:12 entry, minus "Close #251".
+
+## 2026-11-13 10:48 Asia/Manila — Railway idle first-request check passed; pilot scope-change row confirmed
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code ran the read-only `curl` timings and `railway logs`, and wrote the evidence) · **Task:** S5-IK (Railway plan section 5) · **Branch:** `tekatech/railway-rollback-rehearsal` → #252
+
+**Done**
+- Checked the pilot scope-change row: it is already in `docs/scope-changes.md` (5 Nov, "moved past Sprint 5", Manuel told on #229). Nothing to add. The "still to record" item in earlier notes was out of date.
+- Railway first request after idle: **0.31 s** for `/health`, after about 20 h 35 min idle. The Render baseline is 42.7 s, and the target was under 5 s. Railway's request log shows no traffic between the 12 Nov 06:11:26 UTC health check and this test at 13 Nov 02:46:16 UTC. Other routes: `/gadgets` first 0.49 s and warm median 0.20 s; `/health/ready` 1.34 s (about 1.1 s of that on the server, which is the Supabase round trip); `/health` warm median 0.17 s. All 14 requests returned 200; read-only, no AI calls. Evidence: `docs/evidence/railway-idle-first-request-2026-11-13.md`; plan section 5 marked done; commit `1fa7440`.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `curl -w` labels came out as `C:/Program Files/Git/health`, with a literal `/n` between lines | Git Bash path conversion rewrote the leading `/` in the label | Cosmetic only; the URLs and timings were correct (all 200, `/version` = `f836e3b`). Read the values as they were. Fixed in reading |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Earlier notes and the "What's next" list said the pilot scope-change row was still missing; it was added on 5 Nov | None; no duplicate row was added | Notes corrected. Resolved |
+| Railway CLI: "Config as Code (railway.json / railway.toml) is deprecated. Prefer Infrastructure as Code (.railway/railway.ts) … Existing files keep working until 2026-12-01." Our deploy relies on `backend/railway.json` (start command, health check, restart policy) | CI deploys could break or lose these settings after 1 Dec 2026 | Migrate to the new format and test it with a CI deploy before 1 Dec. Open, Ikeee-AI |
+
+**Decisions** — Use Railway's own request log (`railway logs --json`) to prove the idle window, instead of assuming it from the health-check schedule — Ikeee-AI. Add the evidence to #252 so one review covers it — Ikeee-AI.
+
+**Blockers / risks** — `railway.json` deprecation, deadline 1 Dec 2026 — Ikeee-AI. #252 waits on Manuel's approval — Manuel. #249 waits on Jopher's changes — Jopher.
+
+**Plan alignment** — Railway plan section 5: CI deploy **Done**; rollback rehearsal and idle check **Done** (evidence in #252, not merged yet); 7-day usage **Not started** (due ~19 Nov); docs merged **Partial** (#252). Step 6 (retire the Render API) not started, ~19 Nov.
+
+**Next**
+- Merge #252 after Manuel approves — Ikeee-AI.
+- Read Railway usage after 7 days and extrapolate to a month — Ikeee-AI (owner's dashboard) — ~19 Nov.
+- Retire the Render API — Ikeee-AI — ~19 Nov.
+- Migrate `backend/railway.json` to the new format, then check with a CI deploy — Ikeee-AI — before 1 Dec.
