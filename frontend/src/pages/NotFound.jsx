@@ -10,7 +10,7 @@ export default function NotFound() {
         <SearchX size={26} className="text-gray-500" aria-hidden="true" />
       </div>
       <p className="text-sm font-medium text-sage-700">404</p>
-      <h1 className="font-display text-xl font-bold text-gray-900 mt-1">Page Not Found</h1>
+      <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900 mt-1">Page Not Found</h1>
       <p className="text-sm text-gray-500 mt-1 max-w-sm">
         That page doesn't exist — it might have been moved, or the link is off.
       </p>

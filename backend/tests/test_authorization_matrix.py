@@ -20,6 +20,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi.routing import APIRoute
+from supabase_auth.errors import AuthApiError
 
 PUBLIC, USER, ADMIN = "public", "user", "admin"
 
@@ -145,7 +146,7 @@ def real_auth(client, monkeypatch):
 
     def get_user(token):
         if token not in sessions:
-            raise Exception("invalid session")
+            raise AuthApiError("invalid session", 401, "bad_jwt")
         return SimpleNamespace(user=sessions[token])
 
     monkeypatch.setattr("auth.supabase", SimpleNamespace(auth=SimpleNamespace(get_user=get_user)))
@@ -157,7 +158,7 @@ def real_auth(client, monkeypatch):
 def _concrete(path):
     for name in ("gadget_id", "spec_id", "correction_id"):
         path = path.replace("{" + name + "}", str(uuid4()))
-    return path.replace("{slug}", "some-slug")
+    return path.replace("{slug}", "abc1234")
 
 
 @pytest.mark.parametrize(

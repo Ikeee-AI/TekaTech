@@ -87,8 +87,30 @@ def test_create_comparison_gadget_lookup_failure_is_503(client, fake_supabase, m
 
 def test_resolve_comparison_not_found(client, fake_supabase):
     fake_supabase.set_response("comparison_links", "select", [])
-    resp = client.get("/comparisons/doesnotexist")
+    resp = client.get("/comparisons/zzzzzzz")
     assert resp.status_code == 404
+
+
+@pytest.mark.parametrize("slug", ["doesnotexist", "abc123", "abc12345", "ABC1234", "abc-123", "abc_123", "abc%20123", "x" * 500])
+def test_resolve_comparison_malformed_slug_is_404_without_a_lookup(client, fake_supabase, slug):
+    # 404 like any unknown link: the share page only treats 404 as "link not found".
+    resp = client.get(f"/comparisons/{slug}")
+    assert resp.status_code == 404
+    assert fake_supabase.filters == []
+    assert fake_supabase.rpc_calls == []
+
+
+def test_generated_slugs_match_the_route_pattern():
+    from routers.comparisons import SLUG_RE, _generate_slug
+
+    assert all(SLUG_RE.fullmatch(_generate_slug()) for _ in range(200))
+
+
+def test_resolve_comparison_is_limited_to_60_per_minute(client, fake_supabase):
+    fake_supabase.set_response("comparison_links", "select", [])
+    for _ in range(60):
+        assert client.get("/comparisons/zzzzzzz").status_code == 404
+    assert client.get("/comparisons/zzzzzzz").status_code == 429
 
 
 def test_resolve_comparison_success(client, fake_supabase):

@@ -123,9 +123,11 @@ export default function Login() {
   }
 
   return (
-    <div className="max-w-sm mx-auto">
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h1 className="font-display text-xl font-bold text-gray-900 mb-1">
+    <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+      <LoginPerks />
+      <div className="flex flex-col">
+      <div className="bg-white border border-slate-200 rounded-[28px] p-6 sm:p-8 flex-1">
+        <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900 mb-1">
           {TITLES[mode]}
         </h1>
         <p className="text-sm text-gray-500 mb-4">{INTROS[mode]}</p>
@@ -240,6 +242,36 @@ export default function Login() {
       <div className="text-center mt-4">
         <BackLink to="/">Back to Catalog</BackLink>
       </div>
+      </div>
     </div>
+  )
+}
+
+const PERKS = [
+  ['My Gadgets', 'Save the phones you’re considering', 'bg-sage-700 text-white'],
+  ['Saved questions', 'Answers kept for each phone', 'bg-inverse text-inverse-ink'],
+  ['Suggestions', 'Flag a spec that looks wrong', 'bg-pop text-pop-ink'],
+  ['Free', 'Browsing and asking need no account', 'bg-slate-100 text-slate-900'],
+]
+
+// Why sign in (rebrand canvas, 13 Nov 2026). Decorative summary; hidden on phones to keep the form first.
+function LoginPerks() {
+  return (
+    <section aria-label="Why sign in" className="hidden lg:flex flex-col justify-between gap-6 p-8 rounded-[28px] bg-white border border-slate-200">
+      <div>
+        <p className="text-5xl font-extrabold tracking-[-0.055em] leading-[0.98] text-slate-900">Specs you can check.</p>
+        <p className="mt-3 text-base text-slate-600 max-w-sm">
+          Log in to save phones, keep your questions and suggest corrections.
+        </p>
+      </div>
+      <ul className="grid grid-cols-2 gap-2.5">
+        {PERKS.map(([title, text, tone]) => (
+          <li key={title} className={`p-4 rounded-[20px] ${tone}`}>
+            <p className="text-[15px] font-extrabold">{title}</p>
+            <p className="mt-1 text-[13px] opacity-85">{text}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

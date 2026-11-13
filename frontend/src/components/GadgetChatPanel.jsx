@@ -186,7 +186,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
   return (
     <section
       aria-labelledby="gadget-chat-title"
-      className="mt-8 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col overflow-hidden"
+      className="bg-white border border-slate-200 rounded-[28px] flex flex-col overflow-hidden min-w-0"
     >
       <header className="flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-3 border-b border-slate-200">
         <div className="min-w-0">

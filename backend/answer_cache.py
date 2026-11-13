@@ -13,7 +13,7 @@ so a comparison answer is never served to a global search, a technical answer ne
 plain-language request, and a prompt or model change starts from an empty cache.
 
 Same rules as cache.py: entries live in one process and are only correct on a single worker;
-render.yaml runs `--workers 1`. A multi-worker deploy would need a shared store, otherwise one
+.railway/railway.ts runs `--workers 1`. A multi-worker deploy would need a shared store, otherwise one
 worker keeps serving answers another worker has already invalidated. Spec writes made through
 the API call invalidate_gadget() / invalidate_all(); edits made outside the API (SQL Editor,
 seed script) appear once the TTL runs out, and a deploy or restart empties the cache.

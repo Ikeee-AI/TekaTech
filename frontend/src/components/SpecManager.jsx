@@ -381,7 +381,8 @@ function SpecSourceGroup({ group, defaultOpen, user, isAdmin, gadgetId, indexing
         className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 sm:px-5 py-3 bg-slate-50 ${open ? 'border-b border-slate-200' : ''}`}
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
-          {sourceUrl ? (
+          {/* Only http(s) becomes a link: a stored javascript:/data: URL must never be clickable. */}
+          {isHttpUrl(sourceUrl) ? (
             <a
               href={sourceUrl}
               target="_blank"
@@ -463,7 +464,11 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
         onSpecsChange?.(data)
       })
       .catch((err) => {
-        if (!background) setState({ status: 'error', specs: [], error: friendlyError(err) })
+        if (!background) {
+          setState({ status: 'error', specs: [], error: friendlyError(err) })
+          // undefined = couldn't load (not "no specs"), so the page doesn't claim nothing is stated.
+          onSpecsChange?.(undefined)
+        }
       })
   }, [gadgetId, onSpecsChange])
 
@@ -533,7 +538,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   const { status, specs } = state
 
   return (
-    <section aria-labelledby="specs-title" className="mt-8">
+    <section aria-labelledby="specs-title" className="min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
         <h2 id="specs-title" className="text-xl font-bold text-slate-900 flex items-center gap-2">
           <FileText size={20} className="text-sage-700" aria-hidden="true" /> Specifications

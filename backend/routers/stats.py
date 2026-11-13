@@ -3,6 +3,7 @@ from collections import Counter
 from fastapi import APIRouter, Query, Response
 
 import cache
+from routers.query import PRIVATE_QUESTION_PLACEHOLDER
 from supabase_client import supabase
 
 router = APIRouter(prefix="/stats", tags=["stats"])
@@ -42,6 +43,8 @@ TRENDING_MAX = 10
 # Same cap /query puts on new questions (MAX_QUESTION_CHARS in routers/query.py).
 # Rows saved before that cap can be longer; they are shortened for display here.
 TRENDING_QUESTION_MAX_CHARS = 150
+# A question must have been asked this many times before it is shown publicly.
+TRENDING_MIN_COUNT = 2
 
 
 def _shorten(question: str) -> str:
@@ -72,7 +75,13 @@ def _load_trending(limit: int):
     if not history:
         return []
 
-    # Count how often each question (normalized) was asked, keep the original casing
+    # Private turns (a signed-in user's saved gadget question) are stored as a placeholder and
+    # never shown. Everything else is counted by normalized text, keeping the original casing.
+    history = [
+        h
+        for h in history
+        if (h.get("query_text") or "").strip() and h["query_text"].strip() != PRIVATE_QUESTION_PLACEHOLDER
+    ]
     normalized_counts = Counter(h["query_text"].strip().lower() for h in history)
     seen_original = {}
     for h in history:
@@ -80,5 +89,8 @@ def _load_trending(limit: int):
         if key not in seen_original:
             seen_original[key] = h["query_text"].strip()
 
-    ranked = sorted(normalized_counts.items(), key=lambda x: x[1], reverse=True)[:limit]
+    # Privacy: a question asked only once may be personal ("is this OK for my son's ...?"), so
+    # only questions asked at least TRENDING_MIN_COUNT times can appear on the public list.
+    repeated = [(key, count) for key, count in normalized_counts.items() if count >= TRENDING_MIN_COUNT]
+    ranked = sorted(repeated, key=lambda x: x[1], reverse=True)[:limit]
     return [{"question": _shorten(seen_original[key]), "count": count} for key, count in ranked]
