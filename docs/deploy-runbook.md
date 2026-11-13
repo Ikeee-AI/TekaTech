@@ -10,6 +10,7 @@ The API moved from Render to Railway on 12 Nov 2026 ~00:33 Manila ([plan and rec
 - **Deploys** come only from CI (`railway up` with the `RAILWAY_TOKEN` repo secret). Don't connect Railway's GitHub autodeploy.
 - **Manual deploy** (owner, CLI signed in with `railway login` and linked with `railway link --project tekatech --service tekatech-api --environment production`): from a clean checkout of the SHA, `railway variable set APP_COMMIT=<sha> --skip-deploys`, then `railway up backend --path-as-root --ci`.
 - **Logs**: `railway logs --service tekatech-api --environment production`.
+- **Saving a token as a GitHub secret** (for example a new `RAILWAY_TOKEN`): use `gh secret set NAME --body "<value>"`. Don't pipe the value in from Windows PowerShell 5.1: it adds a CRLF, and Railway then rejects the token with `Invalid RAILWAY_TOKEN` (incident 11 Nov 2026, `devops/incidents.md`). Test a new token first from a folder that isn't linked, for example `railway whoami` with `RAILWAY_TOKEN` set.
 - **Render API retired 13 Nov 2026:** the old Render service `tekatech-api` was suspended and its deploy hook secret removed, so the host move can no longer be undone by switching URLs. To recover the API, use Railway's own rollback (below) or redeploy a known-good commit with `rollback.yml`.
 
 The setup steps below are the original Render setup and stay as history. Only the frontend (`tekatech-web`) is still on Render.

@@ -1100,3 +1100,30 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — Railway plan section 5 "usage after 7 days": **Partial**. After about 1.5 days the estimate is $0.19 for the period, far under $5. The 7-day reading is still due ~19 Nov.
 
 **Next** — Read Railway usage again around 19 Nov and record the 7-day figure — Ikeee-AI.
+
+## 2026-11-13 13:08 Asia/Manila — Post-Sprint 5 metrics row; 11 Nov token incident recorded; #249 nudged
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code ran `pipeline_metrics.py`, wrote the row, the incident entry and the nudge; Ikeee-AI approved each) · **Task:** S5-IK · **Branch:** `tekatech/s5-ik-worklog-13nov`
+
+**Done**
+- Metrics row "Post-Sprint 5 (7–13 Nov UTC)" in `docs/devops/metrics.md`: PR 1.96 min (18 runs), main 2.07 min (5 runs), success 95.7 % (22/23; 6 cancelled/skipped excluded), 4 deploys, merge-to-live 5.15 min (4 samples), 1 failed deploy. Recovery: about 11 min for the failed deploy; within about 24 h (upper bound) for the 8 Nov health-check timeout. Marked as a small sample, not comparable. Evidence: `docs/evidence/post-sprint5-metrics-2026-11-13.json`, commit `e754981`.
+- Incident "2026-11-11: first Railway deploys from CI failed (`Invalid RAILWAY_TOKEN`)" added to `docs/devops/incidents.md`: `c4cce99` run 43068375474 and `3658c58` attempts 1–2 failed; attempt 3 succeeded at 17:39:48 UTC (about 11 min). No user impact. Cause: a CRLF added when the token was piped from PowerShell into `gh secret set`. Prevention: a runbook line (save with `--body`, test the token from a folder that isn't linked).
+- Nudged Jopher on [#249](https://github.com/Ikeee-AI/TekaTech/pull/249): Mika's 10 Nov changes-requested review is still open (most `/login` entry points don't pass `from`). Asked for a fix or an expected date, and offered a hand-over.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| `incidents.md` says every failed production deploy gets an entry; the 11 Nov token failure was only in the worklog | Incomplete incident log | Entry added (13 Nov). The exact time the cause was found was not recorded, so the entry gives a range (17:34–17:38 UTC). Resolved |
+
+**Decisions** — Use 7–13 Nov UTC as the window (right after the Sprint 5 final row's 6 Nov cut-off) — Ikeee-AI.
+
+**Blockers / risks** — #249 waits on Jopher — Jopher.
+
+**Plan alignment** — No task row change; post-Sprint 5 operations.
+
+**Next**
+- Batch this branch (`tekatech/s5-ik-worklog-13nov`: worklog, metrics, incident, runbook) into the next PR — Ikeee-AI.
+- Railway 7-day usage — Ikeee-AI — ~19 Nov.
+- If Jopher doesn't reply, decide on a #249 hand-over — Ikeee-AI.
