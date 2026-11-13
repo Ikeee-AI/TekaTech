@@ -1,9 +1,10 @@
 import logging
+import re
 import secrets
 import string
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Path, Request
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
 
@@ -16,8 +17,9 @@ logger = logging.getLogger(__name__)
 ALPHABET = string.ascii_lowercase + string.digits
 SLUG_LENGTH = 7
 # Exactly what _generate_slug produces (every link since Sprint 1), so a malformed slug is
-# refused before it reaches the database.
-SLUG_PATTERN = f"^[a-z0-9]{{{SLUG_LENGTH}}}$"
+# refused before it reaches the database. Answered with 404 like any unknown link, because the
+# share page (frontend ShortLinkRedirect) treats 404 as "link not found"; a 422 would show a retry error.
+SLUG_RE = re.compile(f"^[a-z0-9]{{{SLUG_LENGTH}}}$")
 MAX_COMPARISON_GADGETS = 5  # matches the UI's "select 2-3 gadgets" framing, with headroom
 MIN_COMPARISON_GADGETS = 2
 
@@ -81,8 +83,10 @@ def create_comparison_link(request: Request, payload: ComparisonCreate):
 @limiter.limit("60/minute")
 def resolve_comparison_link(
     request: Request,
-    slug: str = Path(min_length=SLUG_LENGTH, max_length=SLUG_LENGTH, pattern=SLUG_PATTERN),
+    slug: str,
 ):
+    if not SLUG_RE.fullmatch(slug):
+        raise HTTPException(status_code=404, detail="Link not found")
     result = supabase.table("comparison_links").select("*").eq("slug", slug).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Link not found")
