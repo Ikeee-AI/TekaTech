@@ -1185,3 +1185,39 @@ Short session, ~09:45–10:12 Manila.
 **Next**
 - Manuel replies on #201 with a start date; Ikeee-AI decides on admin access if he asks — Manuel / Ikeee-AI.
 - Railway 7-day usage — Ikeee-AI — ~19 Nov.
+
+## 2026-11-13 14:50 Asia/Manila — #204 closed; admin overview (#206) built, PR #256 in review
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code wrote the endpoint, page and tests; Ikeee-AI chose the scope) · **Task:** #206 (S5-IK, area:devops) · **Branch:** `tekatech/s5-ik-admin-overview` → [#256](https://github.com/Ikeee-AI/TekaTech/pull/256); this entry on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- Closed [#204](https://github.com/Ikeee-AI/TekaTech/issues/204) as completed: the account page shipped in #209 (3 Nov); delete-account stays in #213.
+- Scope for #206 agreed with the owner: tokens plus an estimated dollar figure labelled "logged answers only"; 14 days; a new `/admin` page.
+- OpenAI prices read from https://developers.openai.com/api/docs/pricing (13 Nov): gpt-5-mini $0.25 input / $2.00 output, text-embedding-3-small $0.02 per 1M tokens.
+- Built `GET /admin/overview` (admin-only, read-only, uncached; catalog, 14-day usage per Manila day with estimated cost, account and My Gadgets list counts, no emails or ids) and the `/admin` page with an admin-only "Overview" navbar link. Authorization-matrix row added (ADMIN); `gte` added to `FakeQuery`; `CLAUDE.md`/`AGENTS.md` admin list updated.
+- Checks (local): backend **770 passed** (7 new); frontend lint clean, **329 passed**, build OK; secret guard passed. Real read-only run against **TekaTech-dev** (confirmed by project ref): 13 gadgets, 3 answerable, 11/12 chunks indexed, 86 questions in 14 days, est. $0.0561, 9 accounts.
+- PR [#256](https://github.com/Ikeee-AI/TekaTech/pull/256) (commit `90fce0f`), reviewers Manuel (backend) and Mika (UI).
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| ESLint `react-refresh/only-export-components` on `AdminOverview.jsx` | The page exported the `formatUsd` helper | Moved it to `src/utils/formatUsd.js`. Fixed |
+| Dev run: `APIError: Could not find the table 'public.user_gadgets' in the schema cache` (`PGRST205`) | `sql/user_gadgets.sql` was applied to production (3 Nov) but never to TekaTech-dev | Endpoint made fail-soft: the list count shows "Unavailable" (test added). Dev still lacks the table. Open (optional), Ikeee-AI |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Dev database is missing `user_gadgets`; production has it | Dev doesn't match production; My Gadgets can't be tested on dev | Apply `backend/sql/user_gadgets.sql` to TekaTech-dev (optional, owner). Open |
+| The issue asked for "estimated spend against the $10 balance"; the app can't read the OpenAI balance, and `query_history` misses general-knowledge, length-capped and indexing calls | A dollar figure could be misread as the real spend | Shown as an estimate for logged answers only, with the caveat on the page; the OpenAI dashboard stays the source of truth (owner's choice). Resolved |
+| #206 is Ikeee-AI's issue, but the route is in Manuel's API area and the page in Mika's UI area | Ownership | Both requested as reviewers on #256. Open |
+
+**Decisions** — Close #204 as done — Ikeee-AI. #206 scope (estimate with caveat, 14 days, `/admin` page) — Ikeee-AI. Counts fail soft instead of failing the page — Ikeee-AI.
+
+**Blockers / risks** — #256 needs Manuel's and Mika's reviews — Manuel, Mika. The browser check of `/admin` needs an admin sign-in (on dev or after deploy) — Ikeee-AI.
+
+**Plan alignment** — #206: **Partial** (built and tested locally; not yet reviewed, merged, deployed or checked in a browser).
+
+**Next**
+- Browser check of `/admin`, then merge #256 after both reviews, then check it on production — Ikeee-AI.
+- Optional: apply `user_gadgets.sql` to TekaTech-dev — Ikeee-AI.
