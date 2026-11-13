@@ -27,12 +27,16 @@ function Card({ title, children }) {
 /**
  * Landing page for the password-reset email link.
  *
- * supabase-js parses the link's tokens from the URL while the client initialises and
- * stores a recovery session before AuthProvider's getSession() resolves, so once
- * `loading` is false a valid link shows up here as a signed-in `user`. That is more
- * reliable than catching the PASSWORD_RECOVERY event, which fires on a timer and can
- * run before this page mounts. An expired or reused link instead leaves
- * `#error_code=otp_expired` (or similar) in the URL and creates no session.
+ * The link opens /reset-password?code=… (PKCE). supabase-js exchanges the code while the
+ * client initialises and stores a recovery session before AuthProvider's getSession()
+ * resolves, so once `loading` is false a valid link shows up here as a signed-in `user`
+ * (a link sent before the PKCE switch, #access_token=…, is stored the same way; see
+ * utils/authLink.js). That is more reliable than catching the PASSWORD_RECOVERY event,
+ * which can fire before this page mounts; AuthProvider uses that event only to bring a
+ * recovery session that landed elsewhere to this page. An expired or reused link instead
+ * leaves `?error_code=otp_expired` (or similar) in the URL and creates no session, and so
+ * does a link opened in a different browser from the one that requested it (no PKCE code
+ * verifier there).
  */
 export default function ResetPassword() {
   useDocumentTitle('Set a New Password')
@@ -60,7 +64,8 @@ export default function ResetPassword() {
     return (
       <Card title="Reset Link Not Valid">
         <Alert tone="error" title="This reset link is invalid or has expired." className="mt-3">
-          Reset links work once and expire after a while. Request a new link and use the most recent email.
+          Reset links work once, expire after a while, and only work in the browser where you requested them. Request a
+          new link in this browser and use the most recent email.
         </Alert>
         <Button as={Link} to="/forgot-password" variant="primary" size="lg" icon={Mail} className="w-full mt-4">
           Request a New Link
