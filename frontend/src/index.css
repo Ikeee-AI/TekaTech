@@ -207,8 +207,12 @@ body {
 .animate-fade-in {
   animation: fade-in 0.25s ease-out;
 }
-/* Fallback keyboard focus ring for any control that doesn't set its own. */
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+/* Fallback keyboard focus ring for any control that doesn't set its own. tabindex="-1"
+   elements are script focus targets (the <main> landmark after a route change, headings,
+   error summaries), not controls: this unlayered rule beats their Tailwind outline-none,
+   which drew a lime outline round the whole page on /login (14 Nov 2026). Those that want
+   a ring set one with focus-visible:ring-*. */
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: 2px solid var(--color-sage-700);
   outline-offset: 2px;
 }
