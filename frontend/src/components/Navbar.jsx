@@ -314,10 +314,10 @@ function Navbar() {
           {isAdmin && (
             <Link
               to="/add"
-              aria-label="Add gadget"
+              aria-label="Add phone"
               className={`flex items-center gap-2 bg-sage-700 text-white text-sm font-bold px-3 sm:px-4 py-2 min-h-10 rounded-full hover:bg-sage-800 active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
             >
-              <Plus size={18} strokeWidth={2.5} /> <span className="hidden sm:inline">Add Gadget</span>
+              <Plus size={18} strokeWidth={2.5} /> <span className="hidden sm:inline">Add Phone</span>
             </Link>
           )}
 
