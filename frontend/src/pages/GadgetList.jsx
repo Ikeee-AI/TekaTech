@@ -11,7 +11,6 @@ import {
   PackagePlus,
   SearchX,
   ImageOff,
-  BadgeCheck,
   BookmarkPlus,
   BookmarkCheck,
 } from 'lucide-react'
@@ -19,15 +18,14 @@ import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
-import Button from '../components/ui/Button'
-import DeleteGadgetButton from '../components/DeleteGadgetButton'
 import { CatalogSkeleton } from '../components/Skeleton'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useAuth } from '../hooks/useAuth'
 import AIAnswerPanel from '../components/AIAnswerPanel'
 import TrendingQuestions from '../components/TrendingQuestions'
 import { friendlyError } from '../utils/requestErrors'
-import { gadgetDisplayName } from '../utils/gadgetName'
+import { formatPeso } from '../utils/formatPeso'
+import { categoryLine, compareLine } from '../utils/lineColors'
 
 const SUGGESTED_QUESTIONS = [
   'Which gadget has the best battery life?',
@@ -35,15 +33,17 @@ const SUGGESTED_QUESTIONS = [
   'Compare display quality across gadgets',
 ]
 
-const PAGE_SIZE = 6
+const PAGE_SIZE = 12
 const HISTOGRAM_BINS = 11
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600'
+// Controls on the navy compare tray: the navy ring would vanish there.
+const trayFocusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-yellow'
 // Widens a small icon button's touch area to about 40px without changing its look.
 const hitArea = "relative before:absolute before:-inset-2.5 before:content-['']"
 
 function formatPrice(value) {
-  return `Php ${Math.round(value).toLocaleString()}`
+  return formatPeso(value)
 }
 
 function formatRelease(date) {
@@ -61,7 +61,7 @@ function countBy(list, key) {
   return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]))
 }
 
-// Gadgets without a price sort last in both directions, not first as Php 0.
+// Gadgets without a price sort last in both directions, not first as ₱0.
 function comparePrices(a, b, direction) {
   const aMissing = a.price_php == null
   const bMissing = b.price_php == null
@@ -169,15 +169,6 @@ export default function GadgetList() {
     } finally {
       setSavingId(null)
     }
-  }
-
-  function handleDeleted(gadget) {
-    setGadgets((prev) => prev.filter((g) => g.id !== gadget.id))
-    setSelected((prev) => {
-      const next = new Set(prev)
-      next.delete(gadget.id)
-      return next
-    })
   }
 
   const categoryCounts = useMemo(() => countBy(gadgets, 'category'), [gadgets])
@@ -434,16 +425,18 @@ export default function GadgetList() {
           <p role="status" className="sr-only">
             {hasFilters ? `${filtered.length} ${filtered.length === 1 ? 'gadget matches' : 'gadgets match'} your filters` : ''}
           </p>
-          <div className="flex flex-col gap-3 bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
+          <div className="flex flex-col gap-3 bg-white rounded-xl p-4 sm:p-6 border border-slate-200 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-3xl font-bold tracking-tight text-slate-900">Gadget Catalog</h1>
-                  <span className="font-mono text-sm bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-semibold">
+                  <span className="font-mono text-sm bg-rail-50 text-rail-800 border border-rail-200 px-2.5 py-0.5 rounded-full font-semibold">
                     {gadgets.length} device{gadgets.length === 1 ? '' : 's'}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-slate-600">AI answers link to the saved specs they use. Optional general-knowledge answers are labelled.</p>
+                <p className="hidden sm:block mt-1 text-sm text-slate-600">
+                  Every AI answer links to the official spec it came from.
+                </p>
               </div>
               <div className="flex items-center gap-1.5">
                 <label htmlFor="sort-select" className="text-slate-600 font-mono text-xs">
@@ -506,13 +499,16 @@ export default function GadgetList() {
             <AIAnswerPanel question={askedQuestion} onClose={() => setAskedQuestion(null)} />
           ) : (
             <div>
-              <TrendingQuestions onSelect={ask} />
-              <div className="flex flex-wrap gap-1.5">
+              <div className="hidden md:block">
+                <TrendingQuestions onSelect={ask} />
+              </div>
+              {/* One row on phones (scrolls sideways) so the first gadget shows on the first screen. */}
+              <div className="flex flex-nowrap sm:flex-wrap gap-1.5 overflow-x-auto sm:overflow-visible -mx-1 px-1 pb-1 sm:pb-0">
                 {SUGGESTED_QUESTIONS.map((q) => (
                   <button
                     key={q}
                     onClick={() => ask(q)}
-                    className={`flex items-center gap-1 text-sm font-medium text-rail-700 bg-rail-50 hover:bg-rail-200 border border-rail-200 rounded-full px-2.5 py-1 min-h-10 sm:min-h-8 transition active:scale-95 ${focusRing}`}
+                    className={`flex shrink-0 items-center gap-1 whitespace-nowrap text-sm font-medium text-rail-700 bg-rail-50 hover:bg-rail-200 border border-rail-200 rounded-full px-2.5 py-1 min-h-10 sm:min-h-8 transition active:scale-95 ${focusRing}`}
                   >
                     <Sparkles size={11} /> {q}
                   </button>
@@ -539,15 +535,13 @@ export default function GadgetList() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,23rem),1fr))] gap-6">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))] gap-4">
                 {pageItems.map((g) => (
                   <GadgetCard
                     key={g.id}
                     gadget={g}
                     selected={selected.has(g.id)}
                     onToggle={() => toggleSelect(g.id)}
-                    onAsk={() => ask(`What are the key specs of the ${gadgetDisplayName(g)}?`)}
-                    onDeleted={handleDeleted}
                     // Visitors see the button too (it leads to log in); signed-in users once their list loads.
                     mine={!user ? false : myIds ? myIds.has(g.id) : null}
                     saving={savingId === g.id}
@@ -609,9 +603,9 @@ function CheckboxGroup({ title, items, selected, onToggle, prominent = false }) 
               key={value}
               className={`flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer transition-colors ${
                 checked && prominent
-                  ? 'bg-emerald-50 border-emerald-200 text-slate-900'
+                  ? 'bg-rail-50 border-rail-200 text-slate-900'
                   : 'border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              } ${prominent ? 'text-sm' : 'text-sm'}`}
+              } text-sm`}
             >
               <span className="flex items-center gap-2 min-w-0">
                 <input
@@ -620,12 +614,15 @@ function CheckboxGroup({ title, items, selected, onToggle, prominent = false }) 
                   onChange={() => onToggle(value)}
                   className="w-4 h-4 rounded border-slate-300 accent-rail-700"
                 />
+                {prominent && (
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${categoryLine(value).dot}`} aria-hidden="true" />
+                )}
                 <span className={`truncate ${checked ? 'font-medium text-slate-900' : ''}`}>{value}</span>
               </span>
               <span
                 className={`font-mono text-xs px-1.5 py-0.5 rounded ${
                   checked
-                    ? 'bg-white text-emerald-800 border border-emerald-200 font-semibold'
+                    ? 'bg-white text-rail-800 border border-rail-200 font-semibold'
                     : 'bg-slate-100 text-slate-600'
                 }`}
               >
@@ -671,90 +668,62 @@ function PageButton({ children, active = false, disabled = false, onClick }) {
   )
 }
 
-function SpecCell({ label, value, sub }) {
-  return (
-    <div className="flex flex-col min-w-0">
-      <span className="font-mono text-xs text-slate-600 uppercase tracking-wider font-medium">{label}</span>
-      <span className="font-mono text-sm text-slate-900 font-semibold truncate">{value}</span>
-      {sub && <span className="font-mono text-xs text-slate-600 truncate">{sub}</span>}
-    </div>
-  )
-}
-
-export function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted, mine, saving, onToggleMine }) {
+// A compact catalog card (rebrand step 2). The whole card opens the gadget page: the
+// name's link stretches over the card. Only Compare and Save sit above it; Ask AI lives
+// on the gadget page and Delete with the other admin controls there.
+export function GadgetCard({ gadget, selected, onToggle, mine, saving, onToggleMine }) {
   const [imgError, setImgError] = useState(false)
   const showImage = gadget.image_url && !imgError
   const release = formatRelease(gadget.release_date)
+  const price = formatPeso(gadget.price_php)
+  const line = categoryLine(gadget.category)
 
   return (
     <article
-      className={`relative bg-white rounded-xl p-6 border shadow-xs flex flex-col justify-between hover:shadow-md transition-all group ${
-        selected ? 'border-rail-400 ring-1 ring-rail-400' : 'border-slate-200 hover:border-slate-300'
+      className={`group relative bg-white rounded-xl border p-4 flex flex-col gap-3 transition-shadow hover:shadow-md focus-within:shadow-md ${
+        selected ? 'border-rail-600 ring-2 ring-rail-600/25' : 'border-slate-200 hover:border-rail-300'
       }`}
     >
-      <div className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span className="font-mono text-xs bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded font-medium">
-              {gadget.category}
-            </span>
-            {release && <span className="font-mono text-xs text-slate-500 shrink-0">Rel. {release}</span>}
-          </div>
-          {selected && (
-            <span className="flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-mono text-xs font-semibold shrink-0">
-              <BadgeCheck size={13} className="text-emerald-700" /> In Compare
-            </span>
+      <div className="flex gap-4">
+        <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+          {showImage ? (
+            <img
+              src={gadget.image_url}
+              alt=""
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <ImageOff size={20} className="text-slate-300" aria-hidden="true" />
           )}
         </div>
-
-        <div className="flex gap-5">
-          <div className="w-24 h-24 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
-            {showImage ? (
-              <img
-                src={gadget.image_url}
-                alt={gadget.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <ImageOff size={22} className="text-slate-300" />
-            )}
-          </div>
-          <div className="flex flex-col justify-center min-w-0">
-            <h3 className="text-xl font-bold text-slate-900 tracking-tight truncate">
-              <Link to={`/gadgets/${gadget.id}`} className={`hover:underline rounded ${focusRing}`}>
-                {gadget.name}
-              </Link>
-            </h3>
-            <span className="font-mono text-xs text-rail-700 font-semibold truncate">{gadget.brand}</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 bg-slate-100 border border-slate-200 px-3.5 py-3 rounded-lg">
-          <SpecCell label="Brand" value={gadget.brand} />
-          <SpecCell label="Price" value={gadget.price_php != null ? formatPrice(gadget.price_php) : '—'} />
-          <SpecCell label="Released" value={release ?? '—'} />
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600">
+            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${line.dot}`} aria-hidden="true" />
+            <span className="truncate">{gadget.category}</span>
+          </p>
+          <h3 className="font-display text-xl font-bold leading-tight text-slate-900 truncate">
+            <Link
+              to={`/gadgets/${gadget.id}`}
+              className={`rounded group-hover:underline decoration-2 after:absolute after:inset-0 after:rounded-xl ${focusRing}`}
+            >
+              {gadget.name}
+            </Link>
+          </h3>
+          <p className="text-sm text-slate-600 truncate">
+            {gadget.brand}
+            {release && <span className="text-slate-500"> · {release}</span>}
+          </p>
         </div>
       </div>
 
-      {mine !== null && (
-        <Button
-          variant={mine ? 'subtle' : 'outline'}
-          size="sm"
-          icon={mine ? BookmarkCheck : BookmarkPlus}
-          loading={saving}
-          disabled={saving}
-          aria-pressed={mine}
-          onClick={onToggleMine}
-          aria-label={`${gadget.name}: ${mine ? 'in My Gadgets, select to remove' : 'add to My Gadgets'}`}
-          className="w-full mt-5"
-        >
-          {mine ? 'In My Gadgets' : 'Add to My Gadgets'}
-        </Button>
-      )}
+      <p className="font-mono text-2xl font-bold text-slate-900 leading-none">
+        {price ?? <span className="text-sm font-semibold text-slate-500">Price not listed</span>}
+      </p>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-5 mt-5 border-t border-slate-200">
-        <label className="flex items-center gap-2 min-h-9 cursor-pointer select-none rounded-md focus-within:ring-2 focus-within:ring-rail-600 px-1 -mx-1">
+      {/* Above the stretched link, so these stay their own controls. */}
+      <div className="relative z-10 flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+        <label className="flex items-center gap-2 min-h-10 cursor-pointer select-none rounded-md focus-within:ring-2 focus-within:ring-rail-600 px-1 -mx-1">
           <input
             type="checkbox"
             checked={selected}
@@ -762,19 +731,25 @@ export function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted, mine,
             aria-label={`Compare ${gadget.name}`}
             className="w-5 h-5 rounded border-slate-300 accent-rail-700 focus:outline-none"
           />
-          <span className="text-sm text-slate-800 font-semibold">Compare</span>
+          <span className={`text-sm font-semibold ${selected ? 'text-rail-800' : 'text-slate-800'}`}>
+            {selected ? 'In Compare' : 'Compare'}
+          </span>
         </label>
-        <div className="flex items-center gap-2">
-          <DeleteGadgetButton gadget={gadget} onDeleted={onDeleted} size="sm" iconOnly />
-          {/* aria-label, not an sr-only span: a span's leading space is dropped when the
-              accessible name is computed, so it read "Ask AIabout …" (#207). */}
-          <Button variant="subtle" size="sm" icon={Sparkles} onClick={onAsk} aria-label={`Ask AI about ${gadget.name}`}>
-            Ask AI
-          </Button>
-          <Button as={Link} to={`/gadgets/${gadget.id}`} variant="primary" size="sm" aria-label={`Details for ${gadget.name}`}>
-            Details <ArrowRight size={14} aria-hidden="true" />
-          </Button>
-        </div>
+        {mine !== null && (
+          <button
+            type="button"
+            onClick={onToggleMine}
+            disabled={saving}
+            aria-pressed={mine}
+            aria-label={`${gadget.name}: ${mine ? 'in My Gadgets, select to remove' : 'add to My Gadgets'}`}
+            className={`flex items-center gap-1.5 min-h-10 px-3 rounded-lg text-sm font-semibold transition disabled:opacity-60 ${focusRing} ${
+              mine ? 'bg-rail-50 text-rail-800 hover:bg-rail-100' : 'text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            {mine ? <BookmarkCheck size={16} aria-hidden="true" /> : <BookmarkPlus size={16} aria-hidden="true" />}
+            {mine ? 'Saved' : 'Save'}
+          </button>
+        )}
       </div>
     </article>
   )
@@ -785,25 +760,25 @@ function CompareTray({ gadgets, onRemove, onClear, onCompare }) {
   return (
     <aside
       aria-label="Compare tray"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-4xl bg-white/95 backdrop-blur-md rounded-xl p-3.5 border border-slate-200 shadow-2xl animate-fade-in"
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-4xl bg-rail-900 text-white rounded-xl p-3.5 shadow-2xl shadow-rail-950/30 animate-fade-in"
     >
       <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
           <div className="flex items-center gap-1.5 font-mono text-sm shrink-0">
-            <Scale size={18} className="text-emerald-800" />
-            <span className="font-bold uppercase tracking-wider text-slate-900">Compare</span>
+            <Scale size={18} className="text-line-yellow" aria-hidden="true" />
+            <span className="font-bold uppercase tracking-wider text-white">Compare</span>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
             {gadgets.map((g, i) => (
               <span key={g.id} className="flex items-center gap-1.5">
-                {i > 0 && <span className="font-mono text-xs text-slate-500 font-bold">VS</span>}
-                <span className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg text-slate-900 text-sm shadow-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                {i > 0 && <span className="font-mono text-xs text-rail-300 font-bold">VS</span>}
+                <span className="flex items-center gap-1.5 bg-rail-800 border border-rail-700 px-2.5 py-1 rounded-lg text-white text-sm">
+                  <span className={`w-2.5 h-2.5 rounded-full ${compareLine(i).dot}`} aria-hidden="true" />
                   <span className="font-semibold">{g.name}</span>
                   <button
                     onClick={() => onRemove(g.id)}
                     aria-label={`Remove ${g.name} from comparison`}
-                    className={`text-slate-600 hover:text-red-700 ml-0.5 p-1 -m-1 transition-colors rounded ${hitArea} ${focusRing}`}
+                    className={`text-rail-200 hover:text-white ml-0.5 p-1 -m-1 transition-colors rounded ${hitArea} ${trayFocusRing}`}
                   >
                     <X size={12} />
                   </button>
@@ -815,7 +790,7 @@ function CompareTray({ gadgets, onRemove, onClear, onCompare }) {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onClear}
-            className={`font-mono text-xs text-slate-500 hover:text-red-600 px-1 py-1 min-h-10 sm:min-h-0 transition-colors font-medium rounded ${focusRing}`}
+            className={`font-mono text-xs text-rail-200 hover:text-white px-1 py-1 min-h-10 sm:min-h-0 transition-colors font-medium rounded ${trayFocusRing}`}
           >
             Clear ({gadgets.length})
           </button>
@@ -823,7 +798,7 @@ function CompareTray({ gadgets, onRemove, onClear, onCompare }) {
             onClick={onCompare}
             disabled={!canCompare}
             title={canCompare ? undefined : 'Select at least 2 to compare'}
-            className={`bg-rail-400 text-rail-900 hover:bg-[#73a082] text-sm px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rail-400 ${focusRing}`}
+            className={`bg-line-yellow text-line-yellow-ink hover:brightness-95 text-sm px-4 py-2 min-h-10 rounded-lg font-bold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed ${trayFocusRing} focus-visible:ring-offset-2 focus-visible:ring-offset-rail-900`}
           >
             Compare Now ({gadgets.length}) <ArrowRight size={16} />
           </button>

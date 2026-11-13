@@ -7,7 +7,8 @@ import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { useCorrectionBadges } from '../hooks/useCorrectionBadges'
 import logo from '../assets/logo.webp'
 
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600'
+// On the navy bar the navy ring would vanish, so header controls use the signal yellow.
+const barFocusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-yellow'
 
 // Small count bubble. The number is visible; srLabel says what it counts. Screen readers
 // get ", 3 pending" instead: a leading space inside the badge is dropped when the link's
@@ -29,17 +30,19 @@ function decisionsLabel(count) {
   return count === 1 ? 'new decision' : 'new decisions'
 }
 
+// Rail-style "you are here": the current page sits on a lighter tile with a signal-yellow
+// bar under it, like the current station on a line diagram.
 function navLinkClass({ isActive }) {
-  return `px-3.5 py-2 rounded-lg text-[15px] transition-colors ${focusRing} ${
+  return `relative px-3.5 py-2 rounded-lg text-[15px] transition-colors ${barFocusRing} ${
     isActive
-      ? 'bg-rail-400 text-rail-900 font-semibold'
-      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+      ? 'bg-rail-800 text-white font-semibold after:absolute after:left-3 after:right-3 after:-bottom-[13px] after:h-[3px] after:rounded-full after:bg-line-yellow'
+      : 'text-rail-100 hover:text-white hover:bg-rail-800'
   }`
 }
 
 function mobileLinkClass({ isActive }) {
-  return `block px-3 py-2.5 rounded-lg text-base transition-colors ${focusRing} ${
-    isActive ? 'bg-rail-50 text-rail-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+  return `block px-3 py-2.5 rounded-lg text-base transition-colors ${barFocusRing} ${
+    isActive ? 'bg-rail-800 text-white font-semibold' : 'text-rail-100 hover:text-white hover:bg-rail-800'
   }`
 }
 
@@ -126,7 +129,7 @@ function SearchBar() {
 
   return (
     <div className="relative flex items-center w-full">
-      <Search size={18} className="absolute left-3 text-slate-500 pointer-events-none" />
+      <Search size={18} className="absolute left-3 text-rail-200 pointer-events-none z-10" />
       <label htmlFor="gadget-search" className="sr-only">
         Search gadgets by name or brand, or press Enter to ask the AI
       </label>
@@ -134,7 +137,7 @@ function SearchBar() {
         id="gadget-search"
         ref={inputRef}
         type="text"
-        placeholder="Search gadgets, or ask a question and press Enter"
+        placeholder="Search gadgets or ask a question"
         maxLength={MAX_QUESTION_CHARS}
         value={query}
         onChange={(e) => setText(e.target.value)}
@@ -145,7 +148,7 @@ function SearchBar() {
             ask()
           }
         }}
-        className="w-full bg-slate-100 text-slate-900 placeholder:text-slate-500 text-[15px] pl-10 pr-12 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-rail-600 focus:bg-white focus:ring-1 focus:ring-rail-600 transition-all"
+        className="w-full bg-rail-800 text-white placeholder:text-rail-200 text-[15px] pl-10 pr-12 py-2.5 rounded-lg border border-rail-700 focus:outline-none focus:bg-rail-950 focus:border-line-yellow focus:ring-2 focus:ring-line-yellow transition-colors"
       />
       {query.trim() ? (
         <button
@@ -156,12 +159,12 @@ function SearchBar() {
           onClick={ask}
           aria-label="Ask the AI"
           title="Ask the AI"
-          className={`absolute right-2 flex items-center gap-1 text-xs font-semibold text-rail-700 bg-rail-50 border border-rail-200 rounded-md px-2 py-1 min-h-10 sm:min-h-0 hover:bg-rail-200 transition ${focusRing}`}
+          className={`absolute right-2 flex items-center gap-1 text-xs font-semibold text-line-yellow-ink bg-line-yellow rounded-md px-2 py-1 min-h-10 sm:min-h-0 hover:brightness-95 transition ${barFocusRing}`}
         >
           <Sparkles size={12} /> Ask <CornerDownLeft size={12} />
         </button>
       ) : (
-        <kbd className="absolute right-3 text-xs text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200 pointer-events-none">
+        <kbd className="absolute right-3 text-xs text-rail-100 bg-rail-700 px-1.5 py-0.5 rounded border border-rail-600 pointer-events-none">
           /
         </kbd>
       )}
@@ -227,10 +230,12 @@ function Navbar() {
   )
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+    <header className="sticky top-0 z-30 bg-rail-900 text-white shadow-md shadow-rail-950/20">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap md:flex-nowrap items-center gap-x-6 gap-y-3">
-        <Link to="/" aria-label="TekaTech home" className={`shrink-0 rounded-md ${focusRing}`}>
-          <img src={logo} alt="TekaTech" className="h-10 w-auto" />
+        <Link to="/" aria-label="TekaTech home" className={`shrink-0 rounded-md ${barFocusRing}`}>
+          {/* White silhouette of the current mark on the navy bar, until the owner decides
+              on the logo (open decision in docs/design/rebrand-brief.md). */}
+          <img src={logo} alt="TekaTech" className="h-10 w-auto brightness-0 invert" />
         </Link>
 
         <div className="order-last w-full md:order-none md:w-auto md:flex-1 md:max-w-xl">
@@ -247,7 +252,7 @@ function Navbar() {
             <Link
               to="/add"
               aria-label="Add gadget"
-              className={`flex items-center gap-2 bg-rail-700 text-white text-[15px] font-bold px-3 sm:px-5 py-2.5 min-h-10 rounded-lg shadow-md shadow-rail-700/25 ring-2 ring-rail-400/50 hover:bg-rail-800 hover:shadow-lg active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
+              className={`flex items-center gap-2 bg-white text-rail-900 text-[15px] font-bold px-3 sm:px-4 py-2.5 min-h-10 rounded-lg hover:bg-rail-50 active:scale-95 transition ${barFocusRing} focus-visible:ring-offset-2 focus-visible:ring-offset-rail-900`}
             >
               <Plus size={18} strokeWidth={2.5} /> <span className="hidden sm:inline">Add Gadget</span>
             </Link>
@@ -255,19 +260,13 @@ function Navbar() {
 
           {user ? (
             <div className="hidden lg:flex items-center gap-2">
-              <div className="hidden xl:flex items-center gap-2 bg-slate-100 border border-slate-200 text-slate-600 text-sm px-3 py-1.5 rounded-lg max-w-[260px]">
-                <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
-                <span className="truncate" title={user.email}>
-                  Signed in as <strong className="text-slate-900 font-semibold">{user.email}</strong>
-                </span>
-              </div>
               <NavLink
                 to="/my-suggestions"
                 aria-label={mySuggestionsLabel}
                 title={mySuggestionsLabel}
                 className={({ isActive }) =>
-                  `relative p-2 rounded-lg transition ${focusRing} ${
-                    isActive ? 'bg-rail-50 text-rail-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                  `relative p-2 rounded-lg transition ${barFocusRing} ${
+                    isActive ? 'bg-rail-800 text-white' : 'text-rail-200 hover:text-white hover:bg-rail-800'
                   }`
                 }
               >
@@ -282,10 +281,10 @@ function Navbar() {
               <NavLink
                 to="/account"
                 aria-label="Your account"
-                title="Your account"
+                title={`Your account: ${user.email}`}
                 className={({ isActive }) =>
-                  `w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0 transition ${focusRing} ${
-                    isActive ? 'bg-rail-800 ring-2 ring-rail-300' : 'bg-rail-700 hover:bg-rail-800'
+                  `w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition ${barFocusRing} ${
+                    isActive ? 'bg-white text-rail-900' : 'bg-rail-700 text-white hover:bg-rail-600'
                   }`
                 }
               >
@@ -295,7 +294,7 @@ function Navbar() {
                 onClick={handleSignOut}
                 aria-label="Log out"
                 title="Log out"
-                className={`p-2 text-slate-500 hover:text-red-600 rounded-lg transition ${focusRing}`}
+                className={`p-2 text-rail-200 hover:text-white hover:bg-rail-800 rounded-lg transition ${barFocusRing}`}
               >
                 <LogOut size={18} />
               </button>
@@ -303,7 +302,7 @@ function Navbar() {
           ) : (
             <Link
               to="/login"
-              className={`hidden lg:flex items-center gap-1.5 px-3.5 py-2 text-[15px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition ${focusRing}`}
+              className={`hidden lg:flex items-center gap-1.5 px-3.5 py-2 text-[15px] text-rail-100 hover:text-white hover:bg-rail-800 rounded-lg transition ${barFocusRing}`}
             >
               <LogIn size={18} /> Log In
             </Link>
@@ -316,22 +315,22 @@ function Navbar() {
             }
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            className={`relative lg:hidden p-2.5 -mr-2.5 text-slate-600 hover:text-slate-900 rounded-lg transition ${focusRing}`}
+            className={`relative lg:hidden p-2.5 -mr-2.5 text-rail-100 hover:text-white rounded-lg transition ${barFocusRing}`}
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
             {!menuOpen && menuUpdates > 0 && (
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-700 ring-2 ring-white" aria-hidden="true" />
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-line-yellow ring-2 ring-rail-900" aria-hidden="true" />
             )}
           </button>
         </div>
       </div>
 
       {menuOpen && (
-        <div id="mobile-menu" className="lg:hidden border-t border-slate-200 px-4 py-3 space-y-1 animate-fade-in">
+        <div id="mobile-menu" className="lg:hidden border-t border-rail-800 px-4 py-3 space-y-1 animate-fade-in">
           <nav aria-label="Main" className="space-y-1">
             {renderLinks(mobileLinkClass)}
           </nav>
-          <div className="border-t border-slate-200 mt-2 pt-2">
+          <div className="border-t border-rail-800 mt-2 pt-2">
             {user && (
               <NavLink to="/my-suggestions" className={mobileLinkClass}>
                 My Suggestions
@@ -349,10 +348,10 @@ function Navbar() {
             )}
             {user ? (
               <div className="flex items-center justify-between gap-2 px-3">
-                <span className="text-sm text-slate-500 truncate">Signed in as {user.email}</span>
+                <span className="text-sm text-rail-200 truncate">Signed in as {user.email}</span>
                 <button
                   onClick={handleSignOut}
-                  className={`flex items-center gap-1.5 min-h-10 px-2 -mr-2 text-sm text-slate-600 hover:text-red-600 rounded-md transition ${focusRing}`}
+                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap min-h-10 px-2 -mr-2 text-sm text-rail-100 hover:text-white rounded-md transition ${barFocusRing}`}
                 >
                   <LogOut size={16} /> Log Out
                 </button>
