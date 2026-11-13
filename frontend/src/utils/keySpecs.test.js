@@ -14,7 +14,7 @@ describe('extractKeySpecs', () => {
     expect(k.refresh).toEqual({ value: '120', unit: 'Hz', source: 'samsung.com' })
     expect(k.camera).toEqual({ value: '50', unit: 'MP', source: 'samsung.com' })
     expect(k.ram).toMatchObject({ value: '8', unit: 'GB' })
-    expect(k.storage).toMatchObject({ value: '128–512', unit: 'GB' })
+    expect(k.storage).toMatchObject({ value: '128', unit: 'GB', variants: true })
     expect(countKeySpecs(k)).toBe(4)
   })
 
@@ -23,7 +23,7 @@ describe('extractKeySpecs', () => {
       { content: 'Storage: 128GB, 256GB, 512GB', source_url: 'https://support.apple.com/en-ph/111831' },
       { content: 'Rear camera: 48MP Main, 26 mm, f/1.6', source_url: 'https://support.apple.com/en-ph/111831' },
     ])
-    expect(k.storage).toEqual({ value: '128–512', unit: 'GB', source: 'support.apple.com' })
+    expect(k.storage).toEqual({ value: '128', unit: 'GB', variants: true, source: 'support.apple.com' })
     expect(k.camera.value).toBe('48')
     expect(k.ram).toBeNull()
     expect(k.refresh).toBeNull()
@@ -31,7 +31,8 @@ describe('extractKeySpecs', () => {
 
   it('shows terabytes and leaves unstated specs null', () => {
     const k = extractKeySpecs([{ content: 'Storage options: 256GB, 512GB, 1TB', source_url: null }])
-    expect(k.storage).toEqual({ value: '256 GB–1 TB', unit: '', source: null })
+    expect(k.storage).toEqual({ value: '256', unit: 'GB', variants: true, source: null })
+    expect(extractKeySpecs([{ content: 'Storage: 1TB' }]).storage).toMatchObject({ value: '1 TB', unit: '' })
     expect(countKeySpecs(extractKeySpecs([]))).toBe(0)
   })
 
@@ -50,8 +51,8 @@ describe('extractKeySpecs', () => {
 
   it('reads several combined variants', () => {
     const k = extractKeySpecs([{ content: 'RAM + ROM: 8GB + 256GB / 12GB + 512GB' }])
-    expect(k.ram.value).toBe('8–12')
-    expect(k.storage.value).toBe('256–512')
+    expect(k.ram).toMatchObject({ value: '8', variants: true })
+    expect(k.storage).toMatchObject({ value: '256', variants: true })
   })
 
   it('never takes the tail of a bigger number', () => {
@@ -72,16 +73,16 @@ describe('extractKeySpecs', () => {
 
   it('reads POCO-style "RAM with storage" lines', () => {
     const k = extractKeySpecs([{ content: '• RAM & Storage: 8GB or 12GB LPDDR5X RAM with 256GB or 512GB UFS 4.0 storage.' }])
-    expect(k.ram.value).toBe('8–12')
-    expect(k.storage.value).toBe('256–512')
+    expect(k.ram.value).toBe('8')
+    expect(k.storage.value).toBe('256')
   })
 
   it('reads labelled editions and skips expandable RAM', () => {
     const k = extractKeySpecs([
       { content: 'Memory (Pro Edition): LPDDR5X 24GB\nMemory (Pro): LPDDR5X 16GB\nStorage (Pro Edition): UFS 4.0 1TB\nStorage (Pro): UFS 4.0 512GB\nExpandable RAM capacity: 16 GB' },
     ])
-    expect(k.ram.value).toBe('16–24')
-    expect(k.storage).toMatchObject({ value: '512 GB–1 TB', unit: '' })
+    expect(k.ram).toMatchObject({ value: '16', variants: true })
+    expect(k.storage).toMatchObject({ value: '512', unit: 'GB', variants: true })
   })
 
   it('reads "rear 50 MP" camera lists and trims 50.0', () => {
@@ -91,7 +92,14 @@ describe('extractKeySpecs', () => {
 
   it('keeps variants listed with semicolons together', () => {
     const k = extractKeySpecs([{ content: 'RAM and storage: 8GB + 256GB; 12GB + 256GB; 12GB + 512GB' }])
-    expect(k.ram.value).toBe('8–12')
-    expect(k.storage.value).toBe('256–512')
+    expect(k.ram).toMatchObject({ value: '8', variants: true })
+    expect(k.storage).toMatchObject({ value: '256', variants: true })
+  })
+
+  it('picks RAM and storage from the same base variant', () => {
+    const k = extractKeySpecs([{ content: 'RAM and storage: 12GB + 512GB; 8GB + 256GB' }])
+    expect(k.ram.value).toBe('8')
+    expect(k.storage.value).toBe('256')
+    expect(extractKeySpecs([{ content: 'RAM and storage: 12GB + 256GB' }]).ram.variants).toBeUndefined()
   })
 })

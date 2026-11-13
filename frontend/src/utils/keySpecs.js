@@ -29,12 +29,16 @@ function formatSize(gb) {
   return gb >= 1024 ? `${gb / 1024} TB` : `${gb} GB`
 }
 
-function sizeRange(sizes) {
+// Phones sold in several variants show the standard (base) model only, e.g. 8 GB / 256 GB
+// (owner, 13 Nov 2026); `variants` lets the tile say "base model".
+function sizeValue(gb, variants = false) {
+  const value = gb >= 1024 ? { value: formatSize(gb), unit: '' } : { value: `${gb}`, unit: 'GB' }
+  return variants ? { ...value, variants: true } : value
+}
+
+function baseSize(sizes) {
   if (!sizes || sizes.length === 0) return null
-  const low = Math.min(...sizes)
-  const high = Math.max(...sizes)
-  if (high < 1024) return { value: low === high ? `${low}` : `${low}–${high}`, unit: 'GB' }
-  return { value: low === high ? formatSize(low) : `${formatSize(low)}–${formatSize(high)}`, unit: '' }
+  return sizeValue(Math.min(...sizes), new Set(sizes).size > 1)
 }
 
 // Sizes listed in one segment: "128GB, 256GB, 512GB", "8GB / 12GB", "256GB and 1TB".
@@ -72,20 +76,25 @@ function combinedVariants(text) {
     if (!(RAM_LABEL.test(label) && STORAGE_LABEL.test(label))) continue
     const pairs = [...value.matchAll(/(?<![\d.])(\d{1,2})[ \t]*GB[ \t]*\+[ \t]*(\d{1,4})[ \t]*(GB|TB)/gi)]
     if (pairs.length > 0) {
-      return { ram: pairs.map((p) => Number(p[1])), storage: pairs.map((p) => sizeInGb(Number(p[2]), p[3])) }
+      // The base variant is the pair with the least storage, then the least RAM ("8GB + 256GB").
+      const variants = pairs
+        .map((p) => ({ ram: Number(p[1]), storage: sizeInGb(Number(p[2]), p[3]) }))
+        .sort((a, b) => a.storage - b.storage || a.ram - b.ram)
+      const many = variants.length > 1
+      return { ram: sizeValue(variants[0].ram, many), storage: sizeValue(variants[0].storage, many) }
     }
     const [ramPart, storagePart] = value.split(/\bwith\b/i)
     if (storagePart) {
       const ram = sizesIn(ramPart)
       const storage = sizesIn(storagePart)
-      if (ram.length && storage.length) return { ram, storage }
+      if (ram.length && storage.length) return { ram: baseSize(ram), storage: baseSize(storage) }
     }
   }
   return null
 }
 
 // Sizes from every segment labelled like `labelRe` (e.g. two editions: "Memory (Edition): 24GB",
-// "Memory (Pro): 16GB" → 16–24), skipping combined and "extra" labels.
+// "Memory (Pro): 16GB" → base 16), skipping combined and "extra" labels.
 function labelledSizes(text, labelRe, otherRe, firstOnly) {
   const sizes = []
   for (const segment of segments(text)) {
@@ -104,16 +113,16 @@ function trimNumber(value) {
 const PARSERS = {
   ram(text) {
     const combined = combinedVariants(text)
-    if (combined) return sizeRange(combined.ram)
+    if (combined) return combined.ram
     const before = text.match(/(?<![\d.])(\d{1,2})[ \t]*GB[ \t]*(?:of[ \t]+)?(?:RAM|memory)\b/i)
     if (before) return { value: before[1], unit: 'GB' }
     // First size per line: "RAM: 12GB (up to 14GB dynamic RAM expansion)" is 12 GB.
-    return sizeRange(labelledSizes(text, RAM_LABEL, STORAGE_LABEL, true))
+    return baseSize(labelledSizes(text, RAM_LABEL, STORAGE_LABEL, true))
   },
   storage(text) {
     const combined = combinedVariants(text)
-    if (combined) return sizeRange(combined.storage)
-    return sizeRange(labelledSizes(text, STORAGE_LABEL, RAM_LABEL, false))
+    if (combined) return combined.storage
+    return baseSize(labelledSizes(text, STORAGE_LABEL, RAM_LABEL, false))
   },
   camera(text) {
     const m =

@@ -39,7 +39,9 @@ export default function KeySpecTiles({ keySpecs, gadgetName, size = 'md', loadin
             ) : (
               <p className="text-base font-semibold opacity-80">Not stated by source</p>
             )}
-            <p className="text-xs opacity-80 truncate">{found?.source ?? ' '}</p>
+            <p className="text-xs opacity-80 truncate">
+              {found ? [found.source, found.variants && 'base model'].filter(Boolean).join(' · ') || ' ' : ' '}
+            </p>
           </li>
         )
       })}
