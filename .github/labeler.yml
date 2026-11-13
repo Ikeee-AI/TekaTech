@@ -58,6 +58,7 @@ area:devops:  # Ikeee-AI: CI/CD, hosting, ops scripts and docs
           - .github/**
           - .claude/**
           - render.yaml
+          - .railway/**
           - scripts/**
           - PIPELINE.md
           - docs/devops/**

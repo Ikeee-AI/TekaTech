@@ -6,10 +6,10 @@ For the backend part of the panel session ("malformed request handling, controll
 
 ## 1. Malformed and unauthorized requests (one command)
 
-Open `https://tekatech-api.onrender.com/health` a minute earlier to wake the free host (the first request can take 42–55 s), then, from the repository root:
+The API runs on Railway since 12 Nov 2026 and doesn't sleep (first request after 20 h idle: 0.31 s, 13 Nov), so no warm-up is needed. From the repository root:
 
 ```powershell
-python scripts/demo_malformed_requests.py --api-base https://tekatech-api.onrender.com
+python scripts/demo_malformed_requests.py --api-base https://tekatech-api-production-549b48c9.up.railway.app
 ```
 
 It sends 16 requests and prints the status and the message a user would see. All 16 are refused before they can write data or call OpenAI. Expected output (run on 30 Oct against a local backend on the dev database, and again on 31 Oct 09:30 UTC against production, `https://tekatech-api.onrender.com`: 16 of 16 refused with the same statuses and messages, no stack trace, key or file path, and a request id on each):
@@ -82,7 +82,7 @@ Windows PowerShell mangles inline JSON, so use `curl.exe` and a file:
 
 ```powershell
 '{"question": ""}' | Set-Content body.json -Encoding ascii
-curl.exe -i -X POST https://tekatech-api.onrender.com/query -H "Content-Type: application/json" -d "@body.json"
+curl.exe -i -X POST https://tekatech-api-production-549b48c9.up.railway.app/query -H "Content-Type: application/json" -d "@body.json"
 ```
 
 Point at the status line (`422`), the plain message, and the `X-Request-ID` header.

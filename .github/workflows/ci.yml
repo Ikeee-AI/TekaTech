@@ -236,12 +236,10 @@ jobs:
     runs-on: ubuntu-latest
     # Repository-level production hooks support this private repository on GitHub Free.
     # Environment secrets on private repositories require an eligible paid GitHub plan.
-    # Backend: Railway (since 12 Nov 2026, docs/devops/railway-migration-plan.md).
-    # Frontend: Render. The Render API hook only keeps the old Render API current as a
-    # fallback until it is retired; it is optional and can't fail the deploy.
+    # Backend: Railway (since 12 Nov 2026, docs/devops/railway-migration-plan.md;
+    # service settings in .railway/railway.ts). Frontend: Render.
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      RENDER_API_FALLBACK_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
       FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
       API_URL: ${{ vars.PRODUCTION_API_URL }}
       FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
@@ -265,10 +263,6 @@ jobs:
           npm install --global @railway/cli@5.71.0
           railway variable set "APP_COMMIT=${{ github.sha }}" --service tekatech-api --environment production --skip-deploys
           railway up backend --path-as-root --service tekatech-api --environment production --ci
-      - name: Keep the Render API fallback current
-        if: env.RENDER_API_FALLBACK_HOOK != ''
-        continue-on-error: true
-        run: curl --fail --silent --show-error --request POST "$RENDER_API_FALLBACK_HOOK&ref=${{ github.sha }}" > /dev/null
       - name: Verify live commit, database path and CORS
         timeout-minutes: 12
         run: |

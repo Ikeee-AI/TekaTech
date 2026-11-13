@@ -55,8 +55,10 @@ def test_disabled_by_default():
 
 
 def test_production_service_never_enables_it():
-    render_yaml = (Path(__file__).resolve().parents[2] / "render.yaml").read_text(encoding="utf-8")
-    assert "FAILURE_SIMULATION" not in render_yaml.upper()
+    # Production config in the repo: render.yaml (frontend) and .railway/railway.ts (API, since 13 Nov 2026).
+    root = Path(__file__).resolve().parents[2]
+    for config in (root / "render.yaml", root / ".railway" / "railway.ts"):
+        assert "FAILURE_SIMULATION" not in config.read_text(encoding="utf-8").upper(), config.name
 
 
 def test_header_is_ignored_while_the_setting_is_off(client, fake_supabase):

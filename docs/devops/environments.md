@@ -13,12 +13,12 @@ Owner: Ikeee-AI (DevOps). Prepared 16 October 2026 for Sprint 2 task S2-IK ("est
 | Database | Supabase project `TekaTech-dev` (`efdgguybkampozuvqjrz`, created 16 October 2026; issue #18) — verified by project ID only | Disposable `pgvector/pgvector:0.8.7-pg16` service container per run | Supabase project `TekaTech` (`lqswcmkzygqmnblaukco`, region ap-south-1 Mumbai) |
 | AI provider | OpenAI key from `backend/.env` (credit restored; real embeddings call passed 22 Oct 2026, [evidence](../evidence/openai-local-2026-10-22.json)) | None: dummy `sk-test-dummy`; all model calls mocked | OpenAI key `TekaTech_Render` in Render (rotated and verified with a cited live answer 22 Oct 2026, [evidence](../evidence/openai-production-2026-10-22.md)) |
 | Rate-limit store | `memory://` | `memory://` | `memory://` (valid only with 1 worker) |
-| Config source | `backend/.env`, `frontend/.env` (gitignored; templates in `.env.example`) | Literal dummy values in `ci.yml` | Render env vars (`render.yaml` lists names with `sync: false`) |
-| Deploy credentials | None | PR jobs: none. Deploy job (main only): repo secrets `RAILWAY_TOKEN`, `RENDER_FRONTEND_DEPLOY_HOOK` (+ optional `RENDER_BACKEND_DEPLOY_HOOK` for the Render API fallback); repo variables `PRODUCTION_API_URL`, `PRODUCTION_FRONTEND_URL`, `RAILWAY_API_URL` | Hooks accept deploys only of the tested SHA |
+| Config source | `backend/.env`, `frontend/.env` (gitignored; templates in `.env.example`) | Literal dummy values in `ci.yml` | API: Railway dashboard variables (unmanaged by `.railway/railway.ts`). Frontend: Render env vars (`render.yaml` lists names with `sync: false`) |
+| Deploy credentials | None | PR jobs: none. Deploy job (main only): repo secrets `RAILWAY_TOKEN`, `RENDER_FRONTEND_DEPLOY_HOOK`; repo variables `PRODUCTION_API_URL`, `PRODUCTION_FRONTEND_URL`, `RAILWAY_API_URL` | Hooks accept deploys only of the tested SHA |
 
 ### Configuration inventory (names only)
 
-| Name | Local | CI | Production (Render) | Secret? |
+| Name | Local | CI | Production (API: Railway; frontend: Render) | Secret? |
 | --- | --- | --- | --- | --- |
 | `OPENAI_API_KEY` / `openai_api_key` | backend `.env` | dummy | `tekatech-api` | Yes |
 | `SUPABASE_URL` | backend `.env` | dummy | `tekatech-api` | No |
@@ -29,7 +29,7 @@ Owner: Ikeee-AI (DevOps). Prepared 16 October 2026 for Sprint 2 task S2-IK ("est
 | `VITE_SUPABASE_ANON_KEY` (`sb_publishable_`) | frontend `.env` | dummy | `tekatech-web` | No (public by design) |
 | `VITE_API_BASE_URL` | frontend `.env` | dummy | `tekatech-web` | No; baked in at build time |
 | `RAILWAY_TOKEN` (Railway project token, `production` environment, starts `rlwy_`) | — | repo secret, main deploy and rollback jobs only | — | Yes |
-| `RENDER_BACKEND_DEPLOY_HOOK` (fallback only; remove when the Render API is retired), `RENDER_FRONTEND_DEPLOY_HOOK` | — | repo secrets, main deploy job only | — | Yes |
+| `RENDER_FRONTEND_DEPLOY_HOOK` (`RENDER_BACKEND_DEPLOY_HOOK` removed 13 Nov 2026 with the Render API) | — | repo secrets, main deploy job only | — | Yes |
 | `PRODUCTION_API_URL`, `PRODUCTION_FRONTEND_URL` | — | repo variables | — | No |
 | `OPENAI_SMOKE_API_KEY` | — | repo secret, used only by `ops-ai-smoke.yml` (weekly live check) | — | Yes; separate restricted key, shares the prepaid $10 balance |
 | Supabase Auth custom SMTP (Brevo) | — | — | Production Supabase project, Authentication → SMTP Settings (not an app env var) | Yes: the Brevo SMTP key is stored only in Supabase, never in the repo or Render |
@@ -53,7 +53,7 @@ Supabase's built-in email sender allowed **2 emails per hour** for the whole pro
 | E4 | One OpenAI key used locally and in production | No per-environment spending cap or usage attribution | Partly mitigated 22 Oct 2026 — separate restricted keys for production and development, but one shared Default-project budget; per-environment projects deferred |
 | E5 | Branch protection unavailable (HTTP 403) | Required checks and reviews are not enforced | Recorded; manual `/pr-gate`; raise with instructor |
 | E7 | Auth email limited to 2/hour on Supabase's built-in sender | A third sign-up or password reset in an hour got "Too many requests" and no email | **Fixed 3 November 2026** for production: Brevo custom SMTP, 30/hour (see "Auth email" above) |
-| E6 | Production database (ap-south-1 Mumbai) and API (Render Singapore) are in different regions | Every API request pays a cross-region database round trip; affects Sprint 3–4 latency measurements | Known; measure before deciding (Manuel, Sprint 3). Not a Sprint 2 change |
+| E6 | Production database (ap-south-1 Mumbai) and API (Render Singapore; Railway Singapore since 12 Nov 2026) are in different regions | Every API request pays a cross-region database round trip; affects Sprint 3–4 latency measurements | Known; measure before deciding (Manuel, Sprint 3). Not a Sprint 2 change |
 
 ## Decision: `POST /query` stays public (#59, 23 October 2026)
 

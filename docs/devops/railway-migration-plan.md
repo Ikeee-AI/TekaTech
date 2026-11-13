@@ -81,6 +81,7 @@ The cutover makes no database change.
 
 **Step 6: Keep Render as a fallback for 7 days, then retire it (Ikeee-AI).**
 Leave `tekatech-api` on Render running, on the free plan at no cost, with autodeploy off. After 7 clean days, suspend it, remove `RENDER_BACKEND_DEPLOY_HOOK` and the API block from `render.yaml`, and update the docs.
+**Done early, 13 Nov 2026 (owner's decision, after 1 day instead of 7):** API block removed from `render.yaml`, fallback steps removed from `ci.yml`/`rollback.yml`, secret removed, Render service suspended by the owner. Railway had passed CI deploys, the rollback rehearsal and the idle check. Same day, `backend/railway.json` was replaced by `.railway/railway.ts`, because Railway stops reading config-as-code files on 2026-12-01 (settings applied with `railway config apply`; see `.railway/README.md`).
 
 **Step 7: Docs (Ikeee-AI).** Update `PIPELINE.md`, `docs/deploy-runbook.md`, `docs/devops/environments.md`, `support-and-maintenance.md`, the README URLs and the scripts with the hard-coded Render API URL (`pilot_monitor.py`, `deploy_challenge_timer.py`, `demo_malformed_requests.py`). Add a `docs/scope-changes.md` entry with the reason and the cost.
 
@@ -100,14 +101,14 @@ Deploying from CI with `railway up` keeps today's rules: deploy only after the t
 
 ## 6. Rollback of the migration itself
 
-Until step 6 retires Render, undoing the migration takes minutes:
+**No longer possible since 13 Nov 2026:** step 6 retired the Render API. Before that, undoing the migration took minutes:
 1. Set `VITE_API_BASE_URL` back to `https://tekatech-api.onrender.com` and redeploy the frontend.
 2. Set `PRODUCTION_API_URL` back.
 3. Revert the workflow PR.
 
 No data moves, so there is nothing to restore.
 
-`rollback.yml` on Railway can only restore SHAs that contain the step-3 `/version` change. For older SHAs, use Railway's dashboard rollback (three dots on a past deployment, limited by plan retention) or the Render fallback during the 7 days.
+`rollback.yml` on Railway can only restore SHAs that contain the step-3 `/version` change. For older SHAs, use Railway's dashboard rollback (three dots on a past deployment, limited by plan retention) (the Render fallback is gone since 13 Nov).
 
 ## 7. Risks
 
@@ -115,10 +116,10 @@ No data moves, so there is nothing to restore.
 | --- | --- |
 | Bill grows (a loop, high traffic) | Railway usage limit; check the usage page weekly; public `/query` is already rate-limited and the OpenAI balance is a $10 prepaid cap |
 | Trial ends before Hobby is chosen | Services stop, but production is still on Render until cutover; cut over only after upgrading |
-| Build differs from Render (Railpack/Nixpacks detection) | Explicit build/start commands in `railway.json`; parallel run in step 4 before cutover |
+| Build differs from Render (Railpack/Nixpacks detection) | Explicit start command and health check (in `railway.json`, since 13 Nov `.railway/railway.ts`); parallel run in step 4 before cutover |
 | Railway's proxy changes the visitor IP | Proxy trust stays off (all visitors share one bucket), same as today on Render |
 | Token leak | Project token limited to the production environment, stored only as a GitHub secret; rotate it in Railway if exposed |
-| Change near Demo Day | Don't start before the Sprint 5 review (Sat 7 Nov 15:00); keep Render as a fallback for 7 days |
+| Change near Demo Day | Don't start before the Sprint 5 review (Sat 7 Nov 15:00); keep Render as a fallback for 7 days (cut short to 1 day by the owner on 13 Nov) |
 
 ## 8. Open questions for the owner
 

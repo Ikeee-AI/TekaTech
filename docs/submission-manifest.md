@@ -3,7 +3,7 @@
 The 21 final checklist items from the [course guide](https://csp221a.vercel.app/#deliverables), as assigned in [sprints-2-to-5.md](sprints-2-to-5.md#final-submission-manifest-all-21-website-checklist-items). Prepared by Ikeee-AI on 31 October 2026 for the frozen release [`v1.0.0`](https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.0.0) (`5aa4635`). Status is what the repository shows on that date; anything not verified is marked open, not complete. Submitting to the course portal is a separate team action.
 
 - **Repository:** https://github.com/Ikeee-AI/TekaTech (private; the instructor needs access)
-- **Production:** https://tekatech-web.onrender.com · API https://tekatech-api.onrender.com/health (free Render tier; the first request after idle can take about a minute)
+- **Production:** https://tekatech-web.onrender.com · API https://tekatech-api.onrender.com/health at the `v1.0.0` release (free Render tier; the first request after idle could take about a minute). Since 12 Nov 2026 the API is https://tekatech-api-production-549b48c9.up.railway.app/health (Railway); the Render API was retired on 13 Nov 2026
 
 | # | Artifact | Owner | Where | Status |
 | --- | --- | --- | --- | --- |
