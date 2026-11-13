@@ -54,6 +54,7 @@ EXPECTED = {
     ("DELETE", "/me/gadgets/{gadget_id}"): USER,
     ("GET", "/me/gadgets/{gadget_id}/questions"): USER,
     ("DELETE", "/me/gadgets/{gadget_id}/questions"): USER,
+    ("GET", "/admin/overview"): ADMIN,
 }
 
 # /health/ready reaches for the real database, which a unit test must not do.
@@ -80,10 +81,10 @@ def _allowed(level, caller):
 def _app_routes():
     """Every APIRoute the app serves: its own, plus each included router's (prefixes are baked into the path)."""
     from main import app
-    from routers import comparisons, corrections, gadgets, my_gadgets, query, specs, stats, techspecs
+    from routers import admin, comparisons, corrections, gadgets, my_gadgets, query, specs, stats, techspecs
 
     routes = [r for r in app.routes if isinstance(r, APIRoute)]
-    for module in (gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets):
+    for module in (gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets, admin):
         routes += [r for r in module.router.routes if isinstance(r, APIRoute)]
     return routes
 

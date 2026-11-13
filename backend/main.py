@@ -16,7 +16,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from config import settings
 from rate_limit import limiter, verify_storage_reachable
 from request_id import REQUEST_ID_HEADER, RequestIdMiddleware
-from routers import gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets
+from routers import admin, gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets
 from supabase_client import supabase
 
 logger = logging.getLogger(__name__)
@@ -83,6 +83,7 @@ app.include_router(query.router)
 app.include_router(stats.router)
 app.include_router(techspecs.router)
 app.include_router(my_gadgets.router)
+app.include_router(admin.router)
 
 @app.get("/health")
 def health_check():

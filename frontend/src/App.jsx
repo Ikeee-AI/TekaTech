@@ -16,6 +16,7 @@ const AddGadget = lazy(() => import('./pages/AddGadget'))
 const EditGadget = lazy(() => import('./pages/EditGadget'))
 const ComparePage = lazy(() => import('./pages/ComparePage'))
 const AdminCorrections = lazy(() => import('./pages/AdminCorrections'))
+const AdminOverview = lazy(() => import('./pages/AdminOverview'))
 const MySuggestions = lazy(() => import('./pages/MySuggestions'))
 const MyGadgets = lazy(() => import('./pages/MyGadgets'))
 const Account = lazy(() => import('./pages/Account'))
@@ -77,6 +78,14 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly>
                     <AdminCorrections />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminOverview />
                   </ProtectedRoute>
                 }
               />
