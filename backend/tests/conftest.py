@@ -1,7 +1,9 @@
 import os
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -176,3 +178,38 @@ def client(fake_supabase, monkeypatch):
     yield TestClient(app)
 
     app.dependency_overrides.pop(get_current_user, None)
+
+@contextmanager
+def signed_in_as(user):
+    """Within the block, the `client` fixture's caller is `user` instead of the default admin.
+
+    user=None removes the override, so the real get_current_user runs: a request without an
+    Authorization header then gets its real 401 "Login required" (no Supabase call is made).
+    The previous override (normally the admin) is restored afterwards.
+    """
+    from auth import get_current_user
+    from main import app
+
+    previous = app.dependency_overrides.get(get_current_user)
+    if user is None:
+        app.dependency_overrides.pop(get_current_user, None)
+    else:
+        app.dependency_overrides[get_current_user] = lambda: user
+    try:
+        yield
+    finally:
+        if previous is None:
+            app.dependency_overrides.pop(get_current_user, None)
+        else:
+            app.dependency_overrides[get_current_user] = previous
+
+
+@contextmanager
+def real_session_lookup(user):
+    """Run the real get_current_user, with Supabase Auth answering every token with `user`.
+
+    Yields the get_user mock, so a test can count how many session lookups one request made.
+    """
+    lookup = MagicMock(return_value=SimpleNamespace(user=user))
+    with signed_in_as(None), patch("auth.supabase", SimpleNamespace(auth=SimpleNamespace(get_user=lookup))):
+        yield lookup
