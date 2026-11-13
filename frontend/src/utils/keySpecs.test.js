@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countKeySpecs, extractKeySpecs } from './keySpecs'
+import { countKeySpecs, extractKeySpecs, extractVariants } from './keySpecs'
 
 const samsung = 'https://www.samsung.com/ph/smartphones/galaxy-s24/specs/'
 
@@ -103,3 +103,28 @@ describe('extractKeySpecs', () => {
     expect(extractKeySpecs([{ content: 'RAM and storage: 12GB + 256GB' }]).ram.variants).toBeUndefined()
   })
 })
+
+describe('extractVariants', () => {
+  it('lists paired variants, standard first', () => {
+    const v = extractVariants([{ content: 'RAM and storage: 12GB + 512GB; 8GB + 256GB; 12GB + 256GB', source_url: 'https://www.oppo.com/ph/x' }])
+    expect(v.pairs).toEqual([
+      { ram: 8, storage: 256 },
+      { ram: 12, storage: 256 },
+      { ram: 12, storage: 512 },
+    ])
+    expect(v.source).toBe('oppo.com')
+  })
+
+  it('lists separate options and leaves out RAM expansion', () => {
+    const v = extractVariants([{ content: 'RAM: 12GB (up to 14GB dynamic RAM expansion)\nStorage: 128GB, 256GB, 1TB' }])
+    expect(v.pairs).toEqual([])
+    expect(v.ram).toEqual([12])
+    expect(v.storage).toEqual([128, 256, 1024])
+  })
+
+  it('is null for a single variant', () => {
+    expect(extractVariants([{ content: 'RAM and storage: 12GB + 256GB' }])).toBeNull()
+    expect(extractVariants([])).toBeNull()
+  })
+})
+

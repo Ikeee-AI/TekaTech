@@ -149,6 +149,66 @@ const PARSERS = {
   },
 }
 
+// All RAM/storage variants a source lists, for the phone page's "Variants" list.
+// Pairs when the source pairs them ("8GB + 256GB; 12GB + 512GB"); otherwise separate RAM and
+// storage options. Parenthetical extras ("up to 14GB dynamic RAM") are left out.
+function variantsIn(text) {
+  for (const segment of segments(text, { keepSemicolons: true })) {
+    const { label, value } = labelled(segment)
+    if (!(RAM_LABEL.test(label) && STORAGE_LABEL.test(label))) continue
+    const pairs = [...value.matchAll(/(?<![\d.])(\d{1,2})[ \t]*GB[ \t]*\+[ \t]*(\d{1,4})[ \t]*(GB|TB)/gi)].map((p) => ({
+      ram: Number(p[1]),
+      storage: sizeInGb(Number(p[2]), p[3]),
+    }))
+    if (pairs.length) return { pairs, ram: pairs.map((p) => p.ram), storage: pairs.map((p) => p.storage) }
+    const [ramPart, storagePart] = value.split(/\bwith\b/i)
+    if (storagePart) return { pairs: [], ram: sizesIn(ramPart), storage: sizesIn(storagePart) }
+  }
+  const listed = (labelRe, otherRe) => {
+    const sizes = []
+    for (const segment of segments(text)) {
+      const { label, value } = labelled(segment)
+      if (!labelRe.test(label) || otherRe.test(label) || NOT_BASE.test(label)) continue
+      sizes.push(...sizesIn(value.replace(/\([^)]*\)/g, '')))
+    }
+    return sizes
+  }
+  return { pairs: [], ram: listed(RAM_LABEL, STORAGE_LABEL), storage: listed(STORAGE_LABEL, RAM_LABEL) }
+}
+
+function uniqueSorted(list) {
+  return [...new Set(list)].sort((a, b) => a - b)
+}
+
+export function formatGb(gb) {
+  return formatSize(gb)
+}
+
+/**
+ * The RAM/storage variants the saved sources list, or null when there is only one
+ * (or none). { pairs: [{ ram, storage }], ram: [GB…], storage: [GB…], source }
+ * pairs is empty when the source lists RAM and storage options separately.
+ */
+export function extractVariants(specs) {
+  let found = null
+  for (const spec of specs ?? []) {
+    const v = variantsIn(spec?.content ?? '')
+    if (!found && (v.pairs.length || v.ram.length || v.storage.length)) found = { ...v, source: sourceSite(spec.source_url) }
+    else if (found && !found.pairs.length && !v.pairs.length) {
+      // RAM on one page, storage on another: merge the option lists.
+      if (!found.ram.length && v.ram.length) found.ram = v.ram
+      if (!found.storage.length && v.storage.length) found.storage = v.storage
+    }
+  }
+  if (!found) return null
+  const pairs = [...new Map(found.pairs.map((p) => [`${p.ram}+${p.storage}`, p])).values()].sort(
+    (a, b) => a.storage - b.storage || a.ram - b.ram,
+  )
+  const result = { pairs, ram: uniqueSorted(found.ram), storage: uniqueSorted(found.storage), source: found.source }
+  const many = pairs.length > 1 || result.ram.length > 1 || result.storage.length > 1
+  return many ? result : null
+}
+
 /**
  * specs: the gadget's saved spec chunks ({ content, source_url }).
  * Returns { ram, storage, camera, refresh }, each { value, unit, source } or null.

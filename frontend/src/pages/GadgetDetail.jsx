@@ -14,9 +14,10 @@ import ErrorState from '../components/ui/ErrorState'
 import { timeAgo } from '../utils/timeAgo'
 import { friendlyError } from '../utils/requestErrors'
 import { formatPeso } from '../utils/formatPeso'
-import { extractKeySpecs } from '../utils/keySpecs'
+import { extractKeySpecs, extractVariants } from '../utils/keySpecs'
 import KeySpecTiles from '../components/KeySpecTiles'
 import PhoneGlyph from '../components/PhoneGlyph'
+import VariantsList from '../components/VariantsList'
 
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
 
@@ -155,7 +156,12 @@ export default function GadgetDetail() {
         </article>
 
         {/* specs: null while loading, undefined if the specs couldn't load (SpecManager shows that error). */}
-        {specs !== undefined && <KeySpecTiles keySpecs={extractKeySpecs(specList)} loading={specs === null} />}
+        {specs !== undefined && (
+          <div className="flex flex-col gap-3.5 min-w-0">
+            <KeySpecTiles keySpecs={extractKeySpecs(specList)} loading={specs === null} />
+            <VariantsList variants={extractVariants(specList)} />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-3.5 items-start">
