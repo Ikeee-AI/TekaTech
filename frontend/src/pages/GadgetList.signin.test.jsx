@@ -23,6 +23,8 @@ vi.mock('../api/client', () => ({ api }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: auth.user }) }))
 vi.mock('../components/TrendingQuestions', () => ({ default: () => <p>Popular Questions</p> }))
 vi.mock('../components/AIAnswerPanel', () => ({ default: ({ question }) => <p>AI panel: {question}</p> }))
+// jsdom has no scrollIntoView; asking the AI scrolls the catalog to the top.
+Element.prototype.scrollIntoView ??= vi.fn()
 
 function LoginProbe() {
   const location = useLocation()

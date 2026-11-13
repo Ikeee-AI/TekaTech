@@ -15,6 +15,8 @@ import {
   ChevronRight,
   Pause,
   Play,
+  SlidersHorizontal,
+  Droplets,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
@@ -35,7 +37,8 @@ import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { friendlyError } from '../utils/requestErrors'
 import { gadgetDisplayName } from '../utils/gadgetName'
 import { formatPeso } from '../utils/formatPeso'
-import { extractKeySpecs } from '../utils/keySpecs'
+import { extractKeySpecs, extractMoreSpecs } from '../utils/keySpecs'
+import { BATTERY_OPTIONS, CHARGING_OPTIONS, SPEC_SORTS, applySpecFilters, hiddenNote, sortBySpec } from '../utils/specFilters'
 
 const SUGGESTED_QUESTIONS = [
   'Which phone has the best battery life?',
@@ -127,6 +130,12 @@ export default function GadgetList() {
   const [brands, setBrands] = useState(new Set())
   const [maxPrice, setMaxPrice] = useState(null)
   const [sortBy, setSortBy] = useState('name')
+  // Spec filters (owner decision, 14 Nov 2026): read from the saved sources; null/false = off.
+  const [minBattery, setMinBattery] = useState(null)
+  const [minCharging, setMinCharging] = useState(null)
+  const [waterOnly, setWaterOnly] = useState(false)
+  // On a phone the filters collapse behind a Filters button.
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [lastQuery, setLastQuery] = useState(query)
 
@@ -256,19 +265,30 @@ export default function GadgetList() {
   const priceLimit = maxPrice ?? priceStats?.max ?? null
   const priceFilterActive = priceStats && maxPrice != null && maxPrice < priceStats.max
 
-  const filtered = useMemo(() => {
+  // Battery, charging, water rating etc. per gadget, parsed once from the specs already fetched.
+  const moreById = useMemo(() => {
+    if (!specsById) return null
+    return Object.fromEntries(Object.entries(specsById).map(([id, specs]) => [id, extractMoreSpecs(specs)]))
+  }, [specsById])
+  const specsLoading = specsById === null && typeof api.getSpecs === 'function'
+  const specFiltersActive = minBattery != null || minCharging != null || waterOnly
+
+  const { filtered, hiddenText } = useMemo(() => {
     const q = query.toLowerCase()
     let list = gadgets.filter((g) => {
       if (brands.size > 0 && !brands.has(g.brand)) return false
       if (priceFilterActive && (g.price_php == null || g.price_php > maxPrice)) return false
       return g.name.toLowerCase().includes(q) || g.brand.toLowerCase().includes(q)
     })
+    const specResult = applySpecFilters(list, moreById, { minBattery, minCharging, waterResistant: waterOnly })
+    list = specResult.list
     if (sortBy === 'price-low') list = [...list].sort((a, b) => comparePrices(a, b, 1))
     else if (sortBy === 'price-high') list = [...list].sort((a, b) => comparePrices(a, b, -1))
     else if (sortBy === 'newest') list = [...list].sort((a, b) => (b.release_date ?? '').localeCompare(a.release_date ?? ''))
+    else if (SPEC_SORTS[sortBy]) list = sortBySpec(list, moreById, sortBy)
     else list = [...list].sort((a, b) => a.name.localeCompare(b.name))
-    return list
-  }, [gadgets, query, brands, priceFilterActive, maxPrice, sortBy])
+    return { filtered: list, hiddenText: hiddenNote(specResult) }
+  }, [gadgets, query, brands, priceFilterActive, maxPrice, sortBy, moreById, minBattery, minCharging, waterOnly])
 
   // Featured phones, in the shuffled rotation order. Built from the specs already fetched;
   // a deleted gadget drops out without reshuffling the rest.
@@ -290,7 +310,8 @@ export default function GadgetList() {
     [selected, gadgets],
   )
 
-  const hasFilters = query || brands.size > 0 || priceFilterActive
+  const hasFilters = query || brands.size > 0 || priceFilterActive || specFiltersActive
+  const activeFilterCount = [priceFilterActive, minBattery != null, minCharging != null, waterOnly].filter(Boolean).length
 
   function toggleSelect(id) {
     if (!signedIn) {
@@ -335,6 +356,9 @@ export default function GadgetList() {
     setQuery('')
     setBrands(new Set())
     setMaxPrice(null)
+    setMinBattery(null)
+    setMinCharging(null)
+    setWaterOnly(false)
     setPage(1)
   }
 
@@ -396,7 +420,7 @@ export default function GadgetList() {
       <h1 className="sr-only">TekaTech phone catalog</h1>
       {/* Announces the result count when filters change; silent when none are set. */}
       <p role="status" className="sr-only">
-        {hasFilters ? `${filtered.length} ${filtered.length === 1 ? 'phone matches' : 'phones match'} your filters` : ''}
+        {hasFilters ? `${filtered.length} ${filtered.length === 1 ? 'phone matches' : 'phones match'} your filters.${hiddenText ? ` ${hiddenText}` : ''}` : ''}
       </p>
 
       {showHero && <HowItWorks signedIn={signedIn} />}
@@ -471,27 +495,16 @@ export default function GadgetList() {
             </span>
           </h2>
           <div className="flex flex-wrap items-center gap-2">
-            {priceStats && priceStats.max > priceStats.min && (
-              <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-full pl-4 pr-3 min-h-10">
-                <label htmlFor="price-range" className="text-sm font-semibold text-slate-700 whitespace-nowrap">
-                  Max Price
-                </label>
-                <input
-                  id="price-range"
-                  type="range"
-                  aria-valuetext={formatPrice(priceLimit)}
-                  min={priceStats.min}
-                  max={priceStats.max}
-                  step={priceStep}
-                  value={priceLimit}
-                  onChange={(e) => setPriceFromSlider(Number(e.target.value))}
-                  className="w-28 sm:w-36 accent-sage-700"
-                />
-                <span className="font-mono text-sm font-semibold text-slate-900 min-w-[5.5rem] text-right">
-                  {priceFilterActive ? formatPrice(priceLimit) : 'Any'}
-                </span>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((open) => !open)}
+              aria-expanded={filtersOpen}
+              aria-controls="catalog-filters"
+              className={`sm:hidden flex items-center gap-2 bg-white text-slate-900 text-sm font-semibold px-4 min-h-10 rounded-full border border-slate-200 ${focusRing}`}
+            >
+              <SlidersHorizontal size={15} aria-hidden="true" />
+              Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </button>
             <div className="relative">
               <label htmlFor="sort-select" className="sr-only">
                 Sort by
@@ -506,10 +519,68 @@ export default function GadgetList() {
                 <option value="newest">Newest first</option>
                 <option value="price-low">Price (low → high)</option>
                 <option value="price-high">Price (high → low)</option>
+                <option value="battery">Battery (high → low)</option>
+                <option value="charging">Charging (fast → slow)</option>
+                <option value="weight">Weight (light → heavy)</option>
               </select>
               <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
             </div>
           </div>
+        </div>
+
+        <div id="catalog-filters" className={`${filtersOpen ? 'flex' : 'hidden'} sm:flex flex-wrap items-center gap-2`}>
+          {priceStats && priceStats.max > priceStats.min && (
+            <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-full pl-4 pr-3 min-h-10">
+              <label htmlFor="price-range" className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+                Max Price
+              </label>
+              <input
+                id="price-range"
+                type="range"
+                aria-valuetext={formatPrice(priceLimit)}
+                min={priceStats.min}
+                max={priceStats.max}
+                step={priceStep}
+                value={priceLimit}
+                onChange={(e) => setPriceFromSlider(Number(e.target.value))}
+                className="w-28 sm:w-36 accent-sage-700"
+              />
+              <span className="font-mono text-sm font-semibold text-slate-900 min-w-[5.5rem] text-right">
+                {priceFilterActive ? formatPrice(priceLimit) : 'Any'}
+              </span>
+            </div>
+          )}
+          <SpecSelect
+            id="battery-filter"
+            label="Battery"
+            value={minBattery}
+            options={BATTERY_OPTIONS}
+            unit="mAh"
+            disabled={specsLoading}
+            onChange={updateFilter(setMinBattery)}
+          />
+          <SpecSelect
+            id="charging-filter"
+            label="Charging"
+            value={minCharging}
+            options={CHARGING_OPTIONS}
+            unit="W"
+            disabled={specsLoading}
+            onChange={updateFilter(setMinCharging)}
+          />
+          <button
+            type="button"
+            onClick={() => updateFilter(setWaterOnly)(!waterOnly)}
+            aria-pressed={waterOnly}
+            disabled={specsLoading}
+            className={`flex items-center gap-2 text-sm font-semibold px-4 min-h-10 rounded-full border transition disabled:opacity-50 disabled:cursor-not-allowed ${focusRing} ${
+              waterOnly ? 'bg-inverse text-inverse-ink border-inverse' : 'bg-white text-slate-900 border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <Droplets size={15} aria-hidden="true" />
+            Water resistant (IP67+)
+          </button>
+          {specsLoading && <span className="text-xs font-medium text-slate-500">Loading specs…</span>}
         </div>
 
         {hasFilters && (
@@ -525,6 +596,13 @@ export default function GadgetList() {
             {priceFilterActive && (
               <FilterPill label={`Up to ${formatPrice(maxPrice)}`} onRemove={() => updateFilter(setMaxPrice)(null)} />
             )}
+            {minBattery != null && (
+              <FilterPill label={`Battery ≥ ${minBattery.toLocaleString('en-US')} mAh`} onRemove={() => updateFilter(setMinBattery)(null)} />
+            )}
+            {minCharging != null && (
+              <FilterPill label={`Charging ≥ ${minCharging} W`} onRemove={() => updateFilter(setMinCharging)(null)} />
+            )}
+            {waterOnly && <FilterPill label="Water resistant (IP67+)" onRemove={() => updateFilter(setWaterOnly)(false)} />}
             <button
               onClick={clearFilters}
               className={`text-sm font-semibold text-slate-600 hover:text-slate-900 px-2 min-h-10 sm:min-h-8 underline rounded ${focusRing}`}
@@ -539,7 +617,7 @@ export default function GadgetList() {
             <EmptyState
               icon={SearchX}
               title="No Phones Match Your Filters"
-              description="Try a different search or clear your filters."
+              description={hiddenText ?? 'Try a different search or clear your filters.'}
               action={
                 <Button onClick={clearFilters} variant="secondary">
                   Clear Filters
@@ -549,6 +627,7 @@ export default function GadgetList() {
           </div>
         ) : (
           <>
+            {hiddenText && <p className="text-sm text-slate-600">{hiddenText}</p>}
             <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,270px),1fr))] gap-3.5">
               {pageItems.map((g) => (
                 <GadgetCard
@@ -806,6 +885,36 @@ function BrandTile({ label, count, pressed, styleIndex, onClick }) {
       </span>
       <ArrowRight size={18} aria-hidden="true" className="shrink-0" />
     </button>
+  )
+}
+
+/** A labelled "at least" select for a spec filter; an empty value means any. */
+function SpecSelect({ id, label, value, options, unit, disabled, onChange }) {
+  return (
+    <div
+      className={`relative flex items-center bg-white border border-slate-200 rounded-full pl-4 min-h-10 focus-within:ring-2 focus-within:ring-sage-600 ${
+        disabled ? 'opacity-50' : ''
+      }`}
+    >
+      <label htmlFor={id} className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+        {label}
+      </label>
+      <select
+        id={id}
+        value={value ?? ''}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
+        className="appearance-none bg-transparent text-slate-900 text-sm font-semibold py-2 pl-2 pr-9 min-h-10 rounded-full cursor-pointer focus:outline-none disabled:cursor-not-allowed"
+      >
+        <option value="">Any</option>
+        {options.map((n) => (
+          <option key={n} value={n}>
+            {n.toLocaleString('en-US')}+ {unit}
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
+    </div>
   )
 }
 
