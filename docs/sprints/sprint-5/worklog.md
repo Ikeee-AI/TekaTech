@@ -1313,3 +1313,40 @@ Short session, ~09:45–10:12 Manila.
 **Next**
 - Ikeee-AI's own retro comment on #238 — Ikeee-AI — by 16 Nov.
 - After the 16 Nov deadline, update the table in `retrospective.md` and close #238 — Ikeee-AI.
+
+## 2026-11-13 20:27 Asia/Manila — UI rebrand: final design chosen, #257 closed, rebuild steps a–g on `tekatech/s5-ik-rebrand-h1`
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code drew the preview boards, wrote the code and browser-checked it at Ikeee-AI's direction; Ikeee-AI chose every design decision) · **Task:** S5-IK rebrand (post-release polish) · **Branch:** `tekatech/s5-ik-rebrand-h1` (7 commits, local, not pushed); this entry on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- Design chosen by the owner from preview boards (private claude.ai canvases): **dark "Night Market" by default, light "Showroom" layout with the Bento Lab palette**; phones only, browsed by brand; four key-spec tiles (RAM, storage, main camera, display Hz) for every phone; Compare with two cards locked onto a centred VS badge, Face-off/Table views; Ask AI unchanged. Recorded in `docs/design/rebrand-brief.md`.
+- Closed [#257](https://github.com/Ikeee-AI/TekaTech/pull/257) (navy "Rail wayfinding" look, rejected by the owner) with a note; `PRODUCT.md` and the 13 Nov critique carried over.
+- Built on a new branch from `main` (729d5bc): a `9757941` themes, Geist, theme switch, pill header · b `dfc5de3` catalog: featured phone + key-spec tiles, shop by brand, compact cards, filter sidebar removed · c `75d2c31` phone page · d `0edb2e4` Compare · e–f `17e41bf` headings, two-panel log in, two-column account, wider admin forms · g `fd8fb64` phone-width polish and the brief.
+- Key specs are read from each phone's saved, sourced spec text (`frontend/src/utils/keySpecs.js`, 4 new tests); unstated values show "Not stated by source".
+- Checks (local): `npm run lint` clean, `vitest` 330/330 passed, `npm run build` OK. Browser-checked against the dev API (TekaTech-dev) on catalog, phone page, Compare (dark and light), My Gadgets, Account, Log in, Review Queue, Add Gadget, and at 390 px width.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Catalog showed "Couldn't Load the Catalog" on first load | The page loaded before the local API finished starting | Reloaded once the API was up; not a code bug. Fixed |
+| `no-useless-escape` on `[:\-]` in `keySpecs.js` (4 errors) | Unneeded escape in regex | Changed to `[:-]`. Fixed |
+| Storage test failed for "1TB" | Regex required two digits | Allowed 1–4 digits. Fixed |
+| At phone width the Compare cut-out bit into stacked cards | The cut-out mask applied at every width | Moved it to CSS from the `sm` breakpoint; added a small VS badge between stacked cards. Fixed |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Rebrand touches Mika's area (layouts, components) and the catalog journey | Ownership overlap | One PR, reviewed by Mika (Manuel as backup) before merge. Open, Ikeee-AI |
+| The design wants a sourced-spec count and structured key specs; today they are parsed from spec text and the catalog makes one specs request per phone (capped at 24) | Extra requests on the catalog, parser can miss unusual wording | Backend follow-up for Manuel: spec count on `GET /gadgets` and key-spec fields. Open |
+| "Phones only" scope vs dev/prod data that still contains laptops, audio, handheld and test entries | Brand tiles show test brands ("12", "TekaTech QA") | Admin data clean-up, not code. Open, owner/Manuel |
+
+**Decisions** — Final look (dark default + Bento Lab light), phones only by brand, Compare VS cut-out with Face-off/Table — Ikeee-AI. Key specs parsed from sourced text until backend fields exist — Ikeee-AI with Claude Code.
+
+**Blockers / risks** — Not reviewed, not pushed, not deployed. Prompt/citation rendering (`AnswerText.jsx`, `prompts.py`) unchanged.
+
+**Plan alignment** — Rebrand: **Partial** (built and checked locally; still needs review, merge, deploy and a production check).
+
+**Next**
+- Push `tekatech/s5-ik-rebrand-h1` and open one PR for Mika's review (Manuel backup) — Ikeee-AI — on approval.
+- Raise the backend follow-up (spec count, key-spec fields) with Manuel — Ikeee-AI.
