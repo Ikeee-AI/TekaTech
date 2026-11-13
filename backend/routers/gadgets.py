@@ -1,11 +1,18 @@
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 import answer_cache
 import cache
-from schemas import GadgetCreate, GadgetUpdate, GadgetResponse, normalize_category
+from schemas import (
+    MAX_BRAND_CHARS,
+    MAX_CATEGORY_CHARS,
+    GadgetCreate,
+    GadgetResponse,
+    GadgetUpdate,
+    normalize_category,
+)
 from supabase_client import supabase
 from auth import get_current_admin_user
 
@@ -20,8 +27,14 @@ DETAIL_SAVE_FAILED = "Couldn't save the gadget right now. Try again in a moment.
 # re-reads the list right after a create/edit and must not get a stale copy.
 GADGETS_TTL_SECONDS = 60
 
+# Filter values are part of the public cache key (cache.py), so they are bounded by the
+# longest value a saved gadget can hold (schemas.py): category 60, brand 80.
 @router.get("", response_model=list[GadgetResponse])
-def list_gadgets(response: Response, category: str | None = None, brand: str | None = None):
+def list_gadgets(
+    response: Response,
+    category: str | None = Query(None, max_length=MAX_CATEGORY_CHARS),
+    brand: str | None = Query(None, max_length=MAX_BRAND_CHARS),
+):
     # Same spelling rule as saving (#78), so ?category=smartphone finds "Smartphone".
     category = normalize_category(category) or None
 
