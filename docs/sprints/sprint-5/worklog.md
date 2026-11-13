@@ -1076,3 +1076,27 @@ Short session, ~09:45–10:12 Manila.
 - Check the Railway resource limit (Settings → Resource limits) and usage against the $10 limit — Ikeee-AI — by 19 Nov.
 - Decide later whether to delete the suspended Render `tekatech-api` — Ikeee-AI — not scheduled.
 - UI rebrand (needs the Impeccable hooks decision first) and the custom-domain question — Ikeee-AI — not scheduled.
+
+## 2026-11-13 12:38 Asia/Manila — Railway usage and resource limit checked; limit kept at 2 vCPU / 2 GB
+**Who:** Ikeee-AI (AI-assisted: yes — Ikeee-AI opened the Railway dashboard pages and sent screenshots; Claude Code read them and updated the docs) · **Task:** S5-IK (Railway plan section 5) · **Branch:** `tekatech/s5-ik-worklog-13nov`
+
+**Done**
+- Railway → Project Settings → Usage (about 12:23 Manila): current usage **$0.09** (memory $0.09, CPU $0.00, egress $0.00); Railway's estimated usage for the period **$0.19** (memory $0.18). Well inside the Hobby plan's included $5 and the $10 usage limit. The screen does not show the billing-period dates. Evidence: owner screenshot `Screenshot 2026-11-13 122305.png` (local).
+- `tekatech-api` → Settings → Scale (about 12:33 Manila): Southeast Asia (Singapore), 1 replica, **replica limits 2 vCPU / 2 GB** (plan limit 8 / 8). This matches `.railway/railway.ts` (`cpu: 2, memoryBytes: 2000000000`). Evidence: owner screenshot `Screenshot 2026-11-13 123323.png` (local).
+- Corrected the "1 vCPU / 1 GB" note: `docs/deploy-runbook.md` now states the current limit; `docs/devops/railway-migration-plan.md` keeps the original note with a dated correction.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Notes from 11–12 Nov (runbook, plan, project notes) said replica cap 1 vCPU / 1 GB; Railway shows 2 vCPU / 2 GB | None on cost: Railway bills actual use, and the limit is only a ceiling (usage so far $0.09, CPU $0.00) | Owner keeps 2/2. Docs corrected. Any later change goes through `.railway/railway.ts` + `railway config apply`, not the dashboard sliders (the file would put a dashboard change back). Resolved |
+
+**Decisions** — Keep the replica limit at 2 vCPU / 2 GB — Ikeee-AI.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — Railway plan section 5 "usage after 7 days": **Partial**. After about 1.5 days the estimate is $0.19 for the period, far under $5. The 7-day reading is still due ~19 Nov.
+
+**Next** — Read Railway usage again around 19 Nov and record the 7-day figure — Ikeee-AI.
