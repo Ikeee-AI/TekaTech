@@ -47,9 +47,30 @@ export function classifyAuthLink(hash = '', search = '') {
     const code = params.get('error_code') || params.get('error')
     if (code) return { kind: 'error', code }
   }
+  // Any-browser email links (14 Nov 2026): ?token_hash=…&type=… is checked by the app itself
+  // (verifyOtp, supabaseClient.js); the outcome is only known after that request.
+  const otpType = fromQuery.get('token_hash') ? fromQuery.get('type') : null
+  if (otpType) return { kind: 'otp', type: otpType }
   if (fromQuery.get('code')) return { kind: 'confirmed' }
   if (fromHash.get('access_token') && fromHash.get('type') === 'signup') return { kind: 'confirmed' }
   return null
+}
+
+/** Email-link types verifyOtp accepts for a token_hash link. */
+const OTP_TYPES = new Set(['email', 'signup', 'recovery', 'invite', 'email_change', 'magiclink'])
+
+/**
+ * A token-hash email link (`?token_hash=…&type=recovery`), or null. These links work in any
+ * browser: the app sends the one-time token hash to Supabase (verifyOtp), so nothing depends
+ * on a code verifier stored by the browser that asked for the email (as PKCE `?code=` does).
+ * The Supabase email templates build them (docs/deploy-runbook.md, "Email link templates").
+ */
+export function readEmailLinkOtp(search = '') {
+  const params = new URLSearchParams(search)
+  const tokenHash = params.get('token_hash')
+  const type = params.get('type')
+  if (!tokenHash || !OTP_TYPES.has(type)) return null
+  return { token_hash: tokenHash, type }
 }
 
 /**

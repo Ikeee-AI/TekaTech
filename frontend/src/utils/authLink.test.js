@@ -50,4 +50,26 @@ describe('authLink', () => {
     expect(link.legacyLinkTokens).toBeNull()
     expect(window.location.hash).toBe('#error=access_denied&error_code=otp_expired')
   })
+
+  it('takes an any-browser link token out of the address bar and keeps other params', async () => {
+    const link = await loadAt('/reset-password?token_hash=th_123&type=recovery&x=1')
+    expect(link.emailLinkOtp).toEqual({ token_hash: 'th_123', type: 'recovery' })
+    expect(link.initialAuthLink).toEqual({ kind: 'otp', type: 'recovery' })
+    expect(window.location.pathname).toBe('/reset-password')
+    expect(window.location.search).toBe('?x=1')
+  })
+
+  it('ignores a token_hash with an unknown type', async () => {
+    const link = await loadAt('/?token_hash=th_1&type=weird')
+    expect(link.emailLinkOtp).toBeNull()
+    expect(window.location.search).toBe('?token_hash=th_1&type=weird')
+  })
+
+  it('remembers a recovery session per tab', async () => {
+    const link = await loadAt('/')
+    link.setRecoveryActive(true)
+    expect(link.isRecoveryActive()).toBe(true)
+    link.setRecoveryActive(false)
+    expect(link.isRecoveryActive()).toBe(false)
+  })
 })

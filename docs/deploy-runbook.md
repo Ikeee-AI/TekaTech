@@ -80,6 +80,19 @@ The CSP starts in **report-only** mode: the browser reports what it *would* bloc
 
 `script-src 'self'` works because the pre-paint theme script is a file (`frontend/public/theme-init.js`), not inline. Don't add inline `<script>` blocks to `index.html`.
 
+## Email link templates (any-browser links, 14 Nov 2026)
+
+Why: with the PKCE sign-in flow, the default email links (`{{ .ConfirmationURL }}`) only work in the browser that asked for the email. A reset requested in a private window and opened from Gmail in another window then left no session ("Session not found" on update, 14 Nov 2026). Token-hash links work in any browser or device: the app sends the one-time token to Supabase itself (`verifyOtp`), and the token is taken out of the address bar at once.
+
+Order: deploy the app version that reads `?token_hash=` first, then change the templates. Links already sent keep working (the app still accepts `?code=` and `#access_token=` links).
+
+Supabase → Authentication → Emails (Templates), on each project (prod `lqswcmkzygqmnblaukco`, dev `efdgguybkampozuvqjrz`):
+
+- **Confirm signup**: change the link's `href` to `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email`
+- **Reset Password**: change the link's `href` to `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery`
+
+`{{ .RedirectTo }}` is the address the app asked for (`emailRedirectTo` = the site origin for sign-up, `redirectTo` = `/reset-password` for resets); it must be on Authentication → URL Configuration → Redirect URLs, or Supabase uses the Site URL. Check: request a reset in a private window, open the link from the email client in a normal window; the "Set a New Password" form appears and the update succeeds.
+
 ## Routine deployment
 
 Each issue gets a feature branch and a reviewed PR. Required CI jobs pass before merging. On main the pipeline repeats checks and triggers deployment. Verify the live version and record timestamps; a successful hook request is not deployment completion.
