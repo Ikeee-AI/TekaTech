@@ -38,7 +38,7 @@ const SUGGESTED_QUESTIONS = [
 const PAGE_SIZE = 6
 const HISTOGRAM_BINS = 11
 
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600'
 // Widens a small icon button's touch area to about 40px without changing its look.
 const hitArea = "relative before:absolute before:-inset-2.5 before:content-['']"
 
@@ -315,7 +315,7 @@ export default function GadgetList() {
         action={
           <Link
             to="/add"
-            className={`inline-flex items-center gap-1.5 bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-sage-800 active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
+            className={`inline-flex items-center gap-1.5 bg-rail-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-rail-800 active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
           >
             Add Your First Gadget
           </Link>
@@ -341,7 +341,7 @@ export default function GadgetList() {
                   aria-controls="catalog-filters"
                   className={`flex items-center gap-1.5 min-h-10 rounded ${focusRing}`}
                 >
-                  <SlidersHorizontal size={18} className="text-sage-700" />
+                  <SlidersHorizontal size={18} className="text-rail-700" />
                   Filters
                   {hasFilters && (
                     <>
@@ -353,12 +353,12 @@ export default function GadgetList() {
                 </button>
               </h2>
               <h2 className="hidden lg:flex items-center gap-1.5 text-xl font-semibold text-slate-900 tracking-tight">
-                <SlidersHorizontal size={18} className="text-sage-700" /> Filters
+                <SlidersHorizontal size={18} className="text-rail-700" /> Filters
               </h2>
               <button
                 type="button"
                 onClick={clearFilters}
-                className={`font-mono text-xs font-medium text-slate-600 hover:text-sage-700 transition-colors flex items-center gap-1 min-h-10 lg:min-h-0 px-1 rounded ${focusRing}`}
+                className={`font-mono text-xs font-medium text-slate-600 hover:text-rail-700 transition-colors flex items-center gap-1 min-h-10 lg:min-h-0 px-1 rounded ${focusRing}`}
               >
                 Reset <RotateCcw size={12} />
               </button>
@@ -386,9 +386,9 @@ export default function GadgetList() {
                     <label htmlFor="price-range" className="text-slate-600 font-medium">
                       Max Price
                     </label>
-                    <span className="text-sage-700 font-bold">{formatPrice(priceLimit)}</span>
+                    <span className="text-rail-700 font-bold">{formatPrice(priceLimit)}</span>
                   </div>
-                  <svg className="w-full h-8 text-sage-700" viewBox={`0 0 ${HISTOGRAM_BINS * 10} 28`} aria-hidden="true">
+                  <svg className="w-full h-8 text-rail-700" viewBox={`0 0 ${HISTOGRAM_BINS * 10} 28`} aria-hidden="true">
                     {priceStats.bins.map((count, i) => {
                       const height = count === 0 ? 2 : 4 + (count / priceStats.peak) * 24
                       const binStart = priceStats.min + ((priceStats.max - priceStats.min) / HISTOGRAM_BINS) * i
@@ -416,9 +416,9 @@ export default function GadgetList() {
                     step={priceStep}
                     value={priceLimit}
                     onChange={(e) => setPriceFromSlider(Number(e.target.value))}
-                    className="w-full accent-sage-700"
+                    className="w-full accent-rail-700"
                   />
-                  <div className="flex justify-between font-mono text-[11px] text-slate-600">
+                  <div className="flex justify-between font-mono text-xs text-slate-600">
                     <span>{formatPrice(priceStats.min)}</span>
                     <span>{formatPrice(priceStats.max)}</span>
                   </div>
@@ -454,7 +454,7 @@ export default function GadgetList() {
                     id="sort-select"
                     value={sortBy}
                     onChange={(e) => updateFilter(setSortBy)(e.target.value)}
-                    className="bg-slate-100 text-slate-900 font-mono text-sm font-medium py-1.5 pl-3 pr-8 min-h-10 sm:min-h-0 rounded-lg appearance-none cursor-pointer border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sage-600"
+                    className="bg-slate-100 text-slate-900 font-mono text-sm font-medium py-1.5 pl-3 pr-8 min-h-10 sm:min-h-0 rounded-lg appearance-none cursor-pointer border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rail-600"
                   >
                     <option value="name">Name (A → Z)</option>
                     <option value="newest">Release Date (Newest)</option>
@@ -512,7 +512,7 @@ export default function GadgetList() {
                   <button
                     key={q}
                     onClick={() => ask(q)}
-                    className={`flex items-center gap-1 text-sm font-medium text-sage-700 bg-sage-50 hover:bg-sage-200 border border-sage-200 rounded-full px-2.5 py-1 min-h-10 sm:min-h-8 transition active:scale-95 ${focusRing}`}
+                    className={`flex items-center gap-1 text-sm font-medium text-rail-700 bg-rail-50 hover:bg-rail-200 border border-rail-200 rounded-full px-2.5 py-1 min-h-10 sm:min-h-8 transition active:scale-95 ${focusRing}`}
                   >
                     <Sparkles size={11} /> {q}
                   </button>
@@ -618,7 +618,7 @@ function CheckboxGroup({ title, items, selected, onToggle, prominent = false }) 
                   type="checkbox"
                   checked={checked}
                   onChange={() => onToggle(value)}
-                  className="w-4 h-4 rounded border-slate-300 accent-sage-700"
+                  className="w-4 h-4 rounded border-slate-300 accent-rail-700"
                 />
                 <span className={`truncate ${checked ? 'font-medium text-slate-900' : ''}`}>{value}</span>
               </span>
@@ -641,7 +641,7 @@ function CheckboxGroup({ title, items, selected, onToggle, prominent = false }) 
 
 function FilterPill({ label, onRemove }) {
   return (
-    <span className="flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 py-1 rounded-md font-mono text-xs text-sage-700 font-medium">
+    <span className="flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 py-1 rounded-md font-mono text-xs text-rail-700 font-medium">
       {label}
       <button
         onClick={onRemove}
@@ -662,7 +662,7 @@ function PageButton({ children, active = false, disabled = false, onClick }) {
       aria-current={active ? 'page' : undefined}
       className={`px-3 py-1.5 min-h-10 min-w-10 sm:min-h-0 sm:min-w-0 rounded font-mono text-xs transition-colors ${focusRing} ${
         active
-          ? 'bg-sage-700 text-white font-semibold shadow-xs'
+          ? 'bg-rail-700 text-white font-semibold shadow-xs'
           : 'bg-slate-100 border border-slate-200 text-slate-700 font-medium hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-100'
       }`}
     >
@@ -674,9 +674,9 @@ function PageButton({ children, active = false, disabled = false, onClick }) {
 function SpecCell({ label, value, sub }) {
   return (
     <div className="flex flex-col min-w-0">
-      <span className="font-mono text-[11px] text-slate-600 uppercase tracking-wider font-medium">{label}</span>
+      <span className="font-mono text-xs text-slate-600 uppercase tracking-wider font-medium">{label}</span>
       <span className="font-mono text-sm text-slate-900 font-semibold truncate">{value}</span>
-      {sub && <span className="font-mono text-[11px] text-slate-600 truncate">{sub}</span>}
+      {sub && <span className="font-mono text-xs text-slate-600 truncate">{sub}</span>}
     </div>
   )
 }
@@ -689,7 +689,7 @@ export function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted, mine,
   return (
     <article
       className={`relative bg-white rounded-xl p-6 border shadow-xs flex flex-col justify-between hover:shadow-md transition-all group ${
-        selected ? 'border-sage-400 ring-1 ring-sage-400' : 'border-slate-200 hover:border-slate-300'
+        selected ? 'border-rail-400 ring-1 ring-rail-400' : 'border-slate-200 hover:border-slate-300'
       }`}
     >
       <div className="flex flex-col gap-4">
@@ -726,7 +726,7 @@ export function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted, mine,
                 {gadget.name}
               </Link>
             </h3>
-            <span className="font-mono text-xs text-sage-700 font-semibold truncate">{gadget.brand}</span>
+            <span className="font-mono text-xs text-rail-700 font-semibold truncate">{gadget.brand}</span>
           </div>
         </div>
 
@@ -754,13 +754,13 @@ export function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted, mine,
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-5 mt-5 border-t border-slate-200">
-        <label className="flex items-center gap-2 min-h-9 cursor-pointer select-none rounded-md focus-within:ring-2 focus-within:ring-sage-600 px-1 -mx-1">
+        <label className="flex items-center gap-2 min-h-9 cursor-pointer select-none rounded-md focus-within:ring-2 focus-within:ring-rail-600 px-1 -mx-1">
           <input
             type="checkbox"
             checked={selected}
             onChange={onToggle}
             aria-label={`Compare ${gadget.name}`}
-            className="w-5 h-5 rounded border-slate-300 accent-sage-700 focus:outline-none"
+            className="w-5 h-5 rounded border-slate-300 accent-rail-700 focus:outline-none"
           />
           <span className="text-sm text-slate-800 font-semibold">Compare</span>
         </label>
@@ -823,7 +823,7 @@ function CompareTray({ gadgets, onRemove, onClear, onCompare }) {
             onClick={onCompare}
             disabled={!canCompare}
             title={canCompare ? undefined : 'Select at least 2 to compare'}
-            className={`bg-sage-400 text-sage-900 hover:bg-[#73a082] text-sm px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-sage-400 ${focusRing}`}
+            className={`bg-rail-400 text-rail-900 hover:bg-[#73a082] text-sm px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rail-400 ${focusRing}`}
           >
             Compare Now ({gadgets.length}) <ArrowRight size={16} />
           </button>

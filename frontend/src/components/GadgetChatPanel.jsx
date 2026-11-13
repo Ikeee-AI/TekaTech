@@ -191,7 +191,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
       <header className="flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-3 border-b border-slate-200">
         <div className="min-w-0">
           <h2 id="gadget-chat-title" className="flex items-center gap-2 text-lg font-bold text-slate-900">
-            <Sparkles size={18} className="text-sage-700" aria-hidden="true" /> Ask About {gadgetName}
+            <Sparkles size={18} className="text-rail-700" aria-hidden="true" /> Ask About {gadgetName}
           </h2>
           <p className="text-sm text-slate-600 mt-0.5">
             {allowGeneralKnowledge
@@ -200,7 +200,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
           </p>
           {!user && (
             <p className="text-xs text-slate-500 mt-1">
-              <Link to="/login" className="inline-flex items-center gap-1 font-medium text-sage-700 hover:underline">
+              <Link to="/login" className="inline-flex items-center gap-1 font-medium text-rail-700 hover:underline">
                 <LogIn size={12} aria-hidden="true" /> Log in
               </Link>{' '}
               to keep this conversation for next time.
@@ -239,7 +239,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
           role="region"
           aria-label={`Conversation about ${gadgetName}`}
           tabIndex={0}
-          className="relative max-h-[min(65vh,620px)] min-h-48 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sage-400"
+          className="relative max-h-[min(65vh,620px)] min-h-48 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-rail-400"
         >
           {thread.loading && (
             <p role="status" className="text-sm text-slate-500 text-center py-6">
@@ -254,7 +254,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
 
           {!hasConversation && !thread.loading && (
             <div className="flex flex-col items-center text-center py-6">
-              <span className="inline-flex items-center justify-center size-10 rounded-full bg-sage-100 text-sage-700 mb-3">
+              <span className="inline-flex items-center justify-center size-10 rounded-full bg-rail-100 text-rail-700 mb-3">
                 <Sparkles size={20} aria-hidden="true" />
               </span>
               <p className="font-semibold text-slate-900">What would you like to know about {gadgetName}?</p>
@@ -265,7 +265,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
                       key={q}
                       type="button"
                       onClick={() => send(q)}
-                      className="text-sm font-medium text-sage-800 bg-sage-50 hover:bg-sage-100 border border-sage-200 rounded-full px-3 py-1.5 min-h-10 sm:min-h-8 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+                      className="text-sm font-medium text-rail-800 bg-rail-50 hover:bg-rail-100 border border-rail-200 rounded-full px-3 py-1.5 min-h-10 sm:min-h-8 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-400"
                     >
                       {q}
                     </button>
@@ -315,7 +315,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
             type="button"
             onClick={() => scrollToBottom()}
             aria-label="Jump to latest message"
-            className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center justify-center size-9 rounded-full bg-white border border-slate-300 shadow-md text-slate-700 hover:bg-slate-50 transition animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center justify-center size-9 rounded-full bg-white border border-slate-300 shadow-md text-slate-700 hover:bg-slate-50 transition animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-400"
           >
             <ArrowDown size={16} aria-hidden="true" />
           </button>
@@ -329,7 +329,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
         }}
         className="border-t border-slate-200 bg-slate-50/60 px-4 sm:px-6 pt-3 pb-4"
       >
-        <div className="flex items-end gap-2 rounded-2xl border border-slate-300 bg-white px-3 py-2 shadow-xs focus-within:border-sage-600 focus-within:ring-2 focus-within:ring-sage-200 transition">
+        <div className="flex items-end gap-2 rounded-2xl border border-slate-300 bg-white px-3 py-2 shadow-xs focus-within:border-rail-600 focus-within:ring-2 focus-within:ring-rail-200 transition">
           <label htmlFor="gadget-chat-input" className="sr-only">
             Ask about {gadgetName}
           </label>
@@ -349,7 +349,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
             type="submit"
             disabled={!draft.trim() || loading}
             aria-label="Send question"
-            className="inline-flex items-center justify-center size-9 shrink-0 rounded-full bg-sage-700 text-white hover:bg-sage-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 focus-visible:ring-offset-2"
+            className="inline-flex items-center justify-center size-9 shrink-0 rounded-full bg-rail-700 text-white hover:bg-rail-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600 focus-visible:ring-offset-2"
           >
             <ArrowUp size={18} aria-hidden="true" />
           </button>

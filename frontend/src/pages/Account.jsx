@@ -100,7 +100,7 @@ export default function Account() {
           <dd className="text-slate-900">
             {isAdmin ? (
               <span className="inline-flex items-center gap-1.5">
-                <ShieldCheck size={16} aria-hidden="true" className="text-sage-700" /> Admin (curates the catalog)
+                <ShieldCheck size={16} aria-hidden="true" className="text-rail-700" /> Admin (curates the catalog)
               </span>
             ) : (
               'Member (suggests corrections, keeps a My Gadgets list)'

@@ -8,7 +8,7 @@ function controlClass(error) {
   return `${CONTROL} ${
     error
       ? 'border-red-500 focus:border-red-600 focus:ring-red-200'
-      : 'border-slate-300 hover:border-slate-400 focus:border-sage-600 focus:ring-sage-200'
+      : 'border-slate-300 hover:border-slate-400 focus:border-rail-600 focus:ring-rail-200'
   }`
 }
 

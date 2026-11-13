@@ -47,7 +47,7 @@ export default function ShortLinkRedirect() {
         action={
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-sage-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-1.5 bg-rail-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-rail-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600 focus-visible:ring-offset-2"
           >
             Back to Catalog
           </Link>

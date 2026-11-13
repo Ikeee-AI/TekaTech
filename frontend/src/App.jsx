@@ -36,7 +36,7 @@ function App() {
     <div className="min-h-screen bg-slate-50">
 
       <a href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-sage-700 focus:text-white focus:px-3 focus:py-2 focus:rounded-lg focus:text-sm"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-rail-700 focus:text-white focus:px-3 focus:py-2 focus:rounded-lg focus:text-sm"
       >
         Skip to Content
       </a>

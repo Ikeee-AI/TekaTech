@@ -10,7 +10,7 @@ function Citation({ number, source, onCiteClick }) {
       onClick={() => onCiteClick?.(number - 1)}
       aria-label={`${label}. Show this source`}
       title={label}
-      className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 mx-0.5 align-baseline text-xs font-bold leading-none text-sage-900 bg-sage-100 border border-sage-300 rounded-md hover:bg-sage-200 hover:border-sage-400 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 focus-visible:ring-offset-1"
+      className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 mx-0.5 align-baseline text-xs font-bold leading-none text-rail-900 bg-rail-100 border border-rail-300 rounded-md hover:bg-rail-200 hover:border-rail-400 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600 focus-visible:ring-offset-1"
     >
       {number}
     </button>
@@ -64,7 +64,7 @@ export default function AnswerText({ text, sources, onCiteClick }) {
         {list.intro !== null && (
           <p className="text-[15px] text-slate-800 leading-7">{renderInline(list.intro, sources, onCiteClick)}</p>
         )}
-        <ul className="space-y-2 list-disc pl-5 marker:text-sage-600">
+        <ul className="space-y-2 list-disc pl-5 marker:text-rail-600">
           {list.items.map((item, i) => (
             <li key={i} className="text-[15px] text-slate-800 leading-7">
               {renderInline(item, sources, onCiteClick)}

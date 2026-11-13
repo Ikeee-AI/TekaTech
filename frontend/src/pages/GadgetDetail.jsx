@@ -94,7 +94,7 @@ export default function GadgetDetail() {
 
         <div className="min-w-0 flex flex-col">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-sage-800 bg-sage-50 border border-sage-200 rounded-full px-2.5 py-1 uppercase tracking-wide">
+            <span className="text-xs font-semibold text-rail-800 bg-rail-50 border border-rail-200 rounded-full px-2.5 py-1 uppercase tracking-wide">
               {gadget.category}
             </span>
             {oldestVerified && (

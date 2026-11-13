@@ -113,7 +113,7 @@ export default function MySuggestions() {
       <BackLink to="/">Back to Catalog</BackLink>
 
       <h1 className="font-display text-2xl font-medium text-gray-900 tracking-tight mb-1 flex items-center gap-2">
-        <Inbox size={22} className="text-sage-700" aria-hidden="true" /> My Suggestions
+        <Inbox size={22} className="text-rail-700" aria-hidden="true" /> My Suggestions
       </h1>
       <p className="text-sm text-gray-600 mb-6">
         Spec corrections you suggested, newest first, and whether an admin approved or rejected them.
@@ -125,7 +125,7 @@ export default function MySuggestions() {
           title="No Suggestions Yet"
           description="You haven't suggested any corrections yet. Open a gadget and choose Suggest Correction on one of its specs."
           action={
-            <Link to="/" className="inline-flex items-center min-h-10 text-sm font-semibold text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600">
+            <Link to="/" className="inline-flex items-center min-h-10 text-sm font-semibold text-rail-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600">
               Browse the catalog
             </Link>
           }
@@ -140,14 +140,14 @@ export default function MySuggestions() {
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusPill status={item.status} />
                   {isNew && (
-                    <span className="text-xs font-semibold text-sage-800 bg-sage-50 border border-sage-200 rounded-full px-2 py-0.5">
+                    <span className="text-xs font-semibold text-rail-800 bg-rail-50 border border-rail-200 rounded-full px-2 py-0.5">
                       New decision
                     </span>
                   )}
                   {item.gadget ? (
                     <Link
                       to={`/gadgets/${item.gadget.id}`}
-                      className="inline-flex items-center min-h-10 sm:min-h-0 text-sm font-semibold text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+                      className="inline-flex items-center min-h-10 sm:min-h-0 text-sm font-semibold text-rail-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600"
                     >
                       {item.gadget.name}
                       {item.gadget.brand ? ` · ${item.gadget.brand}` : ''}
@@ -168,7 +168,7 @@ export default function MySuggestions() {
                 <div className="mt-3 grid sm:grid-cols-2 gap-3">
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-gray-500 mb-1">Your suggestion</p>
-                    <p className="text-sm text-gray-900 bg-sage-50 rounded-md p-2 whitespace-pre-line break-words">
+                    <p className="text-sm text-gray-900 bg-rail-50 rounded-md p-2 whitespace-pre-line break-words">
                       {item.suggested_content}
                     </p>
                   </div>

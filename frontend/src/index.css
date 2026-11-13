@@ -1,27 +1,85 @@
 @import "tailwindcss";
 
+/*
+ * TekaTech rebrand, step 1 (13 Nov 2026): "Rail wayfinding" tokens and type.
+ * Brief: docs/design/rebrand-brief.md. Colours always carry a meaning (brand shell,
+ * a category or compared gadget, or a state), never decoration.
+ */
 @theme {
-  /* One typeface site-wide: Open Sans Condensed (Open Sans at 75% width). */
-  --font-sans: "Open Sans", ui-sans-serif, sans-serif;
-  --font-display: var(--font-sans);
+  /* Sign-style type with clear numerals: Barlow for reading, Barlow Semi Condensed for headings. */
+  --font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Barlow Semi Condensed", "Barlow", ui-sans-serif, system-ui, sans-serif;
+  /* Not a code font: `font-mono` marks numbers and small data labels, set in Barlow with
+     tabular figures (see the rule below) so specs, prices and counts line up. */
   --font-mono: var(--font-sans);
 
-  /* Sage palette: the site's accent color (matches the logo) */
-  --color-sage-50: #eaf4ee;
-  --color-sage-100: #d9ecdf;
-  --color-sage-200: #bfeecc;
-  --color-sage-300: #a7d0b3;
-  --color-sage-400: #84ae92;
-  --color-sage-600: #3a6a4c;
-  --color-sage-700: #254b35;
-  --color-sage-800: #1b3727;
-  --color-sage-900: #0f3723;
+  /* Smallest text role: 13px (was Tailwind's 12px, plus four 11px labels). Helper text,
+     timestamps and data labels stay readable on a phone. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.4;
+
+  /* Rail: the deep navy brand scale (shell, primary actions, links, focus). Replaces the
+     old sage-green scale step for step, so light steps stay backgrounds and dark steps text. */
+  --color-rail-50: #eff4fb;
+  --color-rail-100: #dfe8f5;
+  --color-rail-200: #c4d4ec;
+  --color-rail-300: #9db6dd;
+  --color-rail-400: #6f92c8;
+  --color-rail-500: #4672b0;
+  --color-rail-600: #2c5794;
+  --color-rail-700: #1c4178;
+  --color-rail-800: #13305c;
+  --color-rail-900: #0b2041;
+  --color-rail-950: #06142b;
+
+  /* Line colours: one per catalog category or compared gadget (used from step 2 on).
+     Each passes 3:1 against white as a marker; text on them uses the matching -ink. */
+  --color-line-yellow: #f2b705;
+  --color-line-yellow-ink: #3d2e00;
+  --color-line-green: #1f8a4c;
+  --color-line-blue: #1d6fd6;
+  --color-line-purple: #7b3fb8;
+  --color-line-orange: #d9661a;
+  --color-line-teal: #0f8484;
+  --color-line-red: #c8323b;
 }
 
 body {
   font-family: var(--font-sans);
-  font-stretch: 75%;
   font-weight: 500;
+  color: var(--color-slate-900);
+  background-color: var(--color-slate-50);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings get the display face, balanced line breaks; prose gets pretty breaks. */
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  text-wrap: balance;
+  letter-spacing: -0.005em;
+}
+p {
+  text-wrap: pretty;
+}
+
+/* Numbers that get compared line up: data labels, tables, prices. */
+.font-mono, table, .tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Browser surfaces in the palette, not the browser's defaults. */
+::selection {
+  background-color: var(--color-rail-200);
+  color: var(--color-rail-950);
+}
+input, textarea {
+  caret-color: var(--color-rail-700);
+}
+html {
+  scrollbar-color: var(--color-rail-300) transparent;
+}
+a {
+  text-underline-offset: 0.18em;
 }
 
 @keyframes fade-in {
@@ -33,7 +91,7 @@ body {
 }
 /* Fallback keyboard focus ring for any control that doesn't set its own. */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-sage-700);
+  outline: 2px solid var(--color-rail-700);
   outline-offset: 2px;
 }
 

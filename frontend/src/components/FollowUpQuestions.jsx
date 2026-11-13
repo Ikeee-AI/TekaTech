@@ -18,7 +18,7 @@ export default function FollowUpQuestions({ questions, onSelect, disabled = fals
             type="button"
             disabled={disabled}
             onClick={() => onSelect(q)}
-            className="inline-flex items-center gap-1.5 text-left text-sm font-medium text-sage-800 bg-sage-50 hover:bg-sage-100 border border-sage-200 rounded-full px-3 py-1.5 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+            className="inline-flex items-center gap-1.5 text-left text-sm font-medium text-rail-800 bg-rail-50 hover:bg-rail-100 border border-rail-200 rounded-full px-3 py-1.5 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-400"
           >
             <CornerDownRight size={13} aria-hidden="true" className="shrink-0" />
             {q}

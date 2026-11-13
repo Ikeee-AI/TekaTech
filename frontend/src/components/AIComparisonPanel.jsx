@@ -115,7 +115,7 @@ export default function AIComparisonPanel({
   return (
     <section aria-labelledby="ai-compare-title" className="mt-8 bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-xs">
       <div className="flex items-center gap-2 mb-1">
-        <Sparkles size={18} className="text-sage-700" aria-hidden="true" />
+        <Sparkles size={18} className="text-rail-700" aria-hidden="true" />
         <h2 id="ai-compare-title" className="text-lg font-bold text-slate-900">{title}</h2>
       </div>
       <p className="text-sm text-slate-600 mb-4">
@@ -151,7 +151,7 @@ export default function AIComparisonPanel({
                 <button
                   key={q}
                   onClick={() => handleSuggestedClick(q)}
-                  className="text-sm font-medium text-sage-800 bg-sage-50 hover:bg-sage-100 border border-sage-200 rounded-full px-3 py-1.5 min-h-10 sm:min-h-8 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400"
+                  className="text-sm font-medium text-rail-800 bg-rail-50 hover:bg-rail-100 border border-rail-200 rounded-full px-3 py-1.5 min-h-10 sm:min-h-8 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-400"
                 >
                   {q}
                 </button>
@@ -170,7 +170,7 @@ export default function AIComparisonPanel({
               maxLength={MAX_QUESTION_CHARS}
               aria-describedby="ai-question-count"
               onChange={(e) => setQuestion(e.target.value)}
-              className="w-full bg-white text-slate-900 border border-slate-300 hover:border-slate-400 rounded-lg px-3 py-2.5 text-[15px] focus:border-sage-600 focus:ring-2 focus:ring-sage-200 outline-none transition resize-y"
+              className="w-full bg-white text-slate-900 border border-slate-300 hover:border-slate-400 rounded-lg px-3 py-2.5 text-[15px] focus:border-rail-600 focus:ring-2 focus:ring-rail-200 outline-none transition resize-y"
             />
             <p id="ai-question-count" className="mt-1 text-right text-xs text-slate-500 tabular-nums">
               {question.length}/{MAX_QUESTION_CHARS}

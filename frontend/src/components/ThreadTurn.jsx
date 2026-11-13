@@ -14,10 +14,10 @@ export function UserBubble({ question, askedAt }) {
   const when = formatAskedAt(askedAt)
   return (
     <div className="flex flex-col items-end gap-1">
-      <div className="max-w-[85%] rounded-3xl rounded-br-lg bg-sage-100 text-slate-900 px-4 py-2.5">
+      <div className="max-w-[85%] rounded-3xl rounded-br-lg bg-rail-100 text-slate-900 px-4 py-2.5">
         <p className="text-[15px] leading-relaxed whitespace-pre-line break-words">{question}</p>
       </div>
-      {when && <p className="text-[11px] text-slate-500 pr-2">{when}</p>}
+      {when && <p className="text-xs text-slate-500 pr-2">{when}</p>}
     </div>
   )
 }
@@ -27,7 +27,7 @@ export function AssistantMessage({ children }) {
   return (
     <div className="flex items-start gap-3">
       <span
-        className="mt-3 inline-flex items-center justify-center size-7 shrink-0 rounded-full bg-sage-700 text-white"
+        className="mt-3 inline-flex items-center justify-center size-7 shrink-0 rounded-full bg-rail-700 text-white"
         aria-hidden="true"
       >
         <Sparkles size={14} />

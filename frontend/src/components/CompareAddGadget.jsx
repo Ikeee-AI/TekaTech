@@ -86,7 +86,7 @@ export default function CompareAddGadget({ excludeIds, onAdd, buttonRef }) {
               type="button"
               onClick={close}
               aria-label="Close"
-              className="w-10 h-10 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+              className="w-10 h-10 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600"
             >
               <X size={16} aria-hidden="true" />
             </button>
@@ -100,7 +100,7 @@ export default function CompareAddGadget({ excludeIds, onAdd, buttonRef }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Name, brand or category"
-              className="w-full text-sm border border-slate-300 rounded-lg pl-9 pr-3 py-2 min-h-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+              className="w-full text-sm border border-slate-300 rounded-lg pl-9 pr-3 py-2 min-h-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-rail-600"
             />
           </div>
 
@@ -109,7 +109,7 @@ export default function CompareAddGadget({ excludeIds, onAdd, buttonRef }) {
             {catalog.status === 'error' && (
               <div className="text-sm text-red-800 py-2">
                 <p>{catalog.error}</p>
-                <button type="button" onClick={load} className="mt-1 min-h-10 font-semibold underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600">
+                <button type="button" onClick={load} className="mt-1 min-h-10 font-semibold underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600">
                   Try Again
                 </button>
               </div>
@@ -131,7 +131,7 @@ export default function CompareAddGadget({ excludeIds, onAdd, buttonRef }) {
                         onAdd(g)
                       }}
                       aria-label={`Add ${g.name} to the comparison`}
-                      className="w-full flex items-center justify-between gap-3 text-left px-2 py-2 min-h-10 rounded-md hover:bg-sage-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+                      className="w-full flex items-center justify-between gap-3 text-left px-2 py-2 min-h-10 rounded-md hover:bg-rail-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600"
                     >
                       <span className="min-w-0">
                         <span className="block text-sm font-semibold text-slate-900 break-words">{g.name}</span>
@@ -139,7 +139,7 @@ export default function CompareAddGadget({ excludeIds, onAdd, buttonRef }) {
                           {g.brand} · {g.category}
                         </span>
                       </span>
-                      <Plus size={16} aria-hidden="true" className="shrink-0 text-sage-700" />
+                      <Plus size={16} aria-hidden="true" className="shrink-0 text-rail-700" />
                     </button>
                   </li>
                 ))}

@@ -83,8 +83,8 @@ function GeneralKnowledgeLabel() {
 }
 
 const optionLabelClass =
-  'flex items-center gap-2 min-h-9 text-sm font-medium text-slate-700 cursor-pointer select-none rounded focus-within:ring-2 focus-within:ring-sage-400 px-1 -mx-1'
-const optionInputClass = 'w-4 h-4 rounded border-slate-300 accent-sage-700 focus:outline-none'
+  'flex items-center gap-2 min-h-9 text-sm font-medium text-slate-700 cursor-pointer select-none rounded focus-within:ring-2 focus-within:ring-rail-400 px-1 -mx-1'
+const optionInputClass = 'w-4 h-4 rounded border-slate-300 accent-rail-700 focus:outline-none'
 
 /** The answer options shown next to each other wherever a question can be (re)asked:
  * Plain-Language Answer and the opt-in Allow General Knowledge (#172). Both are real,
@@ -146,7 +146,7 @@ function FailureNotice({ error, onRetry }) {
 }
 
 const linkClass =
-  'inline-flex items-center gap-1 font-semibold text-amber-900 underline underline-offset-2 hover:text-amber-950 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400'
+  'inline-flex items-center gap-1 font-semibold text-amber-900 underline underline-offset-2 hover:text-amber-950 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-400'
 
 function scrollToSpecs() {
   const heading = document.getElementById('specs-title')
@@ -277,7 +277,7 @@ export default function AiAnswerResult({
                 onClick={() => setSourcesOpen((s) => !s)}
                 aria-expanded={sourcesOpen}
                 aria-controls={`${idPrefix}-sources`}
-                className="inline-flex items-center gap-1 min-h-9 text-sm font-semibold text-slate-700 hover:text-sage-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 rounded"
+                className="inline-flex items-center gap-1 min-h-9 text-sm font-semibold text-slate-700 hover:text-rail-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-400 rounded"
               >
                 {sourcesOpen ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
                 {result.sources.length} Source{result.sources.length === 1 ? '' : 's'} Retrieved
@@ -290,14 +290,14 @@ export default function AiAnswerResult({
                       ref={(el) => (sourceRefs.current[i] = el)}
                       tabIndex={-1}
                       aria-label={`Source ${i + 1}: ${s.gadget_name}`}
-                      className={`border rounded-lg px-4 py-3.5 transition-colors duration-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 ${
-                        highlightedIndex === i ? 'border-sage-400 bg-sage-50' : 'border-slate-200 bg-slate-50'
+                      className={`border rounded-lg px-4 py-3.5 transition-colors duration-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-rail-600 ${
+                        highlightedIndex === i ? 'border-rail-400 bg-rail-50' : 'border-slate-200 bg-slate-50'
                       }`}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 mb-2">
                         <span className="flex items-start gap-2 min-w-0 text-[15px] font-semibold text-slate-900">
                           <span
-                            className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 text-xs font-bold text-sage-900 bg-sage-100 border border-sage-300 rounded-md shrink-0"
+                            className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 text-xs font-bold text-rail-900 bg-rail-100 border border-rail-300 rounded-md shrink-0"
                             aria-hidden="true"
                           >
                             {i + 1}
@@ -312,7 +312,7 @@ export default function AiAnswerResult({
                       </div>
                       {typeof s.similarity === 'number' && (
                         <div className="h-1 bg-slate-200 rounded-full overflow-hidden mb-2.5" aria-hidden="true">
-                          <div className="h-full bg-sage-600 rounded-full" style={{ width: `${Math.round(s.similarity * 100)}%` }} />
+                          <div className="h-full bg-rail-600 rounded-full" style={{ width: `${Math.round(s.similarity * 100)}%` }} />
                         </div>
                       )}
                       <p className="text-[15px] text-slate-800 leading-relaxed whitespace-pre-line break-words">{s.content}</p>
@@ -321,7 +321,7 @@ export default function AiAnswerResult({
                           href={s.source_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-sm font-medium text-sage-700 hover:underline mt-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 break-all"
+                          className="inline-flex items-center gap-1 text-sm font-medium text-rail-700 hover:underline mt-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-400 break-all"
                         >
                           <ExternalLink size={13} aria-hidden="true" className="shrink-0" /> {sourceLabel(s.source_url)}
                           <span className="sr-only">(opens in a new tab)</span>

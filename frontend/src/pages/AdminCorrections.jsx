@@ -109,7 +109,7 @@ export default function AdminCorrections() {
         tabIndex={-1}
         className="font-display text-2xl font-medium text-gray-900 tracking-tight mb-1 flex items-center gap-2"
       >
-        <ShieldCheck size={22} className="text-sage-700" /> Review Corrections
+        <ShieldCheck size={22} className="text-rail-700" /> Review Corrections
       </h1>
       <p className="text-sm text-gray-600 mb-6">Community-submitted spec corrections awaiting approval.</p>
 
@@ -150,7 +150,7 @@ export default function AdminCorrections() {
         <div className="space-y-3">
           {corrections.map((c) => (
             <article key={c.id} className="bg-white border border-gray-200 rounded-xl p-4">
-              <h2 className="text-xs font-medium text-sage-700 uppercase">
+              <h2 className="text-xs font-medium text-rail-700 uppercase">
                 {c.spec_documents?.gadgets?.name} · {c.spec_documents?.gadgets?.brand}
               </h2>
               <div className="mt-3">

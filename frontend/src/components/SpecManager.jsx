@@ -160,7 +160,7 @@ function CorrectionForm({ spec, onDone }) {
       toast.success(
         <span>
           Suggestion sent — you&apos;ll see the decision in{' '}
-          <Link to="/my-suggestions" className="font-semibold text-sage-700 underline">
+          <Link to="/my-suggestions" className="font-semibold text-rail-700 underline">
             My Suggestions
           </Link>
           .
@@ -386,7 +386,7 @@ function SpecSourceGroup({ group, defaultOpen, user, isAdmin, gadgetId, indexing
               href={sourceUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 min-h-10 sm:min-h-0 text-sm font-semibold text-sage-700 hover:underline rounded break-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+              className="inline-flex items-center gap-1.5 min-h-10 sm:min-h-0 text-sm font-semibold text-rail-700 hover:underline rounded break-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600"
             >
               <ExternalLink size={14} aria-hidden="true" className="shrink-0" /> {sourceLabel(sourceUrl)}
               <span className="sr-only">(source, opens in a new tab)</span>
@@ -416,7 +416,7 @@ function SpecSourceGroup({ group, defaultOpen, user, isAdmin, gadgetId, indexing
             aria-expanded={open}
             aria-controls={rowsId}
             aria-label={`${open ? 'Hide' : 'Show'} ${specs.length} spec part${specs.length === 1 ? '' : 's'} from ${sourceUrl ? sourceLabel(sourceUrl) : 'no source link'}`}
-            className="inline-flex items-center gap-1 min-h-10 sm:min-h-8 px-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-200/70 disabled:opacity-60 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+            className="inline-flex items-center gap-1 min-h-10 sm:min-h-8 px-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-200/70 disabled:opacity-60 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600"
           >
             {specs.length} part{specs.length === 1 ? '' : 's'}
             <ChevronDown size={16} aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -536,7 +536,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
     <section aria-labelledby="specs-title" className="mt-8">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
         <h2 id="specs-title" className="text-xl font-bold text-slate-900 flex items-center gap-2">
-          <FileText size={20} className="text-sage-700" aria-hidden="true" /> Specifications
+          <FileText size={20} className="text-rail-700" aria-hidden="true" /> Specifications
           {status === 'ready' && <span className="text-sm font-medium text-slate-500">({specs.length})</span>}
         </h2>
         {/* Admin-curated catalog (scope change, 3 Nov 2026): only admins add specs.

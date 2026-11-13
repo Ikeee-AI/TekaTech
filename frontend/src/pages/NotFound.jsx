@@ -9,14 +9,14 @@ export default function NotFound() {
       <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
         <SearchX size={26} className="text-gray-500" aria-hidden="true" />
       </div>
-      <p className="text-sm font-medium text-sage-700">404</p>
+      <p className="text-sm font-medium text-rail-700">404</p>
       <h1 className="font-display text-xl font-bold text-gray-900 mt-1">Page Not Found</h1>
       <p className="text-sm text-gray-500 mt-1 max-w-sm">
         That page doesn't exist — it might have been moved, or the link is off.
       </p>
       <Link
         to="/"
-        className="mt-6 inline-flex items-center gap-1.5 bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-sage-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 focus-visible:ring-offset-2"
+        className="mt-6 inline-flex items-center gap-1.5 bg-rail-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-rail-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600 focus-visible:ring-offset-2"
       >
         Back to Catalog
       </Link>

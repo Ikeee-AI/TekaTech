@@ -52,7 +52,7 @@ export default function CorrectionDiff({ current, suggested, headingLevel = 3 })
         </div>
         <div className="min-w-0">
           <Heading className="text-xs font-semibold text-gray-700 mb-1">Suggested</Heading>
-          <p className={`${panelClass} text-gray-900 bg-sage-50 border-sage-200`}>
+          <p className={`${panelClass} text-gray-900 bg-rail-50 border-rail-200`}>
             <Segments
               segments={diff.after}
               Mark="ins"

@@ -7,7 +7,7 @@ import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { useCorrectionBadges } from '../hooks/useCorrectionBadges'
 import logo from '../assets/logo.webp'
 
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600'
 
 // Small count bubble. The number is visible; srLabel says what it counts. Screen readers
 // get ", 3 pending" instead: a leading space inside the badge is dropped when the link's
@@ -32,14 +32,14 @@ function decisionsLabel(count) {
 function navLinkClass({ isActive }) {
   return `px-3.5 py-2 rounded-lg text-[15px] transition-colors ${focusRing} ${
     isActive
-      ? 'bg-sage-400 text-sage-900 font-semibold'
+      ? 'bg-rail-400 text-rail-900 font-semibold'
       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
   }`
 }
 
 function mobileLinkClass({ isActive }) {
   return `block px-3 py-2.5 rounded-lg text-base transition-colors ${focusRing} ${
-    isActive ? 'bg-sage-50 text-sage-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+    isActive ? 'bg-rail-50 text-rail-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
   }`
 }
 
@@ -145,7 +145,7 @@ function SearchBar() {
             ask()
           }
         }}
-        className="w-full bg-slate-100 text-slate-900 placeholder:text-slate-500 text-[15px] pl-10 pr-12 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-sage-600 focus:bg-white focus:ring-1 focus:ring-sage-600 transition-all"
+        className="w-full bg-slate-100 text-slate-900 placeholder:text-slate-500 text-[15px] pl-10 pr-12 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-rail-600 focus:bg-white focus:ring-1 focus:ring-rail-600 transition-all"
       />
       {query.trim() ? (
         <button
@@ -156,7 +156,7 @@ function SearchBar() {
           onClick={ask}
           aria-label="Ask the AI"
           title="Ask the AI"
-          className={`absolute right-2 flex items-center gap-1 text-xs font-semibold text-sage-700 bg-sage-50 border border-sage-200 rounded-md px-2 py-1 min-h-10 sm:min-h-0 hover:bg-sage-200 transition ${focusRing}`}
+          className={`absolute right-2 flex items-center gap-1 text-xs font-semibold text-rail-700 bg-rail-50 border border-rail-200 rounded-md px-2 py-1 min-h-10 sm:min-h-0 hover:bg-rail-200 transition ${focusRing}`}
         >
           <Sparkles size={12} /> Ask <CornerDownLeft size={12} />
         </button>
@@ -247,7 +247,7 @@ function Navbar() {
             <Link
               to="/add"
               aria-label="Add gadget"
-              className={`flex items-center gap-2 bg-sage-700 text-white text-[15px] font-bold px-3 sm:px-5 py-2.5 min-h-10 rounded-lg shadow-md shadow-sage-700/25 ring-2 ring-sage-400/50 hover:bg-sage-800 hover:shadow-lg active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
+              className={`flex items-center gap-2 bg-rail-700 text-white text-[15px] font-bold px-3 sm:px-5 py-2.5 min-h-10 rounded-lg shadow-md shadow-rail-700/25 ring-2 ring-rail-400/50 hover:bg-rail-800 hover:shadow-lg active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
             >
               <Plus size={18} strokeWidth={2.5} /> <span className="hidden sm:inline">Add Gadget</span>
             </Link>
@@ -267,7 +267,7 @@ function Navbar() {
                 title={mySuggestionsLabel}
                 className={({ isActive }) =>
                   `relative p-2 rounded-lg transition ${focusRing} ${
-                    isActive ? 'bg-sage-50 text-sage-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                    isActive ? 'bg-rail-50 text-rail-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
                   }`
                 }
               >
@@ -285,7 +285,7 @@ function Navbar() {
                 title="Your account"
                 className={({ isActive }) =>
                   `w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0 transition ${focusRing} ${
-                    isActive ? 'bg-sage-800 ring-2 ring-sage-300' : 'bg-sage-700 hover:bg-sage-800'
+                    isActive ? 'bg-rail-800 ring-2 ring-rail-300' : 'bg-rail-700 hover:bg-rail-800'
                   }`
                 }
               >

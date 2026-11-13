@@ -22,7 +22,7 @@ const INTROS = {
 const FAILURE_TITLES = { login: 'Log In Failed', signup: 'Sign Up Failed', resend: 'Could Not Send the Email' }
 
 const LINK_CLASS =
-  'text-sm font-medium text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
+  'text-sm font-medium text-rail-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600'
 
 export default function Login() {
   useDocumentTitle('Log In')

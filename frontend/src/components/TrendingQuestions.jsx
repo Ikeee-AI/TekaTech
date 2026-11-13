@@ -21,7 +21,7 @@ export default function TrendingQuestions({ onSelect }) {
           <button
             key={t.question}
             onClick={() => onSelect(t.question)}
-            className="text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full px-2.5 py-1 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+            className="text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full px-2.5 py-1 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600"
           >
             {t.question}
             {t.count > 1 && <span className="text-gray-500 ml-1">×{t.count}</span>}

@@ -6,13 +6,13 @@ const BASE =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2'
 
 const VARIANTS = {
-  primary: 'bg-sage-700 text-white hover:bg-sage-800 shadow-xs focus-visible:ring-sage-600',
-  secondary: 'bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 focus-visible:ring-sage-600',
-  subtle: 'bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 focus-visible:ring-sage-600',
-  outline: 'bg-white text-sage-700 border border-sage-300 hover:bg-sage-50 focus-visible:ring-sage-600',
+  primary: 'bg-rail-700 text-white hover:bg-rail-800 shadow-xs focus-visible:ring-rail-600',
+  secondary: 'bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 focus-visible:ring-rail-600',
+  subtle: 'bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 focus-visible:ring-rail-600',
+  outline: 'bg-white text-rail-700 border border-rail-300 hover:bg-rail-50 focus-visible:ring-rail-600',
   danger: 'bg-white text-red-700 border border-red-300 hover:bg-red-50 focus-visible:ring-red-400',
   dangerSolid: 'bg-red-700 text-white hover:bg-red-800 shadow-xs focus-visible:ring-red-400',
-  ghost: 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus-visible:ring-sage-600',
+  ghost: 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus-visible:ring-rail-600',
 }
 
 const SIZES = {

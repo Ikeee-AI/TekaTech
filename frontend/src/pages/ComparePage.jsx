@@ -194,7 +194,7 @@ export default function ComparePage() {
         action={
           <Link
             to={back.to}
-            className="inline-flex items-center gap-1.5 bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-sage-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-1.5 bg-rail-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-rail-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600 focus-visible:ring-offset-2"
           >
             {back.label}
           </Link>
@@ -229,7 +229,7 @@ export default function ComparePage() {
           onClick={handleShare}
           disabled={sharing}
           aria-busy={sharing || undefined}
-          className="flex items-center gap-1.5 text-xs font-medium text-sage-700 border border-sage-200 rounded-md px-3 py-1.5 min-h-10 sm:min-h-9 hover:bg-sage-50 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+          className="flex items-center gap-1.5 text-xs font-medium text-rail-700 border border-rail-200 rounded-md px-3 py-1.5 min-h-10 sm:min-h-9 hover:bg-rail-50 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600"
         >
           <Share2 size={13} /> {sharing ? 'Creating Link…' : 'Share'}
         </button>
@@ -284,7 +284,7 @@ export default function ComparePage() {
                     </div>
                     <Link
                       to={`/gadgets/${g.id}`}
-                      className="font-semibold text-sm text-gray-900 hover:underline block break-words rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+                      className="font-semibold text-sm text-gray-900 hover:underline block break-words rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600"
                     >
                       {g.name}
                     </Link>
@@ -332,7 +332,7 @@ export default function ComparePage() {
               </div>
               <Link
                 to={`/gadgets/${g.id}`}
-                className="text-sm font-semibold text-gray-900 leading-tight break-words hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+                className="text-sm font-semibold text-gray-900 leading-tight break-words hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600"
               >
                 {g.name}
               </Link>

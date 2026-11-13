@@ -13,7 +13,7 @@ import { friendlyError } from '../utils/requestErrors'
 const MIN_COMPARE = 2
 const MAX_COMPARE = 5
 
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-600'
 
 function formatPrice(value) {
   return `Php ${Number(value).toLocaleString('en-PH', { maximumFractionDigits: 0 })}`
@@ -75,7 +75,7 @@ export default function MyGadgets() {
   const header = (
     <>
       <h1 className="font-display text-2xl font-medium text-gray-900 tracking-tight mb-1 flex items-center gap-2">
-        <LayoutDashboard size={22} className="text-sage-700" aria-hidden="true" /> My Gadgets
+        <LayoutDashboard size={22} className="text-rail-700" aria-hidden="true" /> My Gadgets
       </h1>
       <p className="text-sm text-gray-600 mb-6">
         Your own shortlist from the TekaTech catalog. Open a gadget to ask the AI about it, or select {MIN_COMPARE}–
@@ -145,7 +145,7 @@ export default function MyGadgets() {
             ))}
           </ul>
           <p className="text-sm mt-6">
-            <Link to="/" className={`font-medium text-sage-700 hover:underline rounded ${focusRing}`}>
+            <Link to="/" className={`font-medium text-rail-700 hover:underline rounded ${focusRing}`}>
               Add more from the catalog
             </Link>
           </p>
@@ -191,7 +191,7 @@ function MyGadgetCard({ gadget, selected, removing, onToggle, onRemove }) {
   return (
     <li
       className={`bg-white rounded-xl p-5 border shadow-xs flex flex-col gap-4 ${
-        selected ? 'border-sage-400 ring-1 ring-sage-400' : 'border-slate-200'
+        selected ? 'border-rail-400 ring-1 ring-rail-400' : 'border-slate-200'
       }`}
     >
       <div className="flex gap-4">
@@ -217,13 +217,13 @@ function MyGadgetCard({ gadget, selected, removing, onToggle, onRemove }) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200">
-        <label className="flex items-center gap-2 min-h-9 cursor-pointer select-none rounded-md focus-within:ring-2 focus-within:ring-sage-600 px-1 -mx-1">
+        <label className="flex items-center gap-2 min-h-9 cursor-pointer select-none rounded-md focus-within:ring-2 focus-within:ring-rail-600 px-1 -mx-1">
           <input
             type="checkbox"
             checked={selected}
             onChange={onToggle}
             aria-label={`Select ${gadget.name} to compare`}
-            className="w-5 h-5 rounded border-slate-300 accent-sage-700 focus:outline-none"
+            className="w-5 h-5 rounded border-slate-300 accent-rail-700 focus:outline-none"
           />
           <span className="text-sm text-slate-800 font-semibold" aria-hidden="true">
             Select
