@@ -960,3 +960,21 @@ Short session, ~09:45–10:12 Manila.
 - Measure the first request after 30+ min idle, and Railway usage — Ikeee-AI — by 19 Nov.
 - Retire the Render API — Ikeee-AI — ~19 Nov.
 - Scope-change entry for moving the pilot past Sprint 5 — Ikeee-AI — not scheduled.
+
+## 2026-11-13 10:35 Asia/Manila — #251 closed
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code checked the run and the review history and wrote the closing note) · **Task:** S5-IK · **Branch:** `tekatech/railway-rollback-rehearsal` → #252
+
+**Done**
+- Closed main-guard issue [#251](https://github.com/Ikeee-AI/TekaTech/issues/251) with a note. Before closing, checked that #247's final commit `a15091b` has Ikeee-AI's approval (the earlier approval was on `2d6cd26`, before `@dependabot rebase`). Also checked that [run 43070610868](https://github.com/Ikeee-AI/TekaTech/actions/runs/43070610868) attempt 2 passed every job: main guard, tests, lint/build, migrations, deploy, browser checks. Production serves `f836e3b`. The original exception is in the 12 Nov entry.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — Close #251: the final commit is approved and the deploy passed — Ikeee-AI.
+
+**Blockers / risks** — #252 waits on Manuel's approval — Manuel. #249 waits on Jopher's changes — Jopher.
+
+**Plan alignment** — No change: Railway plan section 5 is still Partial until #252 merges; Render API retirement is not started (~19 Nov).
+
+**Next** — Same as the 10:12 entry, minus "Close #251".
