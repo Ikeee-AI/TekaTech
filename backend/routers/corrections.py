@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -184,15 +185,26 @@ def pending_corrections_count(user=Depends(get_current_admin_user)):
     return {"count": result.count}
 
 
+# The review queue is read whole on every admin page load; a cap keeps one request bounded.
+ADMIN_CORRECTIONS_LIMIT = 200
+
+
 @router.get("/corrections")
-def list_corrections(status: str = "pending", user=Depends(get_current_admin_user)):
-    result = (
-        supabase.table("spec_corrections")
-        .select("*, spec_documents(content, gadget_id, gadgets(name, brand))")
-        .eq("status", status)
-        .order("created_at", desc=True)
-        .execute()
-    )
+def list_corrections(
+    status: Literal["pending", "approved", "rejected"] = "pending", user=Depends(get_current_admin_user)
+):
+    try:
+        result = (
+            supabase.table("spec_corrections")
+            .select("*, spec_documents(content, gadget_id, gadgets(name, brand))")
+            .eq("status", status)
+            .order("created_at", desc=True)
+            .limit(ADMIN_CORRECTIONS_LIMIT)
+            .execute()
+        )
+    except Exception as exc:
+        logger.warning("Listing corrections failed: %s", type(exc).__name__, exc_info=True)
+        raise HTTPException(status_code=503, detail="Couldn't load corrections right now.") from None
     return result.data
 
 
