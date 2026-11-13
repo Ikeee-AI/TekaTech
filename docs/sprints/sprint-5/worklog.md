@@ -1350,3 +1350,46 @@ Short session, ~09:45–10:12 Manila.
 **Next**
 - Push `tekatech/s5-ik-rebrand-h1` and open one PR for Mika's review (Manuel backup) — Ikeee-AI — on approval.
 - Raise the backend follow-up (spec count, key-spec fields) with Manuel — Ikeee-AI.
+
+## 2026-11-14 01:06 Asia/Manila — Rebrand live (#258, #259); security audit; DB browser-role lock applied (prod + dev); hardening PRs #260–#263
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code and its review agents audited, wrote the code and SQL, and checked the live site at Ikeee-AI's direction; Ikeee-AI applied the production SQL and made every decision) · **Task:** S5-IK rebrand follow-up and security hardening · **Branches:** `tekatech/s5-ik-keyspecs-fix`, `tekatech/s5-ik-backend-hardening`, `tekatech/s5-ik-frontend-security`, `tekatech/s5-ik-ci-supply-chain`, `tekatech/s5-ik-db-lock`; this entry on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- [#258](https://github.com/Ikeee-AI/TekaTech/pull/258) rebrand approved by Mika on `fd8fb64`, squash-merged as `23b2d08`; main run [43430362252](https://github.com/Ikeee-AI/TekaTech/actions/runs/43430362252) green incl. deploy; live site checked in dark and light mode (production now has 24 phones).
+- Live check found wrong key-spec tiles (OPPO Find X8 "RAM 56 GB / Storage 12 GB", realme 14 Pro "840 Hz", POCO X7 Pro "Storage 8 GB"). Fixed in [#259](https://github.com/Ikeee-AI/TekaTech/pull/259): labelled-segment parser; owner rule "variants → show the standard model (e.g. 8/256)" with a "base model" note; new **Variants** card on the phone page listing every variant, standard first. Parser checked read-only against all 24 production phones. Approved by Mika on `1005496`, merged as `278583a`; run [43441661541](https://github.com/Ikeee-AI/TekaTech/actions/runs/43441661541) green; live Reno14 F page and realme vs Find X8 compare checked.
+- Security audit by three read-only review agents (backend auth/API, platform security, database/RLS) plus local `npm audit` (0 prod vulnerabilities) and `pip-audit` (0 known). No critical findings; route auth is correct everywhere.
+- Anonymous PostgREST probe with the public key: all 7 tracked tables refused on prod and dev; untracked live tables `profiles`, `image_lookups`, `ingestion_queue` answered 200 on prod.
+- Owner ran a read-only catalog query on prod (`lqswcmkzygqmnblaukco`): RLS on all 10 tables, but full `anon`/`authenticated` rights (incl. TRUNCATE) on the 3 leftover tables, default privileges granting new objects to the browser, 5 inert policies, `set_updated_at()` without `search_path`.
+- [#263](https://github.com/Ikeee-AI/TekaTech/pull/263) `backend/sql/lock_browser_roles.sql` (replay-safe safety net) + Supabase-realistic CI default grants and new acceptance checks; database CI job green. **Applied on prod by the owner** ("Success. No rows returned"), verified by re-running the check query (no policies, no browser grants, defaults clean) and the probe (401 on all 10 tables; `/health/ready` ok; `/gadgets` 24 rows). **Applied on dev** by Claude Code through the owner's signed-in Supabase SQL editor; verified clean. Evidence posted on #263.
+- Hardening PRs from the audit, built by agents in separate worktrees and reviewed by Claude Code: [#260](https://github.com/Ikeee-AI/TekaTech/pull/260) backend (trending privacy, auth-outage 503, rate limits, malformed share slug → 404, CORS without credentials and no `*`, API security headers, `SecretStr` keys, saved-question cap; 841 tests), [#261](https://github.com/Ikeee-AI/TekaTech/pull/261) frontend (theme script out of `index.html`, Render security headers with report-only CSP, PKCE email links with old links still working; 343 tests), [#262](https://github.com/Ikeee-AI/TekaTech/pull/262) CI (deploy secrets per step, SHA-256-checked Railway CLI binary, actions pinned to SHAs). All checks green; Manuel approved #260, #261, #262.
+- Railway `CORS_ORIGINS` checked read-only: only the Render origin, no `*`.
+- Rate-limit hop count measured on Railway (runbook step 1): `xff_entries=2` with and without a client-sent `X-Forwarded-For`, so the client value is dropped and `TRUSTED_PROXY_HOPS=2` is needed.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Key-spec tiles showed RAM 56 GB / Storage 12 GB, 840 Hz, Storage 8 GB on production | Parser took the tail of "256GB" from the next line, PWM dimming, and stopped at "+" | Segment parser + 10 tests (#259). Fixed, live |
+| Second PR (#259) creation blocked by the auto-mode classifier | Not explicitly requested by the owner at that point | Asked the owner; opened after "yes, open the PR". Resolved |
+| `ERROR: 42725: operator is not unique: "char" \|\| unknown` in the dev check query | Missing cast on `defaclobjtype` | Cast to text and re-ran. Fixed |
+| Security agent could not run `pip-audit` / `npm audit` | No shell in that agent | Ran both locally: clean. Resolved |
+| Backend agent's slug check returned 422, which the share page shows as a retry error | Path validation | Malformed slug now answers 404 (`2a14df3`). Fixed |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Live database had 3 tables, 5 policies and default grants not in the repo (`docs/database.md` mentioned the tables only) | Repo could not show browser exposure | Locked by #263 and documented in `docs/database.md`; dropping the 3 unused tables is an open owner decision |
+| Runbook assumed `TRUSTED_PROXY_HOPS=1` (Render) | Wrong hop count on Railway would keep one shared bucket | Measured 2 on Railway; runbook update after the bucket test. Open, Ikeee-AI |
+| Backend hardening is Manuel's area, built by Ikeee-AI's agents | Ownership | Manuel reviewed and approved #260 and #262. Resolved |
+
+**Decisions** — Key-spec tiles show the standard (base) variant; the phone page lists all variants — Ikeee-AI. Lock browser roles out of `public` entirely; keep `rls_auto_enable()`; keep (not drop) the 3 leftover tables for now — Ikeee-AI. CSP ships report-only first — Ikeee-AI with Claude Code.
+
+**Blockers / risks** — #261 needs manual steps after merge: Render dashboard headers (no Blueprint), Supabase Redirect URLs, and a real-email sign-up/reset test (owner). #262's deploy changes are proven only on the next main deploy (checksum + Railway CLI 5.71.0) and the next rollback/release run.
+
+**Plan alignment** — Rebrand: **Done** (#258, #259 reviewed, merged, deployed, live-checked). DB browser-role lock: applied and verified on prod and dev; PR #263 awaiting review. Hardening #260–#262: approved, not yet merged.
+
+**Next**
+- Merge #260, #261, #262 after the merge check, watch each deploy, run the post-merge checks — Ikeee-AI.
+- Set `TRUST_PROXY_HEADERS=true`, `TRUSTED_PROXY_HOPS=2` in Railway, then the bucket test — Ikeee-AI.
+- Manuel reviews #263 — Manuel.
