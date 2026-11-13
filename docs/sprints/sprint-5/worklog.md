@@ -1393,3 +1393,50 @@ Short session, ~09:45–10:12 Manila.
 - Merge #260, #261, #262 after the merge check, watch each deploy, run the post-merge checks — Ikeee-AI.
 - Set `TRUST_PROXY_HEADERS=true`, `TRUSTED_PROXY_HOPS=2` in Railway, then the bucket test — Ikeee-AI.
 - Manuel reviews #263 — Manuel.
+
+## 2026-11-14 04:01 Asia/Manila — Hardening merged and live; Render headers; password-reset fix with Brevo SMTP; per-visitor rate limits verified
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code merged after the gate, checked each deploy, investigated the reset failure in the Supabase auth logs, wrote #265, filled Supabase forms and edited the email templates in the owner's Chrome, set the Railway variables and ran the rate-limit tests; Ikeee-AI entered the Render headers and the Brevo SMTP key, ran the real-email tests and the phone test, and made every decision) · **Task:** S5-IK security hardening · **Branches:** `tekatech/s5-ik-admin-overview`, `tekatech/s5-ik-email-links-any-browser`; this entry and the runbook update on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- Merged in order after the gate (Manuel's approval on each head commit, checks green), each deploy checked:
+  - [#262](https://github.com/Ikeee-AI/TekaTech/pull/262) → `6c56df4`, run [43470139562](https://github.com/Ikeee-AI/TekaTech/actions/runs/43470139562): `railway.tar.gz: OK`, `railway 5.71.0`, deploy + smoke passed.
+  - [#260](https://github.com/Ikeee-AI/TekaTech/pull/260) → `9a1cd4a`: API serves the commit with CSP/nosniff/DENY/HSTS/Referrer-Policy headers; 24 phones; malformed share slug 404; fake token 401; no CORS credentials.
+  - [#261](https://github.com/Ikeee-AI/TekaTech/pull/261) → `e230b54`: `/theme-init.js` served; signed-in session survived the PKCE switch; no console errors.
+- [#256](https://github.com/Ikeee-AI/TekaTech/pull/256) not merged: conflict with `main` in `backend/main.py` (admin router import vs `SecurityHeadersMiddleware`). Resolved by merging `main` (`7d6a2c0`; backend 849, frontend 361 tests locally); re-approval requested.
+- [#254](https://github.com/Ikeee-AI/TekaTech/pull/254) (Manuel's fork) not merged: conflicts in `backend/main.py` and `backend/README.md`; left to Manuel.
+- Render → tekatech-web → Headers: owner entered the 6 headers (nosniff, Referrer-Policy, X-Frame-Options DENY, HSTS, Permissions-Policy, CSP **Report-Only**). Checked with `curl -I` (Render adds its own longer HSTS) and in the browser: 0 CSP violations on home, phone page, compare and theme switch; no inline scripts.
+- Supabase Redirect URLs checked: origin and `/reset-password` already listed, matching the three redirects the code sends. No change.
+- **Owner's real-email reset test failed:** "Password not updated. Your reset session has expired." Supabase auth logs: `/verify` 303, then no `/token` exchange, then `PUT /user` → 403 `session_not_found`. Cause: PKCE link opened in a different window than the request (no code verifier), and the page showed the form for a leftover sign-in.
+- Fix [#265](https://github.com/Ikeee-AI/TekaTech/pull/265): any-browser `?token_hash=…&type=…` links verified by the app (`verifyOtp`); reset form only for a fresh recovery session made in that tab; old link formats still accepted; 371 frontend tests. Approved by Mika on `157fbb6`, merged `7b2f364`, run [43491690511](https://github.com/Ikeee-AI/TekaTech/actions/runs/43491690511) green, live bundle checked.
+- Supabase templates were read-only without custom SMTP. Connected the owner's Brevo account on prod (sender `TekaTech <tekatechemail@gmail.com>`, `smtp-relay.brevo.com:587`; the key was entered by the owner). Reset password and Confirm sign up templates now link to `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery|email` (saved, "Successfully updated email template"). **Owner re-test passed:** reset requested in incognito, opened from Gmail elsewhere, password updated.
+- Rate limits per visitor: Railway `TRUST_PROXY_HEADERS=true`, `TRUSTED_PROXY_HOPS=2` (old value `" 1"` had a stray space). Verified: this PC limited → `429`; spoofed `X-Forwarded-For` (2 forms) → `429`; owner's phone on 5G → `200` during the PC's limited window. `docs/deploy-runbook.md` section rewritten as VERIFIED for Railway, setup step updated.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `GraphQL: Pull Request has merge conflicts (mergePullRequest)` on #256 | `main` moved (#260) | Merged `main` into the branch (`7d6a2c0`). Waiting for re-approval |
+| "Password not updated. Your reset session has expired." / `PUT /user` 403 `session_not_found` | PKCE same-browser rule; form shown for a leftover sign-in | #265 + token-hash templates. Fixed and re-tested |
+| "Set up custom SMTP to edit templates" | Supabase free plan without SMTP | Brevo SMTP connected. Resolved |
+| Navigation blocked by "Leave site?" (unsaved dev SQL editor tab) | My earlier query left in the editor | Used a new tab; nothing discarded |
+| Fake-XFF request returned 200 in the first rate test | Fell just after the minute window reset | Re-ran right after a burst: 429. Resolved |
+| One `curl` returned `000` for a bad-token check | Transient network blip | Retried: 401 twice. Resolved |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Runbook said hop count 1 (Render); Railway needs 2 | Wrong value would keep a shared bucket | Runbook updated with the measurements. Resolved |
+| Brevo sender is a Gmail address ("Freemail domain is not recommended") | Emails may land in spam | Consider a custom domain in Brevo later. Open, owner |
+| Dev project has no custom SMTP, so its emails still use the default (PKCE) links | Dev email links work only in the requesting browser | Acceptable for dev. Open, low |
+
+**Decisions** — Fix the reset properly with any-browser links and custom SMTP (Brevo), not by reverting to the implicit flow — Ikeee-AI. Turn on per-visitor rate limits with `TRUSTED_PROXY_HOPS=2` — Ikeee-AI. Keep the CSP report-only for a few days — Ikeee-AI.
+
+**Blockers / risks** — #256 needs re-approval; #263 needs Manuel's review; #254 needs Manuel's rebase.
+
+**Plan alignment** — Audit items #1–#7: **Done** on production (reviewed, merged, deployed and verified; #263's SQL applied and verified while its PR awaits review).
+
+**Next**
+- Switch the CSP from Report-Only to enforced after a few days without reports — Ikeee-AI.
+- Re-approval of #256 — Manuel or Mika; review of #263 — Manuel; rebase of #254 — Manuel.
+- Optional: a custom sending domain in Brevo — owner.
