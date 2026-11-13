@@ -29,10 +29,11 @@ const SLOT_STYLES = [
   { card: 'bg-inverse text-inverse-ink', bar: 'bg-inverse', ring: 'border-current/40' },
 ]
 
-// The round cut-out each card gets around the centred VS badge (radius = badge 44 px + 8 px gap).
+// Cards get a round cut-out around the centred VS badge from the sm breakpoint up
+// (.vs-notch-left/right in index.css); stacked on a phone they stay whole.
 // The × button sits 32 px in from that edge so the cut-out never clips it.
-const NOTCH_LEFT = { WebkitMask: 'radial-gradient(circle 52px at calc(100% + 6px) 50%, transparent 51.5px, #000 52px)', mask: 'radial-gradient(circle 52px at calc(100% + 6px) 50%, transparent 51.5px, #000 52px)' }
-const NOTCH_RIGHT = { WebkitMask: 'radial-gradient(circle 52px at -6px 50%, transparent 51.5px, #000 52px)', mask: 'radial-gradient(circle 52px at -6px 50%, transparent 51.5px, #000 52px)' }
+const NOTCH_LEFT = 'vs-notch-left'
+const NOTCH_RIGHT = 'vs-notch-right'
 
 /** Unique ids from ?ids=, in order, capped. A repeated id would render twice under one React key. */
 function parseIds(raw) {
@@ -108,8 +109,7 @@ function PhoneCard({ gadget, index, onRemove, side, notch }) {
   return (
     <section
       aria-label={gadget.name}
-      style={notch}
-      className={`relative flex items-center gap-4 sm:gap-5 p-4 sm:p-5 rounded-[26px] min-w-0 ${style.card} ${
+      className={`${notch ?? ''} relative flex items-center gap-4 sm:gap-5 p-4 sm:p-5 rounded-[26px] min-w-0 ${style.card} ${
         right ? 'flex-row-reverse text-right sm:pl-20' : notch ? 'sm:pr-20' : ''
       }`}
     >
@@ -142,6 +142,9 @@ function VersusHeader({ gadgets, onRemove, addSlot }) {
     return (
       <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-3">
         <PhoneCard gadget={gadgets[0]} index={0} onRemove={onRemove} notch={NOTCH_LEFT} />
+        <span aria-hidden="true" className="sm:hidden mx-auto -my-5 z-10 w-12 h-12 rounded-full bg-inverse text-inverse-ink ring-4 ring-slate-50 flex items-center justify-center text-base font-extrabold">
+          VS
+        </span>
         <PhoneCard gadget={gadgets[1]} index={1} onRemove={onRemove} side="right" notch={NOTCH_RIGHT} />
         <span
           aria-hidden="true"

@@ -187,6 +187,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Compare: round cut-out around the centred VS badge (badge radius 44 px + 8 px gap;
+   6 px = half the gap between the cards). Only side by side, from the sm breakpoint. */
+@media (min-width: 40rem) {
+  .vs-notch-left {
+    -webkit-mask: radial-gradient(circle 52px at calc(100% + 6px) 50%, transparent 51.5px, #000 52px);
+    mask: radial-gradient(circle 52px at calc(100% + 6px) 50%, transparent 51.5px, #000 52px);
+  }
+  .vs-notch-right {
+    -webkit-mask: radial-gradient(circle 52px at -6px 50%, transparent 51.5px, #000 52px);
+    mask: radial-gradient(circle 52px at -6px 50%, transparent 51.5px, #000 52px);
+  }
+}
+
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }

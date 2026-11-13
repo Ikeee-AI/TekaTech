@@ -1,4 +1,20 @@
-# TekaTech rebrand brief: "Rail wayfinding" (draft for confirmation)
+# TekaTech rebrand brief
+
+## Final direction (owner, 13 Nov 2026) — supersedes the "Rail wayfinding" draft below
+
+After seeing the built Rail look (closed PR #257), the owner rejected it and chose from preview boards:
+
+- **Dark mode is the default: "Night Market"** — near-black ground (#09090b), dark panels (#111114), lime accent (#c6f432, near-black ink), cobalt second accent (#3b5bff).
+- **Light mode: Showroom layout with the Bento Lab palette** — soft grey ground (#eef0f4), white tiles, ink text (#0f1115), cobalt accent (#2f4bff), pale lime (#d9f99d).
+- **Type:** Geist, with Geist Mono for prices and figures; tabular numbers.
+- **Scope: phones only, browsed by brand.** Every phone shows the same four key-spec tiles: RAM, storage, main camera, display Hz. They are read from saved, sourced spec text; unstated ones say "Not stated by source".
+- **Compare:** two phone cards with round cut-outs around a centred VS badge; Face-off (bar) view or Table view; Ask AI beside them.
+- **Kept:** numbered citations and `AnswerText.jsx` rendering, the five answer states, general knowledge off by default and labelled, admin-only controls, no cart, ratings or invented figures.
+- Reference boards: the "TekaTech Final Design" canvas (private claude.ai artifact). Built on branch `tekatech/s5-ik-rebrand-h1`, steps a–g.
+
+---
+
+# Superseded draft: "Rail wayfinding"
 
 Impeccable `shape`, 13 Nov 2026, Ikeee-AI (AI-assisted, Claude Code). Degraded run: no concept-seed roll or decision page, because the owner keeps the Impeccable binary off. The derivation is recorded below, and the direction was chosen by the owner from four options (three directions plus the familiar category standard). Product truth is in `PRODUCT.md`; the problems this fixes are in `critique-2026-11-13.md` (26/40). Nothing here is built yet.
 
