@@ -16,6 +16,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from config import settings
 from rate_limit import limiter, verify_storage_reachable
 from request_id import REQUEST_ID_HEADER, RequestIdMiddleware
+from security_headers import SecurityHeadersMiddleware
 from routers import gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets
 from supabase_client import supabase
 
@@ -81,6 +82,9 @@ app.add_middleware(
     allow_headers=CORS_ALLOWED_HEADERS,
     expose_headers=[REQUEST_ID_HEADER],
 )
+# Added last, so it is the outermost middleware: every response gets the headers,
+# including CORS preflights, 429s and RequestIdMiddleware's JSON 500.
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(gadgets.router)
 app.include_router(specs.router)
