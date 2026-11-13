@@ -1258,3 +1258,32 @@ Short session, ~09:45–10:12 Manila.
 **Next**
 - Merge #256 after both reviews, then check `/admin` on production — Ikeee-AI.
 - Optional: apply `user_gadgets.sql` to TekaTech-dev — Ikeee-AI.
+
+## 2026-11-13 15:45 Asia/Manila — `user_gadgets.sql` applied to TekaTech-dev (dev now matches production)
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code ran it in Ikeee-AI's Chrome through the Supabase SQL Editor, at Ikeee-AI's request) · **Task:** #206 follow-up (dev environment) · **Branch:** none (database change); this entry on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- Read-only check first: on TekaTech-dev, 6 of 7 app tables existed; only `user_gadgets` was missing (`PGRST205`), `user_questions` was present.
+- Applied the statements of `backend/sql/user_gadgets.sql` (comments shortened; same SQL) in the SQL Editor of **TekaTech-dev**. Project checked in the page title and the URL (`/project/efdgguybkampozuvqjrz/`); the "PRODUCTION" badge is the dev project's own main branch, not the live project. Result: "Success. No rows returned". About 15:35 Manila.
+- Checks (from `docs/database.md`): table exists true; RLS on true; `authenticated` SELECT false; `anon` SELECT false; `service_role` SELECT true; 0 rows. The backend (local `.env`, dev) can now read the table.
+- Recorded on [#256](https://github.com/Ikeee-AI/TekaTech/pull/256). **Production (`lqswcmkzygqmnblaukco`) was not touched.**
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Closing the Supabase tab: the page asked to confirm leaving | The SQL Editor holds the unsaved check query | Left open; the owner closes it and discards. Open (owner) |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| `user_gadgets.sql` was applied to production on 3 Nov but never to TekaTech-dev | My Gadgets couldn't be tested on dev; the overview showed "Unavailable" there | Applied to dev on 13 Nov. Resolved |
+
+**Decisions** — Apply the missing SQL to dev now, rather than leaving dev behind production — Ikeee-AI.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — Dev environment: now matches production for the 7 app tables checked.
+
+**Next** — Close the open Supabase tab (discard the query) — Ikeee-AI. #256 reviews — Manuel, Mika.
