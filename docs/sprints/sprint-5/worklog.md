@@ -1221,3 +1221,40 @@ Short session, ~09:45–10:12 Manila.
 **Next**
 - Browser check of `/admin`, then merge #256 after both reviews, then check it on production — Ikeee-AI.
 - Optional: apply `user_gadgets.sql` to TekaTech-dev — Ikeee-AI.
+
+## 2026-11-13 15:24 Asia/Manila — Admin overview browser check; scrollable panels and bar fix pushed to #256
+**Who:** Ikeee-AI (AI-assisted: yes — Ikeee-AI signed in and sent the first screenshots; Claude Code ran the local servers, drove the follow-up check in Ikeee-AI's Chrome and made the fix) · **Task:** #206 · **Branch:** `tekatech/s5-ik-admin-overview` → [#256](https://github.com/Ikeee-AI/TekaTech/pull/256); this entry on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- Ran the backend (`:8000`) and frontend (`:5173`) locally against **TekaTech-dev** (env checked by project ref); `/admin/overview` without a sign-in → 401. Ikeee-AI signed in as a dev admin and sent 4 screenshots (`Screenshot 2026-11-13 150809/150834/150901/150921.png`, local). The numbers matched the read-only run: 13 gadgets, 3 answerable, 11 indexed / 1 waiting, 86 questions, $0.0561, 9 accounts, lists "Unavailable".
+- Owner request: make every panel scrollable. Commit `0f0328f`:
+  - the gadget table and the day table scroll inside their own boxes (max 26rem), with pinned headers that keep their labels on one line; each box is a labelled, focusable region;
+  - the no-specs list is capped at 7rem;
+  - the day bar fixed (`bg-sage-500` doesn't exist in the palette, and the span was inline).
+- Automated check in Ikeee-AI's Chrome (Claude in Chrome, own tab, closed afterwards):
+  - tables: 414 px visible of 514 / 550 px, header offset 1 px after scrolling;
+  - no-specs list with 120 test names: 112 of 220 px (DOM-only test, real list restored);
+  - bars 120 / 52 / 23 px;
+  - at 390 px (frame inside the page): no sideways page scroll, the day table scrolls sideways inside its box, header rows 36 px.
+  Screenshots saved locally. Results posted on [#256](https://github.com/Ikeee-AI/TekaTech/pull/256).
+- Checks: frontend lint clean, **329 passed**, build OK. Local servers stopped afterwards (ports 8000 and 5173 free).
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Day bars not visible on `/admin` | Class `bg-sage-500` is not in the palette (`index.css` defines 50–400 and 600–900), and an inline `span` ignores width | `inline-block bg-sage-600`. Fixed |
+| `resize_window` to 400 px had no effect (viewport stayed 1536 px) | Owner's Chrome window is maximized | Tested phone width in a 390 px iframe inside the page instead; window size restored. Worked around |
+| Header labels wrapped ("Input tokens") at phone width | Columns squeezed | `whitespace-nowrap` on the sticky header. Fixed |
+
+**Conflicts and contradictions** — None new. Still open: dev lacks `user_gadgets` (optional owner fix).
+
+**Decisions** — Every long panel scrolls on its own, with pinned headers (owner's request) — Ikeee-AI.
+
+**Blockers / risks** — #256 needs Manuel's and Mika's reviews — Manuel, Mika.
+
+**Plan alignment** — #206: **Partial**. Built, tested locally and checked in a browser; not yet reviewed, merged or deployed.
+
+**Next**
+- Merge #256 after both reviews, then check `/admin` on production — Ikeee-AI.
+- Optional: apply `user_gadgets.sql` to TekaTech-dev — Ikeee-AI.
