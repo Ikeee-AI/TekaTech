@@ -28,7 +28,7 @@ router = APIRouter(prefix="/query", tags=["query"])
 PROVIDER_TIMEOUT_SECONDS = 45
 PROVIDER_MAX_RETRIES = 1
 client = OpenAI(
-    api_key=settings.openai_api_key,
+    api_key=settings.openai_api_key.get_secret_value(),
     timeout=PROVIDER_TIMEOUT_SECONDS,
     max_retries=PROVIDER_MAX_RETRIES,
 )
