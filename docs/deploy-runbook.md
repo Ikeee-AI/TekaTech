@@ -67,6 +67,19 @@ Verify after the settings are live (no AI calls; `/health/ready` is limited to 3
 
 If any step fails, set `TRUST_PROXY_HEADERS=false` on the API service (restores the previous shared-bucket behavior) and open a finding.
 
+## Security headers (frontend)
+
+`render.yaml` lists the frontend's response headers for `/*`: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Strict-Transport-Security`, `Permissions-Policy` and a `Content-Security-Policy-Report-Only`. No Blueprint was provisioned (see First-time setup, step 5), so these take effect only once they are entered on `tekatech-web` in the Render dashboard (Settings → Headers, path `/*`, one row per header, values copied from `render.yaml`). Headers apply without a rebuild.
+
+The CSP starts in **report-only** mode: the browser reports what it *would* block but blocks nothing. To enforce it:
+
+1. Open the live frontend with DevTools → Console, cache disabled. Walk the main journeys: catalog, gadget detail with an AI answer and source links, compare, log in / log out, a sign-up confirmation or password-reset email link, light and dark theme.
+2. Look for `[Report Only] Refused to …` messages. Each one names the directive and the blocked URL. Expected: none. If the API URL or Supabase project changes, update `connect-src` first.
+3. When a full walk shows no reports, rename the header in the dashboard (and in `render.yaml`) from `Content-Security-Policy-Report-Only` to `Content-Security-Policy`, keep the value, then repeat step 1 and confirm the app still works and the console is clean.
+4. To undo, rename it back to `…-Report-Only` (takes effect on the next request).
+
+`script-src 'self'` works because the pre-paint theme script is a file (`frontend/public/theme-init.js`), not inline. Don't add inline `<script>` blocks to `index.html`.
+
 ## Routine deployment
 
 Each issue gets a feature branch and a reviewed PR. Required CI jobs pass before merging. On main the pipeline repeats checks and triggers deployment. Verify the live version and record timestamps; a successful hook request is not deployment completion.
