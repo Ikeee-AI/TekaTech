@@ -139,3 +139,27 @@ describe('image links (#202)', () => {
     expect(withImage('', 'failed')).toBeUndefined()
   })
 })
+
+describe('sourced prices (14 Nov 2026)', () => {
+  const base = { ...EMPTY_GADGET, name: 'Galaxy S25', brand: 'Samsung', category: 'Smartphone' }
+
+  it('refuses non-http source and store links, and a future checked date', () => {
+    const errors = validateGadget({
+      ...base, price_source_url: 'javascript:alert(1)', store_url: 'samsung.com/ph', price_checked_at: '2999-01-01',
+    })
+    expect(Object.keys(errors).sort()).toEqual(['price_checked_at', 'price_source_url', 'store_url'])
+  })
+
+  it('sends the three fields, trimmed, and clears them on edit with null', () => {
+    const form = { ...base, price_source_url: ' https://www.samsung.com/ph/x/ ', price_checked_at: '2026-11-14', store_url: 'https://www.samsung.com/ph/' }
+    expect(validateGadget(form)).toEqual({})
+    const payload = toGadgetPayload(form)
+    expect(payload.price_source_url).toBe('https://www.samsung.com/ph/x/')
+    expect(payload.price_checked_at).toBe('2026-11-14')
+    expect(payload.store_url).toBe('https://www.samsung.com/ph/')
+    const cleared = toGadgetPayload(base, form)
+    expect(cleared.price_source_url).toBeNull()
+    expect(cleared.price_checked_at).toBeNull()
+    expect(cleared.store_url).toBeNull()
+  })
+})

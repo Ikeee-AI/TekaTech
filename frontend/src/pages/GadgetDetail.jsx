@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { Pencil, Calendar } from 'lucide-react'
+import { Pencil, Calendar, ExternalLink } from 'lucide-react'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
@@ -13,8 +13,9 @@ import Button from '../components/ui/Button'
 import ErrorState from '../components/ui/ErrorState'
 import { timeAgo } from '../utils/timeAgo'
 import { friendlyError } from '../utils/requestErrors'
-import { formatPeso } from '../utils/formatPeso'
 import { extractKeySpecs, extractMoreSpecs, extractVariants } from '../utils/keySpecs'
+import { isHttpUrl } from '../utils/gadgetValidation'
+import PriceTag from '../components/PriceTag'
 import KeySpecTiles from '../components/KeySpecTiles'
 import MoreKeySpecs from '../components/MoreKeySpecs'
 import ProductImage from '../components/ProductImage'
@@ -82,8 +83,6 @@ export default function GadgetDetail() {
     : null
   const hasOutdated = specList.some((s) => now - new Date(s.verified_at).getTime() > SIX_MONTHS_MS)
 
-  const price = formatPeso(gadget.price_php)
-
   return (
     <div className="flex flex-col gap-4">
       <BackLink to="/">Back to Catalog</BackLink>
@@ -121,8 +120,10 @@ export default function GadgetDetail() {
             <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
               <div>
                 <dt className="text-xs font-semibold text-slate-500">Price</dt>
-                {price ? (
-                  <dd className="mt-0.5 text-2xl font-bold tabular-nums text-slate-900">{price}</dd>
+                {gadget.price_php != null ? (
+                  <dd className="mt-0.5 text-2xl font-bold tabular-nums text-slate-900">
+                    <PriceTag gadget={gadget} />
+                  </dd>
                 ) : (
                   <dd className="mt-1.5 text-base text-slate-500">Not listed</dd>
                 )}
@@ -145,6 +146,12 @@ export default function GadgetDetail() {
               <Button as={Link} to={`/compare?ids=${id}`} variant="primary">
                 Compare
               </Button>
+              {isHttpUrl(gadget.store_url ?? '') && (
+                <Button as="a" href={gadget.store_url} target="_blank" rel="noopener noreferrer" variant="outline" icon={ExternalLink}>
+                  Official store
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </Button>
+              )}
               {/* Admin-curated catalog: PATCH /gadgets/{id} is admin-only. */}
               {user?.app_metadata?.is_admin && (
                 <Button as={Link} to={`/gadgets/${id}/edit`} variant="outline" icon={Pencil}>

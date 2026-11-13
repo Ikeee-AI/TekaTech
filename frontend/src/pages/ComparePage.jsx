@@ -11,6 +11,7 @@ import Button from '../components/ui/Button'
 import AIComparisonPanel from '../components/AIComparisonPanel'
 import CompareAddGadget from '../components/CompareAddGadget'
 import ProductImage from '../components/ProductImage'
+import PriceTag from '../components/PriceTag'
 import { friendlyError } from '../utils/requestErrors'
 import { formatPeso } from '../utils/formatPeso'
 import { extractKeySpecs, extractMoreSpecs } from '../utils/keySpecs'
@@ -76,7 +77,7 @@ function PhoneCard({ gadget, index, onRemove, side, notch }) {
             {withoutDoubledBrand(gadget.name)}
           </Link>
         </h2>
-        <p className={`mt-2 ${price ? 'text-lg sm:text-xl font-bold tabular-nums' : 'text-sm opacity-85'}`}>{price ?? 'No price listed'}</p>
+        <p className={`mt-2 ${price ? 'text-lg sm:text-xl font-bold tabular-nums' : 'text-sm opacity-85'}`}><PriceTag gadget={gadget} empty="No price listed" sourceClassName="opacity-85" /></p>
       </div>
       <button
         type="button"

@@ -5,9 +5,15 @@ export const GADGET_FIELD_LABELS = {
   release_date: 'Release Date',
   price_php: 'Price (Php)',
   image_url: 'Image URL',
+  price_source_url: 'Price Source URL',
+  price_checked_at: 'Price Checked On',
+  store_url: 'Official Store Link',
 }
 
-export const EMPTY_GADGET = { name: '', brand: '', category: '', release_date: '', price_php: '', image_url: '' }
+export const EMPTY_GADGET = {
+  name: '', brand: '', category: '', release_date: '', price_php: '', image_url: '',
+  price_source_url: '', price_checked_at: '', store_url: '',
+}
 
 export function isHttpUrl(value) {
   try {
@@ -90,10 +96,24 @@ export function validateGadget(form, { imageStatus = 'pending' } = {}) {
     errors.image_url = IMAGE_LINK_UNCHECKED
   }
 
+  // Sourced prices (14 Nov 2026): both links are shown as clickable hrefs, so http(s) only.
+  for (const field of ['price_source_url', 'store_url']) {
+    const value = (form[field] ?? '').trim()
+    if (value && !isHttpUrl(value)) errors[field] = 'Enter a full link starting with http:// or https://.'
+  }
+  if (form.price_checked_at) {
+    const checked = new Date(form.price_checked_at)
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    if (Number.isNaN(checked.getTime()) || Number(form.price_checked_at.slice(0, 4)) < 1970 || checked > tomorrow) {
+      errors.price_checked_at = 'Enter the day you checked the price (not a future date).'
+    }
+  }
+
   return errors
 }
 
-const OPTIONAL_FIELDS = ['release_date', 'price_php', 'image_url']
+const OPTIONAL_FIELDS = ['release_date', 'price_php', 'image_url', 'price_source_url', 'price_checked_at', 'store_url']
 
 /**
  * Turns form strings into the API payload; blank optional fields are left out.
@@ -109,6 +129,9 @@ export function toGadgetPayload(form, initialValues = null) {
     release_date: form.release_date || undefined,
     price_php: form.price_php !== '' && form.price_php != null ? Number(form.price_php) : undefined,
     image_url: form.image_url.trim() || undefined,
+    price_source_url: (form.price_source_url ?? '').trim() || undefined,
+    price_checked_at: form.price_checked_at || undefined,
+    store_url: (form.store_url ?? '').trim() || undefined,
   }
   if (initialValues) {
     for (const field of OPTIONAL_FIELDS) {

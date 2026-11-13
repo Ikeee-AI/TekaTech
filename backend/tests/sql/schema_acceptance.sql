@@ -109,6 +109,22 @@ begin
   if not (select relrowsecurity from pg_class where oid = 'public.user_questions'::regclass) then
     raise exception 'user_questions must enable RLS';
   end if;
+  -- Sourced prices: http(s) links and a checked date are stored; other schemes are refused.
+  update gadgets set price_php = 49990, price_source_url = 'https://www.samsung.com/ph/',
+    price_checked_at = date '2026-11-14', store_url = 'https://www.samsung.com/ph/' where id = gadget_b;
+  if (select price_checked_at from gadgets where id = gadget_b) is distinct from date '2026-11-14' then
+    raise exception 'A gadget must keep its price check date';
+  end if;
+  begin
+    update gadgets set price_source_url = 'javascript:alert(1)' where id = gadget_b;
+    raise exception 'A non-http price source must be refused';
+  exception when check_violation then null;
+  end;
+  begin
+    update gadgets set store_url = 'ftp://example.com/x' where id = gadget_b;
+    raise exception 'A non-http store link must be refused';
+  exception when check_violation then null;
+  end;
   delete from gadgets where id = gadget_a;
   if exists (select 1 from user_questions where gadget_id = gadget_a) then
     raise exception 'Deleting a gadget must delete its saved questions';

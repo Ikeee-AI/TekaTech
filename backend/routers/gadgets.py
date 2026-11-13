@@ -84,7 +84,7 @@ def create_gadget(gadget: GadgetCreate, user=Depends(get_current_admin_user)):
 @router.patch("/{gadget_id}", response_model=GadgetResponse)
 def update_gadget(gadget_id: UUID, gadget: GadgetUpdate, user=Depends(get_current_admin_user)):
     # exclude_unset, not exclude_none: an omitted field is left alone, while an
-    # explicit null clears release_date / price_php / image_url (GadgetUpdate
+    # explicit null clears an optional field such as price_php or store_url (GadgetUpdate
     # refuses null for the required columns).
     payload = gadget.model_dump(mode="json", exclude_unset=True)
     if not payload:

@@ -27,6 +27,7 @@ import Button from '../components/ui/Button'
 import DeleteGadgetButton from '../components/DeleteGadgetButton'
 import KeySpecTiles from '../components/KeySpecTiles'
 import ProductImage from '../components/ProductImage'
+import PriceTag from '../components/PriceTag'
 import { CatalogSkeleton } from '../components/Skeleton'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useAuth } from '../hooks/useAuth'
@@ -829,7 +830,7 @@ function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, o
           <p className="mt-1.5 sm:mt-2 text-base text-slate-600">{gadget.brand}</p>
           {/* Prices in the sans face with tabular figures: mono spacing read as "₱ 2 2 , 9 9 9". */}
           <p className={`mt-3 sm:mt-4 ${price ? 'text-2xl sm:text-3xl font-bold tabular-nums text-slate-900' : 'text-base text-slate-500'}`}>
-            {price ?? 'No price yet'}
+            <PriceTag gadget={gadget} empty="No price yet" />
           </p>
           <div className="mt-4 sm:mt-5 flex flex-wrap gap-2">
             {gated ? (
@@ -1042,7 +1043,7 @@ export function GadgetCard({ gadget, specCount, selected, onToggle, onAsk, onDel
           {release ? ` · ${release}` : ''}
         </p>
         <p className={`mt-1.5 ${price ? 'text-xl font-bold tabular-nums text-slate-900' : 'text-sm text-slate-500'}`}>
-          {price ?? 'No price yet'}
+          <PriceTag gadget={gadget} empty="No price yet" />
         </p>
       </div>
 
