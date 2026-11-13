@@ -1287,3 +1287,29 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — Dev environment: now matches production for the 7 app tables checked.
 
 **Next** — Close the open Supabase tab (discard the query) — Ikeee-AI. #256 reviews — Manuel, Mika.
+
+## 2026-11-13 15:54 Asia/Manila — Sprint 5 retro (#238): status checked, missing members pinged
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code checked the issue and posted the reminder at Ikeee-AI's request) · **Task:** #238 (Sprint 5 retrospective) · **Branch:** none; this entry on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- Checked [#238](https://github.com/Ikeee-AI/TekaTech/issues/238): retro comments in from **Jopher** (`s2100932`, 6 Nov) and **Manuel** (`s2302827-byte`, 6 Nov). Missing: **Mika** (`meka-moka`), **Adrian** (`s2302756-cloud`, no activity since 31 Oct) and **Ikeee-AI**.
+- Posted a reminder to Mika and Adrian, asking for a short late retro by **Mon 16 Nov 15:00 Manila**; after that, missing entries are recorded as "missing", and nobody writes one for anyone else. Evidence: [comment](https://github.com/Ikeee-AI/TekaTech/issues/238#issuecomment-6847317126).
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| `docs/sprints/sprint-5/retrospective.md` (on `main`) lists all five members as "missing", but Manuel and Jopher posted their retros on #238 on 6 Nov | The record understates participation | Update the table once after the 16 Nov deadline. Open, Ikeee-AI |
+| The owner's own retro comment is missing | Retro incomplete | Ikeee-AI writes it in their own words (not drafted by Claude Code). Open, Ikeee-AI |
+
+**Decisions** — Late-retro deadline Mon 16 Nov 15:00 Manila — Ikeee-AI.
+
+**Blockers / risks** — Adrian is unlikely to reply (inactive since 31 Oct) — Adrian.
+
+**Plan alignment** — Sprint 5 retrospective: **Partial** (2 of 5 entries).
+
+**Next**
+- Ikeee-AI's own retro comment on #238 — Ikeee-AI — by 16 Nov.
+- After the 16 Nov deadline, update the table in `retrospective.md` and close #238 — Ikeee-AI.
