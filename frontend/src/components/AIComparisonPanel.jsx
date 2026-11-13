@@ -113,7 +113,7 @@ export default function AIComparisonPanel({
   }
 
   return (
-    <section aria-labelledby="ai-compare-title" className="mt-8 bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-xs">
+    <section aria-labelledby="ai-compare-title" className="min-w-0 bg-white border border-slate-200 rounded-[28px] p-5 sm:p-6">
       <div className="flex items-center gap-2 mb-1">
         <Sparkles size={18} className="text-sage-700" aria-hidden="true" />
         <h2 id="ai-compare-title" className="text-lg font-bold text-slate-900">{title}</h2>

@@ -2,7 +2,7 @@ from openai import OpenAI
 from config import settings
 from tokens import EMBEDDING_ENCODING as ENCODING  # cl100k_base, matches text-embedding-3-small
 
-client = OpenAI(api_key=settings.openai_api_key)
+client = OpenAI(api_key=settings.openai_api_key.get_secret_value())
 
 TARGET_TOKENS = 300  # aim for chunks around this size
 MAX_TOKENS = 500     # hard-split any single paragraph bigger than this

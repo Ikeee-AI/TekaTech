@@ -17,7 +17,9 @@ function clearLinkErrorFromUrl() {
 /**
  * One-time feedback for the sign-up confirmation email (#196), shown above the page the
  * link opened (the catalog):
- * - a working link: "Email Confirmed", once supabase-js has signed the user in;
+ * - a working link: "Email Confirmed", once supabase-js has signed the user in; if it
+ *   couldn't (PKCE: the link was opened in a different browser than the sign-up, so there
+ *   is no code verifier), the address is still confirmed, so say so and offer Log In;
  * - an expired or used link: a plain message, plus a way to get a new link.
  * A bad password-reset link is left to ResetPassword, which has its own message.
  * `link` and `pathname` default to what the URL held when the app loaded (utils/authLink.js).
@@ -32,7 +34,7 @@ export default function AuthLinkNotice({ link = initialAuthLink, pathname = init
 
   if (!notice) return null
   // Wait for the session supabase-js creates from the link before saying who is signed in.
-  if (notice.kind === 'confirmed' && (loading || !user)) return null
+  if (notice.kind === 'confirmed' && loading) return null
 
   const dismiss = () => setNotice(null)
   const dismissButton = (
@@ -43,10 +45,26 @@ export default function AuthLinkNotice({ link = initialAuthLink, pathname = init
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
-      {notice.kind === 'confirmed' ? (
+      {notice.kind === 'confirmed' && user ? (
         <Alert tone="success" title="Email Confirmed" action={dismissButton}>
           You&apos;re signed in as <strong className="font-semibold break-all">{user.email}</strong>. You can now suggest
           corrections to specs and follow their review.
+        </Alert>
+      ) : notice.kind === 'confirmed' ? (
+        <Alert
+          tone="success"
+          title="Email Confirmed"
+          action={
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="primary" icon={LogIn} as={Link} to="/login" onClick={dismiss}>
+                Log In
+              </Button>
+              {dismissButton}
+            </div>
+          }
+        >
+          Your email address is confirmed. Log in to continue. (The link signs you in automatically only in the browser
+          you signed up from.)
         </Alert>
       ) : user ? (
         <Alert tone="warning" title="This Email Link Has Expired or Was Already Used" action={dismissButton}>

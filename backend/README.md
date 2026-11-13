@@ -85,12 +85,12 @@ Environment variables (no secret values committed):
 | `openai_api_key` | OpenAI key for embeddings (`text-embedding-3-small`, `cl100k_base`) and chat (`gpt-5-mini`, `o200k_base`) | required |
 | `supabase_url` | Supabase project URL | required |
 | `supabase_key` | Supabase service-role key (`sb_secret_…`), bypasses RLS | required |
-| `cors_origins` | Comma-separated allowed browser origins | `http://localhost:5173` |
-| `rate_limit_storage_uri` | Counter store; `memory://` is single-process only | `memory://` |
+| `cors_origins` | Comma-separated allowed browser origins; `*` is refused at startup. CORS is not credentialed (auth is a Bearer header) and allows only `GET/POST/PUT/PATCH/DELETE` with `Authorization`, `Content-Type` | `http://localhost:5173` |
+| `rate_limit_storage_uri` | Counter store; `memory://` is single-process only. Logs and the startup error show only its scheme and host | `memory://` |
 
 Count with the matching encoder: `count_embedding_tokens` for anything headed to `embed_texts`, `count_chat_tokens` for anything headed into a prompt.
 
-Rate limits: `/query` 10/min; spec ingestion, spec indexing and comparison creation 20/hour each. `memory://` is per-process and correct only for a single worker; use a shared store (e.g. Redis) for multi-worker deploys. Startup aborts if a configured shared store is unreachable — no silent fallback.
+Rate limits: `/query` 10/min; spec ingestion, spec indexing and comparison creation 20/hour each; `GET /comparisons/{slug}` 60/min; signed-in GETs (`/corrections/mine`, `/me/gadgets`, `/me/gadgets/{id}/questions`) 120/min. `memory://` is per-process and correct only for a single worker; use a shared store (e.g. Redis) for multi-worker deploys. Startup aborts if a configured shared store is unreachable — no silent fallback.
 
 ## Failure drill
 
@@ -170,14 +170,14 @@ python scripts/eval_runner.py --answers .local/answers.json --markdown .local/re
 
 ## API reference
 
-Routes marked "none" are public; all others need a valid Supabase bearer token. The `client` pytest fixture overrides auth with an admin user; unauthorized/non-admin tests restore their own dependency overrides.
+Routes marked "none" are public; all others need a valid Supabase bearer token. A token Supabase refuses is a 401; if the sign-in check itself fails (Supabase unreachable, timeout, 5xx) the answer is a 503 `"Sign-in check is temporarily unavailable. Please try again."`, so clients must not treat it as signed out. Every response carries `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Strict-Transport-Security` and a deny-all `Content-Security-Policy` (left off only for the `/docs` and `/redoc` HTML pages). The `client` pytest fixture overrides auth with an admin user; unauthorized/non-admin tests restore their own dependency overrides.
 
 | Endpoint | Method | Auth | Payload | Success | Errors |
 |----------|--------|------|---------|---------|--------|
 | `/health` | GET | none | none | 200 `{"status": "ok"}` | — |
 | `/health/ready` | GET | none | none | 200 `{"status": "ok", "database": "ok", "latency_ms": N}`; `Cache-Control: no-store` | 503 `{"status": "error", "database": "error", "latency_ms": N}` (the database failed or took over 5 s; never any error text), 429 (30/minute) |
 | `/version` | GET | none | none | 200 `{"commit": "..."}` | — |
-| `/gadgets` | GET | none | query: `category`, `brand` | 200 list | — |
+| `/gadgets` | GET | none | query: `category` (max 60 chars), `brand` (max 80) | 200 list | 422 (filter too long) |
 | `/gadgets` | POST | admin | `GadgetCreate` (limits below) | 201 `GadgetResponse` | 401, 403, 422, 503 (database write failed) |
 | `/gadgets/{id}` | GET | none | path `id` | 200 `GadgetResponse` | 404 |
 | `/gadgets/{id}` | PATCH | admin | `GadgetUpdate`: only sent fields change; explicit `null` clears `release_date`, `price_php`, `image_url` | 200 `GadgetResponse` | 400 (no fields), 401, 403, 404, 422 (incl. `null` name/brand/category), 503 |
@@ -187,17 +187,17 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/gadgets/{id}/specs/{spec_id}/index` | POST | admin | path ids | 200 `{"id", "indexing_status"}` | 401, 403, 404, 409, 422, 429, 503 |
 | `/gadgets/{id}/specs/{spec_id}` | DELETE | admin | path ids | 204; its corrections are deleted with it (`on delete cascade`), and saved AI answers about the gadget are dropped from the answer cache | 401, 403, 404 (no such spec, or the spec belongs to another gadget) |
 | `/comparisons` | POST | none | `{"gadget_ids": [...]}` (at most 5 sent; duplicates removed, then at least 2 must remain) | 201 | 404 (a gadget doesn't exist), 422 (fewer than 2 different, more than 5, malformed id), 429, 503, 500 (no free link name after 5 tries; try again) |
-| `/comparisons/{slug}` | GET | none | path `slug` | 200 `{"slug", "gadget_ids"}` (view count is best-effort and never fails the request) | 404 |
+| `/comparisons/{slug}` | GET | none | path `slug` (exactly 7 of `a-z0-9`) | 200 `{"slug", "gadget_ids"}` (view count is best-effort and never fails the request) | 404, 422 (malformed slug), 429 (60/minute) |
 | `/stats/spec-coverage` | GET | none | none | 200 `{"covered": N, "total": N}` | — |
-| `/stats/trending-questions` | GET | none | query: `limit` (1–10, default 5) | 200 list; each `question` at most 150 chars | 422 (limit out of range) |
+| `/stats/trending-questions` | GET | none | query: `limit` (1–10, default 5) | 200 list; each `question` at most 150 chars and asked at least twice (a one-off question is never shown). A signed-in user's saved single-gadget question is stored in `query_history` as `[private question]` (tokens kept for cost) and never listed | 422 (limit out of range) |
 | `/specs/{spec_id}/corrections` | POST | logged-in | `{"suggested_content": "..."}` (stripped; 1–20,000 chars and at most 6,000 embedding tokens, same as spec ingestion) | 201 | 401, 404, 422, 429 (20/hour) |
-| `/corrections` | GET | admin | query `status` | 200 list | 401, 403 |
-| `/me/gadgets` | GET | logged-in | none (always the session user) | 200 list, newest first, max 50: `{"added_at", "gadget": GadgetResponse}` | 401, 503 |
+| `/corrections` | GET | admin | query `status`: `pending` (default), `approved` or `rejected` | 200 list, newest first, max 200 | 401, 403, 422 (unknown status), 503 |
+| `/me/gadgets` | GET | logged-in | none (always the session user) | 200 list, newest first, max 50: `{"added_at", "gadget": GadgetResponse}`. 120/minute | 401, 429, 503 |
 | `/me/gadgets/{gadget_id}` | PUT | logged-in | path `gadget_id` (a catalog gadget) | 204; already in the list is a no-op. 120/hour | 401, 404 (no such gadget), 409 (list full, 50), 422, 429, 503 |
 | `/me/gadgets/{gadget_id}` | DELETE | logged-in | path `gadget_id` | 204, removes it from the caller's list only (idempotent). 120/hour | 401, 422, 429, 503 |
-| `/me/gadgets/{gadget_id}/questions` | GET | logged-in | path `gadget_id` | 200 list, oldest first, the caller's latest 20 questions about that gadget: `{"id", "question", "asked_at", "response": QueryResponse}`. `POST /query` saves them (signed-in, exactly one gadget) | 401, 422, 503 |
+| `/me/gadgets/{gadget_id}/questions` | GET | logged-in | path `gadget_id` | 200 list, oldest first, the caller's latest 20 questions about that gadget: `{"id", "question", "asked_at", "response": QueryResponse}`. `POST /query` saves them (signed-in, exactly one gadget) and keeps only the newest 100 per gadget. 120/minute | 401, 422, 429, 503 |
 | `/me/gadgets/{gadget_id}/questions` | DELETE | logged-in | path `gadget_id` | 204, deletes the caller's saved questions about that gadget only (idempotent). 60/hour | 401, 422, 429, 503 |
-| `/corrections/mine` | GET | logged-in | none (always the session user; no user-id parameter) | 200 list, newest first, max 50: `{"id", "status", "suggested_content", "created_at", "reviewed_at", "spec_id", "spec_excerpt", "gadget": {"id", "name", "brand"} \| null}` | 401, 503 (`"Couldn't load your suggestions right now."`) |
+| `/corrections/mine` | GET | logged-in | none (always the session user; no user-id parameter) | 200 list, newest first, max 50: `{"id", "status", "suggested_content", "created_at", "reviewed_at", "spec_id", "spec_excerpt", "gadget": {"id", "name", "brand"} \| null}` | 401, 429 (120/minute), 503 (`"Couldn't load your suggestions right now."`) |
 | `/corrections/pending-count` | GET | admin | none | 200 `{"count": N}` | 401, 403, 503 |
 | `/corrections/{id}` | PATCH | admin | `{"action": "approve\|reject"}`; only `pending` corrections can be resolved | 200 | 400, 401, 403, 404, 409 (`"Correction was already approved"` / `rejected`), 503 |
 | `/query` | POST | none (optional admin headers: `X-Simulate-Failure`, `X-Bypass-Answer-Cache`) | `{"question": "...", "gadget_ids": [...], "plain_language": false, "allow_general_knowledge": false, "regenerate": false}`; `regenerate` (gadget chat) replaces the caller's newest saved turn for the same question instead of adding one | 200 `{"answer", "sources", "model_used", "invalid_citations_removed", "cached", "cache_match", "retrieval", "answer_basis"}`; `retrieval` is `"vector"`, `"keyword"` or `"none"`; `answer_basis` is `"specs"`, `"general_knowledge"` or `"none"` (see below) | 422 (empty or over-limit question), 429, 503 (AI timeout, provider failure or unusable answer; see below) |

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { legacyLinkSession, supabase } from '../supabaseClient'
+import { clearAuthCodeFromUrl, openResetForm } from '../utils/authLink'
 import { AuthContext } from './authContextValue'
 
 export function AuthProvider({ children }) {
@@ -7,12 +8,22 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // getSession() waits for supabase-js to exchange an email link's ?code=… (PKCE);
+    // legacyLinkSession for a pre-PKCE #access_token=… link (supabaseClient.js).
+    legacyLinkSession
+      .then((legacyType) => {
+        if (legacyType === 'recovery') openResetForm()
+        return supabase.auth.getSession()
+      })
+      .then(({ data: { session } }) => {
+        setUser(session?.user ?? null)
+        setLoading(false)
+        clearAuthCodeFromUrl()
+      })
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
-      setLoading(false)
-    })
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+      // A reset link always ends on the reset form, even if Supabase redirected elsewhere.
+      if (event === 'PASSWORD_RECOVERY') openResetForm()
     })
     return () => listener.subscription.unsubscribe()
   }, [])

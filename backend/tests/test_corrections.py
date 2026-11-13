@@ -331,6 +331,34 @@ def test_list_corrections_requires_admin(client, fake_supabase):
         _restore_admin(app)
 
 
+@pytest.mark.parametrize("status", ["pending", "approved", "rejected"])
+def test_list_corrections_filters_by_status_and_is_capped(client, fake_supabase, status):
+    from routers.corrections import ADMIN_CORRECTIONS_LIMIT
+
+    fake_supabase.set_response("spec_corrections", "select", [{"id": "c1", "status": status}])
+    resp = client.get(f"/corrections?status={status}")
+    assert resp.status_code == 200
+    assert ("spec_corrections", "status", status) in fake_supabase.filters
+    assert ("spec_corrections", ADMIN_CORRECTIONS_LIMIT) in fake_supabase.limits
+
+
+@pytest.mark.parametrize("status", ["all", "PENDING", "", "pending' or 1=1"])
+def test_list_corrections_unknown_status_is_422(client, fake_supabase, status):
+    resp = client.get("/corrections", params={"status": status})
+    assert resp.status_code == 422
+    assert fake_supabase.filters == []
+
+
+def test_list_corrections_database_failure_is_503(client, fake_supabase, monkeypatch):
+    def boom(*a, **k):
+        raise RuntimeError("connection reset by 10.0.0.1")
+
+    monkeypatch.setattr(fake_supabase, "table", boom)
+    resp = client.get("/corrections")
+    assert resp.status_code == 503
+    assert resp.json() == {"detail": "Couldn't load corrections right now."}
+
+
 # --- GET /corrections/mine (issue #109) ---------------------------------
 
 NON_ADMIN_ID = "00000000-0000-0000-0000-0000000000aa"

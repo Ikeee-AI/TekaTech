@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
+from supabase_auth.errors import AuthApiError
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "demo_malformed_requests.py"
 
@@ -29,7 +30,7 @@ def real_auth(client, monkeypatch):
     from main import app
 
     def reject(token):
-        raise Exception("invalid session")
+        raise AuthApiError("invalid session", 401, "bad_jwt")
 
     monkeypatch.setattr("auth.supabase", SimpleNamespace(auth=SimpleNamespace(get_user=reject)))
     previous = app.dependency_overrides.pop(get_current_user)

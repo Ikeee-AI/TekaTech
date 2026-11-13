@@ -17,10 +17,10 @@ export default function AddGadget() {
   }
 
   return (
-    <div className="max-w-xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <BackLink to="/">Back to Catalog</BackLink>
       <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs">
-        <h1 className="text-2xl font-bold text-slate-900">Add Gadget</h1>
+        <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900">Add Gadget</h1>
         <p className="text-sm text-slate-600 mt-1 mb-6">
           Create the catalog entry first. You can add spec sheets on the next screen.
         </p>

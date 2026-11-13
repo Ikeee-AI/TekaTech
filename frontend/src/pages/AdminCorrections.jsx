@@ -107,7 +107,7 @@ export default function AdminCorrections() {
       <h1
         ref={headingRef}
         tabIndex={-1}
-        className="font-display text-2xl font-medium text-gray-900 tracking-tight mb-1 flex items-center gap-2"
+        className="text-4xl font-extrabold tracking-[-0.05em] text-slate-900 mb-1 flex items-center gap-2.5"
       >
         <ShieldCheck size={22} className="text-sage-700" /> Review Corrections
       </h1>
