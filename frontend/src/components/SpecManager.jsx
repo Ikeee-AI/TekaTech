@@ -463,7 +463,11 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
         onSpecsChange?.(data)
       })
       .catch((err) => {
-        if (!background) setState({ status: 'error', specs: [], error: friendlyError(err) })
+        if (!background) {
+          setState({ status: 'error', specs: [], error: friendlyError(err) })
+          // undefined = couldn't load (not "no specs"), so the page doesn't claim nothing is stated.
+          onSpecsChange?.(undefined)
+        }
       })
   }, [gadgetId, onSpecsChange])
 
@@ -533,7 +537,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   const { status, specs } = state
 
   return (
-    <section aria-labelledby="specs-title" className="mt-8">
+    <section aria-labelledby="specs-title" className="min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
         <h2 id="specs-title" className="text-xl font-bold text-slate-900 flex items-center gap-2">
           <FileText size={20} className="text-sage-700" aria-hidden="true" /> Specifications
