@@ -70,7 +70,7 @@ function keyRow(id, label, keySpecsList) {
       if (k === undefined) return { text: '…', missing: true, n: null, source: null }
       const found = k?.[id]
       if (!found) return { text: NOT_STATED, missing: true, n: null, source: null }
-      return { text: `${found.value}${found.unit ? ` ${found.unit}` : ''}`, missing: false, n: magnitude(found), source: found.source }
+      return { text: `${found.value}${found.unit ? ` ${found.unit}` : ''}`, missing: false, n: magnitude(found), source: [found.source, found.variants && 'base model'].filter(Boolean).join(' · ') || null }
     }),
   }
 }
