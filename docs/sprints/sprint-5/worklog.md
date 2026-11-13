@@ -921,3 +921,42 @@ Session ran 11 Nov ~23:30 → 12 Nov ~02:00 Manila. Post-Sprint 5 work under the
 - Measure the first request after 30+ min idle, and Railway usage — Ikeee-AI — by 19 Nov.
 - Retire the Render API (suspend the service, remove `RENDER_BACKEND_DEPLOY_HOOK` and the API block in `render.yaml`) after 7 clean days — Ikeee-AI — ~19 Nov.
 - UI rebrand (Impeccable) after the Railway move — Ikeee-AI — not scheduled.
+
+## 2026-11-13 10:12 Asia/Manila — Status check, #243 closed, 8 Nov incident recorded, Dependabot alert #29 dismissed
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code gathered the status, wrote the notes and the incident entry, and ran the `gh` commands; Ikeee-AI approved each action) · **Task:** S5-IK (post-Sprint 5 operations) · **Branch:** `tekatech/railway-rollback-rehearsal` → #252
+
+Short session, ~09:45–10:12 Manila.
+
+**Done**
+- Status check: production serves `f836e3b` (latest `main`). Scheduled `Ops - production health` passed on 9–12 Nov. Open PRs: #252 (Ikeee-AI, all checks green, no review yet) and #249 (Jopher, changes requested). Evidence: runs [42565284577](https://github.com/Ikeee-AI/TekaTech/actions/runs/42565284577), [42768012291](https://github.com/Ikeee-AI/TekaTech/actions/runs/42768012291), [42963658470](https://github.com/Ikeee-AI/TekaTech/actions/runs/42963658470), [43166364726](https://github.com/Ikeee-AI/TekaTech/actions/runs/43166364726).
+- Closed incident issue [#243](https://github.com/Ikeee-AI/TekaTech/issues/243) with a note: on 8 Nov all 12 smoke attempts against the Render API timed out (`TimeoutError`, [run 42448801063](https://github.com/Ikeee-AI/TekaTech/actions/runs/42448801063)); the next daily run passed. The cause was not confirmed.
+- Recorded that failure in `docs/devops/incidents.md` ("2026-11-08: scheduled production health check timed out"): detection 8 Nov 05:01 UTC, recovery within ~24 h (upper bound, daily check), cause not confirmed, prevention, lesson. Evidence: commit `2e4c731`, pushed to #252.
+- Asked Manuel to review #252 (he was already the requested reviewer). Evidence: [comment](https://github.com/Ikeee-AI/TekaTech/pull/252#issuecomment-6841507442).
+- Dependabot alert #29 ([GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249), medium, `minimatch` 10.2.6, `frontend/package-lock.json`, development scope): checked and dismissed as `tolerable_risk` at 02:03 UTC. Reasons: only ESLint uses it, at lint time; it is not in the production build and only gets patterns from our own lint config. No fix fits yet: the fix is only in 11.x, and ESLint 10.14.0 still requires `minimatch ^10.2.6`. No open Dependabot alerts are left.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Dependabot dismissal: `Invalid property /dismissed_comment: Only 280 characters are allowed; 281 were supplied.` (HTTP 422) | Note one character over GitHub's limit | Shortened the note and retried. Fixed |
+| The 8 Nov health-check failure (#243) went 5 days with no record in the incident log | The automatic issue was not looked at on the day; Render logs for that window have aged out | Recorded now with the cause marked "not confirmed"; prevention step 2 in the entry (look at it the same day). Fixed (late) |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #243's own text said to record detection and recovery times in `incidents.md`; no entry existed | Incident log was incomplete | Entry added in `2e4c731` (#252). Resolved once #252 merges |
+| Local `frontend/node_modules` has `eslint@10.13.0`; `main` requires `^10.14.0` (#246) | Local only; CI uses `npm ci` | Run `npm ci` in `frontend/` before the next local lint. Open, Ikeee-AI |
+
+**Decisions** — Close #243: four clean daily runs since, and the API has moved to Railway — Ikeee-AI. Put the incident entry on the #252 branch so one review covers both — Ikeee-AI. Dismiss Dependabot #29 as tolerable risk instead of forcing `minimatch` 11 with `overrides` (ESLint isn't built for that major version; that would risk breaking lint for no security gain) — Ikeee-AI.
+
+**Blockers / risks** — #252 waits on Manuel's approval — Manuel — next session. #249 waits on Jopher's changes — Jopher. #251 (main guard on `f836e3b`) is still open — Ikeee-AI to close. The weekly `npm audit` may still list the same `minimatch` advisory; it is the same harmless finding — Ikeee-AI.
+
+**Plan alignment** — Railway plan section 5: still **Partial** (rollback evidence and the incident entry are in #252, not merged). Step 6 (retire the Render API): not started, due ~19 Nov. No Sprint 5 row changes; post-Sprint 5 work.
+
+**Next**
+- Merge #252 after Manuel approves; check the `main` run — Ikeee-AI — when approved.
+- Close #251 — Ikeee-AI — 13 Nov.
+- Measure the first request after 30+ min idle, and Railway usage — Ikeee-AI — by 19 Nov.
+- Retire the Render API — Ikeee-AI — ~19 Nov.
+- Scope-change entry for moving the pilot past Sprint 5 — Ikeee-AI — not scheduled.
