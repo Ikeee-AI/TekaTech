@@ -158,7 +158,7 @@ def real_auth(client, monkeypatch):
 def _concrete(path):
     for name in ("gadget_id", "spec_id", "correction_id"):
         path = path.replace("{" + name + "}", str(uuid4()))
-    return path.replace("{slug}", "some-slug")
+    return path.replace("{slug}", "abc1234")
 
 
 @pytest.mark.parametrize(
