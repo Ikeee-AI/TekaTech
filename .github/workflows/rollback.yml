@@ -1,9 +1,9 @@
 name: Rollback production
 
 # Emergency redeploy of a known-good main commit: API to Railway, frontend to
-# Render (and the Render API fallback while it exists), followed by the same smoke
-# checks as a normal release. Only commits that contain backend/railway.json can go
-# to Railway; for older ones use Railway's dashboard rollback (docs/deploy-runbook.md). Afterwards main must
+# Render, followed by the same smoke checks as a normal release. Only commits whose
+# /version reads APP_COMMIT (the Railway change, #250) can go to Railway; for older
+# ones use Railway's dashboard rollback (docs/deploy-runbook.md). Afterwards main must
 # be reconciled with a reviewed revert PR (docs/deploy-runbook.md), otherwise
 # the next merge redeploys the broken code.
 
@@ -36,7 +36,6 @@ jobs:
       SHA: ${{ inputs.sha }}
       REASON: ${{ inputs.reason }}
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      RENDER_API_FALLBACK_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
       FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
       API_URL: ${{ vars.PRODUCTION_API_URL }}
       FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
@@ -66,8 +65,11 @@ jobs:
           if [[ -z "$RAILWAY_TOKEN" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
             echo "::error::RAILWAY_TOKEN, the frontend deploy hook or production URL variables are not configured."; exit 1
           fi
-          if ! git cat-file -e "$SHA:backend/railway.json" 2>/dev/null; then
-            echo "::error::$SHA predates the Railway API (no backend/railway.json). Roll the API back in the Railway dashboard instead (docs/deploy-runbook.md)."; exit 1
+          # /version must read APP_COMMIT (added with the Railway move, #250), or the smoke
+          # check can't confirm the deployed commit. (Until 13 Nov 2026 this checked for
+          # backend/railway.json, which .railway/railway.ts replaced.)
+          if ! git show "$SHA:backend/main.py" 2>/dev/null | grep -q "APP_COMMIT"; then
+            echo "::error::$SHA predates the Railway API (its /version does not read APP_COMMIT). Roll the API back in the Railway dashboard instead (docs/deploy-runbook.md)."; exit 1
           fi
       - name: Check out the target commit
         run: git checkout --detach "$SHA"
@@ -79,10 +81,6 @@ jobs:
           npm install --global @railway/cli@5.71.0
           railway variable set "APP_COMMIT=$SHA" --service tekatech-api --environment production --skip-deploys
           railway up backend --path-as-root --service tekatech-api --environment production --ci
-      - name: Keep the Render API fallback in step
-        if: env.RENDER_API_FALLBACK_HOOK != ''
-        continue-on-error: true
-        run: curl --fail --silent --show-error --request POST "$RENDER_API_FALLBACK_HOOK&ref=$SHA" > /dev/null
       - name: Verify live commit, database path and CORS
         run: |
           python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" \

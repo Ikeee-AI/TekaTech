@@ -98,7 +98,7 @@ Not established by this handoff: current CI results, production deployment SHA/h
 Historical URLs from the Desktop README, not re-probed here:
 
 - Frontend: https://tekatech-web.onrender.com
-- API health: https://tekatech-api.onrender.com/health
+- API health: https://tekatech-api.onrender.com/health (retired 13 Nov 2026; the API is now https://tekatech-api-production-549b48c9.up.railway.app/health on Railway)
 
 ## First DevOps work session
 

@@ -64,12 +64,16 @@ def test_ipv6_clients_share_their_64(trust_proxy):
     assert client_ip_key(_request("10.0.0.1", "::ffff:198.51.100.7")) == "198.51.100.7"
 
 
-def test_render_yaml_keeps_proxy_trust_off_until_verified():
-    render_yaml = (Path(__file__).resolve().parents[2] / "render.yaml").read_text(encoding="utf-8")
-    api_block, web_block = render_yaml.split("name: tekatech-web")
-    assert "key: TRUST_PROXY_HEADERS\n        value: 'false'" in api_block
-    assert "key: TRUSTED_PROXY_HOPS\n        value: '1'" in api_block
-    assert "TRUST" not in web_block
+def test_repo_config_never_turns_proxy_trust_on():
+    # The API's Render block (which pinned TRUST_PROXY_HEADERS='false') was retired on
+    # 13 Nov 2026. On Railway the proxy-trust variables live in the dashboard, so the
+    # repo config must stay variable-free; the dashboard values are checked by hand
+    # (docs/deploy-runbook.md, "Rate-limit buckets behind the proxy").
+    root = Path(__file__).resolve().parents[2]
+    railway_ts = (root / ".railway" / "railway.ts").read_text(encoding="utf-8")
+    assert "variables: { managed: false }" in railway_ts
+    assert "TRUST" not in railway_ts
+    assert "TRUST" not in (root / "render.yaml").read_text(encoding="utf-8")
 
 
 def test_separate_clients_get_separate_buckets_end_to_end(client, fake_supabase, monkeypatch, trust_proxy):

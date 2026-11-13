@@ -102,7 +102,7 @@ Tests never make real Supabase or OpenAI calls. Mock OpenAI with `unittest.mock.
 - **Frontend lint and build**: `npm ci && npm run lint && npm run build`.
 - **Database migrations**: `python backend/scripts/assemble_sql.py` output applied **twice** to scratch pgvector Postgres (so every SQL file must be idempotent/replay-safe), then `backend/tests/sql/schema_acceptance.sql`. A new file in `backend/sql/` must also be registered in `assemble_sql.py` or CI never applies it.
 
-Pushes to `main` additionally trigger Render deploy hooks and `scripts/deployed_smoke.py`. Deploys never touch the database — SQL is applied by hand first (`docs/deploy-runbook.md`, `PIPELINE.md`). PRs follow `.github/PULL_REQUEST_TEMPLATE.md`, which asks for any manual migration/env step to be listed.
+Pushes to `main` additionally deploy the API to Railway (`railway up`; service settings in `.railway/railway.ts`), trigger the Render frontend deploy hook, and run `scripts/deployed_smoke.py`. Deploys never touch the database — SQL is applied by hand first (`docs/deploy-runbook.md`, `PIPELINE.md`). PRs follow `.github/PULL_REQUEST_TEMPLATE.md`, which asks for any manual migration/env step to be listed.
 
 `AGENTS.md` is a copy of this file for Codex; update both together.
 
@@ -111,4 +111,4 @@ Pushes to `main` additionally trigger Render deploy hooks and `scripts/deployed_
 - Both halves need matching config to talk to each other: the frontend's `VITE_API_BASE_URL` must point at the backend, and that frontend's own origin must appear in the backend's `cors_origins`. Vite inlines env vars **at build time**, so changing `VITE_*` requires a dev-server restart or rebuild — it is not read at runtime.
 - The backend's allowed CORS origin comes from `cors_origins` in its `.env` (comma-separated, defaults to `http://localhost:5173`). If Vite starts on a different port because 5173 is taken, requests fail CORS until that origin is added.
 - A paused Supabase project surfaces as DNS failure then Cloudflare 521, and takes a few minutes to fully wake after resuming — not an app bug.
-- `FAILURE_SIMULATION_ENABLED` (the `/query` failure drill, admin + `X-Simulate-Failure` header only) must stay unset in production, except during the supervised, time-boxed drill in `backend/README.md` ("Supervised production drill"), when the DevOps Engineer sets it in the Render dashboard and removes it straight afterwards. Never add it to `render.yaml`; a test fails if it appears there.
+- `FAILURE_SIMULATION_ENABLED` (the `/query` failure drill, admin + `X-Simulate-Failure` header only) must stay unset in production, except during the supervised, time-boxed drill in `backend/README.md` ("Supervised production drill"), when the DevOps Engineer sets it in the Railway dashboard (API host since 12 Nov 2026) and removes it straight afterwards. Never add it to `render.yaml` or `.railway/railway.ts`; a test fails if it appears there.

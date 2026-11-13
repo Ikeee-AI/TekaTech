@@ -4,15 +4,15 @@ Owner: project owner (the team's DevOps Engineer, also contributing full-stack c
 
 ## API host: Railway (since 12 Nov 2026)
 
-The API moved from Render to Railway on 12 Nov 2026 ~00:33 Manila ([plan and record](devops/railway-migration-plan.md)). Project `tekatech`, service `tekatech-api`, environment `production`, Singapore, Hobby plan, replica cap 1 vCPU / 1 GB, compute usage limit $10. URL: https://tekatech-api-production-549b48c9.up.railway.app. Build and start come from `backend/railway.json`; `backend/.railwayignore` keeps `.env` out of uploads.
+The API moved from Render to Railway on 12 Nov 2026 ~00:33 Manila ([plan and record](devops/railway-migration-plan.md)). Project `tekatech`, service `tekatech-api`, environment `production`, Singapore, Hobby plan, replica cap 1 vCPU / 1 GB, compute usage limit $10. URL: https://tekatech-api-production-549b48c9.up.railway.app. Service settings (builder, start command, `/health` health check, restart retries, region, resource limit) live in `.railway/railway.ts` since 13 Nov 2026 (before that `backend/railway.json`); see `.railway/README.md` for `railway config plan` / `apply`. `backend/.railwayignore` keeps `.env` out of uploads.
 
 - **Variables** are set in the Railway dashboard (service → Variables) with the same names as before (`devops/environments.md`). A dashboard change is only *staged* until you click **Deploy** on the banner; until then the running app doesn't see it.
 - **Deploys** come only from CI (`railway up` with the `RAILWAY_TOKEN` repo secret). Don't connect Railway's GitHub autodeploy.
 - **Manual deploy** (owner, CLI signed in with `railway login` and linked with `railway link --project tekatech --service tekatech-api --environment production`): from a clean checkout of the SHA, `railway variable set APP_COMMIT=<sha> --skip-deploys`, then `railway up backend --path-as-root --ci`.
 - **Logs**: `railway logs --service tekatech-api --environment production`.
-- **Undo the host move** (until the Render API is retired, about 19 Nov): Render `tekatech-web` → Environment → `VITE_API_BASE_URL` = `https://tekatech-api.onrender.com` → Save, rebuild and deploy; set the `PRODUCTION_API_URL` variable back. No data moves.
+- **Render API retired 13 Nov 2026:** the old Render service `tekatech-api` was suspended and its deploy hook secret removed, so the host move can no longer be undone by switching URLs. To recover the API, use Railway's own rollback (below) or redeploy a known-good commit with `rollback.yml`.
 
-The setup steps below are the original Render setup and stay as history.
+The setup steps below are the original Render setup and stay as history. Only the frontend (`tekatech-web`) is still on Render.
 
 ## First-time setup
 
@@ -74,13 +74,13 @@ Each issue gets a feature branch and a reviewed PR. Required CI jobs pass before
 
 Preferred code rollback preserves the reviewed history:
 
-1. Find the last known good deployed commit in Render and the metrics/run log. Identify the broken merged change.
+1. Find the last known good deployed commit in the main run log (and Railway → Deployments for the API, Render for the frontend). Identify the broken merged change.
 2. Create a branch from current main, for example `tekatech/rollback-TTK-10`.
 3. `git revert <BROKEN_COMMIT>` (use the correct merge-parent option only if the change was a merge commit). Do not reset/force-push main.
 4. Open a PR, get another teammate review and passing checks, then merge. The pipeline deploys the reverted main state.
 5. Check `/health`, `/health/ready` (404 is expected if the restored release predates it), `/gadgets`, frontend/API wiring and affected behavior. Record time to recover and an incident postmortem.
 
-For an urgent outage, the DevOps Engineer may redeploy the last known good commit. Preferred: **Actions → Rollback production → Run workflow** with the full 40-character SHA and the reason (incident issue). The workflow (`.github/workflows/rollback.yml`) refuses commits that are not on main or lack successful `Backend tests`, `Frontend lint and build` and `Database migrations` checks, deploys that exact SHA's backend to Railway and its frontend through the Render hook (plus the Render API fallback hook while it exists), and runs the same smoke checks as a release. Commits from before the Railway move (no `backend/railway.json`) are refused: roll the API back in Railway instead (service → Deployments → three dots on an earlier deployment → **Redeploy**), and the frontend with Render's deploy controls; its summary and artifact are the recovery evidence. Fallback: Railway's and Render's dashboard deploy controls. Immediately reconcile main with a reviewed revert PR so automatic deployment does not restore the broken code. Record the emergency action. Never roll schema backward by dropping tables; inspect compatibility and restore data from backups only with explicit team approval.
+For an urgent outage, the DevOps Engineer may redeploy the last known good commit. Preferred: **Actions → Rollback production → Run workflow** with the full 40-character SHA and the reason (incident issue). The workflow (`.github/workflows/rollback.yml`) refuses commits that are not on main or lack successful `Backend tests`, `Frontend lint and build` and `Database migrations` checks, deploys that exact SHA's backend to Railway and its frontend through the Render hook, and runs the same smoke checks as a release. Commits from before the Railway move (their `/version` doesn't read `APP_COMMIT`, #250) are refused: roll the API back in Railway instead (service → Deployments → three dots on an earlier deployment → **Redeploy**), and the frontend with Render's deploy controls; its summary and artifact are the recovery evidence. Fallback: Railway's and Render's dashboard deploy controls. Immediately reconcile main with a reviewed revert PR so automatic deployment does not restore the broken code. Record the emergency action. Never roll schema backward by dropping tables; inspect compatibility and restore data from backups only with explicit team approval.
 
 Rollback rehearsal status: **RUN on production, 31 October 2026** ([evidence](evidence/rollback-rehearsal-2026-10-31.md)). `rollback.yml` restored `7d2ab44` in 1 min 35 s and rolled forward to `5aa4635` in 1 min 45 s, both smoke-tested. The two commits differed only in docs/evaluation files, so the rehearsal had no user impact; a rollback across a code or schema change has not been rehearsed.
 

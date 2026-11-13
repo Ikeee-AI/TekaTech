@@ -125,9 +125,10 @@ def test_enabled_without_credentials_is_503_and_makes_no_call(client, no_outboun
     assert "credentials are not set" in resp.json()["detail"]
 
 
-def test_render_yaml_does_not_configure_techspecs():
-    render_yaml = (Path(__file__).resolve().parents[2] / "render.yaml").read_text(encoding="utf-8")
-    assert "TECHSPECS" not in render_yaml.upper()
+def test_production_config_does_not_configure_techspecs():
+    root = Path(__file__).resolve().parents[2]
+    for config in (root / "render.yaml", root / ".railway" / "railway.ts"):
+        assert "TECHSPECS" not in config.read_text(encoding="utf-8").upper(), config.name
 
 
 # --- access control ------------------------------------------------------------------------
