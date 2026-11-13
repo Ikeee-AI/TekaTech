@@ -1,18 +1,38 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom'
-import { X, Sparkles, ImageOff, Trophy, Share2 } from 'lucide-react'
+import { X, Sparkles, Trophy, Share2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
 import BackLink from '../components/ui/BackLink'
+import Button from '../components/ui/Button'
 import AIComparisonPanel from '../components/AIComparisonPanel'
 import CompareAddGadget from '../components/CompareAddGadget'
+import PhoneGlyph from '../components/PhoneGlyph'
 import { friendlyError } from '../utils/requestErrors'
+import { formatPeso } from '../utils/formatPeso'
+import { extractKeySpecs } from '../utils/keySpecs'
 
 // Matches the backend's MAX_COMPARISON_GADGETS (routers/comparisons.py).
 const MAX_COMPARE_GADGETS = 5
+const NOT_STATED = 'Not stated by source'
+
+// Card and bar colour per position (theme tokens): 1st = accent (lime / cobalt),
+// 2nd = cobalt in dark / ink in light, then pale lime, surface, inverse.
+const SLOT_STYLES = [
+  { card: 'bg-sage-700 text-white', bar: 'bg-sage-700', ring: 'border-current/40' },
+  { card: 'bg-vs2 text-vs2-ink', bar: 'bg-vs2', ring: 'border-current/40' },
+  { card: 'bg-pop text-pop-ink', bar: 'bg-pop', ring: 'border-current/40' },
+  { card: 'bg-white text-slate-900 border border-slate-200', bar: 'bg-slate-500', ring: 'border-slate-300' },
+  { card: 'bg-inverse text-inverse-ink', bar: 'bg-inverse', ring: 'border-current/40' },
+]
+
+// The round cut-out each card gets around the centred VS badge (radius = badge 44 px + 8 px gap).
+// The × button sits 32 px in from that edge so the cut-out never clips it.
+const NOTCH_LEFT = { WebkitMask: 'radial-gradient(circle 52px at calc(100% + 6px) 50%, transparent 51.5px, #000 52px)', mask: 'radial-gradient(circle 52px at calc(100% + 6px) 50%, transparent 51.5px, #000 52px)' }
+const NOTCH_RIGHT = { WebkitMask: 'radial-gradient(circle 52px at -6px 50%, transparent 51.5px, #000 52px)', mask: 'radial-gradient(circle 52px at -6px 50%, transparent 51.5px, #000 52px)' }
 
 /** Unique ids from ?ids=, in order, capped. A repeated id would render twice under one React key. */
 function parseIds(raw) {
@@ -29,37 +49,221 @@ function strictlyLowestPrice(gadgets) {
 }
 
 function formatDate(date) {
-  if (!date) return '—'
+  if (!date) return null
   const d = new Date(date)
   return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
-/**
- * Gadget photo for the compare cards. If the image URL is missing or fails to load
- * (e.g. an external shop link that blocks hot-linking), shows the same "no photo"
- * icon as the catalog and detail pages instead of a broken image with alt text (#120).
- */
-function GadgetThumb({ src, alt, iconClassName }) {
-  // Remembers which URL failed, so a different gadget's image still gets its chance.
-  const [failedSrc, setFailedSrc] = useState(null)
-  if (!src || failedSrc === src) {
-    return <ImageOff size={18} className={iconClassName} aria-hidden="true" />
-  }
-  return <img src={src} alt={alt} className="h-full w-full object-cover" onError={() => setFailedSrc(src)} />
+/** Largest number in a key-spec value ("128–512" → 512, "256 GB–1 TB" → 1024), for bar lengths. */
+function magnitude(found) {
+  if (!found) return null
+  const parts = [...found.value.matchAll(/(\d+(?:\.\d+)?)\s*(TB)?/gi)].map((m) => Number(m[1]) * (m[2] ? 1024 : 1))
+  return parts.length ? Math.max(...parts) : null
 }
 
-/** Value cell; the cheapest price gets a visible "Lowest price" label, not just color and an icon. */
-function CompareValue({ row, gadget }) {
-  const isHighlighted = row.highlight?.(gadget)
-  if (!isHighlighted) return row.get(gadget)
+function keyRow(id, label, keySpecsList) {
+  return {
+    label,
+    key: true,
+    cells: keySpecsList.map((k) => {
+      if (k === undefined) return { text: '…', missing: true, n: null, source: null }
+      const found = k?.[id]
+      if (!found) return { text: NOT_STATED, missing: true, n: null, source: null }
+      return { text: `${found.value}${found.unit ? ` ${found.unit}` : ''}`, missing: false, n: magnitude(found), source: found.source }
+    }),
+  }
+}
+
+function plainRow(label, gadgets, get, { missingText = 'Not listed', source = 'catalog' } = {}) {
+  return {
+    label,
+    cells: gadgets.map((g) => {
+      const value = get(g)
+      return value == null ? { text: missingText, missing: true, n: null, source: null } : { text: value, missing: false, n: null, source }
+    }),
+  }
+}
+
+/** Bar fill per cell: proportional where every phone states a number, full when stated, empty when not. */
+function barWidths(row) {
+  const nums = row.cells.map((c) => c.n)
+  const allNumeric = nums.every((n) => n != null && n > 0)
+  const max = allNumeric ? Math.max(...nums) : null
+  return row.cells.map((c) => {
+    if (c.missing) return 0
+    return allNumeric ? Math.round((c.n / max) * 100) : 100
+  })
+}
+
+function GadgetPicture({ gadget, className }) {
+  const [failedSrc, setFailedSrc] = useState(null)
+  if (!gadget.image_url || failedSrc === gadget.image_url) return <PhoneGlyph className={className} />
+  return <img src={gadget.image_url} alt="" className="h-full w-full object-cover" onError={() => setFailedSrc(gadget.image_url)} />
+}
+
+function PhoneCard({ gadget, index, onRemove, side, notch }) {
+  const style = SLOT_STYLES[index % SLOT_STYLES.length]
+  const right = side === 'right'
+  const price = formatPeso(gadget.price_php)
   return (
-    <span className="inline-flex flex-col items-center sm:items-start gap-0.5">
+    <section
+      aria-label={gadget.name}
+      style={notch}
+      className={`relative flex items-center gap-4 sm:gap-5 p-4 sm:p-5 rounded-[26px] min-w-0 ${style.card} ${
+        right ? 'flex-row-reverse text-right sm:pl-20' : notch ? 'sm:pr-20' : ''
+      }`}
+    >
+      <div className="shrink-0 w-16 h-24 sm:w-20 sm:h-28 rounded-2xl bg-black/10 overflow-hidden flex items-center justify-center">
+        <GadgetPicture gadget={gadget} className="w-10 h-16 sm:w-12 sm:h-20" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-[11px] font-semibold opacity-85 uppercase truncate">{gadget.brand}</p>
+        <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-[-0.04em] leading-none break-words">
+          <Link to={`/gadgets/${gadget.id}`} className="hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current">
+            {gadget.name}
+          </Link>
+        </h2>
+        <p className={`mt-2 font-mono ${price ? 'text-lg sm:text-xl' : 'text-sm opacity-85'}`}>{price ?? 'No price listed'}</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => onRemove(gadget.id)}
+        aria-label={`Remove ${gadget.name} from comparison`}
+        className={`absolute top-3 ${right ? (notch ? 'left-3 sm:left-8' : 'left-3') : notch ? 'right-3 sm:right-8' : 'right-3'} w-10 h-10 rounded-full border border-current/40 flex items-center justify-center hover:bg-black/10 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current`}
+      >
+        <X size={18} aria-hidden="true" />
+      </button>
+    </section>
+  )
+}
+
+function VersusHeader({ gadgets, onRemove, addSlot }) {
+  if (gadgets.length === 2) {
+    return (
+      <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <PhoneCard gadget={gadgets[0]} index={0} onRemove={onRemove} notch={NOTCH_LEFT} />
+        <PhoneCard gadget={gadgets[1]} index={1} onRemove={onRemove} side="right" notch={NOTCH_RIGHT} />
+        <span
+          aria-hidden="true"
+          className="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[88px] h-[88px] rounded-full bg-inverse text-inverse-ink items-center justify-center text-3xl font-extrabold tracking-[-0.04em]"
+        >
+          VS
+        </span>
+      </div>
+    )
+  }
+  if (gadgets.length === 1) {
+    return (
+      <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <PhoneCard gadget={gadgets[0]} index={0} onRemove={onRemove} />
+        <div className="flex flex-col items-center justify-center gap-3 min-h-40 p-5 rounded-[26px] border-2 border-dashed border-slate-300 text-center">
+          <p className="text-base font-bold text-slate-900">Add a phone to compare</p>
+          {addSlot}
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3">
+      {gadgets.map((g, i) => (
+        <PhoneCard key={g.id} gadget={g} index={i} onRemove={onRemove} />
+      ))}
+    </div>
+  )
+}
+
+function FaceOff({ gadgets, rows }) {
+  const [a, b] = gadgets
+  return (
+    <div className="px-4 sm:px-5 pb-2">
+      {rows.map((row) => {
+        const [wa, wb] = barWidths(row)
+        const [ca, cb] = row.cells
+        return (
+          <div
+            key={row.label}
+            className={`grid grid-cols-[minmax(0,1fr)_88px_minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_132px_minmax(0,1fr)] items-center gap-3 py-3.5 border-t border-slate-200 ${
+              row.key ? 'bg-sage-50 -mx-4 sm:-mx-5 px-4 sm:px-5' : ''
+            }`}
+          >
+            <div className="min-w-0">
+              <p className={`text-[15px] ${ca.missing ? 'italic text-slate-500' : 'font-bold text-slate-900'}`}>
+                <span className="sr-only">{a.name}: </span>
+                {ca.text}
+              </p>
+              <div className="mt-1.5 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                <div className={`h-full rounded-full ${SLOT_STYLES[0].bar}`} style={{ width: `${wa}%` }} />
+              </div>
+              <p className="mt-1 font-mono text-[11px] text-slate-500 truncate">{ca.source ?? '—'}</p>
+            </div>
+            <p className={`text-center font-mono text-[11px] font-semibold uppercase tracking-wider ${row.key ? 'text-sage-700' : 'text-slate-500'}`}>
+              {row.label}
+            </p>
+            <div className="min-w-0 text-right">
+              <p className={`text-[15px] ${cb.missing ? 'italic text-slate-500' : 'font-bold text-slate-900'}`}>
+                <span className="sr-only">{b.name}: </span>
+                {cb.text}
+              </p>
+              <div className="mt-1.5 h-1.5 rounded-full bg-slate-200 overflow-hidden flex justify-end">
+                <div className={`h-full rounded-full ${SLOT_STYLES[1].bar}`} style={{ width: `${wb}%` }} />
+              </div>
+              <p className="mt-1 font-mono text-[11px] text-slate-500 truncate">{cb.source ?? '—'}</p>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function CellValue({ cell, lowest }) {
+  if (cell.missing) return <span className="italic text-slate-500">{cell.text}</span>
+  if (!lowest) return cell.text
+  return (
+    <span className="inline-flex flex-col items-start gap-0.5">
       <span className="inline-flex items-center gap-1 text-green-800 font-semibold bg-green-50 rounded-full px-2 py-0.5">
         <Trophy size={11} aria-hidden="true" />
-        {row.get(gadget)}
+        {cell.text}
       </span>
       <span className="text-xs font-semibold text-green-800">Lowest price</span>
     </span>
+  )
+}
+
+function SpecTable({ gadgets, rows, cheapestPrice }) {
+  return (
+    <div className="overflow-x-auto">
+      {/* table-fixed: gadget columns share the width equally instead of the longest name widening its column (#156). */}
+      <table className="w-full table-fixed border-collapse min-w-[520px] text-[15px]">
+        <caption className="sr-only">Spec comparison of {gadgets.map((g) => g.name).join(', ')}</caption>
+        <thead>
+          <tr>
+            <th scope="col" className="w-36 text-left text-xs font-semibold text-slate-500 px-4 sm:px-5 py-3">
+              Spec
+            </th>
+            {gadgets.map((g) => (
+              <th key={g.id} scope="col" className="text-left text-xs font-semibold text-slate-500 px-3 py-3 break-words">
+                {g.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.label} className={`border-t border-slate-200 ${row.key ? 'bg-sage-50' : ''}`}>
+              <th scope="row" className="text-left font-bold text-slate-900 px-4 sm:px-5 py-3">
+                {row.label}
+              </th>
+              {row.cells.map((cell, i) => (
+                <td key={gadgets[i].id} className="px-3 py-3 text-slate-900 break-words">
+                  <CellValue cell={cell} lowest={row.label === 'Price' && cheapestPrice != null && gadgets[i].price_php === cheapestPrice} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
@@ -78,6 +282,9 @@ export default function ComparePage() {
   const [sharing, setSharing] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [attempt, setAttempt] = useState(0)
+  const [view, setView] = useState('faceoff')
+  // Key specs per gadget id: undefined = loading, null = couldn't load, object = parsed.
+  const [keySpecsById, setKeySpecsById] = useState({})
   // The link belongs to one exact set of gadgets; changing the set makes it stale.
   const idsKey = ids.join(',')
   const [share, setShare] = useState(null)
@@ -107,7 +314,7 @@ export default function ComparePage() {
         api.getGadget(id).catch((err) => {
           // 404 (gadget deleted) or 422 (malformed id) means this gadget can't load; anything else should fail the whole load so it can be retried.
           if (err.status !== 404 && err.status !== 422) throw err
-          toast.error('One gadget could not be loaded — it may have been deleted', { id: 'gadget-missing' })
+          toast.error('One phone could not be loaded — it may have been deleted', { id: 'gadget-missing' })
           return null
         })
       )
@@ -119,6 +326,21 @@ export default function ComparePage() {
       .catch((err) => setLoadError(err))
       .finally(() => setLoading(false))
   }, [ids, attempt])
+
+  // Key specs come from each phone's saved, sourced spec text (same parser as the catalog tiles).
+  useEffect(() => {
+    if (typeof api.getSpecs !== 'function') return undefined
+    let cancelled = false
+    for (const g of gadgets) {
+      api
+        .getSpecs(g.id)
+        .then((specs) => !cancelled && setKeySpecsById((prev) => ({ ...prev, [g.id]: extractKeySpecs(specs) })))
+        .catch(() => !cancelled && setKeySpecsById((prev) => ({ ...prev, [g.id]: null })))
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [gadgets])
 
   async function handleShare() {
     let url = shareUrl
@@ -164,9 +386,9 @@ export default function ComparePage() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4" role="status" aria-label="Loading comparison">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-64 bg-gray-100 rounded-xl animate-pulse" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="status" aria-label="Loading comparison">
+        {[1, 2].map((i) => (
+          <div key={i} className="h-40 bg-slate-100 rounded-[26px] animate-pulse" />
         ))}
       </div>
     )
@@ -185,68 +407,68 @@ export default function ComparePage() {
     )
   }
 
-  if (ids.length < 2 || gadgets.length < 2) {
+  if (ids.length === 0 || gadgets.length === 0) {
     return (
       <EmptyState
         icon={Sparkles}
-        title="Pick at Least 2 Gadgets to Compare"
-        description={fromMyGadgets ? 'Head back to My Gadgets, select 2–5 gadgets, then choose Compare & Ask AI.' : 'Head back to the catalog, select 2–3 gadgets using the checkmarks, then hit Compare.'}
+        title="Pick at Least 2 Phones to Compare"
+        description={fromMyGadgets ? 'Head back to My Gadgets, select 2–5 phones, then choose Compare & Ask AI.' : 'Head back to the catalog, tick Compare on 2–3 phones, then hit Compare now.'}
         action={
-          <Link
-            to={back.to}
-            className="inline-flex items-center gap-1.5 bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-sage-800 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 focus-visible:ring-offset-2"
-          >
+          <Button as={Link} to={back.to} variant="primary">
             {back.label}
-          </Link>
+          </Button>
         }
       />
     )
   }
 
-  const cheapestPrice = strictlyLowestPrice(gadgets)
+  const addControl =
+    ids.length < MAX_COMPARE_GADGETS ? (
+      <CompareAddGadget excludeIds={ids} onAdd={addGadget} buttonRef={addButtonRef} />
+    ) : (
+      <p className="text-sm text-slate-600">
+        {MAX_COMPARE_GADGETS} gadgets is the most you can compare. Remove one (×) to add another.
+      </p>
+    )
 
+  const comparing = gadgets.length >= 2
+  const cheapestPrice = strictlyLowestPrice(gadgets)
+  const keySpecsList = gadgets.map((g) => keySpecsById[g.id])
   const rows = [
-    { label: 'Brand', get: (g) => g.brand },
-    { label: 'Category', get: (g) => g.category },
-    {
-      label: 'Price',
-      get: (g) => (g.price_php != null ? `Php ${g.price_php.toLocaleString()}` : '—'),
-      highlight: (g) => cheapestPrice != null && g.price_php === cheapestPrice,
-    },
-    { label: 'Released', get: (g) => formatDate(g.release_date) },
+    keyRow('ram', 'RAM', keySpecsList),
+    keyRow('storage', 'Storage', keySpecsList),
+    keyRow('camera', 'Main camera', keySpecsList),
+    keyRow('refresh', 'Display', keySpecsList),
+    plainRow('Price', gadgets, (g) => formatPeso(g.price_php)),
+    plainRow('Released', gadgets, (g) => formatDate(g.release_date)),
+    plainRow('Brand', gadgets, (g) => g.brand),
   ]
+  const showFaceOff = gadgets.length === 2 && view === 'faceoff'
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <BackLink to={back.to}>{back.label}</BackLink>
 
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
-        <h1 ref={headingRef} tabIndex={-1} className="font-display text-xl sm:text-2xl font-medium text-gray-900 tracking-tight focus:outline-none">
-          Comparing {gadgets.length} Gadgets
-        </h1>
-        <button
-          type="button"
-          onClick={handleShare}
-          disabled={sharing}
-          aria-busy={sharing || undefined}
-          className="flex items-center gap-1.5 text-xs font-medium text-sage-700 border border-sage-200 rounded-md px-3 py-1.5 min-h-10 sm:min-h-9 hover:bg-sage-50 active:scale-95 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
-        >
-          <Share2 size={13} /> {sharing ? 'Creating Link…' : 'Share'}
-        </button>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 ref={headingRef} tabIndex={-1} className="text-4xl font-extrabold tracking-[-0.05em] text-slate-900 focus:outline-none">
+            Comparing {gadgets.length} {gadgets.length === 1 ? 'Gadget' : 'Gadgets'}
+          </h1>
+          <p className="mt-1 text-sm text-slate-600">Side by side from official sources. Gaps are shown, never filled in.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {comparing && addControl}
+          {comparing && (
+            <Button variant="primary" icon={Share2} onClick={handleShare} loading={sharing}>
+              {sharing ? 'Creating Link…' : 'Share'}
+            </Button>
+          )}
+        </div>
       </div>
-      <p className="text-sm text-gray-500 mb-4">Side-by-side spec comparison.</p>
-      <div className="mb-6">
-        {ids.length < MAX_COMPARE_GADGETS ? (
-          <CompareAddGadget excludeIds={ids} onAdd={addGadget} buttonRef={addButtonRef} />
-        ) : (
-          <p className="text-sm text-slate-600">
-            {MAX_COMPARE_GADGETS} gadgets is the most you can compare. Remove one (×) to add another.
-          </p>
-        )}
-      </div>
+
       {shareUrl && (
-        <div className="flex items-center gap-2 -mt-3 mb-6">
-                    <label htmlFor="share-url" className="text-xs font-medium text-gray-600 shrink-0">
+        <div className="flex items-center gap-2">
+          <label htmlFor="share-url" className="text-xs font-semibold text-slate-600 shrink-0">
             Share Link
           </label>
           <input
@@ -254,118 +476,55 @@ export default function ComparePage() {
             readOnly
             value={shareUrl}
             onFocus={(e) => e.target.select()}
-            className="flex-1 min-w-0 text-sm text-gray-700 bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5"
+            className="flex-1 min-w-0 text-sm text-slate-800 bg-white border border-slate-200 rounded-full px-4 py-2"
           />
         </div>
       )}
 
-      {/* Desktop / tablet: table */}
-      <div className="hidden sm:block overflow-x-auto">
-        {/* table-fixed: gadget columns share the width equally instead of the longest name
-            widening its column (#156). The label column keeps its w-28. */}
-        <table className="w-full table-fixed border-collapse min-w-[500px]">
-          <caption className="sr-only">Spec comparison of {gadgets.map((g) => g.name).join(', ')}</caption>
-          <thead>
-            <tr>
-              <td className="w-28" />
-              {gadgets.map((g) => (
-                <th key={g.id} scope="col" className="text-left align-top pb-3 px-2">
-                  <div className="relative bg-white border border-gray-200 rounded-xl p-3">
+      <VersusHeader gadgets={gadgets} onRemove={removeGadget} addSlot={addControl} />
+
+      {comparing && (
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-3.5 items-start">
+          <section aria-labelledby="specs-heading" className="min-w-0 bg-white border border-slate-200 rounded-[26px]">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 pt-4 pb-2">
+              <h2 id="specs-heading" className="text-xl font-extrabold tracking-[-0.03em] text-slate-900">
+                Specs
+              </h2>
+              {gadgets.length === 2 && (
+                <div role="group" aria-label="Spec view" className="flex gap-1 p-1 rounded-full bg-slate-100">
+                  {[
+                    ['faceoff', 'Face-off'],
+                    ['table', 'Table'],
+                  ].map(([id, label]) => (
                     <button
-                      onClick={() => removeGadget(g.id)}
-                      aria-label={`Remove ${g.name} from comparison`}
-                      // 32px visible, 40px to touch, like the mobile card's remove button.
-                      className="absolute top-1.5 right-1.5 w-8 h-8 before:absolute before:-inset-1 before:content-[''] flex items-center justify-center text-slate-600 hover:text-red-700 hover:bg-red-50 transition rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      key={id}
+                      type="button"
+                      onClick={() => setView(id)}
+                      aria-pressed={view === id}
+                      className={`px-4 min-h-9 rounded-full text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 ${
+                        view === id ? 'bg-inverse text-inverse-ink' : 'text-slate-600 hover:text-slate-900'
+                      }`}
                     >
-                      <X size={16} aria-hidden="true" />
+                      {label}
                     </button>
-                    <div className="h-20 w-full bg-gray-50 rounded-lg overflow-hidden mb-2 flex items-center justify-center">
-                      <GadgetThumb src={g.image_url} alt="" iconClassName="text-gray-300" />
-                    </div>
-                    <Link
-                      to={`/gadgets/${g.id}`}
-                      className="font-semibold text-sm text-gray-900 hover:underline block break-words rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
-                    >
-                      {g.name}
-                    </Link>
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.label} className="border-t border-gray-100">
-                <th scope="row" className="text-left text-xs font-semibold uppercase tracking-wider text-gray-600 py-3 pr-2">
-                  {row.label}
-                </th>
-                {gadgets.map((g) => (
-                  <td key={g.id} className="py-3 px-2 text-sm text-gray-800">
-                    <CompareValue row={row} gadget={g} />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile: gadgets as columns and specs as rows, so values line up for comparison
-          instead of sitting in separate cards the user has to scroll between. */}
-      <div className="sm:hidden">
-        <div
-          className="grid gap-2"
-          style={{ gridTemplateColumns: `repeat(${gadgets.length}, minmax(0, 1fr))` }}
-        >
-          {gadgets.map((g) => (
-            <div key={g.id} className="relative bg-white border border-gray-200 rounded-xl p-2 pt-3 flex flex-col items-center text-center min-w-0">
-              <button
-                onClick={() => removeGadget(g.id)}
-                aria-label={`Remove ${g.name} from comparison`}
-                // 32px visible, 40px to touch: the ::before widens the hit area.
-                className="absolute -top-2 -right-2 w-8 h-8 before:absolute before:-inset-1 before:content-[''] flex items-center justify-center bg-white border border-gray-200 rounded-full shadow-xs text-slate-600 hover:text-red-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-              >
-                <X size={16} aria-hidden="true" />
-              </button>
-              <div className="h-14 w-14 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center mb-2">
-                <GadgetThumb src={g.image_url} alt="" iconClassName="text-gray-400" />
-              </div>
-              <Link
-                to={`/gadgets/${g.id}`}
-                className="text-sm font-semibold text-gray-900 leading-tight break-words hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
-              >
-                {g.name}
-              </Link>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
+            {showFaceOff ? <FaceOff gadgets={gadgets} rows={rows} /> : <SpecTable gadgets={gadgets} rows={rows} cheapestPrice={cheapestPrice} />}
+            <p className="px-4 sm:px-5 py-3 text-xs text-slate-500 border-t border-slate-200">
+              Highlighted rows are the four key specs, read from each phone&apos;s saved sources.
+              {showFaceOff ? ' Bars compare numbers only where both sources state them.' : ''}
+            </p>
+          </section>
+
+          <AIComparisonPanel
+            gadgetIds={gadgets.map((g) => g.id)}
+            gadgetNames={gadgets.map((g) => g.name)}
+            category={gadgets.map((g) => g.category)}
+          />
         </div>
-
-        <dl className="mt-4 bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
-          {rows.map((row) => (
-            // dt and dd must be direct children of this wrapper for a valid <dl>,
-            // so the label spans the whole grid row instead of sitting outside it.
-            <div
-              key={row.label}
-              className="px-3 py-3 grid gap-x-2 gap-y-1.5"
-              style={{ gridTemplateColumns: `repeat(${gadgets.length}, minmax(0, 1fr))` }}
-            >
-              <dt className="col-span-full text-xs font-semibold uppercase tracking-wider text-gray-600">{row.label}</dt>
-              {gadgets.map((g) => (
-                <dd key={g.id} className="min-w-0 text-center text-sm text-gray-800 break-words">
-                  <span className="sr-only">{g.name}: </span>
-                  <CompareValue row={row} gadget={g} />
-                </dd>
-              ))}
-            </div>
-          ))}
-        </dl>
-      </div>
-
-      <AIComparisonPanel
-        gadgetIds={gadgets.map((g) => g.id)}
-        gadgetNames={gadgets.map((g) => g.name)}
-        category={gadgets.map((g) => g.category)}
-      />
+      )}
     </div>
   )
 }

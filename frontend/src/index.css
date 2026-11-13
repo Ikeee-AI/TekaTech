@@ -66,6 +66,9 @@
   --color-pop-ink: #1a2300;
   --color-cobalt: #2f4bff;
   --color-cobalt-ink: #ffffff;
+  /* Second phone on Compare: ink in light, cobalt in dark (canvas 13 Nov). */
+  --color-vs2: #0f1115;
+  --color-vs2-ink: #ffffff;
   /* Inverse surface (selected pills, VS badge): ink in light, near-white in dark. */
   --color-inverse: #0f1115;
   --color-inverse-ink: #ffffff;
@@ -120,6 +123,8 @@
   --color-pop-ink: #ffffff;
   --color-cobalt: #3b5bff;
   --color-cobalt-ink: #ffffff;
+  --color-vs2: #3b5bff;
+  --color-vs2-ink: #ffffff;
   --color-inverse: #fafafa;
   --color-inverse-ink: #09090b;
   --color-gk: #a78bfa;
