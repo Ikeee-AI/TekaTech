@@ -14,8 +14,9 @@ import ErrorState from '../components/ui/ErrorState'
 import { timeAgo } from '../utils/timeAgo'
 import { friendlyError } from '../utils/requestErrors'
 import { formatPeso } from '../utils/formatPeso'
-import { extractKeySpecs, extractVariants } from '../utils/keySpecs'
+import { extractKeySpecs, extractMoreSpecs, extractVariants } from '../utils/keySpecs'
 import KeySpecTiles from '../components/KeySpecTiles'
+import MoreKeySpecs from '../components/MoreKeySpecs'
 import PhoneGlyph from '../components/PhoneGlyph'
 import VariantsList from '../components/VariantsList'
 
@@ -159,6 +160,7 @@ export default function GadgetDetail() {
         {specs !== undefined && (
           <div className="flex flex-col gap-3.5 min-w-0">
             <KeySpecTiles keySpecs={extractKeySpecs(specList)} loading={specs === null} />
+            <MoreKeySpecs moreSpecs={extractMoreSpecs(specList)} loading={specs === null} />
             <VariantsList variants={extractVariants(specList)} />
           </div>
         )}
