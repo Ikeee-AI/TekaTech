@@ -8,7 +8,9 @@ import { TextField } from '../components/ui/FormField'
 import Alert from '../components/ui/Alert'
 import Button from '../components/ui/Button'
 import BackLink from '../components/ui/BackLink'
-import { authErrorMessage, MIN_PASSWORD_LENGTH, readAuthLinkError } from '../utils/authErrors'
+import { authErrorMessage, readAuthLinkError } from '../utils/authErrors'
+import { PASSWORD_HINT, passwordError } from '../utils/passwordStrength'
+import PasswordStrength from '../components/PasswordStrength'
 
 function Card({ title, children }) {
   return (
@@ -93,9 +95,8 @@ export default function ResetPassword() {
 
   function validate() {
     const next = {}
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      next.password = `Use at least ${MIN_PASSWORD_LENGTH} characters.`
-    }
+    const weak = passwordError(password)
+    if (weak) next.password = weak
     if (confirm !== password) next.confirm = "The passwords don't match."
     return next
   }
@@ -128,21 +129,24 @@ export default function ResetPassword() {
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Hidden username field lets password managers attach the new password to the right account. */}
         <input type="email" name="username" autoComplete="username" value={user.email ?? ''} readOnly hidden />
-        <TextField
-          id="new-password"
-          label="New Password"
-          type="password"
-          required
-          autoComplete="new-password"
-          hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}
-          error={fieldErrors.password}
-          value={password}
-          onChange={(v) => {
-            setPassword(v)
-            setFieldErrors((prev) => ({ ...prev, password: undefined }))
-            setError(null)
-          }}
-        />
+        <div>
+          <TextField
+            id="new-password"
+            label="New Password"
+            type="password"
+            required
+            autoComplete="new-password"
+            hint={PASSWORD_HINT}
+            error={fieldErrors.password}
+            value={password}
+            onChange={(v) => {
+              setPassword(v)
+              setFieldErrors((prev) => ({ ...prev, password: undefined }))
+              setError(null)
+            }}
+          />
+          <PasswordStrength password={password} id="new-password-strength" />
+        </div>
         <TextField
           id="confirm-password"
           label="Confirm New Password"

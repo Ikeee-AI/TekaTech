@@ -23,6 +23,13 @@ describe('authErrorMessage', () => {
     ['the email send rate limit', { code: 'over_email_send_rate_limit' }, /Too many requests/],
     ['the request rate limit', { code: 'over_request_rate_limit' }, /Too many requests/],
     ['reusing the old password', { code: 'same_password' }, /different from your current one/],
+    [
+      'a weak password',
+      { code: 'weak_password', reasons: ['characters'] },
+      /^That password is too weak\. Use at least 8 characters, with an uppercase and a lowercase letter, a number and a symbol\.$/,
+    ],
+    ['a weak password by name', { name: 'AuthWeakPasswordError', reasons: ['length'] }, /^That password is too weak/],
+    ['a leaked password', { code: 'weak_password', reasons: ['pwned'] }, /appeared in a data breach/],
     ['a missing reset session', { name: 'AuthSessionMissingError' }, /reset session has expired/],
     ['an expired session', { code: 'session_expired' }, /reset session has expired/],
     ['a session not found', { code: 'session_not_found' }, /reset session has expired/],

@@ -8,7 +8,9 @@ import { TextField } from '../components/ui/FormField'
 import Alert from '../components/ui/Alert'
 import Button from '../components/ui/Button'
 import BackLink from '../components/ui/BackLink'
-import { authErrorMessage, isEmailNotConfirmed, MIN_PASSWORD_LENGTH } from '../utils/authErrors'
+import { authErrorMessage, isEmailNotConfirmed } from '../utils/authErrors'
+import { PASSWORD_HINT, passwordError } from '../utils/passwordStrength'
+import PasswordStrength from '../components/PasswordStrength'
 
 // ?mode=signup or ?mode=resend opens the page in that mode (#196); anything else is Log In.
 const LINK_MODES = ['signup', 'resend']
@@ -46,6 +48,8 @@ export default function Login() {
   })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  // Sign-up only: the new password misses a rule (utils/passwordStrength.js).
+  const [passwordFieldError, setPasswordFieldError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
   // 'confirm' after a successful sign up, 'exists' when the email is already registered,
@@ -62,6 +66,7 @@ export default function Login() {
     setMode(next)
     if (!keepEmail) setEmail('')
     setPassword('')
+    setPasswordFieldError(null)
     setError(null)
     setNotice(null)
     setUnconfirmed(false)
@@ -88,6 +93,16 @@ export default function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    // New accounts must meet every password rule before Supabase is called. Log In does not
+    // check them: accounts made before 14 Nov 2026 may still have a shorter password.
+    if (mode === 'signup') {
+      const weak = passwordError(password)
+      setPasswordFieldError(weak)
+      if (weak) {
+        document.getElementById('password')?.focus()
+        return
+      }
+    }
     setSubmitting(true)
     setError(null)
     setNotice(null)
@@ -153,15 +168,17 @@ export default function Login() {
                 label="Password"
                 type="password"
                 required
-                minLength={MIN_PASSWORD_LENGTH}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                hint={mode === 'signup' ? `At least ${MIN_PASSWORD_LENGTH} characters.` : undefined}
+                hint={mode === 'signup' ? PASSWORD_HINT : undefined}
+                error={mode === 'signup' ? passwordFieldError : undefined}
                 value={password}
                 onChange={(v) => {
                   setPassword(v)
+                  setPasswordFieldError(null)
                   setError(null)
                 }}
               />
+              {mode === 'signup' && <PasswordStrength password={password} id="password-strength" />}
               {mode === 'login' && (
                 <p className="text-right mt-1.5">
                   <Link to="/forgot-password" state={{ email }} className={`${LINK_CLASS} inline-flex items-center min-h-10`}>
