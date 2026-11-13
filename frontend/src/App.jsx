@@ -5,6 +5,7 @@ import Navbar from './components/Navbar'
 import ServerWakeBanner from './components/ServerWakeBanner'
 import AuthLinkNotice from './components/AuthLinkNotice'
 import RouteErrorBoundary from './components/RouteErrorBoundary'
+import Footer from './components/Footer'
 import { useRouteFocus } from './hooks/useRouteFocus'
 import GadgetList from './pages/GadgetList'
 import NotFound from './pages/NotFound'
@@ -23,6 +24,12 @@ const ShortLinkRedirect = lazy(() => import('./pages/ShortLinkRedirect'))
 const Login = lazy(() => import('./pages/Login'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const About = lazy(() => import('./pages/About'))
+const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'))
+const Faq = lazy(() => import('./pages/Faq'))
+const Privacy = lazy(() => import('./pages/Privacy'))
+const Terms = lazy(() => import('./pages/Terms'))
+const Contact = lazy(() => import('./pages/Contact'))
 
 function PageLoading() {
   return <p role="status" className="text-slate-600 animate-pulse">Loading page…</p>
@@ -132,11 +139,19 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              {/* Public content pages, linked from the footer. */}
+              <Route path="/about" element={<About />} />
+              <Route path="/how-it-works" element={<HowItWorksPage />} />
+              <Route path="/faq" element={<Faq />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </RouteErrorBoundary>
       </main>
+      <Footer />
     </div>
   )
 }
