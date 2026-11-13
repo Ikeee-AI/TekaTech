@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Sparkles,
   ChevronDown,
@@ -11,6 +11,10 @@ import {
   BadgeCheck,
   BookmarkPlus,
   BookmarkCheck,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
@@ -25,10 +29,12 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useAuth } from '../hooks/useAuth'
 import AIAnswerPanel from '../components/AIAnswerPanel'
 import TrendingQuestions from '../components/TrendingQuestions'
+import SignInPrompt from '../components/SignInPrompt'
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { friendlyError } from '../utils/requestErrors'
 import { gadgetDisplayName } from '../utils/gadgetName'
 import { formatPeso } from '../utils/formatPeso'
-import { countKeySpecs, extractKeySpecs } from '../utils/keySpecs'
+import { extractKeySpecs } from '../utils/keySpecs'
 
 const SUGGESTED_QUESTIONS = [
   'Which phone has the best battery life?',
@@ -42,6 +48,8 @@ const PAGE_SIZE = 12
 // (a spec count on GET /gadgets would remove the extra requests — backend follow-up).
 const SPEC_FETCH_LIMIT = 24
 const BRAND_TILES = 6
+// Featured hero: one phone with saved specs at a time, shuffled, a new one every 8 seconds.
+export const HERO_ROTATE_MS = 8000
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
 // Widens a small icon button's touch area to about 40px without changing its look.
@@ -82,6 +90,16 @@ function comparePrices(a, b, direction) {
   return (a.price_php - b.price_php) * direction
 }
 
+// Fisher-Yates. Called from the specs request's callback, never during render.
+function shuffled(list) {
+  const out = [...list]
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
 function toggleInSet(set, value) {
   const next = new Set(set)
   if (next.has(value)) next.delete(value)
@@ -93,6 +111,11 @@ export default function GadgetList() {
   useDocumentTitle('Phones')
   const { user } = useAuth()
   const isAdmin = Boolean(user?.app_metadata?.is_admin)
+  // Signed-out visitors may only browse the catalog (owner decision, 14 Nov 2026): asking the
+  // AI, comparing, phone pages and My Gadgets open the sign-in prompt instead.
+  const signedIn = Boolean(user)
+  const [signInPromptOpen, setSignInPromptOpen] = useState(false)
+  const requireSignIn = () => setSignInPromptOpen(true)
   const [gadgets, setGadgets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -130,6 +153,8 @@ export default function GadgetList() {
   // Saved specs per gadget: the "N sourced specs" chips and the featured phone's key-spec tiles.
   // null = still loading. A failed request leaves that gadget without a count.
   const [specsById, setSpecsById] = useState(null)
+  // Shuffled ids of the phones with saved specs: the featured hero's rotation order.
+  const [heroOrder, setHeroOrder] = useState([])
   useEffect(() => {
     if (gadgets.length === 0 || typeof api.getSpecs !== 'function') return undefined
     let cancelled = false
@@ -141,6 +166,7 @@ export default function GadgetList() {
         if (r.status === 'fulfilled' && Array.isArray(r.value)) map[ids[i]] = r.value
       })
       setSpecsById(map)
+      setHeroOrder(shuffled(ids.filter((id) => map[id]?.length > 0)))
     })
     return () => {
       cancelled = true
@@ -149,7 +175,6 @@ export default function GadgetList() {
 
   // My Gadgets: which catalog gadgets the signed-in user has on their dashboard.
   // null = not loaded (or signed out); the card buttons wait for it before showing a state.
-  const location = useLocation()
   const [myIds, setMyIds] = useState(null)
   const [savingId, setSavingId] = useState(null)
   const userId = user?.id ?? null
@@ -169,7 +194,7 @@ export default function GadgetList() {
 
   async function toggleMine(gadget) {
     if (!user) {
-      navigate('/login', { state: { from: location } })
+      requireSignIn()
       return
     }
     const inList = myIds?.has(gadget.id)
@@ -244,19 +269,15 @@ export default function GadgetList() {
     return list
   }, [gadgets, query, brands, priceFilterActive, maxPrice, sortBy])
 
-  // Featured phone: the one whose sources state the most key specs, then the most saved specs.
+  // Featured phones, in the shuffled rotation order. Built from the specs already fetched;
+  // a deleted gadget drops out without reshuffling the rest.
   const featured = useMemo(() => {
-    if (!specsById) return null
-    let best = null
-    for (const g of gadgets) {
-      const specs = specsById[g.id]
-      if (!specs || specs.length === 0) continue
-      const keySpecs = extractKeySpecs(specs)
-      const score = countKeySpecs(keySpecs) * 100 + specs.length
-      if (!best || score > best.score) best = { gadget: g, specs, keySpecs, score }
-    }
-    return best
-  }, [gadgets, specsById])
+    if (!specsById) return []
+    const byId = new Map(gadgets.map((g) => [g.id, g]))
+    return heroOrder
+      .filter((id) => byId.has(id) && specsById[id]?.length > 0)
+      .map((id) => ({ gadget: byId.get(id), specs: specsById[id], keySpecs: extractKeySpecs(specsById[id]) }))
+  }, [gadgets, specsById, heroOrder])
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
@@ -271,6 +292,10 @@ export default function GadgetList() {
   const hasFilters = query || brands.size > 0 || priceFilterActive
 
   function toggleSelect(id) {
+    if (!signedIn) {
+      requireSignIn()
+      return
+    }
     setSelected((prev) => {
       if (!prev.has(id) && prev.size >= 3) {
         toast.error('You can compare up to 3 phones at a time')
@@ -313,6 +338,10 @@ export default function GadgetList() {
   }
 
   function ask(question) {
+    if (!signedIn) {
+      requireSignIn()
+      return
+    }
     setAskedQuestion(question)
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
@@ -357,7 +386,9 @@ export default function GadgetList() {
     )
   }
 
-  const showHero = !hasFilters && !askedQuestion
+  // A shared ?ask= link opens the AI panel only for signed-in users; visitors see the catalog.
+  const activeQuestion = signedIn ? askedQuestion : null
+  const showHero = !hasFilters && !activeQuestion
 
   return (
     <div ref={topRef} className={`scroll-mt-24 flex flex-col gap-7 ${selected.size > 0 ? 'pb-28' : ''}`}>
@@ -368,12 +399,13 @@ export default function GadgetList() {
       </p>
 
       {showHero &&
-        (featured ? (
+        (featured.length > 0 ? (
           <FeaturedHero
-            featured={featured}
-            selected={selected.has(featured.gadget.id)}
-            onToggleCompare={() => toggleSelect(featured.gadget.id)}
-            onAsk={() => ask(`What are the key specs of the ${gadgetDisplayName(featured.gadget)}?`)}
+            items={featured}
+            selectedIds={selected}
+            onToggleCompare={(g) => toggleSelect(g.id)}
+            onAsk={(g) => ask(`What are the key specs of the ${gadgetDisplayName(g)}?`)}
+            onRequireSignIn={signedIn ? undefined : requireSignIn}
           />
         ) : (
           specsById === null && typeof api.getSpecs === 'function' && (
@@ -381,9 +413,10 @@ export default function GadgetList() {
           )
         ))}
 
-      {askedQuestion ? (
-        <AIAnswerPanel question={askedQuestion} onClose={() => setAskedQuestion(null)} />
+      {activeQuestion ? (
+        <AIAnswerPanel question={activeQuestion} onClose={() => setAskedQuestion(null)} />
       ) : (
+        signedIn && (
         <div className="flex flex-col gap-2">
           <TrendingQuestions onSelect={ask} />
           <div className="flex flex-wrap gap-1.5">
@@ -398,6 +431,7 @@ export default function GadgetList() {
             ))}
           </div>
         </div>
+        )
       )}
 
       <section aria-labelledby="brands-heading">
@@ -522,10 +556,11 @@ export default function GadgetList() {
                   onToggle={() => toggleSelect(g.id)}
                   onAsk={() => ask(`What are the key specs of the ${gadgetDisplayName(g)}?`)}
                   onDeleted={handleDeleted}
-                  // Visitors see the button too (it leads to log in); signed-in users once their list loads.
+                  // Visitors see the button too (it opens the sign-in prompt); signed-in users once their list loads.
                   mine={!user ? false : myIds ? myIds.has(g.id) : null}
                   saving={savingId === g.id}
                   onToggleMine={() => toggleMine(g)}
+                  onRequireSignIn={signedIn ? undefined : requireSignIn}
                 />
               ))}
             </div>
@@ -563,17 +598,129 @@ export default function GadgetList() {
           onCompare={() => navigate(`/compare?ids=${[...selected].join(',')}`)}
         />
       )}
+
+      <SignInPrompt open={signInPromptOpen} onClose={() => setSignInPromptOpen(false)} />
     </div>
   )
 }
 
-function FeaturedHero({ featured, selected, onToggleCompare, onAsk }) {
-  const { gadget, specs, keySpecs } = featured
+/**
+ * Featured hero: rotates through the phones with saved specs (already shuffled by the caller),
+ * one every HERO_ROTATE_MS with a cross-fade. WCAG 2.2.2: a visible Pause/Play control, and the
+ * rotation also waits while the pointer is over the hero or keyboard focus is inside it. With
+ * prefers-reduced-motion there is no auto-rotation; Prev/Next buttons appear instead.
+ * Changes are deliberately not announced (no aria-live): the user did not ask for them.
+ * All slides share one grid cell, so the hero is as tall as its tallest slide and never jumps.
+ */
+export function FeaturedHero({ items, selectedIds, onToggleCompare, onAsk, onRequireSignIn }) {
+  const reducedMotion = usePrefersReducedMotion()
+  const [index, setIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [focusInside, setFocusInside] = useState(false)
+  const count = items.length
+  const current = count > 0 ? index % count : 0
+  const rotating = count > 1 && !reducedMotion && !paused && !hovered && !focusInside
+
+  useEffect(() => {
+    if (!rotating) return undefined
+    const timer = setInterval(() => setIndex((i) => (i + 1) % count), HERO_ROTATE_MS)
+    return () => clearInterval(timer)
+  }, [rotating, count])
+
+  const show = (i) => setIndex(((i % count) + count) % count)
+
+  return (
+    <section
+      aria-roledescription="carousel"
+      aria-label="Featured phones"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocusInside(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setFocusInside(false)
+      }}
+      className="flex flex-col gap-3"
+    >
+      <div className="grid">
+        {items.map((item, i) => (
+          <HeroSlide
+            key={item.gadget.id}
+            item={item}
+            active={i === current}
+            position={`${i + 1} of ${count}`}
+            selected={selectedIds.has(item.gadget.id)}
+            onToggleCompare={() => onToggleCompare(item.gadget)}
+            onAsk={() => onAsk(item.gadget)}
+            onRequireSignIn={onRequireSignIn}
+          />
+        ))}
+      </div>
+
+      {count > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {reducedMotion ? (
+            <>
+              <Button size="sm" variant="subtle" icon={ChevronLeft} onClick={() => show(current - 1)} aria-label="Previous featured phone">
+                Prev
+              </Button>
+              <Button size="sm" variant="subtle" icon={ChevronRight} onClick={() => show(current + 1)} aria-label="Next featured phone">
+                Next
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="sm"
+              variant="subtle"
+              icon={paused ? Play : Pause}
+              onClick={() => setPaused((p) => !p)}
+              aria-label={paused ? 'Play featured phones rotation' : 'Pause featured phones rotation'}
+            >
+              {paused ? 'Play' : 'Pause'}
+            </Button>
+          )}
+          <div className="flex flex-wrap items-center gap-1 ml-1">
+            {items.map((item, i) => (
+              <button
+                key={item.gadget.id}
+                type="button"
+                onClick={() => show(i)}
+                aria-label={`Show featured phone ${i + 1} of ${count}: ${item.gadget.name}`}
+                aria-current={i === current ? 'true' : undefined}
+                className={`flex items-center justify-center w-7 h-10 sm:h-8 rounded-full ${focusRing}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`block h-2.5 rounded-full transition-all ${
+                    i === current ? 'w-5 bg-sage-700' : 'w-2.5 bg-slate-400 hover:bg-slate-600'
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, onRequireSignIn }) {
+  const { gadget, specs, keySpecs } = item
   const [imgError, setImgError] = useState(false)
   const showImage = gadget.image_url && !imgError
   const price = formatPeso(gadget.price_php)
+  const gated = Boolean(onRequireSignIn)
   return (
-    <section aria-label={`Featured: ${gadget.name}`} className="grid grid-cols-1 lg:grid-cols-4 gap-3.5">
+    <div
+      role="group"
+      aria-roledescription="slide"
+      aria-label={`${position}: ${gadget.name}`}
+      aria-hidden={active ? undefined : true}
+      inert={!active}
+      className={`col-start-1 row-start-1 grid grid-cols-1 lg:grid-cols-4 gap-3.5 transition-[opacity,visibility] duration-700 ease-in-out ${
+        active ? 'opacity-100 visible' : 'opacity-0 invisible'
+      }`}
+    >
       <article className="lg:col-span-2 relative overflow-hidden flex flex-col justify-end min-h-[340px] lg:min-h-[384px] p-6 sm:p-8 rounded-[28px] bg-white border border-slate-200">
         <div className="absolute right-6 sm:right-12 top-6 sm:top-8 w-32 sm:w-44 h-52 sm:h-72 flex items-center justify-center" aria-hidden="true">
           {showImage ? (
@@ -586,30 +733,55 @@ function FeaturedHero({ featured, selected, onToggleCompare, onAsk }) {
           <span className="inline-block px-2.5 py-1 rounded-full bg-sage-700 text-white font-mono text-xs font-semibold">
             {specs.length} SOURCED SPEC{specs.length === 1 ? '' : 'S'}
           </span>
-          <h2 className="mt-3 text-5xl sm:text-6xl font-extrabold tracking-[-0.055em] leading-[0.95] text-slate-900">
-            <Link to={`/gadgets/${gadget.id}`} className={`hover:underline rounded ${focusRing}`}>
-              {gadget.name}
-            </Link>
+          <h2 className="mt-3 text-5xl sm:text-6xl font-extrabold tracking-[-0.055em] leading-[0.95] text-slate-900 break-words">
+            {gated ? (
+              <button type="button" onClick={onRequireSignIn} aria-haspopup="dialog" className={`text-left hover:underline rounded ${focusRing}`}>
+                {gadget.name}
+              </button>
+            ) : (
+              <Link to={`/gadgets/${gadget.id}`} className={`hover:underline rounded ${focusRing}`}>
+                {gadget.name}
+              </Link>
+            )}
           </h2>
           <p className="mt-2 text-base text-slate-600">{gadget.brand}</p>
           <p className={`mt-4 font-mono text-3xl ${price ? 'text-slate-900' : 'text-slate-500 text-xl'}`}>
             {price ?? 'No price yet'}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
-            <Button as={Link} to={`/gadgets/${gadget.id}`} variant="primary" size="lg">
-              View specs
-            </Button>
-            <Button size="lg" onClick={onToggleCompare} aria-pressed={selected} icon={selected ? BadgeCheck : Scale}>
+            {gated ? (
+              <Button variant="primary" size="lg" onClick={onRequireSignIn} aria-haspopup="dialog">
+                View specs
+              </Button>
+            ) : (
+              <Button as={Link} to={`/gadgets/${gadget.id}`} variant="primary" size="lg">
+                View specs
+              </Button>
+            )}
+            <Button
+              size="lg"
+              onClick={onToggleCompare}
+              aria-pressed={gated ? undefined : selected}
+              aria-haspopup={gated ? 'dialog' : undefined}
+              icon={selected ? BadgeCheck : Scale}
+            >
               {selected ? 'In Compare' : 'Compare'}
             </Button>
-            <Button size="lg" variant="ghost" icon={Sparkles} onClick={onAsk} aria-label={`Ask AI about ${gadget.name}`}>
+            <Button
+              size="lg"
+              variant="ghost"
+              icon={Sparkles}
+              onClick={onAsk}
+              aria-haspopup={gated ? 'dialog' : undefined}
+              aria-label={`Ask AI about ${gadget.name}`}
+            >
               Ask AI
             </Button>
           </div>
         </div>
       </article>
       <KeySpecTiles keySpecs={keySpecs} gadgetName={gadget.name} size="lg" className="lg:col-span-2" />
-    </section>
+    </div>
   )
 }
 
@@ -666,7 +838,10 @@ function PageButton({ children, active = false, disabled = false, onClick }) {
   )
 }
 
-export function GadgetCard({ gadget, specCount, selected, onToggle, onAsk, onDeleted, mine, saving, onToggleMine }) {
+// onRequireSignIn is set for signed-out visitors: the name, View specs, Compare, Ask AI and
+// Save stay visible but open the sign-in prompt instead of acting.
+export function GadgetCard({ gadget, specCount, selected, onToggle, onAsk, onDeleted, mine, saving, onToggleMine, onRequireSignIn }) {
+  const gated = Boolean(onRequireSignIn)
   const [imgError, setImgError] = useState(false)
   const showImage = gadget.image_url && !imgError
   const release = formatRelease(gadget.release_date)
@@ -707,9 +882,15 @@ export function GadgetCard({ gadget, specCount, selected, onToggle, onAsk, onDel
 
       <div className="min-w-0 px-1">
         <h3 className="text-lg font-extrabold tracking-[-0.03em] text-slate-900 truncate">
-          <Link to={`/gadgets/${gadget.id}`} className={`hover:underline rounded ${focusRing}`}>
-            {gadget.name}
-          </Link>
+          {gated ? (
+            <button type="button" onClick={onRequireSignIn} aria-haspopup="dialog" className={`text-left hover:underline rounded ${focusRing}`}>
+              {gadget.name}
+            </button>
+          ) : (
+            <Link to={`/gadgets/${gadget.id}`} className={`hover:underline rounded ${focusRing}`}>
+              {gadget.name}
+            </Link>
+          )}
         </h3>
         <p className="text-sm text-slate-600 truncate">
           {gadget.brand}
@@ -721,16 +902,29 @@ export function GadgetCard({ gadget, specCount, selected, onToggle, onAsk, onDel
       </div>
 
       <div className="flex items-center gap-2 mt-auto">
-        <Button
-          as={Link}
-          to={`/gadgets/${gadget.id}`}
-          variant="primary"
-          size="sm"
-          aria-label={`Details for ${gadget.name}`}
-          className="flex-1"
-        >
-          View specs
-        </Button>
+        {gated ? (
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onRequireSignIn}
+            aria-haspopup="dialog"
+            aria-label={`Details for ${gadget.name}`}
+            className="flex-1"
+          >
+            View specs
+          </Button>
+        ) : (
+          <Button
+            as={Link}
+            to={`/gadgets/${gadget.id}`}
+            variant="primary"
+            size="sm"
+            aria-label={`Details for ${gadget.name}`}
+            className="flex-1"
+          >
+            View specs
+          </Button>
+        )}
         <label
           className={`flex items-center gap-2 min-h-10 sm:min-h-9 px-3.5 rounded-full border cursor-pointer select-none text-sm font-semibold focus-within:ring-2 focus-within:ring-sage-600 ${
             selected ? 'bg-sage-700 text-white border-sage-700' : 'border-slate-300 text-slate-800 hover:bg-slate-100'
@@ -739,7 +933,7 @@ export function GadgetCard({ gadget, specCount, selected, onToggle, onAsk, onDel
           <input
             type="checkbox"
             checked={selected}
-            onChange={onToggle}
+            onChange={gated ? onRequireSignIn : onToggle}
             aria-label={`Compare ${gadget.name}`}
             className="w-4 h-4 rounded accent-slate-900 focus:outline-none"
           />
@@ -750,7 +944,14 @@ export function GadgetCard({ gadget, specCount, selected, onToggle, onAsk, onDel
       <div className="flex items-center gap-1.5 border-t border-slate-200 pt-2.5">
         {/* aria-label, not an sr-only span: a span's leading space is dropped when the
             accessible name is computed, so it read "Ask AIabout …" (#207). */}
-        <Button variant="ghost" size="sm" icon={Sparkles} onClick={onAsk} aria-label={`Ask AI about ${gadget.name}`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={Sparkles}
+          onClick={gated ? onRequireSignIn : onAsk}
+          aria-haspopup={gated ? 'dialog' : undefined}
+          aria-label={`Ask AI about ${gadget.name}`}
+        >
           Ask AI
         </Button>
         {mine !== null && (

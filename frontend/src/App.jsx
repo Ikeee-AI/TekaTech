@@ -55,7 +55,16 @@ function App() {
           <Suspense fallback={<PageLoading />}>
             <Routes>
               <Route path="/" element={<GadgetList />} />
-              <Route path="/gadgets/:id" element={<GadgetDetail />} />
+              {/* Signed-out visitors only browse the catalog (owner decision, 14 Nov 2026): phone
+                  pages, compare and shared comparison links send them to log in and back. */}
+              <Route
+                path="/gadgets/:id"
+                element={
+                  <ProtectedRoute>
+                    <GadgetDetail />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/gadgets/:id/edit"
                 element={
@@ -72,7 +81,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/compare" element={<ComparePage />} />
+              <Route
+                path="/compare"
+                element={
+                  <ProtectedRoute>
+                    <ComparePage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/corrections"
                 element={
@@ -105,7 +121,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/c/:slug" element={<ShortLinkRedirect />} />
+              <Route
+                path="/c/:slug"
+                element={
+                  <ProtectedRoute>
+                    <ShortLinkRedirect />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
