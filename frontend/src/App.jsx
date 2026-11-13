@@ -33,7 +33,7 @@ function App() {
   useRouteFocus(location.pathname, 'main-content')
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
 
       <a href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-sage-700 focus:text-white focus:px-3 focus:py-2 focus:rounded-lg focus:text-sm"
@@ -48,7 +48,8 @@ function App() {
         key={location.pathname}
         // Focus target for the skip link and for useRouteFocus; not in the tab order.
         tabIndex={-1}
-        className={`${location.pathname === '/' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 sm:px-6 py-8 animate-fade-in outline-none`}
+        // One width for every page (rebrand: no wide empty side gutters).
+        className="max-w-[1320px] mx-auto px-4 sm:px-6 py-6 animate-fade-in outline-none"
       >
         <RouteErrorBoundary>
           <Suspense fallback={<PageLoading />}>

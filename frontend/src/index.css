@@ -1,27 +1,185 @@
 @import "tailwindcss";
 
+/*
+ * TekaTech theme (rebrand, 13 Nov 2026, docs/design/rebrand-brief.md).
+ * Dark mode ("Night Market") is the default; light mode uses the Bento Lab palette.
+ *
+ * The app's components use Tailwind's slate/gray/white/sage/status utilities. Rather than
+ * rewrite every class, those colour tokens are remapped by role, and each theme sets them:
+ *   slate-50 = page background · white = card surface · slate-100 = subtle surface
+ *   slate-200/300 = borders · slate-500/600 = secondary text · slate-700..900 = text
+ *   sage-* = the accent (cobalt in light, lime in dark). "text-white" on an accent
+ *   background is the accent's ink, so it flips to near-black in dark mode with the lime.
+ * The values below in @theme are the LIGHT theme; the unlayered :root block further down
+ * overrides them for dark, which applies whenever data-theme is not "light".
+ */
 @theme {
-  /* One typeface site-wide: Open Sans Condensed (Open Sans at 75% width). */
-  --font-sans: "Open Sans", ui-sans-serif, sans-serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-sans);
-  --font-mono: var(--font-sans);
+  --font-mono: "Geist Mono", ui-monospace, monospace;
 
-  /* Sage palette: the site's accent color (matches the logo) */
-  --color-sage-50: #eaf4ee;
-  --color-sage-100: #d9ecdf;
-  --color-sage-200: #bfeecc;
-  --color-sage-300: #a7d0b3;
-  --color-sage-400: #84ae92;
-  --color-sage-600: #3a6a4c;
-  --color-sage-700: #254b35;
-  --color-sage-800: #1b3727;
-  --color-sage-900: #0f3723;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 1.75rem;
+
+  --color-white: #ffffff;
+  --color-black: #0f1115;
+
+  --color-slate-50: #eef0f4;
+  --color-slate-100: #f2f3f6;
+  --color-slate-200: #dfe2ea;
+  --color-slate-300: #c5cad6;
+  --color-slate-400: #8a91a1;
+  --color-slate-500: #5b6170;
+  --color-slate-600: #4b5160;
+  --color-slate-700: #343946;
+  --color-slate-800: #1d2029;
+  --color-slate-900: #0f1115;
+  --color-slate-950: #08090c;
+
+  --color-gray-50: #f6f7f9;
+  --color-gray-100: #f2f3f6;
+  --color-gray-200: #dfe2ea;
+  --color-gray-300: #c5cad6;
+  --color-gray-400: #8a91a1;
+  --color-gray-500: #5b6170;
+  --color-gray-600: #4b5160;
+  --color-gray-700: #343946;
+  --color-gray-800: #1d2029;
+  --color-gray-900: #0f1115;
+
+  /* Accent: cobalt in light mode. */
+  --color-sage-50: #eef1ff;
+  --color-sage-100: #e0e6ff;
+  --color-sage-200: #c7d0ff;
+  --color-sage-300: #a9b6ff;
+  --color-sage-400: #7f91ff;
+  --color-sage-500: #4f68ff;
+  --color-sage-600: #3d58ff;
+  --color-sage-700: #2f4bff;
+  --color-sage-800: #1f35c4;
+  --color-sage-900: #141f80;
+
+  /* Second accent (key-spec tiles, highlights): pale lime in light mode. */
+  --color-pop: #d9f99d;
+  --color-pop-ink: #1a2300;
+  --color-cobalt: #2f4bff;
+  --color-cobalt-ink: #ffffff;
+  /* Inverse surface (selected pills, VS badge): ink in light, near-white in dark. */
+  --color-inverse: #0f1115;
+  --color-inverse-ink: #ffffff;
+  /* General-knowledge answers (dashed violet, labelled, never cited). */
+  --color-gk: #7c3aed;
+  --color-gk-ink: #5b21b6;
+  --color-gk-surface: #f5f0ff;
+}
+
+:root:not([data-theme="light"]) {
+  color-scheme: dark;
+
+  --color-white: #111114;
+  --color-black: #fafafa;
+
+  --color-slate-50: #09090b;
+  --color-slate-100: #18181c;
+  --color-slate-200: #27272a;
+  --color-slate-300: #3f3f46;
+  --color-slate-400: #71717a;
+  --color-slate-500: #a1a1aa;
+  --color-slate-600: #a1a1aa;
+  --color-slate-700: #d4d4d8;
+  --color-slate-800: #e4e4e7;
+  --color-slate-900: #fafafa;
+  --color-slate-950: #ffffff;
+
+  --color-gray-50: #141417;
+  --color-gray-100: #18181c;
+  --color-gray-200: #27272a;
+  --color-gray-300: #3f3f46;
+  --color-gray-400: #71717a;
+  --color-gray-500: #a1a1aa;
+  --color-gray-600: #a1a1aa;
+  --color-gray-700: #d4d4d8;
+  --color-gray-800: #e4e4e7;
+  --color-gray-900: #fafafa;
+
+  /* Accent: lime in dark mode; "white" (its ink) is near-black here. */
+  --color-sage-50: #15170e;
+  --color-sage-100: #1c2010;
+  --color-sage-200: #3a4515;
+  --color-sage-300: #5b6b1f;
+  --color-sage-400: #8fae22;
+  --color-sage-500: #b2dc25;
+  --color-sage-600: #b8e62a;
+  --color-sage-700: #c6f432;
+  --color-sage-800: #d7ff5c;
+  --color-sage-900: #e6ff99;
+
+  --color-pop: #3b5bff;
+  --color-pop-ink: #ffffff;
+  --color-cobalt: #3b5bff;
+  --color-cobalt-ink: #ffffff;
+  --color-inverse: #fafafa;
+  --color-inverse-ink: #09090b;
+  --color-gk: #a78bfa;
+  --color-gk-ink: #c4b5fd;
+  --color-gk-surface: #15121f;
+
+  /* Status colours, re-tuned so tinted backgrounds stay dark and text stays readable. */
+  --color-red-50: #2a1213;
+  --color-red-100: #3b1416;
+  --color-red-200: #5c1f22;
+  --color-red-300: #7f2a2e;
+  --color-red-400: #f87171;
+  --color-red-500: #f87171;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+  --color-red-900: #fee2e2;
+  --color-red-950: #fff1f1;
+
+  --color-emerald-50: #0f1f14;
+  --color-emerald-100: #13291a;
+  --color-emerald-200: #1f4a2c;
+  --color-emerald-600: #4ade80;
+  --color-emerald-700: #6ee7a0;
+  --color-emerald-800: #86efac;
+  --color-emerald-900: #bbf7d0;
+  --color-emerald-950: #dcfce7;
+  --color-green-50: #0f1f14;
+  --color-green-800: #86efac;
+
+  --color-amber-50: #1f1a0b;
+  --color-amber-200: #4a3b12;
+  --color-amber-300: #6b5517;
+  --color-amber-700: #fbbf24;
+  --color-amber-800: #fcd34d;
+  --color-amber-900: #fde68a;
+  --color-amber-950: #fef3c7;
+
+  --color-sky-50: #0b1a2a;
+  --color-sky-200: #1e3a5f;
+  --color-sky-700: #7dd3fc;
+  --color-sky-800: #bae6fd;
+  --color-sky-900: #e0f2fe;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--color-slate-50);
+  color: var(--color-slate-900);
 }
 
 body {
   font-family: var(--font-sans);
-  font-stretch: 75%;
-  font-weight: 500;
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
 }
 
 @keyframes fade-in {
