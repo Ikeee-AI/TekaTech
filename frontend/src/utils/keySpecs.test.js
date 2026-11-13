@@ -39,4 +39,59 @@ describe('extractKeySpecs', () => {
     const k = extractKeySpecs([{ content: '4000mAh battery; up to 29 hours video playback.' }])
     expect(countKeySpecs(k)).toBe(0)
   })
+
+  it('reads OPPO-style combined RAM and storage lines (bug seen on production, 13 Nov)', () => {
+    const k = extractKeySpecs([
+      { content: 'RAM and storage: 12GB + 256GB\nRAM type: LPDDR5X\nStorage type: UFS 4.0', source_url: 'https://www.oppo.com/ph/' },
+    ])
+    expect(k.ram).toMatchObject({ value: '12', unit: 'GB' })
+    expect(k.storage).toMatchObject({ value: '256', unit: 'GB' })
+  })
+
+  it('reads several combined variants', () => {
+    const k = extractKeySpecs([{ content: 'RAM + ROM: 8GB + 256GB / 12GB + 512GB' }])
+    expect(k.ram.value).toBe('8–12')
+    expect(k.storage.value).toBe('256–512')
+  })
+
+  it('never takes the tail of a bigger number', () => {
+    const k = extractKeySpecs([{ content: 'Storage: 256GB\nRAM type: LPDDR5X' }])
+    expect(k.ram).toBeNull()
+    expect(k.storage.value).toBe('256')
+  })
+
+  it('ignores PWM dimming and touch sampling when reading the refresh rate', () => {
+    const k = extractKeySpecs([{ content: 'PWM dimming: 3840Hz\nRefresh rate: 120Hz\nTouch sampling rate: up to 180Hz' }])
+    expect(k.refresh.value).toBe('120')
+  })
+
+  it('takes the highest rate from an adaptive refresh line', () => {
+    const k = extractKeySpecs([{ content: 'Refresh rate: LTPO adaptive (120/90/72/60 Hz)' }])
+    expect(k.refresh.value).toBe('120')
+  })
+
+  it('reads POCO-style "RAM with storage" lines', () => {
+    const k = extractKeySpecs([{ content: '• RAM & Storage: 8GB or 12GB LPDDR5X RAM with 256GB or 512GB UFS 4.0 storage.' }])
+    expect(k.ram.value).toBe('8–12')
+    expect(k.storage.value).toBe('256–512')
+  })
+
+  it('reads labelled editions and skips expandable RAM', () => {
+    const k = extractKeySpecs([
+      { content: 'Memory (Pro Edition): LPDDR5X 24GB\nMemory (Pro): LPDDR5X 16GB\nStorage (Pro Edition): UFS 4.0 1TB\nStorage (Pro): UFS 4.0 512GB\nExpandable RAM capacity: 16 GB' },
+    ])
+    expect(k.ram.value).toBe('16–24')
+    expect(k.storage).toMatchObject({ value: '512 GB–1 TB', unit: '' })
+  })
+
+  it('reads "rear 50 MP" camera lists and trims 50.0', () => {
+    expect(extractKeySpecs([{ content: 'Cameras: front 32 MP; rear 50 MP + 50 MP + 200 MP' }]).camera.value).toBe('50')
+    expect(extractKeySpecs([{ content: 'Main camera: 50.0 MP' }]).camera.value).toBe('50')
+  })
+
+  it('keeps variants listed with semicolons together', () => {
+    const k = extractKeySpecs([{ content: 'RAM and storage: 8GB + 256GB; 12GB + 256GB; 12GB + 512GB' }])
+    expect(k.ram.value).toBe('8–12')
+    expect(k.storage.value).toBe('256–512')
+  })
 })
