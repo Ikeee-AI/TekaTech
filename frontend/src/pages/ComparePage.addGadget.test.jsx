@@ -53,7 +53,7 @@ function renderCompare(entry) {
   )
 }
 
-const addButton = () => screen.findByRole('button', { name: 'Add Gadget' })
+const addButton = () => screen.findByRole('button', { name: 'Add Phone' })
 
 afterEach(cleanup)
 
@@ -63,7 +63,7 @@ describe('Compare: add a gadget', () => {
     fireEvent.click(await addButton())
     fireEvent.click(await screen.findByRole('button', { name: 'Add Phone c to the comparison' }))
     await waitFor(() => expect(screen.getByTestId('where').textContent).toBe('?ids=a%2Cb%2Cc'))
-    expect(await screen.findByRole('heading', { name: 'Comparing 3 Gadgets' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Comparing 3 Phones' })).toBeTruthy()
     expect(screen.getByRole('link', { name: /back to my gadgets/i })).toBeTruthy()
   })
 
@@ -79,7 +79,7 @@ describe('Compare: add a gadget', () => {
     expect(screen.queryByRole('button', { name: 'Add Phone d to the comparison' })).toBeNull()
   })
 
-  it('closes on Escape and returns focus to Add Gadget', async () => {
+  it('closes on Escape and returns focus to Add Phone', async () => {
     renderCompare('/compare?ids=a,b')
     const toggle = await addButton()
     fireEvent.click(toggle)
@@ -91,12 +91,12 @@ describe('Compare: add a gadget', () => {
     expect(document.activeElement).toBe(toggle)
   })
 
-  it('returns focus to Add Gadget once the page has reloaded after an add', async () => {
+  it('returns focus to Add Phone once the page has reloaded after an add', async () => {
     renderCompare('/compare?ids=a,b')
     fireEvent.click(await addButton())
     fireEvent.click(await screen.findByRole('button', { name: 'Add Phone c to the comparison' }))
-    await screen.findByRole('heading', { name: 'Comparing 3 Gadgets' })
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add Gadget' })))
+    await screen.findByRole('heading', { name: 'Comparing 3 Phones' })
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add Phone' })))
   })
 
   it('moves focus to the heading when the add reaches the 5-gadget limit', async () => {
@@ -104,14 +104,14 @@ describe('Compare: add a gadget', () => {
     renderCompare('/compare?ids=a,b,c,d')
     fireEvent.click(await addButton())
     fireEvent.click(await screen.findByRole('button', { name: 'Add Phone e to the comparison' }))
-    const heading = await screen.findByRole('heading', { name: 'Comparing 5 Gadgets' })
+    const heading = await screen.findByRole('heading', { name: 'Comparing 5 Phones' })
     await waitFor(() => expect(document.activeElement).toBe(heading))
   })
 
-  it('offers no Add Gadget at the 5-gadget limit', async () => {
+  it('offers no Add Phone at the 5-phone limit', async () => {
     renderCompare('/compare?ids=a,b,c,d,e')
-    expect(await screen.findByRole('heading', { name: 'Comparing 5 Gadgets' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Add Gadget' })).toBeNull()
+    expect(await screen.findByRole('heading', { name: 'Comparing 5 Phones' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Add Phone' })).toBeNull()
     expect(screen.getByText(/5 gadgets is the most you can compare/)).toBeTruthy()
   })
 })

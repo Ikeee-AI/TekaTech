@@ -229,8 +229,17 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
 
       {noIndexedSpecs && (
         <Alert tone="warning" className="mx-5 sm:mx-6 mt-4">
-          <strong className="font-semibold">{gadgetName}</strong> has no indexed specs yet — the AI won&apos;t be able to
-          say anything grounded about it. Add specs and index them below.
+          {user?.app_metadata?.is_admin ? (
+            <>
+              <strong className="font-semibold">{gadgetName}</strong> has no indexed specs yet — the AI won&apos;t be
+              able to say anything grounded about it. Add specs and index them below.
+            </>
+          ) : (
+            <>
+              <strong className="font-semibold">{gadgetName}</strong> doesn&apos;t have sourced specs ready for AI answers
+              yet, so the AI can&apos;t answer from official sources. The TekaTech team adds them.
+            </>
+          )}
         </Alert>
       )}
 
