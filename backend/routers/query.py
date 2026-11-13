@@ -294,8 +294,23 @@ def _keyword_matches(question: str, query_embedding, gadget_ids) -> list[dict]:
         return []
 
 
-def _record_query(*, question, answer, cited_gadget_ids, embedding_tokens, prompt_tokens, completion_tokens) -> None:
+# query_history.query_text feeds the public /stats/trending-questions list. A signed-in user's
+# single-gadget question is saved privately in user_questions instead, so its row here keeps
+# only these placeholders: the token columns are still the only per-query cost record (no other
+# table holds embedding/prompt/completion counts), so skipping the row would lose cost accounting,
+# while the placeholder keeps the question and its answer out of anything public. The trending
+# list also ignores the placeholder (routers/stats.py).
+PRIVATE_QUESTION_PLACEHOLDER = "[private question]"
+PRIVATE_ANSWER_PLACEHOLDER = "[private answer]"
+
+
+def _record_query(
+    *, question, answer, cited_gadget_ids, embedding_tokens, prompt_tokens, completion_tokens, private=False
+) -> None:
     """Best-effort write to query_history.
+
+    private=True (a signed-in user's saved single-gadget question) stores the placeholders above
+    instead of the question and answer text, keeping the token accounting.
 
     Deliberately swallows failures: by the time this runs the OpenAI calls for
     this answer have already been billed, so losing the analytics row is
@@ -309,8 +324,8 @@ def _record_query(*, question, answer, cited_gadget_ids, embedding_tokens, promp
     mismatch falls back to writing the row without them.
     """
     base_row = {
-        "query_text": question,
-        "answer_text": answer,
+        "query_text": PRIVATE_QUESTION_PLACEHOLDER if private else question,
+        "answer_text": PRIVATE_ANSWER_PLACEHOLDER if private else answer,
         "gadget_ids_ref": cited_gadget_ids,
         "model_used": MODEL_USED,
     }
@@ -336,7 +351,9 @@ def _record_query(*, question, answer, cited_gadget_ids, embedding_tokens, promp
         logger.exception("query_history insert failed; continuing without logging this query")
 
 
-def _serve_cached(question: str, cached: answer_cache.CachedAnswer, match: str, *, embedding_tokens) -> QueryResponse:
+def _serve_cached(
+    question: str, cached: answer_cache.CachedAnswer, match: str, *, embedding_tokens, private=False
+) -> QueryResponse:
     """Return a cached answer as this request's answer, and record it like a fresh one.
 
     The "no relevant specs" answer is not recorded, the same as when it is generated.
@@ -350,6 +367,7 @@ def _serve_cached(question: str, cached: answer_cache.CachedAnswer, match: str, 
             embedding_tokens=embedding_tokens,
             prompt_tokens=0,
             completion_tokens=0,
+            private=private,
         )
     return response
 
@@ -448,13 +466,33 @@ def ask_question(request: Request, payload: QueryRequest):
         # Returns or raises before the cache is read or written, so a drill always shows the
         # failure it asked for and never leaves a cached answer behind (or a saved thread turn).
         return _simulated_failure(simulated)
-    response = _answer_question(request, payload)
-    _save_thread_turn(request, payload, response)
+    # Resolved before answering, so the query_history row already knows the question is private.
+    thread_user = _thread_user(request, payload)
+    response = _answer_question(request, payload, private=thread_user is not None)
+    _save_thread_turn(thread_user, payload, response)
     return response
 
 
+def _thread_user(request: Request, payload: "QueryRequest"):
+    """The signed-in caller whose turn will be saved to user_questions, or None.
 
-def _save_thread_turn(request: Request, payload: "QueryRequest", response: QueryResponse) -> None:
+    Only a question about exactly one gadget with an Authorization header is looked up, so
+    anonymous and comparison/catalog questions cost no extra Supabase call.
+    """
+    if not payload.gadget_ids or len(payload.gadget_ids) != 1:
+        return None
+    authorization = request.headers.get("authorization")
+    if not authorization:
+        return None
+    try:
+        return get_optional_user(authorization)
+    except Exception:
+        logger.warning("Session lookup for the gadget thread failed; the turn is not saved", exc_info=True)
+        return None
+
+
+
+def _save_thread_turn(user, payload: "QueryRequest", response: QueryResponse) -> None:
     """Per-gadget conversation (user_questions.sql): a signed-in user's question about exactly
     one gadget is saved with its full answer, so the gadget page can show the thread later.
 
@@ -462,15 +500,9 @@ def _save_thread_turn(request: Request, payload: "QueryRequest", response: Query
     The route stays public: no session means nothing is saved. Like _record_query, this can
     never fail the request: the OpenAI calls are already billed by the time it runs.
     """
-    if not payload.gadget_ids or len(payload.gadget_ids) != 1:
-        return
-    authorization = request.headers.get("authorization")
-    if not authorization:
+    if user is None:
         return
     try:
-        user = get_optional_user(authorization)
-        if user is None:
-            return
         if payload.regenerate:
             _drop_regenerated_turn(str(user.id), str(payload.gadget_ids[0]), payload.question)
         supabase.table("user_questions").insert(
@@ -503,7 +535,7 @@ def _drop_regenerated_turn(user_id: str, gadget_id: str, question: str) -> None:
         supabase.table("user_questions").delete().eq("id", rows[0]["id"]).eq("user_id", user_id).execute()
 
 
-def _answer_question(request: Request, payload: "QueryRequest") -> QueryResponse:
+def _answer_question(request: Request, payload: "QueryRequest", *, private: bool = False) -> QueryResponse:
     # 0. The same question in the same scope (gadgets, plain-language flag, prompt version,
     #    models) is answered from answer_cache without any OpenAI call. The generation is
     #    read first, so an answer built from specs that change mid-request is not stored.
@@ -518,7 +550,7 @@ def _answer_question(request: Request, payload: "QueryRequest") -> QueryResponse
     cache_generation = answer_cache.current_generation()
     cached = None if bypass_cache else answer_cache.lookup_exact(cache_scope, payload.question)
     if cached:
-        return _serve_cached(payload.question, cached, "exact", embedding_tokens=0)
+        return _serve_cached(payload.question, cached, "exact", embedding_tokens=0, private=private)
 
     # 1. Embed the question the same way spec chunks were embedded
     try:
@@ -542,6 +574,7 @@ def _answer_question(request: Request, payload: "QueryRequest") -> QueryResponse
         return _serve_cached(
             payload.question, cached, "similar",
             embedding_tokens=_token_count(embedding_response, "total_tokens"),
+            private=private,
         )
 
     # 2. Retrieve the most relevant spec chunks via the SQL function in schema.sql
@@ -663,6 +696,7 @@ def _answer_question(request: Request, payload: "QueryRequest") -> QueryResponse
         embedding_tokens=_token_count(embedding_response, "total_tokens"),
         prompt_tokens=_token_count(completion, "prompt_tokens"),
         completion_tokens=_token_count(completion, "completion_tokens"),
+        private=private,
     )
 
     sources = [
