@@ -381,7 +381,8 @@ function SpecSourceGroup({ group, defaultOpen, user, isAdmin, gadgetId, indexing
         className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 sm:px-5 py-3 bg-slate-50 ${open ? 'border-b border-slate-200' : ''}`}
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
-          {sourceUrl ? (
+          {/* Only http(s) becomes a link: a stored javascript:/data: URL must never be clickable. */}
+          {isHttpUrl(sourceUrl) ? (
             <a
               href={sourceUrl}
               target="_blank"
