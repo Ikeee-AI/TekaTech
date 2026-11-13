@@ -56,6 +56,11 @@ Run these in Supabase SQL Editor as the project postgres owner:
 7. `backend/sql/user_gadgets.sql` (My Gadgets, 3 Nov 2026: one table, private to the backend)
 8. `backend/sql/user_questions.sql` (per-gadget AI conversation, 3 Nov 2026: one table, private to the backend)
 9. `backend/sql/api_access.sql` (last, to restrict RPC/table grants)
+10. `backend/sql/lock_browser_roles.sql` (always last: removes every browser-role right in `public`, including tables no file names, and stops Supabase's defaults from granting new objects to the browser; 14 Nov 2026)
+
+### Browser-role lock (14 Nov 2026)
+
+A read-only check of production on 14 Nov 2026 found RLS on all ten tables, but three untracked leftover tables (`profiles`, `image_lookups`, `ingestion_queue`, unused by the app) with full `anon`/`authenticated` rights including TRUNCATE (not covered by RLS); default privileges that grant every new table and function to the browser roles; five old policies with no effect; and `set_updated_at()` without a fixed `search_path`. `lock_browser_roles.sql` fixes all of these and is replay-safe. It does not drop the leftover tables (that is a separate decision). To apply on an existing project: paste the file into the SQL Editor of the right project (check the project ref in the URL), run it, then re-run the check query from the PR. Expected: no `browser_grants`, no `policies`, and `anon`/`auth` false for every function except Supabase's `rls_auto_enable()`. The backend uses `service_role`, which keeps full rights, so the app is unaffected.
 
 ### Adding My Gadgets to an existing project
 

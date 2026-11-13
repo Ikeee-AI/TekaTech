@@ -134,4 +134,53 @@ select * from public.keyword_match_spec_documents(
   ('[' || '1,' || repeat('0,', 1534) || '0]')::vector, 'battery', '{}', 0
 );
 reset role;
+
+-- lock_browser_roles.sql: the browser roles hold no right on anything in public, including
+-- objects no migration names, and objects created later get none by default.
+do $$
+declare r record; priv text;
+begin
+  for r in
+    select c.oid, format('%I.%I', n.nspname, c.relname) as qname
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm', 'f')
+      and not exists (select 1 from pg_depend d where d.classid = 'pg_class'::regclass and d.objid = c.oid and d.deptype = 'e')
+  loop
+    foreach priv in array array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'] loop
+      if has_table_privilege('anon', r.oid, priv) or has_table_privilege('authenticated', r.oid, priv) then
+        raise exception 'Browser roles must have no % on %', priv, r.qname;
+      end if;
+    end loop;
+  end loop;
+  for r in
+    select p.oid, p.oid::regprocedure::text as fn from pg_proc p
+    where p.pronamespace = 'public'::regnamespace and p.prokind in ('f', 'p') and p.proname <> 'rls_auto_enable'
+      and not exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e')
+  loop
+    if has_function_privilege('anon', r.oid, 'EXECUTE') or has_function_privilege('authenticated', r.oid, 'EXECUTE') then
+      raise exception 'Browser roles must not execute %', r.fn;
+    end if;
+  end loop;
+  if exists (select 1 from pg_policies where schemaname = 'public') then
+    raise exception 'No RLS policies expected in public: the backend uses the service role';
+  end if;
+end;
+$$;
+
+-- A table and a function created after the migrations: the default privileges must not
+-- hand them to the browser roles (Supabase grants them by default; ci_roles.sql copies that).
+create table public.ci_default_privilege_probe (id int);
+create function public.ci_default_privilege_probe_fn() returns int language sql as 'select 1';
+do $$
+begin
+  if has_table_privilege('anon', 'public.ci_default_privilege_probe', 'SELECT') or
+     has_table_privilege('authenticated', 'public.ci_default_privilege_probe', 'INSERT') then
+    raise exception 'New tables must not be granted to browser roles by default';
+  end if;
+  if has_function_privilege('anon', 'public.ci_default_privilege_probe_fn()', 'EXECUTE') or
+     has_function_privilege('authenticated', 'public.ci_default_privilege_probe_fn()', 'EXECUTE') then
+    raise exception 'New functions must not be executable by browser roles by default';
+  end if;
+end;
+$$;
 rollback;
