@@ -1048,3 +1048,31 @@ Short session, ~09:45–10:12 Manila.
 - Merge #252 and #253 after Manuel approves; watch the main run and the Railway deploy — Ikeee-AI — when approved.
 - Check the Railway resource limit and usage — Ikeee-AI — by 19 Nov.
 - After a few weeks, decide whether to delete the suspended Render `tekatech-api` — Ikeee-AI — not scheduled.
+
+## 2026-11-13 12:19 Asia/Manila — #252 and #253 merged; first deploy without `railway.json` verified
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code ran the merge gate, the merges and the checks; Manuel approved both PRs) · **Task:** S5-IK (Railway plan steps 6–7) · **Branch:** `main`; this log on `tekatech/s5-ik-worklog-13nov`
+
+**Done**
+- Merge gate (`pr-gate`, a manual gate, not enforced protection): both **PASS**. [#252](https://github.com/Ikeee-AI/TekaTech/pull/252): approved by `s2302827-byte` on head `49f764c`; Backend tests, Frontend lint and build, and Database migrations SUCCESS; no SQL/env files. [#253](https://github.com/Ikeee-AI/TekaTech/pull/253): approved by `s2302827-byte` on head `8b7007c`; the same three checks SUCCESS; no SQL/env files; Manuel's test/README files reviewed by Manuel.
+- #252 squash-merged at 04:14:04 UTC as `03ebb34`; #253 at 04:14:27 UTC as `6f3d169` (still CLEAN after #252, no conflict).
+- Main runs: [43364170611](https://github.com/Ikeee-AI/TekaTech/actions/runs/43364170611) (`03ebb34`) and [43364213815](https://github.com/Ikeee-AI/TekaTech/actions/runs/43364213815) (`6f3d169`, 04:14:30 → 04:18:39 UTC) both succeeded on every job: main guard, three checks, deploy and smoke, browser checks. **Merge to live for #253: about 4 min 12 s.**
+- **First deploy without `backend/railway.json`:** Railway deployment at 04:17:35 UTC, SUCCESS. Its settings came from the service itself: start command `uvicorn main:app … --workers 1`, health check `/health` (120 s), 3 restart retries, no config-file mapping. `/version` returns `6f3d16904bd1f6ed826cb628946bcf6cda285311`.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `gh pr view --jq`: `invalid escape sequence "\." in string literal` | jq string escaping inside the shell | Used `[.]` instead of `\.`. Fixed |
+
+**Conflicts and contradictions** — None new. Still open from the 12:07 entry: Railway reports a resource limit of 2 vCPU / 2 GB against the 1 vCPU / 1 GB in earlier notes — Ikeee-AI.
+
+**Decisions** — Merge #252 before #253, then watch #253's main run, because it is the first deploy without `railway.json` — Ikeee-AI.
+
+**Blockers / risks** — None blocking. The resource limit and Railway usage are still to check — Ikeee-AI — by 19 Nov.
+
+**Plan alignment** — Railway plan steps 6 (retire the Render API) and 7 (docs): **Done** (reviewed, checks green, merged, deployed, verified in production). Section 5: CI deploy, rollback rehearsal (#252 merged) and idle check **Done**; 7-day usage **Not started** (~19 Nov). The `railway.json` deprecation (deadline 1 Dec) is **resolved**.
+
+**Next**
+- Check the Railway resource limit (Settings → Resource limits) and usage against the $10 limit — Ikeee-AI — by 19 Nov.
+- Decide later whether to delete the suspended Render `tekatech-api` — Ikeee-AI — not scheduled.
+- UI rebrand (needs the Impeccable hooks decision first) and the custom-domain question — Ikeee-AI — not scheduled.
