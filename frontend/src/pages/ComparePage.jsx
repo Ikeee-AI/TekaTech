@@ -11,6 +11,7 @@ import Button from '../components/ui/Button'
 import AIComparisonPanel from '../components/AIComparisonPanel'
 import CompareAddGadget from '../components/CompareAddGadget'
 import PhoneGlyph from '../components/PhoneGlyph'
+import PriceTag from '../components/PriceTag'
 import { friendlyError } from '../utils/requestErrors'
 import { formatPeso } from '../utils/formatPeso'
 import { extractKeySpecs } from '../utils/keySpecs'
@@ -123,7 +124,7 @@ function PhoneCard({ gadget, index, onRemove, side, notch }) {
             {gadget.name}
           </Link>
         </h2>
-        <p className={`mt-2 font-mono ${price ? 'text-lg sm:text-xl' : 'text-sm opacity-85'}`}>{price ?? 'No price listed'}</p>
+        <p className={`mt-2 font-mono ${price ? 'text-lg sm:text-xl' : 'text-sm opacity-85'}`}><PriceTag gadget={gadget} empty="No price listed" sourceClassName="opacity-85" /></p>
       </div>
       <button
         type="button"

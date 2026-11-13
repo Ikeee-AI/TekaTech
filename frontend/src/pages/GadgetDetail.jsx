@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { Pencil, Calendar } from 'lucide-react'
+import { Pencil, Calendar, ExternalLink } from 'lucide-react'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
@@ -13,7 +13,8 @@ import Button from '../components/ui/Button'
 import ErrorState from '../components/ui/ErrorState'
 import { timeAgo } from '../utils/timeAgo'
 import { friendlyError } from '../utils/requestErrors'
-import { formatPeso } from '../utils/formatPeso'
+import { isHttpUrl } from '../utils/gadgetValidation'
+import PriceTag from '../components/PriceTag'
 import { extractKeySpecs, extractVariants } from '../utils/keySpecs'
 import KeySpecTiles from '../components/KeySpecTiles'
 import PhoneGlyph from '../components/PhoneGlyph'
@@ -82,8 +83,6 @@ export default function GadgetDetail() {
     : null
   const hasOutdated = specList.some((s) => now - new Date(s.verified_at).getTime() > SIX_MONTHS_MS)
 
-  const price = formatPeso(gadget.price_php)
-
   return (
     <div className="flex flex-col gap-4">
       <BackLink to="/">Back to Catalog</BackLink>
@@ -123,7 +122,7 @@ export default function GadgetDetail() {
               <div>
                 <dt className="text-xs font-semibold text-slate-500">Price</dt>
                 <dd className="mt-0.5 font-mono text-2xl text-slate-900">
-                  {price ?? <span className="text-base text-slate-500">Not listed</span>}
+                  <PriceTag gadget={gadget} empty={<span className="text-base text-slate-500">Not listed</span>} />
                 </dd>
               </div>
               <div>
@@ -144,6 +143,12 @@ export default function GadgetDetail() {
               <Button as={Link} to={`/compare?ids=${id}`} variant="primary">
                 Compare
               </Button>
+              {isHttpUrl(gadget.store_url ?? '') && (
+                <Button as="a" href={gadget.store_url} target="_blank" rel="noopener noreferrer" variant="outline" icon={ExternalLink}>
+                  Official store
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </Button>
+              )}
               {/* Admin-curated catalog: PATCH /gadgets/{id} is admin-only. */}
               {user?.app_metadata?.is_admin && (
                 <Button as={Link} to={`/gadgets/${id}/edit`} variant="outline" icon={Pencil}>
