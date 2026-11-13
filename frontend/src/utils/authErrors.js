@@ -31,10 +31,14 @@ export function isEmailNotConfirmed(err) {
 
 /**
  * What an email link left in the URL it opened (#196):
- * - `{ kind: 'error', code }` for an expired or used link (`#error_code=otp_expired`, or the
- *   same in the query string);
- * - `{ kind: 'confirmed' }` for a working sign-up confirmation link (`#access_token=…&type=signup`);
- * - `null` for anything else, including a password-reset link (`type=recovery`).
+ * - `{ kind: 'error', code }` for an expired or used link (`?error_code=otp_expired`, or the
+ *   same in the hash);
+ * - `{ kind: 'confirmed' }` for a working sign-up confirmation link: `?code=…` since the
+ *   switch to the PKCE flow (Supabase only issues the code after confirming the address),
+ *   or `#access_token=…&type=signup` from a link sent before it;
+ * - `null` for anything else, including an old password-reset link (`type=recovery`).
+ * A reset link's `?code=…` also returns `confirmed`; callers skip /reset-password and
+ * password-recovery sessions (AuthLinkNotice).
  */
 export function classifyAuthLink(hash = '', search = '') {
   const fromHash = new URLSearchParams(hash.replace(/^#/, ''))
@@ -43,8 +47,21 @@ export function classifyAuthLink(hash = '', search = '') {
     const code = params.get('error_code') || params.get('error')
     if (code) return { kind: 'error', code }
   }
+  if (fromQuery.get('code')) return { kind: 'confirmed' }
   if (fromHash.get('access_token') && fromHash.get('type') === 'signup') return { kind: 'confirmed' }
   return null
+}
+
+/**
+ * The session tokens of an implicit-flow email link (`#access_token=…&refresh_token=…&type=…`),
+ * or null. Links sent before the PKCE switch still have this shape; see utils/authLink.js.
+ */
+export function readLegacyLinkTokens(hash = '') {
+  const params = new URLSearchParams(hash.replace(/^#/, ''))
+  const accessToken = params.get('access_token')
+  const refreshToken = params.get('refresh_token')
+  if (!accessToken || !refreshToken) return null
+  return { access_token: accessToken, refresh_token: refreshToken, type: params.get('type') }
 }
 
 /**

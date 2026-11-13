@@ -41,6 +41,13 @@ describe('AuthLinkNotice', () => {
     expect(container.innerHTML).toBe('')
   })
 
+  it('says the email is confirmed and offers Log In when the link could not sign in (PKCE, other browser)', () => {
+    renderNotice({ link: CONFIRMED, user: null, loading: false })
+    expect(screen.getByText('Email Confirmed')).toBeTruthy()
+    expect(screen.getByText(/Log in to continue/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: /log in/i }).getAttribute('href')).toBe('/login')
+  })
+
   it('can be dismissed', () => {
     renderNotice({ link: CONFIRMED, user: USER })
     fireEvent.click(screen.getByRole('button', { name: /dismiss/i }))

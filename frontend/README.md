@@ -74,3 +74,5 @@ src/
 ## Auth
 
 Login/signup goes straight to Supabase (`AuthContext.jsx`) — the backend never sees a password, only the resulting JWT (as a Bearer token, attached automatically by `api/client.js`). Routes that mutate data (`/add`, edit, `/corrections`) and the signed-in user's `/my-suggestions` page are wrapped in `ProtectedRoute`; browsing and asking AI questions never require an account.
+
+The Supabase client uses the **PKCE flow** (`supabaseClient.js`). Sign-up confirmation and password-reset emails link back as `?code=…` (errors as `?error=…&error_code=…`), and supabase-js exchanges the code using a verifier stored in the browser that requested the email, so a link only signs in from that browser. Supabase → Authentication → URL Configuration → Redirect URLs must allow the frontend origin and `<origin>/reset-password` (for local work, `http://localhost:5173/**`). `utils/authLink.js` still accepts the older `#access_token=…` links for the first day after the switch.
