@@ -25,18 +25,31 @@ function clearLinkErrorFromUrl() {
  * `link` and `pathname` default to what the URL held when the app loaded (utils/authLink.js).
  */
 export default function AuthLinkNotice({ link = initialAuthLink, pathname = initialPathname }) {
-  const { user, loading } = useAuth()
-  const [notice, setNotice] = useState(() => (pathname === '/reset-password' ? null : link))
+  const { user, loading, emailLink } = useAuth()
+  const [dismissed, setDismissed] = useState(false)
+  const [initial] = useState(() => (pathname === '/reset-password' || link?.type === 'recovery' ? null : link))
+  // An any-browser link (?token_hash=…) is only "confirmed" once Supabase has accepted it.
+  const notice =
+    dismissed || !initial
+      ? null
+      : initial.kind !== 'otp'
+        ? initial
+        : loading || !emailLink
+          ? { kind: 'pending' }
+          : emailLink.ok
+            ? { kind: 'confirmed' }
+            : { kind: 'error', code: emailLink.code }
 
+  const noticeKind = notice?.kind
   useEffect(() => {
-    if (notice?.kind === 'error') clearLinkErrorFromUrl()
-  }, [notice])
+    if (noticeKind === 'error') clearLinkErrorFromUrl()
+  }, [noticeKind])
 
-  if (!notice) return null
+  if (!notice || notice.kind === 'pending') return null
   // Wait for the session supabase-js creates from the link before saying who is signed in.
   if (notice.kind === 'confirmed' && loading) return null
 
-  const dismiss = () => setNotice(null)
+  const dismiss = () => setDismissed(true)
   const dismissButton = (
     <Button size="sm" variant="ghost" icon={X} onClick={dismiss}>
       Dismiss

@@ -9,10 +9,10 @@ const USER = { id: 'u-1', email: 'new.user@example.com', app_metadata: {}, user_
 const CONFIRMED = { kind: 'confirmed' }
 const EXPIRED = { kind: 'error', code: 'otp_expired' }
 
-function renderNotice({ link, pathname = '/', user = null, loading = false }) {
+function renderNotice({ link, pathname = '/', user = null, loading = false, emailLink = null }) {
   return render(
     <MemoryRouter>
-      <AuthContext.Provider value={{ user, loading }}>
+      <AuthContext.Provider value={{ user, loading, emailLink }}>
         <AuthLinkNotice link={link} pathname={pathname} />
       </AuthContext.Provider>
     </MemoryRouter>,
@@ -78,4 +78,23 @@ describe('AuthLinkNotice', () => {
     const { container } = renderNotice({ link: EXPIRED, pathname: '/reset-password' })
     expect(container.innerHTML).toBe('')
   })
+
+  it('any-browser sign-up link: confirmed once Supabase accepted it', () => {
+    renderNotice({ link: { kind: 'otp', type: 'email' }, user: USER, emailLink: { type: 'email', ok: true } })
+    expect(screen.getByText('Email Confirmed')).toBeTruthy()
+  })
+
+  it('any-browser sign-up link: nothing until the check finishes, then expired if refused', () => {
+    const { container } = renderNotice({ link: { kind: 'otp', type: 'email' }, emailLink: null })
+    expect(container.innerHTML).toBe('')
+    cleanup()
+    renderNotice({ link: { kind: 'otp', type: 'email' }, emailLink: { type: 'email', ok: false, code: 'otp_expired' } })
+    expect(screen.getByText('This Email Link Has Expired or Was Already Used')).toBeTruthy()
+  })
+
+  it('leaves an any-browser reset link to the reset page', () => {
+    const { container } = renderNotice({ link: { kind: 'otp', type: 'recovery' }, user: USER, emailLink: { type: 'recovery', ok: true } })
+    expect(container.innerHTML).toBe('')
+  })
 })
+
