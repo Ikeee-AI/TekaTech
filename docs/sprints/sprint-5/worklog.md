@@ -1150,3 +1150,38 @@ Short session, ~09:45–10:12 Manila.
 - Railway 7-day usage — Ikeee-AI — ~19 Nov.
 - #249 follow-up, or a hand-over if no reply — Ikeee-AI.
 - Decide the next bigger item: #201 catalog content, the UI rebrand (Impeccable hooks decision first), or a custom domain — Ikeee-AI.
+
+## 2026-11-13 14:27 Asia/Manila — Catalog gap check for #201; task handed to Manuel
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code ran the read-only checks and wrote the hand-over; Ikeee-AI decided to hand it to Manuel) · **Task:** #201 (catalog content) · **Branch:** `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- Production catalog check (read-only `GET`s against the Railway API): **4 gadgets**, `/stats/spec-coverage` = 3 of 4.
+  - iPhone 15: 1 block, 425 characters, indexed; no price, date or image.
+  - Infinix Note 50 Pro 5G+: 1 block, 171 characters, indexed; the image host sends `Cross-Origin-Resource-Policy: same-site`, so browsers block it.
+  - Poco x7 Pro: 1 block, 891 characters, indexed, no source URL; release date 2026-10-12 looks wrong. The image is now a real JPEG.
+  - Rog Ally: no specs.
+- Data pack `docs/catalog-data/smartphones-2026-11-10.json` (#248, Manuel): 24 gadgets (20 `add`, 3 `fix`, Infinix `blocked`), 25 spec blocks, 26,515 characters; 4 phones dropped. **Never entered into production.** Image links tested today: all 13 return real images, none with a cross-site block.
+- #201 assigned to `s2302827-byte` (Ikeee-AI stays assigned) with a task comment: the fixes first, then the 20 phones, Index All Pending, done-criteria, rate limits (20/h), cost, admin-access note, optional import script as a reviewed PR. Evidence: [comment](https://github.com/Ikeee-AI/TekaTech/issues/201#issuecomment-6845895208).
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| iPhone 16 image check: `[WinError 10054] An existing connection was forcibly closed` | One-off network reset | Retried: 206, `image/png`, PNG signature. Fixed |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #248 (10 Nov) delivered the data pack for #201, but production still has the 3 Nov catalog | AI answers mostly "No Evidence Found"; Compare and My Gadgets thin | Entry handed to Manuel on #201. Open, Manuel |
+| Adding data is admin-only (#195); whether Manuel's production account is an admin is unknown (not checked: needs the production service key) | Manuel may be unable to start | Asked him on #201 to tell Ikeee-AI. Making him admin is the owner's decision. Open, Ikeee-AI |
+
+**Decisions** — Hand #201's data entry to Manuel, the author of the data pack — Ikeee-AI.
+
+**Blockers / risks** — Manuel may need admin access on production — Ikeee-AI. #249 still waits on Jopher — Jopher.
+
+**Plan alignment** — #201: **Not started** in production (data pack ready, not entered).
+
+**Next**
+- Manuel replies on #201 with a start date; Ikeee-AI decides on admin access if he asks — Manuel / Ikeee-AI.
+- Railway 7-day usage — Ikeee-AI — ~19 Nov.
