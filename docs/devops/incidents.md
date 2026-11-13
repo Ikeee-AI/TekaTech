@@ -123,3 +123,23 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
   2. Look at an automatic `incident` issue on the day it opens: re-run the health check by hand and check the host logs while they still cover the window. Without that, recovery time can only be bounded by the next daily run.
   - Follow-up issue: none.
 - **Lesson:** an automatic issue is only detection. Without someone looking the same day, the cause and the real recovery time are lost.
+
+## 2026-11-11: first Railway deploys from CI failed (`Invalid RAILWAY_TOKEN`)
+
+**Status: resolved 11 Nov 2026, recorded 13 Nov** (from the 12 Nov worklog and the run logs). Failed production deploy; no user impact. Owner: Ikeee-AI.
+
+- **Affected:** #250's merge commit `c4cce99`, [main run 43068375474](https://github.com/Ikeee-AI/TekaTech/actions/runs/43068375474), and the next main commit `3658c58`, [run 43068554699](https://github.com/Ikeee-AI/TekaTech/actions/runs/43068554699) attempts 1 and 2. All failed at the new `Deploy backend to Railway` step. In each run the Render frontend hook had already run and `Verify live commit…` was skipped.
+- **Impact:** none for users. The live API was the Railway build deployed by hand during the cutover (`02762f5`, about 00:33 Manila on 12 Nov), and it kept serving. The frontend rebuilds that ran contained no frontend change (#250 changed no `frontend/` files). For about 11 minutes, `main` was not what the API served.
+- **Timeline (UTC, 11 Nov):**
+  - 17:27:39: main run for `c4cce99` started.
+  - 17:28:55: failed at `Deploy backend to Railway`: `Invalid RAILWAY_TOKEN. Please check that it is valid and has access to the resource you're trying to use.` **Detected** at once, while the owner and Claude Code were watching the first CI deploy.
+  - 17:28:47–17:30:25: `3658c58` run, attempt 1, same error. 17:33:41–17:33:55: attempt 2, after the secret was saved again, same error.
+  - Between 17:34 and 17:38 (exact time not recorded): cause found. A third project token was tested from a folder that wasn't linked, then saved with `gh secret set RAILWAY_TOKEN --body …`.
+  - 17:38:23–17:39:48: attempt 3 succeeded: Railway deploy of `3658c58`, deployed smoke passed. **Recovered: about 11 min** from the first failure (17:28:55 → 17:39:48).
+- **Root cause:** the token was piped into `gh secret set` from Windows PowerShell 5.1, which added a trailing CRLF to the stored secret. Railway's CLI sent the token with the line break and got "Invalid". The token itself was valid; the manual `railway up` during the cutover had worked from a logged-in CLI, not with this secret.
+- **Fix:** a new token saved with `--body` (no pipe). The two earlier tokens were deleted in Railway by the owner.
+- **Prevention (Ikeee-AI):**
+  1. Runbook: save secrets with `--body`, never by piping from PowerShell, and test a new token from a folder that isn't linked first (`docs/deploy-runbook.md`, Railway section; added 13 Nov).
+  - Follow-up issue: none.
+- **Lesson:** a secret can be wrong in ways nobody can see. When a credential that works by hand fails in CI, suspect how it was stored before suspecting the credential.
+

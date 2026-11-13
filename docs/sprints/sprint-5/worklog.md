@@ -1048,3 +1048,82 @@ Short session, ~09:45–10:12 Manila.
 - Merge #252 and #253 after Manuel approves; watch the main run and the Railway deploy — Ikeee-AI — when approved.
 - Check the Railway resource limit and usage — Ikeee-AI — by 19 Nov.
 - After a few weeks, decide whether to delete the suspended Render `tekatech-api` — Ikeee-AI — not scheduled.
+
+## 2026-11-13 12:19 Asia/Manila — #252 and #253 merged; first deploy without `railway.json` verified
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code ran the merge gate, the merges and the checks; Manuel approved both PRs) · **Task:** S5-IK (Railway plan steps 6–7) · **Branch:** `main`; this log on `tekatech/s5-ik-worklog-13nov`
+
+**Done**
+- Merge gate (`pr-gate`, a manual gate, not enforced protection): both **PASS**. [#252](https://github.com/Ikeee-AI/TekaTech/pull/252): approved by `s2302827-byte` on head `49f764c`; Backend tests, Frontend lint and build, and Database migrations SUCCESS; no SQL/env files. [#253](https://github.com/Ikeee-AI/TekaTech/pull/253): approved by `s2302827-byte` on head `8b7007c`; the same three checks SUCCESS; no SQL/env files; Manuel's test/README files reviewed by Manuel.
+- #252 squash-merged at 04:14:04 UTC as `03ebb34`; #253 at 04:14:27 UTC as `6f3d169` (still CLEAN after #252, no conflict).
+- Main runs: [43364170611](https://github.com/Ikeee-AI/TekaTech/actions/runs/43364170611) (`03ebb34`) and [43364213815](https://github.com/Ikeee-AI/TekaTech/actions/runs/43364213815) (`6f3d169`, 04:14:30 → 04:18:39 UTC) both succeeded on every job: main guard, three checks, deploy and smoke, browser checks. **Merge to live for #253: about 4 min 12 s.**
+- **First deploy without `backend/railway.json`:** Railway deployment at 04:17:35 UTC, SUCCESS. Its settings came from the service itself: start command `uvicorn main:app … --workers 1`, health check `/health` (120 s), 3 restart retries, no config-file mapping. `/version` returns `6f3d16904bd1f6ed826cb628946bcf6cda285311`.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `gh pr view --jq`: `invalid escape sequence "\." in string literal` | jq string escaping inside the shell | Used `[.]` instead of `\.`. Fixed |
+
+**Conflicts and contradictions** — None new. Still open from the 12:07 entry: Railway reports a resource limit of 2 vCPU / 2 GB against the 1 vCPU / 1 GB in earlier notes — Ikeee-AI.
+
+**Decisions** — Merge #252 before #253, then watch #253's main run, because it is the first deploy without `railway.json` — Ikeee-AI.
+
+**Blockers / risks** — None blocking. The resource limit and Railway usage are still to check — Ikeee-AI — by 19 Nov.
+
+**Plan alignment** — Railway plan steps 6 (retire the Render API) and 7 (docs): **Done** (reviewed, checks green, merged, deployed, verified in production). Section 5: CI deploy, rollback rehearsal (#252 merged) and idle check **Done**; 7-day usage **Not started** (~19 Nov). The `railway.json` deprecation (deadline 1 Dec) is **resolved**.
+
+**Next**
+- Check the Railway resource limit (Settings → Resource limits) and usage against the $10 limit — Ikeee-AI — by 19 Nov.
+- Decide later whether to delete the suspended Render `tekatech-api` — Ikeee-AI — not scheduled.
+- UI rebrand (needs the Impeccable hooks decision first) and the custom-domain question — Ikeee-AI — not scheduled.
+
+## 2026-11-13 12:38 Asia/Manila — Railway usage and resource limit checked; limit kept at 2 vCPU / 2 GB
+**Who:** Ikeee-AI (AI-assisted: yes — Ikeee-AI opened the Railway dashboard pages and sent screenshots; Claude Code read them and updated the docs) · **Task:** S5-IK (Railway plan section 5) · **Branch:** `tekatech/s5-ik-worklog-13nov`
+
+**Done**
+- Railway → Project Settings → Usage (about 12:23 Manila): current usage **$0.09** (memory $0.09, CPU $0.00, egress $0.00); Railway's estimated usage for the period **$0.19** (memory $0.18). Well inside the Hobby plan's included $5 and the $10 usage limit. The screen does not show the billing-period dates. Evidence: owner screenshot `Screenshot 2026-11-13 122305.png` (local).
+- `tekatech-api` → Settings → Scale (about 12:33 Manila): Southeast Asia (Singapore), 1 replica, **replica limits 2 vCPU / 2 GB** (plan limit 8 / 8). This matches `.railway/railway.ts` (`cpu: 2, memoryBytes: 2000000000`). Evidence: owner screenshot `Screenshot 2026-11-13 123323.png` (local).
+- Corrected the "1 vCPU / 1 GB" note: `docs/deploy-runbook.md` now states the current limit; `docs/devops/railway-migration-plan.md` keeps the original note with a dated correction.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Notes from 11–12 Nov (runbook, plan, project notes) said replica cap 1 vCPU / 1 GB; Railway shows 2 vCPU / 2 GB | None on cost: Railway bills actual use, and the limit is only a ceiling (usage so far $0.09, CPU $0.00) | Owner keeps 2/2. Docs corrected. Any later change goes through `.railway/railway.ts` + `railway config apply`, not the dashboard sliders (the file would put a dashboard change back). Resolved |
+
+**Decisions** — Keep the replica limit at 2 vCPU / 2 GB — Ikeee-AI.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — Railway plan section 5 "usage after 7 days": **Partial**. After about 1.5 days the estimate is $0.19 for the period, far under $5. The 7-day reading is still due ~19 Nov.
+
+**Next** — Read Railway usage again around 19 Nov and record the 7-day figure — Ikeee-AI.
+
+## 2026-11-13 13:08 Asia/Manila — Post-Sprint 5 metrics row; 11 Nov token incident recorded; #249 nudged
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code ran `pipeline_metrics.py`, wrote the row, the incident entry and the nudge; Ikeee-AI approved each) · **Task:** S5-IK · **Branch:** `tekatech/s5-ik-worklog-13nov`
+
+**Done**
+- Metrics row "Post-Sprint 5 (7–13 Nov UTC)" in `docs/devops/metrics.md`: PR 1.96 min (18 runs), main 2.07 min (5 runs), success 95.7 % (22/23; 6 cancelled/skipped excluded), 4 deploys, merge-to-live 5.15 min (4 samples), 1 failed deploy. Recovery: about 11 min for the failed deploy; within about 24 h (upper bound) for the 8 Nov health-check timeout. Marked as a small sample, not comparable. Evidence: `docs/evidence/post-sprint5-metrics-2026-11-13.json`, commit `e754981`.
+- Incident "2026-11-11: first Railway deploys from CI failed (`Invalid RAILWAY_TOKEN`)" added to `docs/devops/incidents.md`: `c4cce99` run 43068375474 and `3658c58` attempts 1–2 failed; attempt 3 succeeded at 17:39:48 UTC (about 11 min). No user impact. Cause: a CRLF added when the token was piped from PowerShell into `gh secret set`. Prevention: a runbook line (save with `--body`, test the token from a folder that isn't linked).
+- Nudged Jopher on [#249](https://github.com/Ikeee-AI/TekaTech/pull/249): Mika's 10 Nov changes-requested review is still open (most `/login` entry points don't pass `from`). Asked for a fix or an expected date, and offered a hand-over.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| `incidents.md` says every failed production deploy gets an entry; the 11 Nov token failure was only in the worklog | Incomplete incident log | Entry added (13 Nov). The exact time the cause was found was not recorded, so the entry gives a range (17:34–17:38 UTC). Resolved |
+
+**Decisions** — Use 7–13 Nov UTC as the window (right after the Sprint 5 final row's 6 Nov cut-off) — Ikeee-AI.
+
+**Blockers / risks** — #249 waits on Jopher — Jopher.
+
+**Plan alignment** — No task row change; post-Sprint 5 operations.
+
+**Next**
+- Batch this branch (`tekatech/s5-ik-worklog-13nov`: worklog, metrics, incident, runbook) into the next PR — Ikeee-AI.
+- Railway 7-day usage — Ikeee-AI — ~19 Nov.
+- If Jopher doesn't reply, decide on a #249 hand-over — Ikeee-AI.
