@@ -30,6 +30,7 @@ import { useAuth } from '../hooks/useAuth'
 import AIAnswerPanel from '../components/AIAnswerPanel'
 import TrendingQuestions from '../components/TrendingQuestions'
 import SignInPrompt from '../components/SignInPrompt'
+import HowItWorks from '../components/HowItWorks'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { friendlyError } from '../utils/requestErrors'
 import { gadgetDisplayName } from '../utils/gadgetName'
@@ -397,6 +398,8 @@ export default function GadgetList() {
       <p role="status" className="sr-only">
         {hasFilters ? `${filtered.length} ${filtered.length === 1 ? 'phone matches' : 'phones match'} your filters` : ''}
       </p>
+
+      {showHero && <HowItWorks signedIn={signedIn} />}
 
       {showHero &&
         (featured.length > 0 ? (
