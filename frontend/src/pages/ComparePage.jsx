@@ -10,9 +10,10 @@ import BackLink from '../components/ui/BackLink'
 import Button from '../components/ui/Button'
 import AIComparisonPanel from '../components/AIComparisonPanel'
 import CompareAddGadget from '../components/CompareAddGadget'
-import PhoneGlyph from '../components/PhoneGlyph'
+import ProductImage from '../components/ProductImage'
 import { friendlyError } from '../utils/requestErrors'
 import { formatPeso } from '../utils/formatPeso'
+import { withoutDoubledBrand } from '../utils/gadgetName'
 import { extractKeySpecs } from '../utils/keySpecs'
 
 // Matches the backend's MAX_COMPARISON_GADGETS (routers/comparisons.py).
@@ -96,12 +97,6 @@ function barWidths(row) {
   })
 }
 
-function GadgetPicture({ gadget, className }) {
-  const [failedSrc, setFailedSrc] = useState(null)
-  if (!gadget.image_url || failedSrc === gadget.image_url) return <PhoneGlyph className={className} />
-  return <img src={gadget.image_url} alt="" className="h-full w-full object-cover" onError={() => setFailedSrc(gadget.image_url)} />
-}
-
 function PhoneCard({ gadget, index, onRemove, side, notch }) {
   const style = SLOT_STYLES[index % SLOT_STYLES.length]
   const right = side === 'right'
@@ -113,17 +108,15 @@ function PhoneCard({ gadget, index, onRemove, side, notch }) {
         right ? 'flex-row-reverse text-right sm:pl-20' : notch ? 'sm:pr-20' : ''
       }`}
     >
-      <div className="shrink-0 w-16 h-24 sm:w-20 sm:h-28 rounded-2xl bg-black/10 overflow-hidden flex items-center justify-center">
-        <GadgetPicture gadget={gadget} className="w-10 h-16 sm:w-12 sm:h-20" />
-      </div>
+      <ProductImage src={gadget.image_url} className="shrink-0 w-16 sm:w-20 aspect-[3/4]" glyphClassName="w-2/3 h-2/3" padding="p-2" />
       <div className="min-w-0 flex-1">
         <p className="font-mono text-[11px] font-semibold opacity-85 uppercase truncate">{gadget.brand}</p>
         <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-[-0.04em] leading-none break-words">
           <Link to={`/gadgets/${gadget.id}`} className="hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current">
-            {gadget.name}
+            {withoutDoubledBrand(gadget.name)}
           </Link>
         </h2>
-        <p className={`mt-2 font-mono ${price ? 'text-lg sm:text-xl' : 'text-sm opacity-85'}`}>{price ?? 'No price listed'}</p>
+        <p className={`mt-2 ${price ? 'text-lg sm:text-xl font-bold tabular-nums' : 'text-sm opacity-85'}`}>{price ?? 'No price listed'}</p>
       </div>
       <button
         type="button"
@@ -455,7 +448,7 @@ export default function ComparePage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 ref={headingRef} tabIndex={-1} className="text-4xl font-extrabold tracking-[-0.05em] text-slate-900 focus:outline-none">
-            Comparing {gadgets.length} {gadgets.length === 1 ? 'Gadget' : 'Gadgets'}
+            Comparing {gadgets.length} {gadgets.length === 1 ? 'Phone' : 'Phones'}
           </h1>
           <p className="mt-1 text-sm text-slate-600">Side by side from official sources. Gaps are shown, never filled in.</p>
         </div>

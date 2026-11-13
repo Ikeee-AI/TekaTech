@@ -16,7 +16,8 @@ import { friendlyError } from '../utils/requestErrors'
 import { formatPeso } from '../utils/formatPeso'
 import { extractKeySpecs, extractVariants } from '../utils/keySpecs'
 import KeySpecTiles from '../components/KeySpecTiles'
-import PhoneGlyph from '../components/PhoneGlyph'
+import ProductImage from '../components/ProductImage'
+import { withoutDoubledBrand } from '../utils/gadgetName'
 import VariantsList from '../components/VariantsList'
 
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
@@ -34,7 +35,6 @@ export default function GadgetDetail() {
   const { user } = useAuth()
   const [state, setState] = useState({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [imgError, setImgError] = useState(false)
   const [specs, setSpecs] = useState(null)
   const [now] = useState(() => Date.now())
 
@@ -62,7 +62,7 @@ export default function GadgetDetail() {
       <div className="max-w-3xl mx-auto">
         <BackLink to="/">Back to Catalog</BackLink>
         <ErrorState
-          title={notFound ? 'Gadget Not Found' : "Couldn't Load This Gadget"}
+          title={notFound ? 'Phone Not Found' : "Couldn't Load This Phone"}
           message={notFound ? 'It may have been deleted, or the link is wrong.' : state.error}
           onRetry={notFound ? undefined : () => setAttempt((n) => n + 1)}
           secondaryAction={
@@ -75,7 +75,6 @@ export default function GadgetDetail() {
     )
   }
 
-  const showImage = gadget.image_url && !imgError
   const specList = specs ?? []
   const oldestVerified = specList.length
     ? specList.reduce((oldest, s) => (new Date(s.verified_at) < new Date(oldest) ? s.verified_at : oldest), specList[0].verified_at)
@@ -90,13 +89,12 @@ export default function GadgetDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-3.5">
         <article className="bg-white border border-slate-200 rounded-[28px] p-5 sm:p-6 flex flex-col sm:flex-row gap-5 sm:gap-6">
-          <div className="sm:w-40 h-56 shrink-0 bg-slate-100 rounded-[22px] overflow-hidden flex items-center justify-center">
-            {showImage ? (
-              <img src={gadget.image_url} alt={gadget.name} className="h-full w-full object-cover" onError={() => setImgError(true)} />
-            ) : (
-              <PhoneGlyph className="w-24 h-44" />
-            )}
-          </div>
+          <ProductImage
+            src={gadget.image_url}
+            alt={gadget.name}
+            className="w-32 sm:w-40 self-center sm:self-start aspect-[3/4] shrink-0"
+            glyphClassName="w-1/2 h-3/4"
+          />
 
           <div className="min-w-0 flex flex-col">
             <div className="flex flex-wrap items-center gap-2">
@@ -111,20 +109,22 @@ export default function GadgetDetail() {
                     hasOutdated ? 'text-amber-800 bg-amber-50 border-amber-200' : 'text-slate-700 bg-slate-100 border-slate-200'
                   }`}
                 >
-                  {hasOutdated ? 'Some Specs May Be Outdated · ' : ''}Verified {timeAgo(oldestVerified)}
+                  {hasOutdated ? 'Some Specs May Be Outdated · ' : ''}Added {timeAgo(oldestVerified)}
                 </span>
               )}
             </div>
 
-            <h1 className="mt-3 text-4xl sm:text-5xl font-extrabold tracking-[-0.05em] leading-[0.95] text-slate-900 break-words">{gadget.name}</h1>
+            <h1 className="mt-3 text-4xl sm:text-5xl font-extrabold tracking-[-0.05em] leading-[0.95] text-slate-900 break-words">{withoutDoubledBrand(gadget.name)}</h1>
             <p className="mt-1.5 text-slate-600">{gadget.brand}</p>
 
             <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
               <div>
                 <dt className="text-xs font-semibold text-slate-500">Price</dt>
-                <dd className="mt-0.5 font-mono text-2xl text-slate-900">
-                  {price ?? <span className="text-base text-slate-500">Not listed</span>}
-                </dd>
+                {price ? (
+                  <dd className="mt-0.5 text-2xl font-bold tabular-nums text-slate-900">{price}</dd>
+                ) : (
+                  <dd className="mt-1.5 text-base text-slate-500">Not listed</dd>
+                )}
               </div>
               <div>
                 <dt className="text-xs font-semibold text-slate-500">Released</dt>
@@ -167,7 +167,7 @@ export default function GadgetDetail() {
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-3.5 items-start">
         <GadgetChatPanel
           gadgetId={id}
-          gadgetName={gadget.name}
+          gadgetName={withoutDoubledBrand(gadget.name)}
           category={gadget.category}
           suggestions={['What chip does it use?', 'How long does the battery last?', 'Is it water resistant?']}
         />

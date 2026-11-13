@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ArrowRight, Scale, Trash2, ImageOff, Sparkles } from 'lucide-react'
+import { LayoutDashboard, ArrowRight, Scale, Trash2, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
 import Button from '../components/ui/Button'
+import ProductImage from '../components/ProductImage'
 import { friendlyError } from '../utils/requestErrors'
 
 // Same bounds as the Compare page and the backend (MAX_COMPARISON_GADGETS).
@@ -185,9 +186,6 @@ export default function MyGadgets() {
 }
 
 function MyGadgetCard({ gadget, selected, removing, onToggle, onRemove }) {
-  const [imgError, setImgError] = useState(false)
-  const showImage = gadget.image_url && !imgError
-
   return (
     <li
       className={`bg-white rounded-xl p-5 border shadow-xs flex flex-col gap-4 ${
@@ -195,13 +193,7 @@ function MyGadgetCard({ gadget, selected, removing, onToggle, onRemove }) {
       }`}
     >
       <div className="flex gap-4">
-        <div className="w-16 h-16 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
-          {showImage ? (
-            <img src={gadget.image_url} alt="" className="w-full h-full object-cover" onError={() => setImgError(true)} />
-          ) : (
-            <ImageOff size={18} className="text-slate-300" aria-hidden="true" />
-          )}
-        </div>
+        <ProductImage src={gadget.image_url} className="w-16 aspect-square shrink-0 !rounded-lg" glyphClassName="w-1/2 h-3/4" padding="p-1.5" />
         <div className="min-w-0 flex flex-col justify-center">
           <span className="font-mono text-xs text-slate-600">{gadget.category}</span>
           <h2 className="text-lg font-bold text-slate-900 truncate">
