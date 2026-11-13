@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ArrowDown, ArrowUp, LogIn, Sparkles, SquarePen } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
@@ -31,6 +31,7 @@ function prefersReducedMotion() {
  */
 export default function GadgetChatPanel({ gadgetId, gadgetName, category, suggestions = [] }) {
   const { user } = useAuth() ?? {}
+  const location = useLocation()
   const thread = useGadgetThread(gadgetId, user?.id)
   const {
     plainLanguage,
@@ -200,7 +201,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
           </p>
           {!user && (
             <p className="text-xs text-slate-500 mt-1">
-              <Link to="/login" className="inline-flex items-center gap-1 font-medium text-sage-700 hover:underline">
+              <Link to="/login" state={{ from: location }} className="inline-flex items-center gap-1 font-medium text-sage-700 hover:underline">
                 <LogIn size={12} aria-hidden="true" /> Log in
               </Link>{' '}
               to keep this conversation for next time.

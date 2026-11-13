@@ -1,7 +1,7 @@
 // #196: resend the sign-up confirmation email, from ?mode=resend or after "Email not confirmed".
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthContext } from '../context/authContextValue'
 import { takeReturnPath } from '../utils/returnPath'
 import Login from './Login'
@@ -16,14 +16,20 @@ function renderLogin({ url = '/login', auth = {}, from } = {}) {
     resendConfirmation: vi.fn().mockResolvedValue(undefined),
     ...auth,
   }
+  const u = new URL(url, 'http://localhost')
+  const entry = from ? { pathname: u.pathname, search: u.search, state: { from } } : url
   render(
-    <MemoryRouter initialEntries={[from ? { pathname: url.split('?')[0], search: url.includes('?') ? `?${url.split('?')[1]}` : '', state: { from } } : url]}>
+    <MemoryRouter initialEntries={[entry]}>
       <AuthContext.Provider value={value}>
         <Login />
       </AuthContext.Provider>
     </MemoryRouter>,
   )
   return value
+}
+
+function Where() {
+  return <output data-testid="where">{useLocation().pathname}</output>
 }
 
 const type = (label, text) => fireEvent.change(screen.getByLabelText(label), { target: { value: text } })
@@ -52,6 +58,25 @@ describe('Sign up remembers the starting page (#196 item 4)', () => {
     fireEvent.click(screen.getByRole('button', { name: /send confirmation email/i }))
     await screen.findByText('Check Your Email')
     expect(takeReturnPath()).toBe('/gadgets/42?ask=chip')
+  })
+
+  it('ignores a starting page that is the log-in page itself', async () => {
+    const signIn = vi.fn().mockResolvedValue({ app_metadata: {} })
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { from: { pathname: '/login', search: '?mode=signup' } } }]}>
+        <AuthContext.Provider value={{ signIn, signUp: vi.fn(), resendConfirmation: vi.fn() }}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="*" element={<Where />} />
+          </Routes>
+        </AuthContext.Provider>
+      </MemoryRouter>,
+    )
+    type(/email/i, 'member@example.com')
+    type(/password/i, 'long-enough-1')
+    fireEvent.click(screen.getByRole('button', { name: 'Log In' }))
+    // A member with no usable starting page lands on My Gadgets, not back on Log In.
+    expect((await screen.findByTestId('where')).textContent).toBe('/my-gadgets')
   })
 
   it('saves nothing when the user opened Log In directly', async () => {

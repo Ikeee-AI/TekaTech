@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LogIn, Mail, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { initialAuthLink, initialPathname } from '../utils/authLink'
@@ -28,6 +28,7 @@ function clearLinkErrorFromUrl() {
 export default function AuthLinkNotice({ link = initialAuthLink, pathname = initialPathname }) {
   const { user, loading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [notice, setNotice] = useState(() => (pathname === '/reset-password' ? null : link))
   const returned = useRef(false)
 
@@ -70,10 +71,10 @@ export default function AuthLinkNotice({ link = initialAuthLink, pathname = init
           title="This Email Link Has Expired or Was Already Used"
           action={
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="primary" icon={Mail} as={Link} to="/login?mode=resend" onClick={dismiss}>
+              <Button size="sm" variant="primary" icon={Mail} as={Link} to="/login?mode=resend" state={{ from: location }} onClick={dismiss}>
                 Send a New Link
               </Button>
-              <Button size="sm" variant="secondary" icon={LogIn} as={Link} to="/login" onClick={dismiss}>
+              <Button size="sm" variant="secondary" icon={LogIn} as={Link} to="/login" state={{ from: location }} onClick={dismiss}>
                 Log In
               </Button>
               {dismissButton}

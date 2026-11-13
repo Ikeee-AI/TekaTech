@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ChevronDown, FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save, Loader2, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
@@ -444,6 +444,7 @@ function SpecSourceGroup({ group, defaultOpen, user, isAdmin, gadgetId, indexing
 
 export default function SpecManager({ gadgetId, onSpecsChange }) {
   const { user } = useAuth()
+  const location = useLocation()
   const isAdmin = Boolean(user?.app_metadata?.is_admin)
   const [state, setState] = useState({ status: 'loading', specs: [] })
   const [showForm, setShowForm] = useState(false)
@@ -549,7 +550,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
           )
         ) : (
           !user && (
-            <Button as={Link} to="/login" variant="outline" icon={LogIn}>
+            <Button as={Link} to="/login" state={{ from: location }} variant="outline" icon={LogIn}>
               Log In to Suggest Corrections
             </Button>
           )

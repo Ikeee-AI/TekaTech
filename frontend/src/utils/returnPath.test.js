@@ -21,6 +21,9 @@ describe('safePath', () => {
     ['a script URL', 'javascript:alert(1)'],
     ['the log-in page', '/login?mode=signup'],
     ['the reset page', '/reset-password'],
+    ['the admin Add Gadget page', '/add'],
+    ['the admin Review Queue', '/corrections'],
+    ['an admin edit page', '/gadgets/g1/edit'],
     ['nothing', null],
   ])('rejects %s', (_label, path) => {
     expect(safePath(path)).toBeNull()

@@ -6,8 +6,11 @@
 const KEY = 'tekatech.returnAfterConfirm'
 // Supabase confirmation links expire after 24 hours by default; an older path is no use.
 const MAX_AGE_MS = 24 * 60 * 60 * 1000
-// Pages that make no sense to return to after confirming.
-const SKIP = ['/login', '/forgot-password', '/reset-password']
+// Pages that make no sense to return to after confirming: the log-in and password pages, and
+// admin-only pages (App.jsx), where a newly confirmed account is never an admin and would be
+// bounced to the catalog.
+const SKIP = ['/login', '/forgot-password', '/reset-password', '/add', '/corrections']
+const SKIP_PATTERNS = [/^\/gadgets\/[^/]+\/edit\/?$/]
 
 /** A same-site path such as "/compare?ids=1,2", or null for anything else. */
 export function safePath(path) {
@@ -19,6 +22,7 @@ export function safePath(path) {
     return null
   }
   if (url.origin !== window.location.origin || SKIP.includes(url.pathname)) return null
+  if (SKIP_PATTERNS.some((pattern) => pattern.test(url.pathname))) return null
   return url.pathname + url.search + url.hash
 }
 
