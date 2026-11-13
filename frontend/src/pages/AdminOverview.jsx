@@ -32,6 +32,26 @@ function Stat({ label, value, hint }) {
   )
 }
 
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
+
+// A panel that scrolls on its own once its content is taller than the cap, so a long gadget list or
+// day list doesn't push the rest of the page down. Focusable, so keyboard users can scroll it too.
+function ScrollPanel({ label, maxHeight = 'max-h-[26rem]', className = '', children }) {
+  return (
+    <div
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+      className={`overflow-auto overscroll-contain ${maxHeight} ${focusRing} ${className}`}
+    >
+      {children}
+    </div>
+  )
+}
+
+// Header cells stay visible while the table body scrolls.
+const stickyHead = 'sticky top-0 z-10 bg-white whitespace-nowrap text-left text-gray-600 shadow-[inset_0_-1px_0_var(--color-slate-200)]'
+
 function Section({ id, title, children }) {
   return (
     <section aria-labelledby={id} className="mb-8">
@@ -117,15 +137,18 @@ export default function AdminOverview() {
           />
         </div>
         {catalog.gadgets_without_specs.length > 0 && (
-          <Alert tone="warning" title="Gadgets with no specs">
-            {catalog.gadgets_without_specs.join(', ')}. AI questions about them get “No Evidence Found”.
+          <Alert tone="warning" title={`Gadgets with no specs (${catalog.gadgets_without_specs.length})`}>
+            <ScrollPanel label="Gadgets with no specs" maxHeight="max-h-28" className="rounded">
+              {catalog.gadgets_without_specs.join(', ')}.
+            </ScrollPanel>
+            AI questions about them get “No Evidence Found”.
           </Alert>
         )}
         {catalog.per_gadget.length > 0 && (
-          <div className="overflow-x-auto mt-4 bg-white border border-slate-200 rounded-xl">
+          <ScrollPanel label="Spec chunks per gadget" className="mt-4 bg-white border border-slate-200 rounded-xl">
             <table className="w-full text-sm">
               <caption className="sr-only">Spec chunks per gadget</caption>
-              <thead className="text-left text-gray-600 border-b border-slate-200">
+              <thead className={stickyHead}>
                 <tr>
                   <th scope="col" className="px-4 py-2 font-medium">Gadget</th>
                   <th scope="col" className="px-4 py-2 font-medium text-right">Indexed</th>
@@ -148,7 +171,7 @@ export default function AdminOverview() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollPanel>
         )}
       </Section>
 
@@ -165,10 +188,10 @@ export default function AdminOverview() {
           {usage.rows_without_tokens > 0 && ` ${usage.rows_without_tokens} logged answer(s) have no token counts.`}
           {usage.truncated && ' Only the most recent 1,000 answers were counted.'}
         </Alert>
-        <div className="overflow-x-auto mt-4 bg-white border border-slate-200 rounded-xl">
+        <ScrollPanel label="Questions and estimated spend per day" className="mt-4 bg-white border border-slate-200 rounded-xl">
           <table className="w-full text-sm">
             <caption className="sr-only">Answered questions and estimated spend per day</caption>
-            <thead className="text-left text-gray-600 border-b border-slate-200">
+            <thead className={stickyHead}>
               <tr>
                 <th scope="col" className="px-4 py-2 font-medium">Day</th>
                 <th scope="col" className="px-4 py-2 font-medium">Questions</th>
@@ -186,7 +209,7 @@ export default function AdminOverview() {
                       <span className="tabular-nums w-8">{d.questions}</span>
                       <span
                         aria-hidden="true"
-                        className="h-2 rounded bg-sage-500"
+                        className="inline-block h-2 rounded bg-sage-600"
                         style={{ width: `${(d.questions / maxQuestions) * 120}px` }}
                       />
                     </div>
@@ -198,7 +221,7 @@ export default function AdminOverview() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollPanel>
       </Section>
 
       <Section id="overview-users" title="Users">

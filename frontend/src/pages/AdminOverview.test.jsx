@@ -59,7 +59,14 @@ describe('AdminOverview', () => {
 
     expect(await screen.findByRole('heading', { name: /Admin Overview/ })).toBeTruthy()
     expect(screen.getByText('1 of 3')).toBeTruthy()
-    expect(screen.getByText(/Rog Ally\. AI questions about them get/)).toBeTruthy()
+    expect(screen.getByText('Gadgets with no specs (1)')).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Gadgets with no specs' }).textContent).toBe('Rog Ally.')
+    // Long panels scroll on their own and can be scrolled from the keyboard.
+    for (const name of ['Gadgets with no specs', 'Spec chunks per gadget', 'Questions and estimated spend per day']) {
+      const region = screen.getByRole('region', { name })
+      expect(region.getAttribute('tabindex')).toBe('0')
+      expect(region.className).toMatch(/overflow-auto/)
+    }
     expect(screen.getByText('$0.0052')).toBeTruthy()
     expect(screen.getByText(/Estimate for logged answers only/)).toBeTruthy()
     expect(screen.getByText('Unavailable')).toBeTruthy()
