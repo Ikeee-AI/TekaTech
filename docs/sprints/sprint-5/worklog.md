@@ -1010,3 +1010,41 @@ Short session, ~09:45–10:12 Manila.
 - Read Railway usage after 7 days and extrapolate to a month — Ikeee-AI (owner's dashboard) — ~19 Nov.
 - Retire the Render API — Ikeee-AI — ~19 Nov.
 - Migrate `backend/railway.json` to the new format, then check with a CI deploy — Ikeee-AI — before 1 Dec.
+
+## 2026-11-13 12:07 Asia/Manila — Railway settings moved to `.railway/railway.ts`; Render API retired
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code did the Railway CLI, repo, test and doc work; Ikeee-AI decided on the early retirement and suspended the Render service in the dashboard) · **Task:** S5-IK (Railway plan steps 6–7) · **Branch:** `tekatech/railway-iac-render-retire` → [#253](https://github.com/Ikeee-AI/TekaTech/pull/253)
+
+**Done**
+- **Railway settings as code:** `railway config pull` (variables unmanaged), then added the start command, `/health` health check (120 s) and 3 restart retries from `backend/railway.json`. `railway config plan` showed only those 5 settings changing (nothing added or destroyed). `railway config apply` at about 02:57 UTC triggered a Railway redeploy of `f836e3b`: SUCCESS at 02:58. `deployed_smoke.py` passed (commit, 4 gadgets, readiness, CORS). A second `plan` reports "already up to date". SDK pinned to `railway@3.16.0` in `.railway/package.json` (3.17.0 was published that morning, so it was skipped).
+- **Repo changes in #253** (commit `8b7007c`, Manuel requested as reviewer): `.railway/` added; `backend/railway.json` deleted; `rollback.yml` now checks that `backend/main.py` reads `APP_COMMIT` instead of checking for `railway.json` (same boundary, checked: `c4cce99`/`3658c58`/`f836e3b` allowed, `c4cce99^`/`53f62e9` refused); Render API block removed from `render.yaml`; fallback steps removed from `ci.yml`/`rollback.yml`; `.railway/**` added to the devops labeler; the 3 tests that guarded `render.yaml` now also check `.railway/railway.ts`; docs updated (runbook, PIPELINE, environments, CLAUDE/AGENTS, backend README drill steps, migration plan step 6 and section 6, scope-change row, demo docs, submission manifest, handoff). Local: 762 backend tests passed, secret guard passed.
+- **Render API retired:** checked that the live frontend bundle `index-PJVRRc1S.js` calls only the Railway API (0 references to the Render API). Repo secret `RENDER_BACKEND_DEPLOY_HOOK` deleted. Ikeee-AI suspended Render `tekatech-api` (`srv-db5v6sijnfac73brl4mg`) at about 12:00 Manila; `tekatech-web` is untouched. Checked at 04:03 UTC: the Render API `/health` returns 503, and production smoke against Railway passed. Evidence: [#253 comment](https://github.com/Ikeee-AI/TekaTech/pull/253), owner screenshot `Screenshot 2026-11-13 115952.png` (local).
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `railway config migrate`: "No Config as Code files found for services in the linked environment." | The service had no config-file path set; `railway.json` was only picked up from each `railway up` upload | Used `railway config pull` and added the settings by hand instead. Fixed |
+| `railway config plan`: "The Railway TypeScript SDK is not installed." | `railway.ts` imports `railway/iac` | Installed `railway@3.16.0` in `.railway/` only (`--ignore-scripts`). Fixed |
+| `Error: This version of railway/iac requires Railway CLI 5.42.1 or newer` (CLI is 5.71.0) | On Windows the npm-installed CLI is a `.cmd` shim; the SDK runs `railway --version` without a shell (ENOENT) | Ran from PowerShell with `$env:_` set to the real `railway.exe`; documented in `.railway/README.md`. Fixed |
+| After the first apply, `plan` still showed `deploy.restartPolicyType (null → "ON_FAILURE")` | Railway stores its defaults as null | Removed that line (ON_FAILURE is the default); `plan` is clean. Fixed |
+| Python edit of `test_proxy_rate_limit.py` failed (`AssertionError`, text not found) | Escaped `\n` in the search string | Edited with the Edit tool instead. Fixed |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Plan step 6 said to keep Render as a 7-day fallback (until about 19 Nov); it was retired after 1 day | No quick switch back to Render | Owner's decision; recorded in `docs/scope-changes.md` and plan step 6. Resolved |
+| The proxy-trust test pinned `TRUST_PROXY_HEADERS='false'` in the Render API block; on Railway these are dashboard variables the repo can't see | Weaker automatic guard | The test now asserts the repo config never sets proxy trust and variables stay unmanaged; dashboard values are a manual runbook check. Manuel to review in #253. Open |
+| Railway reports a resource limit of 2 vCPU / 2 GB (`limitOverride`); earlier notes said a replica cap of 1 vCPU / 1 GB | Possible cost difference | Kept unchanged in `railway.ts`; owner to check Railway → Settings → Resource limits. Open, Ikeee-AI |
+| `backend/tests/*` and `backend/README.md` are Manuel's area | Ownership | Flagged in #253 for his review. Open, Manuel |
+
+**Decisions** — Retire the Render API now instead of about 19 Nov — Ikeee-AI. Suspend rather than delete the Render service — Ikeee-AI. Railway variables stay unmanaged by the IaC file (secrets never in the repo) — Ikeee-AI. Pin the SDK to 3.16.0, not the same-day 3.17.0 — Ikeee-AI. Put this log entry on the #252 branch with the other 13 Nov entries, so #252 and #253 don't conflict in the worklog — Ikeee-AI.
+
+**Blockers / risks** — #252 and #253 need Manuel's approval (Ikeee-AI is contacting him) — Manuel. The first main deploy after #253 is the first one without `railway.json`; watch that the settings stored on Railway are used — Ikeee-AI. Resource limit 2 vCPU / 2 GB to check — Ikeee-AI.
+
+**Plan alignment** — Railway plan: steps 6 (retire Render) and 7 (docs) **Partial**: done and verified in production, waiting for #253's review and merge. Section 5: 7-day usage **Not started** (~19 Nov). The `railway.json` deprecation (deadline 1 Dec) is handled in production.
+
+**Next**
+- Merge #252 and #253 after Manuel approves; watch the main run and the Railway deploy — Ikeee-AI — when approved.
+- Check the Railway resource limit and usage — Ikeee-AI — by 19 Nov.
+- After a few weeks, decide whether to delete the suspended Render `tekatech-api` — Ikeee-AI — not scheduled.
