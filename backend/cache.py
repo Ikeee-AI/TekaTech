@@ -6,7 +6,7 @@ write the underlying tables call invalidate() for the matching namespace, so a
 change made through this API is visible on the next read.
 
 Like the "memory://" rate-limit storage, entries live in one process and are
-only correct on a single worker; render.yaml runs `--workers 1`. A multi-worker
+only correct on a single worker; .railway/railway.ts runs `--workers 1`. A multi-worker
 deploy would need a shared store, otherwise one worker keeps serving data
 another worker has already invalidated. Edits made outside the API (SQL
 Editor, seed script) appear once the TTL runs out.

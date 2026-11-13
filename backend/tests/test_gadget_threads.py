@@ -8,6 +8,8 @@ test_authorization_matrix.py.
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
+
 from routers.my_gadgets import THREAD_TURNS_SHOWN
 
 GADGET = "22222222-2222-2222-2222-222222222222"
@@ -120,7 +122,9 @@ def test_thread_read_failure_is_a_plain_503(client, fake_supabase, monkeypatch):
     assert "connection reset" not in resp.text
 
 
-def test_regenerate_replaces_the_newest_saved_turn_for_that_question(client, fake_supabase):
+def test_regenerate_replaces_the_newest_saved_turn_for_that_question(client, fake_supabase, monkeypatch):
+    # The fake answers every user_questions select alike, so the trim (tested below) is off here.
+    monkeypatch.setattr("routers.query._trim_thread", lambda *a: None)
     fake_supabase.set_response("user_questions", "select", [{"id": "old-turn"}])
     resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH, extra={"regenerate": True})
     assert resp.status_code == 200
@@ -143,3 +147,86 @@ def test_regenerate_with_nothing_saved_just_saves(client, fake_supabase):
 def test_a_normal_ask_never_deletes_earlier_turns(client, fake_supabase):
     _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
     assert ("user_questions", "delete", None) not in fake_supabase.writes
+
+
+# --- Privacy: a saved (private) turn never puts its text into the public query_history ---
+
+def _history_rows(fake_supabase):
+    return [payload for table, op, payload in fake_supabase.writes if table == "query_history" and op == "insert"]
+
+
+def test_saved_turn_is_recorded_in_query_history_as_a_placeholder_with_tokens(client, fake_supabase):
+    from routers.query import PRIVATE_ANSWER_PLACEHOLDER, PRIVATE_QUESTION_PLACEHOLDER
+
+    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
+    assert resp.status_code == 200
+    assert len(_saved(fake_supabase)) == 1
+    rows = _history_rows(fake_supabase)
+    assert rows, "token accounting row must still be written"
+    for row in rows:
+        assert row["query_text"] == PRIVATE_QUESTION_PLACEHOLDER
+        assert row["answer_text"] == PRIVATE_ANSWER_PLACEHOLDER
+        assert "What chip" not in str(row)
+    assert "prompt_tokens" in rows[0]
+
+
+def test_cached_saved_turn_is_also_private_in_query_history(client, fake_supabase):
+    from routers.query import PRIVATE_QUESTION_PLACEHOLDER
+
+    assert _ask(client, fake_supabase, gadget_ids=[GADGET]).status_code == 200  # anonymous: public, cached
+    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
+    assert resp.json()["cached"] is True
+    assert _history_rows(fake_supabase)[-1]["query_text"] == PRIVATE_QUESTION_PLACEHOLDER
+
+
+@pytest.mark.parametrize(
+    "gadget_ids, headers, user",
+    [([GADGET], {}, None), ([GADGET], AUTH, None), ([GADGET, OTHER], AUTH, SESSION_USER), (None, AUTH, SESSION_USER)],
+)
+def test_unsaved_questions_keep_their_text_in_query_history(client, fake_supabase, gadget_ids, headers, user):
+    resp = _ask(client, fake_supabase, gadget_ids=gadget_ids, headers=headers, user=user)
+    assert resp.status_code == 200
+    assert _history_rows(fake_supabase)[0]["query_text"] == "What chip does it use?"
+
+
+# --- Growth cap: only the newest MAX_THREAD_TURNS turns per (user, gadget) are kept ---
+
+def test_saving_a_turn_trims_older_turns_beyond_the_cap(client, fake_supabase):
+    from routers.query import MAX_THREAD_TURNS, THREAD_TRIM_BATCH
+
+    fake_supabase.set_response("user_questions", "select", [{"id": "turn-101"}, {"id": "turn-102"}])
+    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
+    assert resp.status_code == 200
+    ops = [op for t, op, _ in fake_supabase.writes if t == "user_questions"]
+    assert ops == ["insert", "delete"]
+    # Rows past the newest MAX_THREAD_TURNS (0-based offset), newest first, of this user and gadget.
+    assert ("user_questions", MAX_THREAD_TURNS, MAX_THREAD_TURNS + THREAD_TRIM_BATCH - 1) in fake_supabase.ranges
+    assert ("user_questions", "created_at", {"desc": True}) in fake_supabase.orders
+    assert ("user_questions", "id", ["turn-101", "turn-102"]) in fake_supabase.in_filters
+    assert fake_supabase.filters.count(("user_questions", "user_id", SESSION_USER.id)) >= 2
+    assert fake_supabase.filters.count(("user_questions", "gadget_id", GADGET)) >= 2
+
+
+def test_nothing_is_deleted_while_under_the_cap(client, fake_supabase):
+    fake_supabase.set_response("user_questions", "select", [])
+    _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
+    assert [op for t, op, _ in fake_supabase.writes if t == "user_questions"] == ["insert"]
+    assert fake_supabase.ranges  # the trim did look
+
+
+def test_a_failed_trim_never_fails_the_answer_or_the_save(client, fake_supabase, monkeypatch):
+    from conftest import FakeQuery
+
+    def broken_range(self, *a, **k):
+        raise RuntimeError("database down")
+
+    monkeypatch.setattr(FakeQuery, "range", broken_range)
+    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
+    assert resp.status_code == 200
+    assert len(_saved(fake_supabase)) == 1
+
+
+def test_anonymous_and_unsaved_questions_do_not_trim(client, fake_supabase):
+    _ask(client, fake_supabase, gadget_ids=[GADGET], headers={}, user=None)
+    _ask(client, fake_supabase, gadget_ids=[GADGET, OTHER], headers=AUTH)
+    assert fake_supabase.ranges == []

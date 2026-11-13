@@ -111,7 +111,7 @@ def run_checks(*, ai=False, ai_provider="openai", ai_model="qwen3:8b", api_base=
 
     if ai:
         def provider_check():
-            client = OpenAI(api_key=settings.openai_api_key, timeout=20, max_retries=0)
+            client = OpenAI(api_key=settings.openai_api_key.get_secret_value(), timeout=20, max_retries=0)
             response = client.embeddings.create(
                 model="text-embedding-3-small", input=["TekaTech Sprint 1 connection test."]
             )
