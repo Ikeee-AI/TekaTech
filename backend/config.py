@@ -1,4 +1,4 @@
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -35,6 +35,15 @@ class Settings(BaseSettings):
     techspecs_api_key: SecretStr | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator("cors_origins")
+    @classmethod
+    def no_wildcard_origin(cls, value: str) -> str:
+        # A wildcard would let any website call the API from a visitor's browser. List the
+        # real frontend origins instead (comma-separated).
+        if any(origin.strip() == "*" for origin in value.split(",")):
+            raise ValueError('cors_origins must list explicit origins; "*" is not allowed')
+        return value
 
     @property
     def cors_origins_list(self) -> list[str]:

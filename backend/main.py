@@ -66,12 +66,19 @@ app.add_middleware(SlowAPIMiddleware)
 # headers, letting the browser read the request id.
 app.add_middleware(RequestIdMiddleware)
 
+# The browser authenticates with an Authorization: Bearer header (frontend/src/api/client.js),
+# never cookies, so credentialed CORS is off. Methods and headers are exactly what the
+# frontend sends; scripts that send X-Simulate-Failure / X-Bypass-Answer-Cache are not
+# browsers and are unaffected by CORS. config.py refuses "*" as an origin.
+CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+CORS_ALLOWED_HEADERS = ["Authorization", "Content-Type"]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=CORS_ALLOWED_METHODS,
+    allow_headers=CORS_ALLOWED_HEADERS,
     expose_headers=[REQUEST_ID_HEADER],
 )
 
