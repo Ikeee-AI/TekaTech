@@ -270,9 +270,12 @@ function Navbar() {
       <NavLink to="/" end className={className}>
         Phones
       </NavLink>
-      <NavLink to="/compare" className={className}>
-        Compare
-      </NavLink>
+      {/* Comparing needs an account (owner, 14 Nov 2026); visitors only browse the catalog. */}
+      {user && (
+        <NavLink to="/compare" className={className}>
+          Compare
+        </NavLink>
+      )}
       {user && (
         <NavLink to="/my-gadgets" className={className}>
           My Gadgets
@@ -431,7 +434,7 @@ function Navbar() {
       <ConfirmDialog
         open={confirmLogout}
         title="Log out of TekaTech?"
-        description="You can log back in at any time. Browsing, comparing and searching work without an account."
+        description="You can log back in at any time. Without an account you can still browse the catalog."
         confirmLabel="Log out"
         busyLabel="Logging out…"
         busy={signingOut}

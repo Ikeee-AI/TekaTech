@@ -17,8 +17,8 @@ const LINK_MODES = ['signup', 'resend']
 
 const TITLES = { login: 'Log In', signup: 'Create an Account', resend: 'Resend Confirmation Email' }
 const INTROS = {
-  login: 'Needed to suggest corrections to specs and follow their review.',
-  signup: 'Browsing, comparing and AI questions never require an account — it is only for suggesting corrections.',
+  login: 'Log in to view specs, compare phones, ask the AI and save phones to My Gadgets.',
+  signup: 'A free account lets you view full specs, compare phones, ask the AI (20 questions a day) and save phones.',
   resend: "Enter the email you signed up with and we'll send a new confirmation link.",
 }
 const FAILURE_TITLES = { login: 'Log In Failed', signup: 'Sign Up Failed', resend: 'Could Not Send the Email' }
@@ -268,7 +268,7 @@ const PERKS = [
   ['My Gadgets', 'Save the phones you’re considering', 'bg-sage-700 text-white'],
   ['Saved questions', 'Answers kept for each phone', 'bg-inverse text-inverse-ink'],
   ['Suggestions', 'Flag a spec that looks wrong', 'bg-pop text-pop-ink'],
-  ['Free', 'Browsing and asking need no account', 'bg-slate-100 text-slate-900'],
+  ['Free', 'No payment, ever. 20 AI questions a day', 'bg-slate-100 text-slate-900'],
 ]
 
 // Why sign in (rebrand canvas, 13 Nov 2026). Decorative summary; hidden on phones to keep the form first.
