@@ -95,8 +95,14 @@ def _excerpt(text: str | None) -> str:
     return text[:SPEC_EXCERPT_CHARS].rstrip() + "…"
 
 
+# Signed-in GETs call Supabase Auth on every request (the navbar badge polls this one), so
+# they get a generous per-client limit that a normal session never reaches.
+AUTHED_READ_LIMIT = "120/minute"
+
+
 @router.get("/corrections/mine")
-def list_my_corrections(user=Depends(get_current_user)):
+@limiter.limit(AUTHED_READ_LIMIT)
+def list_my_corrections(request: Request, user=Depends(get_current_user)):
     """The caller's own corrections, newest first, so a submitter can see
     whether each one was approved or rejected (issue #109).
 
