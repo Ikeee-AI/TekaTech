@@ -16,6 +16,9 @@ from schemas import (
 from supabase_client import supabase
 from auth import get_current_admin_user
 
+# The two GET routes are deliberately public (owner decision, 14 Nov 2026): visitors who are not
+# signed in may browse the catalog. Every AI, comparison and question endpoint needs a session
+# (routers/query.py, comparisons.py, stats.py trending-questions); writes here are admin-only.
 router = APIRouter(prefix="/gadgets", tags=["gadgets"])
 logger = logging.getLogger(__name__)
 

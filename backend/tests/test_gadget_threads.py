@@ -1,8 +1,8 @@
 """Per-gadget AI conversation (user_questions.sql): saving turns in POST /query and the
 /me/gadgets/{id}/questions read/clear routes.
 
-/query stays public. A turn is saved only for a signed-in caller asking about exactly one
-gadget, and saving can never fail the answer. Route access is covered by
+/query needs a signed-in user since 14 Nov 2026. A turn is saved for every question about exactly
+one gadget (comparison and catalog-wide questions are not saved), and saving can never fail the answer. Route access is covered by
 test_authorization_matrix.py.
 """
 from types import SimpleNamespace
@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
+from conftest import real_session_lookup, signed_in_as
 from routers.my_gadgets import THREAD_TURNS_SHOWN
 
 GADGET = "22222222-2222-2222-2222-222222222222"
@@ -30,7 +31,7 @@ def _ask(client, fake_supabase, *, gadget_ids, headers=None, user=SESSION_USER, 
         "_rpc", None, [{"gadget_id": GADGET, "content": "Chip: X1", "source_url": None, "similarity": 0.8}]
     )
     fake_supabase.set_response("gadgets", "select", [{"id": GADGET, "name": "Phone X", "brand": "Brand"}])
-    with patch("routers.query.client") as mock_client, patch("routers.query.get_optional_user", return_value=user):
+    with patch("routers.query.client") as mock_client, signed_in_as(user):
         mock_client.embeddings.create.return_value = _fake_embedding_response()
         mock_client.chat.completions.create.return_value = _fake_completion_response()
         body = {"question": "What chip does it use?"}
@@ -59,16 +60,19 @@ def test_signed_in_single_gadget_question_is_saved_with_the_full_answer(client, 
     assert row["response"]["sources"] == resp.json()["sources"]
 
 
-def test_anonymous_question_is_not_saved(client, fake_supabase):
+def test_anonymous_question_is_refused_and_not_saved(client, fake_supabase):
     resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers={}, user=None)
-    assert resp.status_code == 200
-    assert _saved(fake_supabase) == []
+    assert resp.status_code == 401
+    assert resp.json() == {"detail": "Login required"}
+    assert fake_supabase.writes == []
 
 
-def test_invalid_session_is_not_saved_and_still_answered(client, fake_supabase):
-    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH, user=None)
-    assert resp.status_code == 200
-    assert _saved(fake_supabase) == []
+def test_invalid_session_is_refused_and_not_saved(client, fake_supabase):
+    with real_session_lookup(None):  # Supabase Auth finds no user for the token
+        resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH, user=None)
+    assert resp.status_code == 401
+    assert resp.json() == {"detail": "Invalid or expired session"}
+    assert fake_supabase.writes == []
 
 
 def test_comparison_and_catalog_questions_are_not_saved(client, fake_supabase):
@@ -173,15 +177,16 @@ def test_saved_turn_is_recorded_in_query_history_as_a_placeholder_with_tokens(cl
 def test_cached_saved_turn_is_also_private_in_query_history(client, fake_supabase):
     from routers.query import PRIVATE_QUESTION_PLACEHOLDER
 
-    assert _ask(client, fake_supabase, gadget_ids=[GADGET]).status_code == 200  # anonymous: public, cached
-    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
+    other_user = SimpleNamespace(id="00000000-0000-0000-0000-0000000000bb", app_metadata={})
+    assert _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH, user=other_user).status_code == 200
+    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)  # same scope: served from cache
     assert resp.json()["cached"] is True
     assert _history_rows(fake_supabase)[-1]["query_text"] == PRIVATE_QUESTION_PLACEHOLDER
 
 
 @pytest.mark.parametrize(
     "gadget_ids, headers, user",
-    [([GADGET], {}, None), ([GADGET], AUTH, None), ([GADGET, OTHER], AUTH, SESSION_USER), (None, AUTH, SESSION_USER)],
+    [([GADGET, OTHER], AUTH, SESSION_USER), (None, AUTH, SESSION_USER)],
 )
 def test_unsaved_questions_keep_their_text_in_query_history(client, fake_supabase, gadget_ids, headers, user):
     resp = _ask(client, fake_supabase, gadget_ids=gadget_ids, headers=headers, user=user)
@@ -227,6 +232,6 @@ def test_a_failed_trim_never_fails_the_answer_or_the_save(client, fake_supabase,
 
 
 def test_anonymous_and_unsaved_questions_do_not_trim(client, fake_supabase):
-    _ask(client, fake_supabase, gadget_ids=[GADGET], headers={}, user=None)
+    assert _ask(client, fake_supabase, gadget_ids=[GADGET], headers={}, user=None).status_code == 401
     _ask(client, fake_supabase, gadget_ids=[GADGET, OTHER], headers=AUTH)
     assert fake_supabase.ranges == []

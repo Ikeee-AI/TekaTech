@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
+from conftest import real_session_lookup, signed_in_as
 from keyword_search import MAX_TERMS, STOPWORDS, build_keyword_query
 from routers import query as query_module
 from routers.query import KEYWORD_MATCH_COUNT, MATCH_COUNT, MATCH_THRESHOLD, NO_MATCHES_ANSWER
@@ -217,9 +218,9 @@ def test_expanded_query_is_bounded():
 # --- B3: X-Bypass-Answer-Cache is honored for admins only ---
 
 def _ask_as(client, who, headers):
-    with patch("routers.query.get_optional_user", return_value=who) as lookup:
+    with signed_in_as(who):
         resp, mock_client = _ask(client, question="How big is the battery?", headers=headers)
-    return resp, mock_client, lookup
+    return resp, mock_client
 
 
 BYPASS = {"X-Bypass-Answer-Cache": "1", "Authorization": "Bearer token"}
@@ -234,7 +235,7 @@ def _prime_cache(client, fake_supabase):
 
 def test_admin_bypass_skips_the_cache_read_but_still_stores(client, fake_supabase):
     _prime_cache(client, fake_supabase)
-    resp, mock_client, _ = _ask_as(client, ADMIN, BYPASS)
+    resp, mock_client = _ask_as(client, ADMIN, BYPASS)
     assert resp.json()["cached"] is False
     mock_client.embeddings.create.assert_called_once()
     mock_client.chat.completions.create.assert_called_once()
@@ -245,23 +246,25 @@ def test_admin_bypass_skips_the_cache_read_but_still_stores(client, fake_supabas
     mock_client.chat.completions.create.assert_not_called()
 
 
-@pytest.mark.parametrize("who", [None, MEMBER])
-def test_bypass_header_is_ignored_for_anonymous_and_non_admin_callers(client, fake_supabase, who):
+# An anonymous caller never gets this far: /query answers 401 first (test_authorization_matrix.py).
+@pytest.mark.parametrize("who", [MEMBER])
+def test_bypass_header_is_ignored_for_non_admin_callers(client, fake_supabase, who):
     _prime_cache(client, fake_supabase)
-    resp, mock_client, _ = _ask_as(client, who, BYPASS)
+    resp, mock_client = _ask_as(client, who, BYPASS)
     assert resp.json()["cached"] is True
     mock_client.chat.completions.create.assert_not_called()
 
 
-def test_other_header_values_do_not_bypass_or_look_up_the_caller(client, fake_supabase):
+def test_other_header_values_do_not_bypass(client, fake_supabase):
     _prime_cache(client, fake_supabase)
-    resp, _, lookup = _ask_as(client, ADMIN, {"X-Bypass-Answer-Cache": "0", "Authorization": "Bearer t"})
+    resp, _ = _ask_as(client, ADMIN, {"X-Bypass-Answer-Cache": "0", "Authorization": "Bearer t"})
     assert resp.json()["cached"] is True
-    lookup.assert_not_called()
 
 
-def test_ordinary_requests_do_no_auth_lookup_for_the_bypass(client, fake_supabase):
+@pytest.mark.parametrize("headers", [{}, {"X-Bypass-Answer-Cache": "1"}])
+def test_the_bypass_adds_no_second_session_lookup(client, fake_supabase, headers):
+    # The admin check reuses the route's session user (get_current_user): one lookup per request.
     fake_supabase.set_response("_rpc", None, [])
-    with patch("routers.query.get_optional_user") as lookup:
-        _ask(client, headers={"Authorization": "Bearer x"})
-    lookup.assert_not_called()
+    with real_session_lookup(ADMIN) as lookup:
+        _ask(client, headers={"Authorization": "Bearer x", **headers})
+    lookup.assert_called_once_with("x")

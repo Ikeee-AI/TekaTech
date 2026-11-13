@@ -4,13 +4,18 @@ import secrets
 import string
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
 
+from auth import get_current_user
 from rate_limit import limiter
 from supabase_client import supabase
 
+# Both routes need a signed-in user (owner decision, 14 Nov 2026): anonymous visitors may browse
+# the catalog, but comparing gadgets and opening a shared comparison link need a session. The
+# dependency runs before the body or slug is looked at, so an anonymous caller gets 401 and
+# nothing is read or written. The rate limits stay.
 router = APIRouter(prefix="/comparisons", tags=["comparisons"])
 logger = logging.getLogger(__name__)
 
@@ -48,7 +53,7 @@ def _generate_slug(length: int = SLUG_LENGTH) -> str:
 
 @router.post("", status_code=201)
 @limiter.limit("20/hour")
-def create_comparison_link(request: Request, payload: ComparisonCreate):
+def create_comparison_link(request: Request, payload: ComparisonCreate, user=Depends(get_current_user)):
     ids = [str(i) for i in payload.gadget_ids]
 
     # One query: every id must be a gadget that exists, or the link would open
@@ -84,6 +89,7 @@ def create_comparison_link(request: Request, payload: ComparisonCreate):
 def resolve_comparison_link(
     request: Request,
     slug: str,
+    user=Depends(get_current_user),
 ):
     if not SLUG_RE.fullmatch(slug):
         raise HTTPException(status_code=404, detail="Link not found")

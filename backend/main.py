@@ -15,9 +15,10 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from config import settings
 from rate_limit import limiter, verify_storage_reachable
+from ai_quota import LIMIT_HEADER as AI_LIMIT_HEADER, REMAINING_HEADER as AI_REMAINING_HEADER
 from request_id import REQUEST_ID_HEADER, RequestIdMiddleware
 from security_headers import SecurityHeadersMiddleware
-from routers import gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets
+from routers import ai_usage, gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets
 from supabase_client import supabase
 
 logger = logging.getLogger(__name__)
@@ -80,7 +81,8 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=CORS_ALLOWED_METHODS,
     allow_headers=CORS_ALLOWED_HEADERS,
-    expose_headers=[REQUEST_ID_HEADER],
+    # The browser may read the request id and the daily AI-question counter (ai_quota.py).
+    expose_headers=[REQUEST_ID_HEADER, AI_LIMIT_HEADER, AI_REMAINING_HEADER],
 )
 # Added last, so it is the outermost middleware: every response gets the headers,
 # including CORS preflights, 429s and RequestIdMiddleware's JSON 500.
@@ -94,6 +96,7 @@ app.include_router(query.router)
 app.include_router(stats.router)
 app.include_router(techspecs.router)
 app.include_router(my_gadgets.router)
+app.include_router(ai_usage.router)
 
 @app.get("/health")
 def health_check():

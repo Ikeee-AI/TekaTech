@@ -9,6 +9,7 @@ import pytest
 
 import answer_cache
 from config import settings
+from conftest import signed_in_as
 from factories import sample_gadget
 from prompts import PROMPT_VERSION
 from routers.query import (
@@ -340,7 +341,7 @@ def test_simulated_failure_is_served_even_when_an_answer_is_cached(client, fake_
     _ask(client)  # cached now
     monkeypatch.setattr(settings, "failure_simulation_enabled", True)
     admin = SimpleNamespace(id="admin-1", app_metadata={"is_admin": True})
-    with patch("routers.query.get_optional_user", return_value=admin):
+    with signed_in_as(admin):
         resp = client.post(
             "/query", json={"question": "How many cores does it have?"}, headers={"X-Simulate-Failure": "timeout"}
         )

@@ -51,7 +51,7 @@ Each entry: **what was chosen**, **why**, **the alternative**, **what it costs**
 - **Why:** because RLS is bypassed, a route that forgets its dependency is a hole.
 - **Alternative:** a role table or RLS-based roles. More moving parts for a five-route admin surface **(inferred)**.
 - **Cost:** one missing `Depends(...)` is an open endpoint. Mitigation: an authorization matrix test classifies all 22 routes, checks the wiring, and calls each as anonymous, bad-token, user, "claims admin in `user_metadata`" and admin callers (PR #157, in review at the time of writing).
-- **Deliberate public routes:** `POST /query`, `POST /comparisons`, `GET /comparisons/{slug}`, `/stats/*` and the gadget/spec reads. The rate limit is their only guard (D9).
+- **Deliberate public routes:** only catalog browsing: the gadget/spec reads, `/stats/spec-coverage`, `/health*` and `/version`. The rate limit is their only guard (D9). Until 14 Nov 2026 `POST /query`, `POST /comparisons`, `GET /comparisons/{slug}` and `/stats/trending-questions` were public too; since then (owner decision) they need a signed-in user, and each non-admin user may ask 20 AI questions per day (`backend/ai_quota.py`).
 
 ### D3. Saving a spec never depends on the AI
 - **Chosen:** saving splits the text into chunks and stores them with no embedding and status `pending`, with no AI call. A separate `POST .../index` embeds one chunk later. If the provider fails, the saved text stays.
@@ -77,11 +77,11 @@ Each entry: **what was chosen**, **why**, **the alternative**, **what it costs**
 - **Cost:** the prompt and the renderer must change together or markup shows as literal text with no error.
 - **Check:** `backend/prompts.py`, `backend/citations.py`, `docs/ai-feature-writeup.md`.
 
-### D6. Cost is capped on every layer, because `/query` is public
+### D6. Cost is capped on every layer, because `/query` is open to every account (public until 14 Nov 2026)
 - **Chosen:**
   - **Per answer:** `max_completion_tokens = 1500` and `reasoning_effort = "low"`. `gpt-5-mini` bills hidden reasoning as output ($2.00 per million tokens against $0.25 for input). An answer that hits the cap is a safe 503, never shown cut off.
   - **Per request:** a character cap then a token cap on questions (150 chars, 160 tokens), counted with the right tokenizer for each model.
-  - **Per caller:** rate limits (`/query` 10 per minute; writes 20 per hour).
+  - **Per caller:** rate limits (`/query` 10 per minute; writes 20 per hour) and, since 14 Nov 2026, sign-in plus 20 AI questions per non-admin user per day (`AI_DAILY_QUESTION_LIMIT`, resets 08:00 Manila).
   - **Repeats:** an in-process answer cache (exact match, or an embedding similarity of at least 0.95), which skips the paid calls.
   - **Overall:** the team shares a $10 prepaid balance with auto-reload off, so spending stops at zero.
 - **Why (measured):** on 4 real answers the cap cut cost from $0.0047 to $0.0019 (about 60% lower); about 87% of the uncapped output tokens were hidden reasoning (PR #103). A comparison answer costs about $0.0009 on dev and a worst-case answer about $0.004, bounded by the context cap, so $10 covers roughly 2,500 worst-case answers (`docs/evidence/comparison-cost-2026-10-30.md`, in PR #157).
@@ -127,7 +127,7 @@ Each entry: **what was chosen**, **why**, **the alternative**, **what it costs**
 | No staging environment | Changes are first seen in production | Disclosed (PR #154 updates the environments doc) | `docs/devops/environments.md` |
 | Evaluation: abstention 0 of 7 as scored | The scorer fails refusals that cite a snippet or quote a value | These are scorer gaps (issue #66), not model behaviour; the report says so | PR #151, issue #66 |
 | Measured on a small dev corpus | Retrieval and cost figures may differ on larger production gadgets | The worst-case cost is computed from the code's limits | D4, D6 |
-| Public endpoints | `/query` and comparison creation are open | Rate limits are the only guard, by design | D2 |
+| Open sign-up | Anyone can create an account and then ask the AI | Sign-in, 10 per minute and 20 AI questions per user per day (since 14 Nov 2026); counters reset on a redeploy with `memory://` | D2, D6 |
 
 ## 5. What would change at scale
 
