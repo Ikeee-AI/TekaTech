@@ -13,6 +13,7 @@ import AiAnswerResult, { AnswerOptions } from './AiAnswerResult'
 import ThreadTurn, { AssistantMessage, UserBubble } from './ThreadTurn'
 import Alert from './ui/Alert'
 import Button from './ui/Button'
+import AiUsageBadge from './AiUsageBadge'
 
 const COMPOSER_MAX_HEIGHT = 160 // px; the box grows with the text up to this, then scrolls
 const NEAR_BOTTOM_PX = 80
@@ -193,6 +194,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
           <h2 id="gadget-chat-title" className="flex items-center gap-2 text-lg font-bold text-slate-900">
             <Sparkles size={18} className="text-sage-700" aria-hidden="true" /> Ask About {gadgetName}
           </h2>
+          <AiUsageBadge className="mt-1.5" />
           <p className="text-sm text-slate-600 mt-0.5">
             {allowGeneralKnowledge
               ? 'Answers use its saved specs with numbered sources. General knowledge is on: unmatched answers are labelled unverified.'

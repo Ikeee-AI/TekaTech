@@ -8,6 +8,7 @@ import { suggestFollowUps } from '../utils/followUps'
 import AiAnswerResult, { AnswerOptions } from './AiAnswerResult'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
+import AiUsageBadge from './AiUsageBadge'
 
 const DEFAULT_QUESTION = 'Compare these gadgets and highlight the key trade-offs someone should know before buying.'
 const SUGGESTED_QUESTIONS = ['Which offers better value for the price?', 'Compare battery life', 'Compare camera quality']
@@ -118,6 +119,7 @@ export default function AIComparisonPanel({
         <Sparkles size={18} className="text-sage-700" aria-hidden="true" />
         <h2 id="ai-compare-title" className="text-lg font-bold text-slate-900">{title}</h2>
       </div>
+      <AiUsageBadge className="mb-2" />
       <p className="text-sm text-slate-600 mb-4">
         {allowGeneralKnowledge ? (
           <>
