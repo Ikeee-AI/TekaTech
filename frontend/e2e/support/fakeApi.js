@@ -57,6 +57,24 @@ export function drillReply(mode) {
   }
 }
 
+// Not a real token: the fake API never checks it and the fake Supabase address is blocked.
+const FAKE_SESSION = {
+  access_token: 'e2e-not-a-real-token',
+  refresh_token: 'e2e-not-a-real-refresh-token',
+  token_type: 'bearer',
+  expires_in: 3600,
+  expires_at: 4102444800, // 2100-01-01: never refreshed during a run
+  user: {
+    id: '99999999-9999-4999-8999-999999999999',
+    aud: 'authenticated',
+    role: 'authenticated',
+    email: 'e2e@example.test',
+    app_metadata: {},
+    user_metadata: {},
+    created_at: '2026-10-01T00:00:00Z',
+  },
+}
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': '*',
@@ -73,6 +91,11 @@ export async function useFakeApi(page, queryReplies) {
 
   // Auth is only read from local storage here; block anything that tries the network.
   await page.route('http://supabase.e2e.test/**', (route) => route.abort())
+  // Phone pages and compare are members-only since 14 Nov 2026, so the journeys start signed
+  // in: a fake, never-expiring session where supabase-js keeps it (sb-<host prefix>-auth-token).
+  await page.addInitScript((session) => {
+    localStorage.setItem('sb-supabase-auth-token', JSON.stringify(session))
+  }, FAKE_SESSION)
 
   await page.route('http://api.e2e.test/**', async (route) => {
     const request = route.request()
