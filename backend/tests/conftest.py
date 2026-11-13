@@ -54,6 +54,7 @@ class FakeQuery:
         return self
 
     def in_(self, *a, **k):
+        self._client.in_filters.append((self._table, *a))
         return self
 
     def order(self, *a, **k):
@@ -62,6 +63,10 @@ class FakeQuery:
 
     def limit(self, *a, **k):
         self._client.limits.append((self._table, *a))
+        return self
+
+    def range(self, start, end, *a, **k):
+        self._client.ranges.append((self._table, start, end))
         return self
 
     def execute(self):
@@ -77,6 +82,8 @@ class FakeSupabase:
         self.filters = []
         self.orders = []
         self.limits = []
+        self.ranges = []
+        self.in_filters = []
         self.rpc_calls = []
 
     def set_response(self, table, operation, data):

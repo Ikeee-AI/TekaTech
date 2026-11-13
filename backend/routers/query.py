@@ -502,19 +502,62 @@ def _save_thread_turn(user, payload: "QueryRequest", response: QueryResponse) ->
     """
     if user is None:
         return
+    user_id, gadget_id = str(user.id), str(payload.gadget_ids[0])
     try:
         if payload.regenerate:
-            _drop_regenerated_turn(str(user.id), str(payload.gadget_ids[0]), payload.question)
+            _drop_regenerated_turn(user_id, gadget_id, payload.question)
         supabase.table("user_questions").insert(
             {
-                "user_id": str(user.id),
-                "gadget_id": str(payload.gadget_ids[0]),
+                "user_id": user_id,
+                "gadget_id": gadget_id,
                 "question": payload.question,
                 "response": response.model_dump(mode="json"),
             }
         ).execute()
     except Exception:
         logger.exception("user_questions insert failed; the answer is returned without saving the turn")
+        return
+    _trim_thread(user_id, gadget_id)
+
+
+# Each saved turn holds a full answer and its sources, and a public /query loop with a valid
+# session could otherwise grow one user's thread without bound. The gadget page shows the
+# latest 20 (routers/my_gadgets.py); older turns beyond this many are deleted.
+MAX_THREAD_TURNS = 100
+# Rows deleted per trim. One insert adds one row, so a single pass normally removes 0 or 1;
+# the margin also cleans up after a run of failed trims.
+THREAD_TRIM_BATCH = 50
+
+
+def _trim_thread(user_id: str, gadget_id: str) -> None:
+    """Keep only the newest MAX_THREAD_TURNS saved turns for this user and gadget.
+
+    Best-effort like the insert: a failed trim is logged and retried by the next save.
+    Both statements are filtered by the session user, so only the caller's own rows can go.
+    """
+    try:
+        stale = (
+            supabase.table("user_questions")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("gadget_id", gadget_id)
+            .order("created_at", desc=True)
+            .range(MAX_THREAD_TURNS, MAX_THREAD_TURNS + THREAD_TRIM_BATCH - 1)
+            .execute()
+            .data
+        )
+        if not stale:
+            return
+        (
+            supabase.table("user_questions")
+            .delete()
+            .in_("id", [row["id"] for row in stale])
+            .eq("user_id", user_id)
+            .eq("gadget_id", gadget_id)
+            .execute()
+        )
+    except Exception:
+        logger.warning("user_questions trim failed; it is retried on the next saved turn", exc_info=True)
 
 
 def _drop_regenerated_turn(user_id: str, gadget_id: str, question: str) -> None:
