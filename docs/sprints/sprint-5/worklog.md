@@ -1827,3 +1827,23 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #267: **Done** (reviewed on the final commit, checks green, merged, deployed, verified).
 
 **Next** — Owner: post the retro. Mika: #249. After Mon 15:00: fill in the retrospective table — Ikeee-AI.
+
+## 2026-11-15 01:55 Asia/Manila — #249 (Jopher: return to the starting page after sign-up confirmation) merged and live
+**Who:** Ikeee-AI merged (AI-assisted: yes); author Jopher (`s2100932`) · **Task:** S5-JO #196 item 4 · **Branch:** `main`
+
+**Done**
+- Mika **approved #249 on its final commit `2be365a`** (01:39), which cleared her 10 Nov change request. Manuel had approved the same commit (14 Nov 20:14). Squash-merged → `e134ab1`.
+- Main run [43623339174](https://github.com/Ikeee-AI/TekaTech/actions/runs/43623339174): all jobs success (tests ran on the combined main with #267/#270), incl. main guard and deploy. API `/version` → `e134ab1`.
+- Live frontend bundle `index-DAigEQjC.js` contains the return-path storage key `tekatech.returnAfterConfirm`; the Login chunk still has the #267 spam hint (2 matches).
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — None.
+
+**Blockers / risks** — The full sign-up → email link → returned-to-page journey was not clicked through on production in this entry (it needs a new sign-up email).
+
+**Plan alignment** — #249: merged, deployed, bundle-verified; the journey check on production is pending.
+
+**Next** — Jopher (or owner) to click through: open a phone page → Log In → Sign Up → confirm email → lands back on that phone page. Owner: post the retro.
