@@ -34,9 +34,10 @@ function formatDate(value) {
  * current password, then a confirm dialog does the work. On confirm the password is re-checked
  * by signing in again (as Change Password does), then DELETE /me/account removes the user's
  * rows and Supabase Auth user, and the user is signed out and sent to the catalog with a notice.
- * An admin account gets 409 from the backend and stays signed in.
+ * Admins see up front that they can't delete here (the button is disabled); the backend's 409
+ * stays handled as a fallback, e.g. when the flag was added after this page loaded.
  */
-function DeleteAccountSection({ user }) {
+function DeleteAccountSection({ user, isAdmin }) {
   const { signIn, signOut } = useAuth()
   const navigate = useNavigate()
   const [password, setPassword] = useState('')
@@ -45,9 +46,33 @@ function DeleteAccountSection({ user }) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [dialogError, setDialogError] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  // The real double-submit guard: state only changes on the next render, so two clicks in the
+  // same tick would both see deleting === false; a ref is updated at once.
+  const deletingRef = useRef(false)
   // Set when the dialog closes because of a wrong password: the field gets focus once the
   // dialog has handed focus back to its opener (its cleanup runs before this page's effect).
   const focusPasswordAfterClose = useRef(false)
+
+  // After a successful delete: sign out once this page has left the screen (see handleConfirm).
+  // The Auth user is gone, so only this browser's session needs clearing; the local scope removes
+  // it before any network call (supabase.auth.signOut reports errors as a return value, not a
+  // throw, so a global sign-out could fail silently and keep the session).
+  const signOutOnLeave = useRef(false)
+  const signOutRef = useRef(signOut)
+  useEffect(() => {
+    signOutRef.current = signOut
+  }, [signOut])
+  useEffect(() => {
+    const pending = signOutOnLeave
+    const latestSignOut = signOutRef
+    return () => {
+      if (pending.current) {
+        Promise.resolve(latestSignOut.current({ scope: 'local' })).catch(() => {
+          // ignore: the account no longer exists either way
+        })
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!confirmOpen && focusPasswordAfterClose.current) {
@@ -65,6 +90,7 @@ function DeleteAccountSection({ user }) {
   function handleSubmit(e) {
     e.preventDefault()
     setError(null)
+    if (isAdmin) return
     if (!password) {
       setFieldError('Enter your current password.')
       document.getElementById(DELETE_PASSWORD_ID)?.focus()
@@ -81,7 +107,8 @@ function DeleteAccountSection({ user }) {
   }
 
   async function handleConfirm() {
-    if (deleting) return
+    if (deletingRef.current) return
+    deletingRef.current = true
     setDeleting(true)
     setDialogError(null)
     try {
@@ -110,16 +137,15 @@ function DeleteAccountSection({ user }) {
         }
         return
       }
-      // The Auth user is gone; signing out clears the local session. supabase-js clears it even
-      // when the server no longer knows the session, so a failure here is not worth showing.
-      try {
-        await signOut()
-      } catch {
-        // ignore: the account no longer exists either way
-      }
+      // Leave the protected /account route before signing out: React Router renders a navigation
+      // as a transition, so a sign-out started now (user -> null) would render first and
+      // ProtectedRoute would send the user to /login. The sign-out runs in the unmount cleanup
+      // above, i.e. only once the catalog has replaced this page.
+      signOutOnLeave.current = true
       toast.success(ACCOUNT_DELETED_NOTICE, { duration: 6000 })
       navigate('/', { replace: true })
     } finally {
+      deletingRef.current = false
       setDeleting(false)
     }
   }
@@ -133,6 +159,11 @@ function DeleteAccountSection({ user }) {
         Removes your account, your My Gadgets list, your saved questions and your pending suggestions. This
         can&apos;t be undone.
       </p>
+      {isAdmin && (
+        <Alert tone="warning" id="delete-account-admin-note" className="mb-4">
+          {ADMIN_DELETE_MESSAGE}
+        </Alert>
+      )}
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <input type="email" name="username" autoComplete="username" value={user.email ?? ''} readOnly hidden />
         <TextField
@@ -145,6 +176,7 @@ function DeleteAccountSection({ user }) {
           error={fieldError}
           value={password}
           onChange={updatePassword}
+          disabled={isAdmin}
         />
         <div aria-live="polite">
           {error && (
@@ -153,7 +185,15 @@ function DeleteAccountSection({ user }) {
             </Alert>
           )}
         </div>
-        <Button type="submit" variant="danger" size="lg" icon={Trash2} disabled={deleting} className="w-full">
+        <Button
+          type="submit"
+          variant="danger"
+          size="lg"
+          icon={Trash2}
+          disabled={deleting || isAdmin}
+          aria-describedby={isAdmin ? 'delete-account-admin-note' : undefined}
+          className="w-full"
+        >
           Delete My Account
         </Button>
       </form>
@@ -337,7 +377,7 @@ export default function Account() {
         </form>
       </section>
 
-      <DeleteAccountSection user={user} />
+      <DeleteAccountSection user={user} isAdmin={isAdmin} />
       </div>
     </div>
   )

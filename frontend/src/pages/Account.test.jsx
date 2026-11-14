@@ -2,12 +2,14 @@
 // re-checking the current one. #213: "Delete my account" re-checks the password too, asks
 // for confirmation, then calls DELETE /me/account and signs out.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { useState } from 'react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { AuthContext } from '../context/authContextValue'
 import { api } from '../api/client'
 import Account from './Account'
+import ProtectedRoute from '../components/ProtectedRoute'
 import { validatePasswordChange } from '../utils/passwordChange'
 
 vi.mock('../api/client', () => ({ api: { deleteMyAccount: vi.fn() } }))
@@ -158,7 +160,10 @@ describe('Delete my account', () => {
     expect(await screen.findByText('Catalog page')).toBeTruthy()
     expect(auth.signIn).toHaveBeenCalledWith('member@example.com', 'old-secret')
     expect(api.deleteMyAccount).toHaveBeenCalledTimes(1)
-    expect(auth.signOut).toHaveBeenCalledTimes(1)
+    // The sign-out runs once the catalog has replaced the Account page (unmount cleanup).
+    await waitFor(() => expect(auth.signOut).toHaveBeenCalledTimes(1))
+    // Local sign-out only: the account is gone, and it can't fail silently on the network.
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' })
     expect(auth.signIn.mock.invocationCallOrder[0]).toBeLessThan(api.deleteMyAccount.mock.invocationCallOrder[0])
     expect(api.deleteMyAccount.mock.invocationCallOrder[0]).toBeLessThan(auth.signOut.mock.invocationCallOrder[0])
     expect(toast.success).toHaveBeenCalledWith(expect.stringMatching(/account was deleted/i), expect.anything())
@@ -197,9 +202,22 @@ describe('Delete my account', () => {
     expect(auth.signOut).not.toHaveBeenCalled()
   })
 
-  it('explains the 409 for an admin account and stays signed in', async () => {
-    api.deleteMyAccount.mockRejectedValue(apiError(409, 'Admin accounts cannot be deleted here.'))
+  it('tells an admin up front and disables the delete', () => {
     const auth = renderAccount({ user: { ...USER, app_metadata: { is_admin: true } } })
+    const note = screen.getByText("Admin accounts can't be deleted here. Ask the owner to remove the admin flag first.")
+    expect(note).toBeTruthy()
+    const button = screen.getByRole('button', { name: /^delete my account$/i })
+    expect(button.disabled).toBe(true)
+    expect(button.getAttribute('aria-describedby')).toBe('delete-account-admin-note')
+    fireEvent.submit(button.closest('form'))
+    expect(deleteDialog()).toBeNull()
+    expect(auth.signIn).not.toHaveBeenCalled()
+    expect(api.deleteMyAccount).not.toHaveBeenCalled()
+  })
+
+  it('still explains a 409 (flag added after the page loaded) and stays signed in', async () => {
+    api.deleteMyAccount.mockRejectedValue(apiError(409, 'Admin accounts cannot be deleted here.'))
+    const auth = renderAccount()
     startDelete()
     confirmDelete()
     expect(
@@ -249,6 +267,69 @@ describe('Delete my account', () => {
     finish(null)
     expect(await screen.findByText('Catalog page')).toBeTruthy()
     expect(api.deleteMyAccount).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores a second confirm in the same tick, before the button is disabled', async () => {
+    api.deleteMyAccount.mockResolvedValue(null)
+    const auth = renderAccount()
+    startDelete()
+    const confirm = within(deleteDialog()).getByRole('button', { name: /yes, delete my account/i })
+    // Inside one act() React does not re-render between the clicks, so the button is still
+    // enabled and the handler's state is stale for the second click: only the ref guard stops it.
+    await act(async () => {
+      confirm.click()
+      confirm.click()
+    })
+    expect(await screen.findByText('Catalog page')).toBeTruthy()
+    expect(auth.signIn).toHaveBeenCalledTimes(1)
+    expect(api.deleteMyAccount).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(auth.signOut).toHaveBeenCalledTimes(1))
+  })
+
+  it('lands on the catalog, not /login, behind ProtectedRoute when sign-out clears the user', async () => {
+    api.deleteMyAccount.mockResolvedValue(null)
+    const loginRendered = vi.fn()
+    const signedOut = vi.fn()
+    function LoginPage() {
+      loginRendered()
+      return <p>Login page</p>
+    }
+    // Like AuthProvider: signing out sets the user to null, which makes ProtectedRoute redirect.
+    function StatefulAuth() {
+      const [user, setUser] = useState(USER)
+      const value = {
+        user,
+        loading: false,
+        signIn: vi.fn().mockResolvedValue(USER),
+        updatePassword: vi.fn(),
+        signOut: async (options) => {
+          signedOut(options)
+          setUser(null)
+        },
+      }
+      return (
+        <AuthContext.Provider value={value}>
+          <Routes>
+            <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<p>Catalog page</p>} />
+          </Routes>
+        </AuthContext.Provider>
+      )
+    }
+    render(
+      <MemoryRouter initialEntries={['/account']}>
+        <StatefulAuth />
+      </MemoryRouter>,
+    )
+    startDelete()
+    confirmDelete()
+    expect(await screen.findByText('Catalog page')).toBeTruthy()
+    // The user really is signed out, and that did not bounce the page to /login.
+    await waitFor(() => expect(signedOut).toHaveBeenCalledWith({ scope: 'local' }))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(screen.getByText('Catalog page')).toBeTruthy()
+    expect(loginRendered).not.toHaveBeenCalled()
   })
 })
 
