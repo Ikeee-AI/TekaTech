@@ -1,7 +1,7 @@
 {
-  "version": "gk-cases-v4",
+  "version": "gk-cases-v5",
   "prompt": "gk-v1 (backend/prompts.py build_general_knowledge_prompt)",
-  "note": "Optional general-knowledge mode (#172), scored separately from the grounded cases with `scripts/eval_runner.py --mode gk`. In this mode no snippets are sent, so every answer must open with the general-knowledge label, carry no citation markers, hedge any spec number, avoid URLs, prices and 'verified' claims, and refuse an unknown product. expected_facts are optional and each one traces to a snippet in sources.json (`trace`: gadget key and snippet id), so no product fact here is invented. GK-03's product name was made up for this case; it is not checked against any catalog, it is meant not to exist. plain_language tells an adapter which prompt style to request. GK-07 (gk-cases-v3) is a post-release Sprint 5 regression case (`added`, `source` and `disposition` are provenance only and not scored): a real product that must not be refused (`should_not_refuse`). It has no expected_facts, because no Pixel 9 spec is in sources.json; that the product exists comes from the dev catalog seed (backend/scripts/seed_dev.py), not from a spec. GK-08 (gk-cases-v4, 15 Nov 2026) is a scoped regression case: it is asked with gadget_ids for the Galaxy S24 (prompts/eval/gk_scope.json, `eval_adapter.py --mode gk --scope prompts/eval/gk_scope.json`), so retrieval returns S24 chunks and only the grounded prompt's NOT_IN_SPECS reply (fallback rule gkf-v1) can reach the general-knowledge answer. It has no expected_facts, because no DeX spec is in sources.json; it checks only that the reply is a labelled, uncited, unrefused general-knowledge answer (answer_basis general_knowledge).",
+  "note": "Optional general-knowledge mode (#172), scored separately from the grounded cases with `scripts/eval_runner.py --mode gk`. In this mode no snippets are sent, so every answer must open with the general-knowledge label, carry no citation markers, hedge any spec number, avoid URLs, prices and 'verified' claims, and refuse an unknown product. expected_facts are optional and each one traces to a snippet in sources.json (`trace`: gadget key and snippet id), so no product fact here is invented. GK-03's product name was made up for this case; it is not checked against any catalog, it is meant not to exist. plain_language tells an adapter which prompt style to request. GK-07 (gk-cases-v3) is a post-release Sprint 5 regression case (`added`, `source` and `disposition` are provenance only and not scored): a real product that must not be refused (`should_not_refuse`). It has no expected_facts, because no Pixel 9 spec is in sources.json; that the product exists comes from the dev catalog seed (backend/scripts/seed_dev.py), not from a spec. GK-08 (gk-cases-v4, 15 Nov 2026) is a scoped regression case: it is asked with gadget_ids for the Galaxy S24 (prompts/eval/gk_scope.json, `eval_adapter.py --mode gk --scope prompts/eval/gk_scope.json`), so retrieval returns S24 chunks and only the grounded prompt's NOT_IN_SPECS reply (fallback rule gkf-v1) can reach the general-knowledge answer. It has no expected_facts, because no DeX spec is in sources.json; it checks only that the reply is a labelled, uncited, unrefused general-knowledge answer (answer_basis general_knowledge). GK-09 (gk-cases-v5, 15 Nov 2026, type stays_grounded) is the opposite check, also scoped (iPhone 15 + Galaxy S24 in gk_scope.json): the stored S24 snippet answers part of the battery comparison, so with the flag on the reply must stay grounded (answer_basis specs, at least one [n] citation, not labelled as general knowledge), state 4000mAh (traced to snippet 9) and say the iPhone 15's capacity is not stated. The GK-answer checks do not apply to it.",
   "cases": [
     {
       "id": "GK-01",
@@ -94,6 +94,25 @@
       "should_not_refuse": true,
       "added": "s5-regression",
       "source": "Production, 15 Nov 2026: on the Galaxy S24 page (scoped, gadget_ids set) with Allow General Knowledge on, this question got the grounded reply 'The provided spec snippets do not state whether the Galaxy S24 supports Samsung DeX...' with citations instead of a labelled general-knowledge answer. Scoped retrieval always returns the nearest chunks, so the no-match trigger for general knowledge never fired; fixed by the gkf-v1 NOT_IN_SPECS rule",
+      "disposition": "prompt"
+    },
+    {
+      "id": "GK-09",
+      "type": "stays_grounded",
+      "query": "Which has the bigger battery?",
+      "comparison": true,
+      "requires_missing_note": true,
+      "expected_facts": [
+        "4000mAh"
+      ],
+      "trace": [
+        {
+          "gadget": "galaxy-s24-ph",
+          "snippet": 9
+        }
+      ],
+      "added": "s5-regression",
+      "source": "Production retest, 15 Nov 2026 (gkf-v1, main 68ed77e): on the Compare page (iPhone 15 vs Galaxy S24, scoped) with Allow General Knowledge on, this question returned NOT_IN_SPECS and a labelled general-knowledge answer with unverified estimates (S24 ~3,900-4,000 mAh, iPhone ~3,300-3,400 mAh), although the stored S24 snippet states 4000mAh. Expected: the grounded answer citing the S24 snippet and saying the iPhone 15's capacity is not stated. Fixed by gkf-v2",
       "disposition": "prompt"
     }
   ]
