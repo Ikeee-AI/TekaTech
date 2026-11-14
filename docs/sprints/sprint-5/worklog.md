@@ -2361,3 +2361,23 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — Final video prep: Part 6 evidence ready (pending #278 merge).
 
 **Next** — Merge #278; continue with the submission prep when the owner sends the GitHub tools.
+
+## 2026-11-15 07:39 Asia/Manila — #278 (repository-rules evidence) merged and live
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** final video Part 6 · **Branch:** `main`
+
+**Done**
+- Jopher **approved #278 on its final commit `ecdf3aa`** (07:32). Squash-merged → `d903e1d`.
+- Main run [43654056969](https://github.com/Ikeee-AI/TekaTech/actions/runs/43654056969): all jobs success, incl. main guard and deploy. API `/version` → `d903e1d`; `/gadgets` 200.
+- `PIPELINE.md` on main now carries the 15 Nov repository-rules status for the video.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions** — None new.
+
+**Decisions** — None.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — Done.
+
+**Next** — Submission prep when the owner sends the GitHub tools.
