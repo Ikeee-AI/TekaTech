@@ -2042,3 +2042,34 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — Done. A visual check of the signed-in Account page is left to the owner's next admin login.
 
 **Next** — Owner: retro by Mon 16 Nov 15:00.
+
+## 2026-11-15 04:58 Asia/Manila — #274's fix did not remove the gap; PR #275 aligns Delete with Change Password
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** #213 follow-up · **Branch:** `tekatech/s5-ik-account-align`
+
+**Done**
+- **The owner's screenshot (04:50) still showed the gap after #274.** The `row-span-2` rule was in the live CSS, but the layout was unchanged. The owner asked to align Delete with Change Password.
+- [#275](https://github.com/Ikeee-AI/TekaTech/pull/275) (`c1c4880`), Jopher requested:
+  - Two real columns on wide screens (Account + Delete left, Password right); equal-height columns, Delete `lg:flex-1` with its button `mt-auto`.
+  - Phone order kept via `display:contents` + `order`.
+  - **Local:** lint, Account tests 29/29, build.
+  - Mock check with the built CSS at 1536 px: Delete 240–530, Password 24–530 (bottoms equal, no gap).
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| #274 "fixed" the gap but the owner still saw it | The row-span approach was not verified on a real render before merging (no signed-in view) | Replaced with explicit columns, checked on a rendered mock first. Open until #275 is live |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| The 05:0x summary said #274 fixed the layout | Overclaimed: the gap remained | Corrected here; #275 replaces it. Open |
+
+**Decisions** — Explicit columns instead of grid row-span — Ikeee-AI.
+
+**Blockers / risks** — #275 review.
+
+**Plan alignment** — Partial.
+
+**Next** — #275 review, merge, then the owner checks the Account page (hard refresh).
