@@ -287,6 +287,11 @@ function Navbar() {
           <CountBadge count={pendingCount} srLabel="pending" className="ml-1.5 align-text-bottom" />
         </NavLink>
       )}
+      {isAdmin && (
+        <NavLink to="/admin" className={className}>
+          Overview
+        </NavLink>
+      )}
     </>
   )
 

@@ -59,6 +59,10 @@ class FakeQuery:
         self._client.in_filters.append((self._table, *a))
         return self
 
+    def gte(self, *a, **k):
+        self._client.filters.append((self._table, "gte", *a))
+        return self
+
     def order(self, *a, **k):
         self._client.orders.append((self._table, *a, k))
         return self
@@ -141,6 +145,7 @@ def fake_supabase(monkeypatch):
     import routers.query as query_module
     import routers.stats as stats_module
     import routers.my_gadgets as my_gadgets_module
+    import routers.admin as admin_module
 
     monkeypatch.setattr(gadgets_module, "supabase", fake)
     monkeypatch.setattr(specs_module, "supabase", fake)
@@ -149,6 +154,7 @@ def fake_supabase(monkeypatch):
     monkeypatch.setattr(query_module, "supabase", fake)
     monkeypatch.setattr(stats_module, "supabase", fake)
     monkeypatch.setattr(my_gadgets_module, "supabase", fake)
+    monkeypatch.setattr(admin_module, "supabase", fake)
     return fake
 
 

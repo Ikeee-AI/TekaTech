@@ -59,6 +59,8 @@ export const api = {
   getMyCorrections: () => request(`/corrections/mine`),
   getPendingCorrectionCount: () => request(`/corrections/pending-count`),
   resolveCorrection: (id, action) => request(`/corrections/${id}`, { method: "PATCH", body: JSON.stringify({ action }) }),
+  // Admin-only, read-only (#206).
+  getAdminOverview: () => request(`/admin/overview`),
   createComparisonLink: (gadgetIds) => request(`/comparisons`, { method: "POST", body: JSON.stringify({ gadget_ids: gadgetIds }) }),
   getComparisonBySlug: (slug) => request(`/comparisons/${slug}`),
   askQuestion: async (data) => {
