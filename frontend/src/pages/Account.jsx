@@ -1,20 +1,27 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Inbox, KeyRound, LayoutGrid, ShieldCheck } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Inbox, KeyRound, LayoutGrid, ShieldCheck, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { api } from '../api/client'
 import { TextField } from '../components/ui/FormField'
 import Alert from '../components/ui/Alert'
 import Button from '../components/ui/Button'
 import BackLink from '../components/ui/BackLink'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 import { authErrorMessage } from '../utils/authErrors'
+import { friendlyError } from '../utils/requestErrors'
 import { PASSWORD_HINT } from '../utils/passwordStrength'
 import PasswordStrength from '../components/PasswordStrength'
 import { isWrongPassword, validatePasswordChange } from '../utils/passwordChange'
 
 const EMPTY = { current: '', next: '', confirm: '' }
 const FIELD_IDS = { current: 'current-password', next: 'new-password', confirm: 'confirm-password' }
+const DELETE_PASSWORD_ID = 'delete-account-password'
+// Shown on the backend's 409 (#213): the catalog is admin-curated, so an admin loses the flag first.
+const ADMIN_DELETE_MESSAGE = "Admin accounts can't be deleted here. Ask the owner to remove the admin flag first."
+const ACCOUNT_DELETED_NOTICE = 'Your account was deleted. Thanks for using TekaTech.'
 
 function formatDate(value) {
   const date = value ? new Date(value) : null
@@ -23,7 +30,156 @@ function formatDate(value) {
 }
 
 /**
- * The signed-in user's account page (#204): email, links to their lists, and Change Password.
+ * Delete my account (#213). Two steps so one stray click can't do it: the form asks for the
+ * current password, then a confirm dialog does the work. On confirm the password is re-checked
+ * by signing in again (as Change Password does), then DELETE /me/account removes the user's
+ * rows and Supabase Auth user, and the user is signed out and sent to the catalog with a notice.
+ * An admin account gets 409 from the backend and stays signed in.
+ */
+function DeleteAccountSection({ user }) {
+  const { signIn, signOut } = useAuth()
+  const navigate = useNavigate()
+  const [password, setPassword] = useState('')
+  const [fieldError, setFieldError] = useState(null)
+  const [error, setError] = useState(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [dialogError, setDialogError] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  // Set when the dialog closes because of a wrong password: the field gets focus once the
+  // dialog has handed focus back to its opener (its cleanup runs before this page's effect).
+  const focusPasswordAfterClose = useRef(false)
+
+  useEffect(() => {
+    if (!confirmOpen && focusPasswordAfterClose.current) {
+      focusPasswordAfterClose.current = false
+      document.getElementById(DELETE_PASSWORD_ID)?.focus()
+    }
+  }, [confirmOpen])
+
+  function updatePassword(value) {
+    setPassword(value)
+    setFieldError(null)
+    setError(null)
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
+    if (!password) {
+      setFieldError('Enter your current password.')
+      document.getElementById(DELETE_PASSWORD_ID)?.focus()
+      return
+    }
+    setDialogError(null)
+    setConfirmOpen(true)
+  }
+
+  function cancel() {
+    if (deleting) return
+    setConfirmOpen(false)
+    setDialogError(null)
+  }
+
+  async function handleConfirm() {
+    if (deleting) return
+    setDeleting(true)
+    setDialogError(null)
+    try {
+      // Re-check the current password by signing in again with it (same account, fresh session).
+      try {
+        await signIn(user.email, password)
+      } catch (err) {
+        if (isWrongPassword(err)) {
+          setFieldError('Your current password is incorrect.')
+          focusPasswordAfterClose.current = true
+          setConfirmOpen(false)
+        } else {
+          setDialogError(authErrorMessage(err, "We couldn't check your password. Please try again."))
+        }
+        return
+      }
+      try {
+        await api.deleteMyAccount()
+      } catch (err) {
+        if (err?.status === 409) {
+          setError(ADMIN_DELETE_MESSAGE)
+          setConfirmOpen(false)
+        } else {
+          // Network failure, 401, 429 or the backend's 503 (nothing more was changed; retry is safe).
+          setDialogError(friendlyError(err))
+        }
+        return
+      }
+      // The Auth user is gone; signing out clears the local session. supabase-js clears it even
+      // when the server no longer knows the session, so a failure here is not worth showing.
+      try {
+        await signOut()
+      } catch {
+        // ignore: the account no longer exists either way
+      }
+      toast.success(ACCOUNT_DELETED_NOTICE, { duration: 6000 })
+      navigate('/', { replace: true })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <section aria-labelledby="delete-account-title" className="bg-white border border-red-200 rounded-[28px] p-6">
+      <h2 id="delete-account-title" className="font-display text-lg font-bold text-red-700 mb-1">
+        Delete My Account
+      </h2>
+      <p className="text-sm text-slate-600 mb-4">
+        Removes your account, your My Gadgets list, your saved questions and your pending suggestions. This
+        can&apos;t be undone.
+      </p>
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <input type="email" name="username" autoComplete="username" value={user.email ?? ''} readOnly hidden />
+        <TextField
+          id={DELETE_PASSWORD_ID}
+          label="Your Password"
+          type="password"
+          required
+          autoComplete="current-password"
+          hint="We check it again before anything is deleted."
+          error={fieldError}
+          value={password}
+          onChange={updatePassword}
+        />
+        <div aria-live="polite">
+          {error && (
+            <Alert tone="error" title="Account Not Deleted">
+              {error}
+            </Alert>
+          )}
+        </div>
+        <Button type="submit" variant="danger" size="lg" icon={Trash2} disabled={deleting} className="w-full">
+          Delete My Account
+        </Button>
+      </form>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete your TekaTech account?"
+        description={
+          <>
+            Your account, My Gadgets list, saved questions and pending suggestions are deleted for good. Suggestions
+            an admin already approved stay in the catalog without your name.
+          </>
+        }
+        confirmLabel="Yes, delete my account"
+        busyLabel="Deleting…"
+        busy={deleting}
+        error={dialogError}
+        onConfirm={handleConfirm}
+        onCancel={cancel}
+      />
+    </section>
+  )
+}
+
+/**
+ * The signed-in user's account page (#204): email, links to their lists, Change Password and
+ * Delete My Account (#213).
  * Changing the password asks for the current one first, so someone at an unattended,
  * signed-in browser can't take the account over. Behind ProtectedRoute in App.jsx.
  */
@@ -180,6 +336,8 @@ export default function Account() {
           </Button>
         </form>
       </section>
+
+      <DeleteAccountSection user={user} />
       </div>
     </div>
   )

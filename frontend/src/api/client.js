@@ -81,4 +81,6 @@ export const api = {
   // The signed-in user's saved questions about one gadget (POST /query saves them), oldest first.
   getGadgetQuestions: (gadgetId) => request(`/me/gadgets/${gadgetId}/questions`),
   clearGadgetQuestions: (gadgetId) => request(`/me/gadgets/${gadgetId}/questions`, { method: "DELETE" }),
+  // Deletes the session user's own account and data (#213): 204 → null; 409 for an admin account.
+  deleteMyAccount: () => request(`/me/account`, { method: "DELETE" }),
 }
