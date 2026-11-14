@@ -15,7 +15,10 @@ Both prompts live in [`backend/prompts.py`](../backend/prompts.py). There are no
 | Prompt | Builder | Label | Used when |
 | --- | --- | --- | --- |
 | Grounded (default) | `build_system_prompt(plain_language)` | `PROMPT_VERSION = "v1"` | Every `POST /query` that retrieved spec chunks |
-| General knowledge (optional, #172) | `build_general_knowledge_prompt(plain_language)` | `GK_PROMPT_VERSION = "gk-v2"` | Retrieval found no chunks **and** the request set `allow_general_knowledge: true` (off by default) |
+| General knowledge (optional, #172) | `build_general_knowledge_prompt(plain_language)` | `GK_PROMPT_VERSION = "gk-v2"` | The request set `allow_general_knowledge: true` (off by default) **and** either retrieval found no chunks or the grounded call replied `NOT_IN_SPECS` (row below) |
+| Grounded + GK fallback rule (15 Nov 2026) | `build_system_prompt(plain_language, allow_general_knowledge=True)` | `PROMPT_VERSION` + `GK_FALLBACK_VERSION = "gkf-v1"` | Every grounded `POST /query` with `allow_general_knowledge: true`. Adds one rule: reply exactly `NOT_IN_SPECS` when the snippets hold none of the answer. Needed because scoped questions always retrieve chunks. Flag-off text unchanged |
+
+**15 Nov 2026 update (Ikeee-AI, prompt owner since the S5-AD takeover, AI-assisted with Claude Code).** On production the toggle never fired on gadget/compare pages: the DeX question on the Galaxy S24 page got a grounded "not stated" reply. The `gkf-v1` rule and the backend sentinel check fix the trigger; GK-08 (`gk-cases-v4`, scoped via `prompts/eval/gk_scope.json`) is the regression case. Not yet scored on real model output. The cache scope with the flag is `v1+gkf-v1+gk-v2`, so earlier flag-on answers are not reused. Bump `GK_FALLBACK_VERSION` (one line, same form) when the rule text changes.
 
 `v1` has not changed since #83. `gk-v2` (5 Nov 2026, Ikeee-AI as prompt owner since the S5-AD takeover, AI-assisted with Claude Code) replaces `gk-v1` for GK-06 only. The label sentence now ends its line, the "verified" rule is reworded, and a "never quote or restate them in the reply" line is added. A grounded `v2` (a variant rule for TC-24) was written and scored in the same dev run but **not shipped**, because it scored lower than `v1`. The attempt is recorded in `docs/evidence/eval-s5-2026-11-05-v2.md`, and the unmerged branch `tekatech/s5-ik-prompt-v2` holds its text. `S2-AD-prompt-spec.md` calls the `v1` text "Revision 2"; the two labels have never been reconciled (open item in `docs/ai-feature-writeup.md`).
 
@@ -49,7 +52,7 @@ Retrieval settings (`MATCH_COUNT` 6, `MATCH_THRESHOLD` 0.25, scoped questions ta
 | --- | --- | --- |
 | `prompts/eval/sources.json` | `s2-ad-sources-v2` | Verified pack, snippets [1]–[10]: iPhone 15 (base) and Galaxy S24 (PH, Exynos 2400), with source URLs and access dates (17 Oct 2026) |
 | `prompts/eval/cases.json` | `s5-ad-cases-v3` | 24 grounded cases: factual 10, comparison 5, missing 4, variant 3, override 2. TC-01..TC-20 are the frozen release set (byte-identical to `s3-ad-cases-v2`); TC-21..TC-24 are Sprint 5 regression cases |
-| `prompts/eval/gk_cases.json` | `gk-cases-v3` | 7 general-knowledge cases; GK-07 is the Sprint 5 regression case (`should_not_refuse`) |
+| `prompts/eval/gk_cases.json` | `gk-cases-v4` | 8 general-knowledge cases; GK-07 and GK-08 are Sprint 5 regression cases (`should_not_refuse`). GK-08 is asked scoped to the Galaxy S24 with `--scope prompts/eval/gk_scope.json` |
 | `reference_answers.json`, `gk_reference_answers.json` | | Hand-written answers that validate the scorer. **Not model output** |
 
 v3 scores (16 factual/comparison, 8 abstention) are not comparable one-to-one with v2 scores (13, 7). Always state the dataset version with a score.

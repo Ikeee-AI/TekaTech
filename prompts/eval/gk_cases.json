@@ -1,7 +1,7 @@
 {
-  "version": "gk-cases-v3",
+  "version": "gk-cases-v4",
   "prompt": "gk-v1 (backend/prompts.py build_general_knowledge_prompt)",
-  "note": "Optional general-knowledge mode (#172), scored separately from the grounded cases with `scripts/eval_runner.py --mode gk`. In this mode no snippets are sent, so every answer must open with the general-knowledge label, carry no citation markers, hedge any spec number, avoid URLs, prices and 'verified' claims, and refuse an unknown product. expected_facts are optional and each one traces to a snippet in sources.json (`trace`: gadget key and snippet id), so no product fact here is invented. GK-03's product name was made up for this case; it is not checked against any catalog, it is meant not to exist. plain_language tells an adapter which prompt style to request. GK-07 (gk-cases-v3) is a post-release Sprint 5 regression case (`added`, `source` and `disposition` are provenance only and not scored): a real product that must not be refused (`should_not_refuse`). It has no expected_facts, because no Pixel 9 spec is in sources.json; that the product exists comes from the dev catalog seed (backend/scripts/seed_dev.py), not from a spec.",
+  "note": "Optional general-knowledge mode (#172), scored separately from the grounded cases with `scripts/eval_runner.py --mode gk`. In this mode no snippets are sent, so every answer must open with the general-knowledge label, carry no citation markers, hedge any spec number, avoid URLs, prices and 'verified' claims, and refuse an unknown product. expected_facts are optional and each one traces to a snippet in sources.json (`trace`: gadget key and snippet id), so no product fact here is invented. GK-03's product name was made up for this case; it is not checked against any catalog, it is meant not to exist. plain_language tells an adapter which prompt style to request. GK-07 (gk-cases-v3) is a post-release Sprint 5 regression case (`added`, `source` and `disposition` are provenance only and not scored): a real product that must not be refused (`should_not_refuse`). It has no expected_facts, because no Pixel 9 spec is in sources.json; that the product exists comes from the dev catalog seed (backend/scripts/seed_dev.py), not from a spec. GK-08 (gk-cases-v4, 15 Nov 2026) is a scoped regression case: it is asked with gadget_ids for the Galaxy S24 (prompts/eval/gk_scope.json, `eval_adapter.py --mode gk --scope prompts/eval/gk_scope.json`), so retrieval returns S24 chunks and only the grounded prompt's NOT_IN_SPECS reply (fallback rule gkf-v1) can reach the general-knowledge answer. It has no expected_facts, because no DeX spec is in sources.json; it checks only that the reply is a labelled, uncited, unrefused general-knowledge answer (answer_basis general_knowledge).",
   "cases": [
     {
       "id": "GK-01",
@@ -85,6 +85,15 @@
       "should_not_refuse": true,
       "added": "s5-regression",
       "source": "PR #193 and issue #172 (2 Nov, TekaTech-dev, Pixel 9 with no specs): the same Pixel 9 question answered 'typically uses Google's Tensor G4' at about 20:00 and 'I don't recognize the Pixel 9 as a confirmed model' at about 21:00; sprint-5 worklog, 2 Nov 22:47 entry",
+      "disposition": "prompt"
+    },
+    {
+      "id": "GK-08",
+      "type": "known",
+      "query": "Does the Galaxy S24 support Samsung DeX?",
+      "should_not_refuse": true,
+      "added": "s5-regression",
+      "source": "Production, 15 Nov 2026: on the Galaxy S24 page (scoped, gadget_ids set) with Allow General Knowledge on, this question got the grounded reply 'The provided spec snippets do not state whether the Galaxy S24 supports Samsung DeX...' with citations instead of a labelled general-knowledge answer. Scoped retrieval always returns the nearest chunks, so the no-match trigger for general knowledge never fired; fixed by the gkf-v1 NOT_IN_SPECS rule",
       "disposition": "prompt"
     }
   ]
