@@ -2018,3 +2018,27 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #213: **Done** (reviewed, merged, deployed, verified on production).
 
 **Next** — #274 review + merge, then check the layout on production. Owner: retro by Mon 15:00.
+
+## 2026-11-15 04:46 Asia/Manila — #274 (Account layout) merged and live
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** #213 follow-up · **Branch:** `main`
+
+**Done**
+- Jopher **approved #274 on its final commit `e3b1600`** (04:38). The owner said "merge it now". Squash-merged → `1ae5ab9`.
+- Main run [43638960751](https://github.com/Ikeee-AI/TekaTech/actions/runs/43638960751): all jobs success, incl. main guard and deploy. API `/version` → `1ae5ab9`.
+- The live frontend bundle contains `lg:row-span-2`.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| A merge attempt after the owner's "approved check" was denied by the permission check | The owner had asked for a check, not a merge | Merged after the explicit "merge it now". Resolved |
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — None.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — Done. A visual check of the signed-in Account page is left to the owner's next admin login.
+
+**Next** — Owner: retro by Mon 16 Nov 15:00.
