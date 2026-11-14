@@ -2304,3 +2304,26 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #277 pending review.
 
 **Next** — Review → "merge 277" → production retest of scenario 8. Then freeze.
+
+## 2026-11-15 07:12 Asia/Manila — #277 (gkf-v2) merged, live and verified on production; AI side locked
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** AI area (takeover) · **Branch:** `main`
+
+**Done**
+- Jopher **approved #277 on its final commit `cd65ff7`** (07:04). Squash-merged → `6f83efc`.
+- Main run [43651690127](https://github.com/Ikeee-AI/TekaTech/actions/runs/43651690127): all jobs success, incl. main guard and deploy. API `/version` → `6f83efc`.
+- **Production retest** (compare iPhone 15 vs Galaxy S24, GK on, signed-in Member):
+  - **Scenario 8** "Which has the bigger battery?" → **"Galaxy S24: battery listed as 4000mAh [1]. iPhone 15: battery capacity is not stated…"**, 1 cited spec. The defect is fixed.
+  - "Which of these phones has a desktop mode like Samsung DeX?" → labelled general knowledge for both phones. GK still works in comparisons.
+- The AI side is **locked** per the owner's decision; the mixed answer is deferred.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — Freeze AI changes after #277 — owner.
+
+**Blockers / risks** — Manuel has not reviewed #276/#277 (merged on Jopher's approval); post-merge review welcome.
+
+**Plan alignment** — GK on gadget/compare pages: **Done** (reviewed, merged, deployed, verified on production in both directions).
+
+**Next** — Owner: today's deadline and the retro by Mon 16 Nov 15:00.
