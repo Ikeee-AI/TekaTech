@@ -1492,3 +1492,26 @@ Short session, ~09:45–10:12 Manila.
 - Switch the CSP from Report-Only to enforced after a few clean days — Ikeee-AI.
 - Reviews: #263 (Manuel), #256 re-approval (Manuel or Mika), #254 rebase (Manuel), #249 (Jopher).
 - Sprint 5 retro (#238) entries due Mon 16 Nov 15:00, the owner's own still missing — Ikeee-AI.
+
+## 2026-11-14 13:55 Asia/Manila — Dependabot alert #30 fixed (#264 merged and live)
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S5-IK security upkeep · **Branch:** `dependabot` PR → `main`
+
+**Done**
+- Alert [#30](https://github.com/Ikeee-AI/TekaTech/security/dependabot/30): `opentelemetry-api` ≤ 1.45.1, GHSA-mf5v-w3w3-f6cg (medium, slow `traceparent` parsing). Transitive via `fastapi`; no TekaTech code uses OpenTelemetry, so exposure was low.
+- [#264](https://github.com/Ikeee-AI/TekaTech/pull/264) (Dependabot, `backend/uv.lock` only, 1.45.1 → 1.45.2): approved by Ikeee-AI (author is Dependabot, so the main guard's other-person rule is met), squash-merged `d7cba22`. Main run [43561947092](https://github.com/Ikeee-AI/TekaTech/actions/runs/43561947092) all green incl. main guard and deploy. Production `/version` → `d7cba22`, `GET /gadgets` 200. Alert state: `fixed`.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Backend dependencies are Manuel's area, but the owner reviewed this bump | Review not by the area owner | Lockfile-only security bump with green checks; owner decision. Resolved |
+
+**Decisions** — Merge the security bump now with the owner's review rather than wait for Manuel — Ikeee-AI.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — Done (reviewed, checks green, merged, deployed, verified).
+
+**Next** — None for this item.
