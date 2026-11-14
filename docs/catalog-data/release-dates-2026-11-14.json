@@ -1,0 +1,243 @@
+[
+  {
+    "gadget_id": "073ad803-9ef7-46dc-bf73-fef21f2c074a",
+    "name": "iPhone 15",
+    "brand": "Apple",
+    "before": null,
+    "release_date": "2023-09-22",
+    "kind": "on sale (\"availability beginning Friday, September 22\")",
+    "source_url": "https://www.apple.com/newsroom/2023/09/apple-debuts-iphone-15-and-iphone-15-plus/",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "3912d3e0-155c-473f-b0e9-1744a6134e82",
+    "name": "iPhone 16",
+    "brand": "Apple",
+    "before": null,
+    "release_date": "2024-09-20",
+    "kind": "on sale",
+    "source_url": "https://www.apple.com/newsroom/2024/09/apple-introduces-iphone-16-and-iphone-16-plus/",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "7bef1116-e7c1-484c-be35-242345f33696",
+    "name": "iPhone 16 Pro",
+    "brand": "Apple",
+    "before": null,
+    "release_date": "2024-09-20",
+    "kind": "on sale",
+    "source_url": "https://www.apple.com/newsroom/2024/09/apple-debuts-iphone-16-pro-and-iphone-16-pro-max/",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "d8b5cdbd-37ef-4239-b11e-3573474f53a0",
+    "name": "iPhone 16e",
+    "brand": "Apple",
+    "before": null,
+    "release_date": "2025-02-28",
+    "kind": "on sale",
+    "source_url": "https://www.apple.com/newsroom/2025/02/apple-debuts-iphone-16e-a-powerful-new-member-of-the-iphone-16-family/",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "a8c964ba-658f-4fb2-b0c6-aec95092ecf4",
+    "name": "Galaxy S24",
+    "brand": "Samsung",
+    "before": null,
+    "release_date": "2024-01-31",
+    "kind": "on sale (US/UK/SG all 31 Jan 2024)",
+    "source_url": "https://news.samsung.com/us/samsung-galaxy-s24-series-now-available-in-us/",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "5e49de5a-87e7-4eb3-ad9e-3e4c828716bc",
+    "name": "Galaxy S25",
+    "brand": "Samsung",
+    "before": null,
+    "release_date": "2025-02-07",
+    "kind": "on sale worldwide",
+    "source_url": "https://news.samsung.com/global/samsung-galaxy-s25-series-arrives-worldwide",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "5c9a2c04-ae56-4dd6-a001-e1f50c84f918",
+    "name": "Galaxy A56 5G",
+    "brand": "Samsung",
+    "before": null,
+    "release_date": "2025-03-17",
+    "kind": "PH stores (Samsung PH newsroom)",
+    "source_url": "https://news.samsung.com/ph/samsung-marks-a-step-forward-with-ai-for-everyone-by-introducing-new-galaxy-a56-5g-and-galaxy-a36-5g",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "cc45a57c-3ac5-4d47-8e9d-84c3d4f6b4a8",
+    "name": "Galaxy A36 5G",
+    "brand": "Samsung",
+    "before": null,
+    "release_date": "2025-03-17",
+    "kind": "PH stores (Samsung PH newsroom)",
+    "source_url": "https://news.samsung.com/ph/samsung-marks-a-step-forward-with-ai-for-everyone-by-introducing-new-galaxy-a56-5g-and-galaxy-a36-5g",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "ed185274-ffa3-4958-b74b-d4d3a01671e4",
+    "name": "ROG Phone 9 Pro",
+    "brand": "ASUS",
+    "before": null,
+    "release_date": "2024-11-19",
+    "kind": "global launch (sale date not stated: 'early Q1 2025')",
+    "source_url": "https://www.asus.com/us/news/svgnhmmg9yk6csvm/",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "88f75ae3-44b0-46d8-8760-4fa5fd892486",
+    "name": "Rog Ally",
+    "brand": "Asus",
+    "before": null,
+    "release_date": "2023-06-13",
+    "kind": "on sale (original ROG Ally RC71L)",
+    "source_url": "https://www.asus.com/us/news/lcgmpd7irpdbdqxc/",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "a621bb58-4c4b-431f-b776-09189150c727",
+    "name": "POCO X7 Pro",
+    "brand": "POCO",
+    "before": null,
+    "release_date": "2025-01-09",
+    "kind": "global launch event",
+    "source_url": "https://www.mi.com/global/event/2025/poco-xser-launch-speed-2025",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "a192c0cd-1d7d-415e-b9ee-5de2a90b52c7",
+    "name": "Find X8",
+    "brand": "OPPO",
+    "before": null,
+    "release_date": "2024-11-21",
+    "kind": "global launch (OPPO PH page)",
+    "source_url": "https://www.oppo.com/ph/events/find-x8-launch/",
+    "checked": "2026-11-14"
+  },
+  {
+    "gadget_id": "496c93f8-aca7-418f-89aa-a5331bd0a095",
+    "name": "Reno13 5G",
+    "brand": "OPPO",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "OPPO global press gives no date; PH event page date is a template"
+  },
+  {
+    "gadget_id": "762ab885-4dbc-48c0-a5ca-beb185945e7a",
+    "name": "Reno13 F 5G",
+    "brand": "OPPO",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "same as Reno13 5G"
+  },
+  {
+    "gadget_id": "7e9e481a-743b-4844-9af0-ea8424d0012a",
+    "name": "Reno14 5G",
+    "brand": "OPPO",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "OPPO PH press says 'now available for pre-order', no date"
+  },
+  {
+    "gadget_id": "dd735047-8c55-44da-8b15-6b73ea85e376",
+    "name": "Reno14 F 5G",
+    "brand": "OPPO",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "same as Reno14 5G"
+  },
+  {
+    "gadget_id": "5916b9a5-7586-40b4-a5ae-ff8fb20f1e37",
+    "name": "13 Pro+ 5G",
+    "brand": "realme",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "no date on realme PH/global pages"
+  },
+  {
+    "gadget_id": "0d4273f6-2c63-4c6e-991c-7174e55ca374",
+    "name": "14 Pro 5G",
+    "brand": "realme",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "only India announcement (19 Dec 2024), no sale date; PH page redirects"
+  },
+  {
+    "gadget_id": "9a053dac-a230-46fa-8e22-2046f76432a3",
+    "name": "14 Pro+ 5G",
+    "brand": "realme",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "same as 14 Pro 5G"
+  },
+  {
+    "gadget_id": "4a26ddb6-023c-41b5-b484-9a1bcf750d96",
+    "name": "X200",
+    "brand": "vivo",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "no official date on vivo PH"
+  },
+  {
+    "gadget_id": "c77cb277-dec1-47f5-bee1-e84caf4c761a",
+    "name": "X200 Pro",
+    "brand": "vivo",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "no official date on vivo PH"
+  },
+  {
+    "gadget_id": "0fe1e3be-b756-4364-8717-44c447969d5d",
+    "name": "X200 FE",
+    "brand": "vivo",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "only a Pakistan launch (14 Jul 2025), not the first release"
+  },
+  {
+    "gadget_id": "4fbc32c0-8418-4de7-9341-5d41a9eca8d5",
+    "name": "V50 5G",
+    "brand": "vivo",
+    "before": null,
+    "release_date": null,
+    "kind": null,
+    "source_url": null,
+    "checked": "2026-11-14",
+    "note": "no official date on vivo PH"
+  }
+]

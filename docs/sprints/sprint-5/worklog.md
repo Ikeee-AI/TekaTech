@@ -1703,3 +1703,49 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #254 (#213 backend): **Done** (reviewed, checks green, merged, deployed, verified). #269 (CSP record): Done.
 
 **Next** — Mika: #267, #249. Manuel: #201 follow-ups. Owner: retro #238 by Mon 16 Nov 15:00.
+
+## 2026-11-15 00:09 Asia/Manila — #201 catalog takeover done on production (dates, launch prices, old blocks, spot-checks)
+**Who:** Ikeee-AI (AI-assisted: yes; the assistant drove the admin pages in the owner's Chrome after the owner signed in as admin; the owner confirmed the deletions and the price rule) · **Task:** #201 (taken over from Manuel with notice) · **Branch:** production data; records on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- Takeover notice on #201 ([comment](https://github.com/Ikeee-AI/TekaTech/issues/201#issuecomment-6879891350)); Manuel's 13 Nov entry stays credited to him.
+- Snapshot of all 24 gadgets and their specs taken first (local, scratchpad), used as the rollback reference.
+- **Deleted 2 old spec blocks** (owner: "delete both"): POCO X7 Pro unsourced `7cefe52f…` and iPhone 15 en-us `92b2ac08…`. Coverage still 24/24.
+- **Owner rule (14 Nov):** discontinued phones still get a price: base-variant regular launch price, brand first, else a named PH outlet.
+- **Release dates:** 22 set (12 from brand newsrooms, 10 PH launches from named outlets) → 23 of 24 dated (X200 FE none).
+- **Prices:** 15 set or replaced → 24 of 24 priced, all with a source link. Records:
+  - `docs/catalog-data/release-dates-2026-11-14.json`
+  - `docs/catalog-data/launch-prices-2026-11-14.json`
+  - Every figure was checked on its linked page before entry; each JSON row keeps the before value for rollback.
+- API check after all edits: 0 unexpected field changes against the snapshot.
+- **Spot-checks:** 48 questions (chip and battery, every phone). All 48 answered from cited specs; no wrong citations or errors. Content gaps:
+  - iPhone battery mAh (Apple doesn't publish it)
+  - ROG Phone 9 Pro battery
+  - Galaxy A36/A56 chip name
+- **Images:** kept. 7 still go through a search-engine image proxy; no usable official product photos exist. Deferred to #202 (image upload).
+- Record posted: [#201 comment](https://github.com/Ikeee-AI/TekaTech/issues/201#issuecomment-6880366794).
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `No element found with reference: "ref_36"` | Browser-tool references expire after a page load | Look the field up again on each page, and check name and value with a script before every save. Resolved |
+| One batch step navigated to a placeholder gadget URL | Assistant error (ID not looked up yet) | Page load only, nothing saved; real IDs fetched. Resolved |
+| Search with a site filter returned nothing; YugaTech's X200 article had unconfirmed pre-launch prices | Tool/source limits | Searched without the filter; used the final launch article instead. Resolved |
+| X200 Pro spot-check answer cited "(1)" instead of "[1]" | Model formatting slip (prompt is coupled to AnswerText.jsx) | Logged, not fixed. Open, prompt owner |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Admin form hint says the price source is "the brand's official PH page"; the owner rule now allows a named PH outlet | Hint is out of date | Update the hint text in GadgetForm later. Open, Ikeee-AI |
+| #266's rule was "official current price only, else none"; the 14 Nov owner rule adds launch prices from named outlets | Earlier "15 have no official price" note superseded | Superseded by the owner's decision. Closed |
+| The price tag shows "checked 14 Nov" with no "launch price" label | A discontinued phone's launch SRP can read as a current price | Possible UI follow-up: a launch-price label. Open, owner |
+
+**Decisions** — Take over all remaining #201 work (owner). Delete both old blocks (owner). Launch prices from brand first, else a named PH outlet (owner). Keep the current images until #202 (Ikeee-AI).
+
+**Blockers / risks** — None. Rollback for any edit: the before values in the two JSON files.
+
+**Plan alignment** — #201: **Done** except images (deferred to #202). Issue left open for the owner to close.
+
+**Next** — Close #201 or keep it open for images (owner). Update the admin form price-source hint (Ikeee-AI). Optionally add ROG Phone 9 Pro battery and Galaxy A-series chip names from official pages (content).

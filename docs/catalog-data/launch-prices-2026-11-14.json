@@ -1,0 +1,238 @@
+{
+  "rule": "Owner 14 Nov 2026: phones no longer sold still get a price. Source order: brand page/newsroom first, else a named PH outlet. Launch price of the base variant, regular (not promo). Dates: brand first, else named PH outlet (PH launch).",
+  "checked": "2026-11-14",
+  "prices": [
+    {
+      "gadget_id": "073ad803-9ef7-46dc-bf73-fef21f2c074a",
+      "name": "iPhone 15",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 56990,
+      "variant": "128GB",
+      "price_source_url": "https://www.technobaboy.com/2023/09/13/apple-iphone-15-and-15-plus-official-price-philippines/",
+      "source_kind": "named PH outlet (Apple PH launch SRP)"
+    },
+    {
+      "gadget_id": "7bef1116-e7c1-484c-be35-242345f33696",
+      "name": "iPhone 16 Pro",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 69990,
+      "variant": "128GB",
+      "price_source_url": "https://www.technobaboy.com/2024/09/10/iphone-16-pro-and-16-pro-max-official-price-in-the-philippines-announced/",
+      "source_kind": "named PH outlet (Apple PH launch SRP)"
+    },
+    {
+      "gadget_id": "d8b5cdbd-37ef-4239-b11e-3573474f53a0",
+      "name": "iPhone 16e",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 39990,
+      "variant": "128GB",
+      "price_source_url": "https://thesummitexpress.com/2025/02/apple-debuts-budget-friendly-iphone-16e-priced-philippines.html",
+      "source_kind": "named PH outlet (Apple PH launch SRP)"
+    },
+    {
+      "gadget_id": "a8c964ba-658f-4fb2-b0c6-aec95092ecf4",
+      "name": "Galaxy S24",
+      "before_price_php": 50990.0,
+      "before_source": null,
+      "price_php": 53990,
+      "variant": "8GB+256GB",
+      "price_source_url": "https://www.samsung.com/ph/smartphones/galaxy-s24/buy/",
+      "source_kind": "brand page (2024 launch price text)"
+    },
+    {
+      "gadget_id": "5c9a2c04-ae56-4dd6-a001-e1f50c84f918",
+      "name": "Galaxy A56 5G",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 23990,
+      "variant": "8GB+128GB online exclusive",
+      "price_source_url": "https://news.samsung.com/ph/create-connect-and-conquer-the-awesome-way-with-the-samsung-galaxy-a-series",
+      "source_kind": "brand PH newsroom"
+    },
+    {
+      "gadget_id": "cc45a57c-3ac5-4d47-8e9d-84c3d4f6b4a8",
+      "name": "Galaxy A36 5G",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 19990,
+      "variant": "8GB+128GB online exclusive",
+      "price_source_url": "https://news.samsung.com/ph/create-connect-and-conquer-the-awesome-way-with-the-samsung-galaxy-a-series",
+      "source_kind": "brand PH newsroom"
+    },
+    {
+      "gadget_id": "5916b9a5-7586-40b4-a5ae-ff8fb20f1e37",
+      "name": "13 Pro+ 5G",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 28999,
+      "variant": "12GB+256GB",
+      "price_source_url": "https://www.revu.com.ph/2024/08/realme-13-pro-series-5g-price-philippines/",
+      "source_kind": "named PH outlet"
+    },
+    {
+      "gadget_id": "0d4273f6-2c63-4c6e-991c-7174e55ca374",
+      "name": "14 Pro 5G",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 21999,
+      "variant": "12GB+256GB",
+      "price_source_url": "https://www.technobaboy.com/2025/03/22/realme-14-pro-5g-and-14-pro-5g-launch-in-the-philippines-price-revealed/",
+      "source_kind": "named PH outlet"
+    },
+    {
+      "gadget_id": "9a053dac-a230-46fa-8e22-2046f76432a3",
+      "name": "14 Pro+ 5G",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 27999,
+      "variant": "12GB+512GB",
+      "price_source_url": "https://www.technobaboy.com/2025/03/22/realme-14-pro-5g-and-14-pro-5g-launch-in-the-philippines-price-revealed/",
+      "source_kind": "named PH outlet"
+    },
+    {
+      "gadget_id": "496c93f8-aca7-418f-89aa-a5331bd0a095",
+      "name": "Reno13 5G",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 34999,
+      "variant": "12GB+512GB",
+      "price_source_url": "https://www.technobaboy.com/2025/01/31/oppo-reno13-series-5g-now-available-for-pre-order-in-the-philippines/",
+      "source_kind": "named PH outlet"
+    },
+    {
+      "gadget_id": "762ab885-4dbc-48c0-a5ca-beb185945e7a",
+      "name": "Reno13 F 5G",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 22999,
+      "variant": "12GB+256GB",
+      "price_source_url": "https://www.technobaboy.com/2025/01/31/oppo-reno13-series-5g-now-available-for-pre-order-in-the-philippines/",
+      "source_kind": "named PH outlet"
+    },
+    {
+      "gadget_id": "4a26ddb6-023c-41b5-b484-9a1bcf750d96",
+      "name": "X200",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 57999,
+      "variant": "12GB+256GB",
+      "price_source_url": "https://www.technobaboy.com/2024/12/16/flagships-vivo-x200-and-x200-pro-launch-in-the-philippines-starts-at-under-58k/",
+      "source_kind": "named PH outlet"
+    },
+    {
+      "gadget_id": "c77cb277-dec1-47f5-bee1-e84caf4c761a",
+      "name": "X200 Pro",
+      "before_price_php": null,
+      "before_source": null,
+      "price_php": 69999,
+      "variant": "16GB+512GB",
+      "price_source_url": "https://www.technobaboy.com/2024/12/16/flagships-vivo-x200-and-x200-pro-launch-in-the-philippines-starts-at-under-58k/",
+      "source_kind": "named PH outlet"
+    },
+    {
+      "gadget_id": "4fbc32c0-8418-4de7-9341-5d41a9eca8d5",
+      "name": "V50 5G",
+      "before_price_php": 22999.0,
+      "before_source": null,
+      "price_php": 27999,
+      "variant": "12GB+256GB",
+      "price_source_url": "https://www.yugatech.com/mobile/vivo-v50-5g-launched-priced-in-the-philippines/",
+      "source_kind": "named PH outlet"
+    },
+    {
+      "gadget_id": "a621bb58-4c4b-431f-b776-09189150c727",
+      "name": "POCO X7 Pro",
+      "before_price_php": 14999.0,
+      "before_source": null,
+      "price_php": 16999,
+      "variant": "8GB+256GB (regular, not promo)",
+      "price_source_url": "https://www.revu.com.ph/2025/01/poco-x7-poco-x7-pro-price-ph-and-global",
+      "source_kind": "named PH outlet (POCO press release)"
+    }
+  ],
+  "dates": [
+    {
+      "gadget_id": "5916b9a5-7586-40b4-a5ae-ff8fb20f1e37",
+      "name": "13 Pro+ 5G",
+      "before": null,
+      "release_date": "2024-08-28",
+      "source_url": "https://www.revu.com.ph/2024/08/realme-13-pro-series-5g-price-philippines/",
+      "source_kind": "named PH outlet (PH launch)"
+    },
+    {
+      "gadget_id": "0d4273f6-2c63-4c6e-991c-7174e55ca374",
+      "name": "14 Pro 5G",
+      "before": null,
+      "release_date": "2025-03-20",
+      "source_url": "https://www.technobaboy.com/2025/03/22/realme-14-pro-5g-and-14-pro-5g-launch-in-the-philippines-price-revealed/",
+      "source_kind": "named PH outlet (PH launch)"
+    },
+    {
+      "gadget_id": "9a053dac-a230-46fa-8e22-2046f76432a3",
+      "name": "14 Pro+ 5G",
+      "before": null,
+      "release_date": "2025-03-20",
+      "source_url": "https://www.technobaboy.com/2025/03/22/realme-14-pro-5g-and-14-pro-5g-launch-in-the-philippines-price-revealed/",
+      "source_kind": "named PH outlet (PH launch)"
+    },
+    {
+      "gadget_id": "496c93f8-aca7-418f-89aa-a5331bd0a095",
+      "name": "Reno13 5G",
+      "before": null,
+      "release_date": "2025-01-31",
+      "source_url": "https://www.technobaboy.com/2025/01/31/oppo-reno13-series-5g-now-available-for-pre-order-in-the-philippines/",
+      "source_kind": "named PH outlet (PH launch)"
+    },
+    {
+      "gadget_id": "762ab885-4dbc-48c0-a5ca-beb185945e7a",
+      "name": "Reno13 F 5G",
+      "before": null,
+      "release_date": "2025-01-31",
+      "source_url": "https://www.technobaboy.com/2025/01/31/oppo-reno13-series-5g-now-available-for-pre-order-in-the-philippines/",
+      "source_kind": "named PH outlet (PH launch)"
+    },
+    {
+      "gadget_id": "7e9e481a-743b-4844-9af0-ea8424d0012a",
+      "name": "Reno14 5G",
+      "before": null,
+      "release_date": "2025-08-08",
+      "source_url": "https://www.technobaboy.com/2025/08/08/oppo-reno14-series-launches-in-the-philippines-specs-prices-and-pre-order-perks/",
+      "source_kind": "named PH outlet (PH launch)"
+    },
+    {
+      "gadget_id": "dd735047-8c55-44da-8b15-6b73ea85e376",
+      "name": "Reno14 F 5G",
+      "before": null,
+      "release_date": "2025-08-08",
+      "source_url": "https://www.technobaboy.com/2025/08/08/oppo-reno14-series-launches-in-the-philippines-specs-prices-and-pre-order-perks/",
+      "source_kind": "named PH outlet (PH launch)"
+    },
+    {
+      "gadget_id": "4a26ddb6-023c-41b5-b484-9a1bcf750d96",
+      "name": "X200",
+      "before": null,
+      "release_date": "2024-12-15",
+      "source_url": "https://yugatech.com/news/vivo-x200-series-returns-philippines-december-15-launch",
+      "source_kind": "named PH outlet (PH launch)"
+    },
+    {
+      "gadget_id": "c77cb277-dec1-47f5-bee1-e84caf4c761a",
+      "name": "X200 Pro",
+      "before": null,
+      "release_date": "2024-12-15",
+      "source_url": "https://yugatech.com/news/vivo-x200-series-returns-philippines-december-15-launch",
+      "source_kind": "named PH outlet (PH launch)"
+    },
+    {
+      "gadget_id": "4fbc32c0-8418-4de7-9341-5d41a9eca8d5",
+      "name": "V50 5G",
+      "before": null,
+      "release_date": "2025-02-27",
+      "source_url": "https://unbox.ph/gadget/vivo-v50-philippines-price/",
+      "source_kind": "named PH outlet (PH launch)"
+    }
+  ]
+}
