@@ -1577,3 +1577,36 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — Housekeeping, no task row. Done.
 
 **Next** — None for this item. Open items unchanged from the 20:06 entry (#254 Manuel, #249 Mika/Manuel, retro #238).
+
+## 2026-11-14 21:17 Asia/Manila — Production sign-up retest: confirmation email lands in spam; "check spam" hint added
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S5-IK #266 follow-up (live sign-up retest), auth email deliverability · **Branch:** `tekatech/s5-ik-spam-hint` (pushed, no PR yet); log on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- Started the production sign-up retest in Chrome on https://tekatech-web.onrender.com: Log In → "Don't have an account? Sign Up" shows "Create an Account" with the password checklist (8+ characters, upper, lower, number, symbol). The owner typed the email and password themselves (not entered by the assistant).
+- **Finding (owner, 14 Nov):** the sign-up confirmation email arrived in the **spam** folder, not the inbox.
+- Hint added on branch `tekatech/s5-ik-spam-hint`, commit `fd87235`: the sign-up "Account Created" notice and the "resent" notice in `frontend/src/pages/Login.jsx` now say to check the spam folder (Forgot Password already did). A test assertion was added in `Login.test.jsx`. **Local:** Login tests 14/14, full frontend 557 passed, lint clean, build OK. Not reviewed, merged or deployed yet.
+- Note: `/signup` is not a route (404); sign-up is a mode of `/login`. Not a bug, just how the page is built.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Sign-up confirmation email filed as spam | Auth email goes through Brevo with sender `tekatechemail@gmail.com`; a gmail.com sender sent from a non-Google server fails SPF/DKIM/DMARC alignment. Brevo warned "Freemail domain is not recommended" when it was set up, and the risk was already in `docs/devops/environments.md` (Known limits) | Short term: the "check your spam folder" hint (`fd87235`, pending review). Real fix: a sending domain verified in Brevo (SPF, DKIM, DMARC). Open, owner |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| 3 Nov entry says a test sign-up email "arrived instantly in the inbox"; on 14 Nov it went to spam | Deliverability is not reliable with a Gmail sender, results vary | Treat as an open risk, not fixed. Open, owner |
+| `Login.jsx` is also changed by Jopher's #249 | Possible merge conflict | #249 edits lines ~11–131; this change only touches the notices at ~220–247. No overlap expected. Open, check at merge |
+
+**Decisions** — Add a "check spam" hint now (free) and decide on a custom sending domain separately, since it costs money (about $1–12/year) — Ikeee-AI.
+
+**Blockers / risks** — Real users may miss the confirmation email until a sending domain is set up — owner. The hint needs a teammate review to go live (frontend: Mika) — Ikeee-AI.
+
+**Plan alignment** — Live sign-up retest (due before Sun 15 Nov 09:00): Partial, sign-up sent and email received in spam; confirmation, sign-in and the "X of 20 questions left" check are still to do. Spam hint: Partial (local only).
+
+**Next**
+- Finish the retest: confirm from the spam email, sign in, check "X of 20 questions left" — owner + assistant — tonight.
+- Open a PR for `tekatech/s5-ik-spam-hint` (or batch it) and ask Mika to review — Ikeee-AI.
+- Decide on a Brevo sending domain — owner — before more real sign-ups.
