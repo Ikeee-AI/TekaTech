@@ -1,11 +1,19 @@
 // #204: the Account page shows the user's details and changes the password only after
-// re-checking the current one.
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+// re-checking the current one. #213: "Delete my account" re-checks the password too, asks
+// for confirmation, then calls DELETE /me/account and signs out.
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useState } from 'react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { AuthContext } from '../context/authContextValue'
+import { api } from '../api/client'
 import Account from './Account'
+import ProtectedRoute from '../components/ProtectedRoute'
 import { validatePasswordChange } from '../utils/passwordChange'
+
+vi.mock('../api/client', () => ({ api: { deleteMyAccount: vi.fn() } }))
+vi.mock('react-hot-toast', () => ({ default: { success: vi.fn() } }))
 
 const USER = {
   id: 'u-1',
@@ -23,12 +31,16 @@ function renderAccount({ user = USER, auth = {} } = {}) {
     user,
     signIn: vi.fn().mockResolvedValue(user),
     updatePassword: vi.fn().mockResolvedValue(undefined),
+    signOut: vi.fn().mockResolvedValue(undefined),
     ...auth,
   }
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={['/account']}>
       <AuthContext.Provider value={value}>
-        <Account />
+        <Routes>
+          <Route path="/account" element={<Account />} />
+          <Route path="/" element={<p>Catalog page</p>} />
+        </Routes>
       </AuthContext.Provider>
     </MemoryRouter>,
   )
@@ -122,6 +134,202 @@ describe('Change password', () => {
     fillAndSubmit()
     expect(await screen.findByText(/too many requests/i)).toBeTruthy()
     expect(screen.getByText('Password Not Updated')).toBeTruthy()
+  })
+})
+
+describe('Delete my account', () => {
+  const deleteDialog = () => screen.queryByRole('alertdialog', { name: /delete your tekatech account/i })
+  const startDelete = (password = 'old-secret') => {
+    type(/^your password/i, password)
+    fireEvent.click(screen.getByRole('button', { name: /^delete my account$/i }))
+  }
+  const confirmDelete = () =>
+    fireEvent.click(within(deleteDialog()).getByRole('button', { name: /yes, delete my account/i }))
+  const apiError = (status, message) => Object.assign(new Error(message), { status })
+
+  beforeEach(() => {
+    api.deleteMyAccount.mockReset()
+    toast.success.mockReset()
+  })
+
+  it('re-checks the password, deletes, signs out and shows a notice on the catalog', async () => {
+    api.deleteMyAccount.mockResolvedValue(null)
+    const auth = renderAccount()
+    startDelete()
+    confirmDelete()
+    expect(await screen.findByText('Catalog page')).toBeTruthy()
+    expect(auth.signIn).toHaveBeenCalledWith('member@example.com', 'old-secret')
+    expect(api.deleteMyAccount).toHaveBeenCalledTimes(1)
+    // The sign-out runs once the catalog has replaced the Account page (unmount cleanup).
+    await waitFor(() => expect(auth.signOut).toHaveBeenCalledTimes(1))
+    // Local sign-out only: the account is gone, and it can't fail silently on the network.
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' })
+    expect(auth.signIn.mock.invocationCallOrder[0]).toBeLessThan(api.deleteMyAccount.mock.invocationCallOrder[0])
+    expect(api.deleteMyAccount.mock.invocationCallOrder[0]).toBeLessThan(auth.signOut.mock.invocationCallOrder[0])
+    expect(toast.success).toHaveBeenCalledWith(expect.stringMatching(/account was deleted/i), expect.anything())
+  })
+
+  it('sends nothing until the confirm step, and Cancel sends nothing', () => {
+    const auth = renderAccount()
+    startDelete()
+    expect(deleteDialog()).not.toBeNull()
+    expect(auth.signIn).not.toHaveBeenCalled()
+    expect(api.deleteMyAccount).not.toHaveBeenCalled()
+    fireEvent.click(within(deleteDialog()).getByRole('button', { name: 'Cancel' }))
+    expect(deleteDialog()).toBeNull()
+    expect(auth.signIn).not.toHaveBeenCalled()
+    expect(api.deleteMyAccount).not.toHaveBeenCalled()
+    expect(auth.signOut).not.toHaveBeenCalled()
+  })
+
+  it('asks for the password before opening the confirm step', () => {
+    const auth = renderAccount()
+    fireEvent.click(screen.getByRole('button', { name: /^delete my account$/i }))
+    expect(deleteDialog()).toBeNull()
+    expect(screen.getByLabelText(/^your password/i).getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(screen.getByLabelText(/^your password/i))
+    expect(auth.signIn).not.toHaveBeenCalled()
+  })
+
+  it('does not delete when the password is wrong, and focuses the field', async () => {
+    const auth = renderAccount({ auth: { signIn: vi.fn().mockRejectedValue(wrongPassword()) } })
+    startDelete('guess')
+    confirmDelete()
+    expect(await screen.findByText('Your current password is incorrect.')).toBeTruthy()
+    await waitFor(() => expect(deleteDialog()).toBeNull())
+    expect(document.activeElement).toBe(screen.getByLabelText(/^your password/i))
+    expect(api.deleteMyAccount).not.toHaveBeenCalled()
+    expect(auth.signOut).not.toHaveBeenCalled()
+  })
+
+  it('tells an admin up front and disables the delete', () => {
+    const auth = renderAccount({ user: { ...USER, app_metadata: { is_admin: true } } })
+    const note = screen.getByText("Admin accounts can't be deleted here. Ask the owner to remove the admin flag first.")
+    expect(note).toBeTruthy()
+    const button = screen.getByRole('button', { name: /^delete my account$/i })
+    expect(button.disabled).toBe(true)
+    expect(button.getAttribute('aria-describedby')).toBe('delete-account-admin-note')
+    fireEvent.submit(button.closest('form'))
+    expect(deleteDialog()).toBeNull()
+    expect(auth.signIn).not.toHaveBeenCalled()
+    expect(api.deleteMyAccount).not.toHaveBeenCalled()
+  })
+
+  it('still explains a 409 (flag added after the page loaded) and stays signed in', async () => {
+    api.deleteMyAccount.mockRejectedValue(apiError(409, 'Admin accounts cannot be deleted here.'))
+    const auth = renderAccount()
+    startDelete()
+    confirmDelete()
+    expect(
+      await screen.findByText("Admin accounts can't be deleted here. Ask the owner to remove the admin flag first."),
+    ).toBeTruthy()
+    expect(screen.getByText('Account Not Deleted')).toBeTruthy()
+    expect(deleteDialog()).toBeNull()
+    expect(auth.signOut).not.toHaveBeenCalled()
+    expect(toast.success).not.toHaveBeenCalled()
+    expect(screen.queryByText('Catalog page')).toBeNull()
+  })
+
+  it('shows a friendly message on a network failure and keeps the dialog open to retry', async () => {
+    api.deleteMyAccount.mockRejectedValueOnce(new TypeError('Failed to fetch')).mockResolvedValueOnce(null)
+    const auth = renderAccount()
+    startDelete()
+    confirmDelete()
+    expect(await screen.findByText(/can't reach the server/i)).toBeTruthy()
+    expect(deleteDialog()).not.toBeNull()
+    expect(auth.signOut).not.toHaveBeenCalled()
+    // The password stays filled in, so a retry needs only the confirm button.
+    confirmDelete()
+    expect(await screen.findByText('Catalog page')).toBeTruthy()
+    expect(api.deleteMyAccount).toHaveBeenCalledTimes(2)
+  })
+
+  it("shows the backend's 503 message", async () => {
+    api.deleteMyAccount.mockRejectedValue(apiError(503, "Couldn't delete your account right now. Try again."))
+    const auth = renderAccount()
+    startDelete()
+    confirmDelete()
+    expect(await screen.findByText("Couldn't delete your account right now. Try again.")).toBeTruthy()
+    expect(auth.signOut).not.toHaveBeenCalled()
+  })
+
+  it('cannot be submitted twice while the delete is running', async () => {
+    let finish
+    api.deleteMyAccount.mockReturnValue(new Promise((resolve) => (finish = resolve)))
+    renderAccount()
+    startDelete()
+    confirmDelete()
+    const busyButton = await within(deleteDialog()).findByRole('button', { name: /deleting/i })
+    expect(busyButton.disabled).toBe(true)
+    expect(within(deleteDialog()).getByRole('button', { name: 'Cancel' }).disabled).toBe(true)
+    expect(screen.getByRole('button', { name: /^delete my account$/i }).disabled).toBe(true)
+    fireEvent.click(busyButton)
+    finish(null)
+    expect(await screen.findByText('Catalog page')).toBeTruthy()
+    expect(api.deleteMyAccount).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores a second confirm in the same tick, before the button is disabled', async () => {
+    api.deleteMyAccount.mockResolvedValue(null)
+    const auth = renderAccount()
+    startDelete()
+    const confirm = within(deleteDialog()).getByRole('button', { name: /yes, delete my account/i })
+    // Inside one act() React does not re-render between the clicks, so the button is still
+    // enabled and the handler's state is stale for the second click: only the ref guard stops it.
+    await act(async () => {
+      confirm.click()
+      confirm.click()
+    })
+    expect(await screen.findByText('Catalog page')).toBeTruthy()
+    expect(auth.signIn).toHaveBeenCalledTimes(1)
+    expect(api.deleteMyAccount).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(auth.signOut).toHaveBeenCalledTimes(1))
+  })
+
+  it('lands on the catalog, not /login, behind ProtectedRoute when sign-out clears the user', async () => {
+    api.deleteMyAccount.mockResolvedValue(null)
+    const loginRendered = vi.fn()
+    const signedOut = vi.fn()
+    function LoginPage() {
+      loginRendered()
+      return <p>Login page</p>
+    }
+    // Like AuthProvider: signing out sets the user to null, which makes ProtectedRoute redirect.
+    function StatefulAuth() {
+      const [user, setUser] = useState(USER)
+      const value = {
+        user,
+        loading: false,
+        signIn: vi.fn().mockResolvedValue(USER),
+        updatePassword: vi.fn(),
+        signOut: async (options) => {
+          signedOut(options)
+          setUser(null)
+        },
+      }
+      return (
+        <AuthContext.Provider value={value}>
+          <Routes>
+            <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<p>Catalog page</p>} />
+          </Routes>
+        </AuthContext.Provider>
+      )
+    }
+    render(
+      <MemoryRouter initialEntries={['/account']}>
+        <StatefulAuth />
+      </MemoryRouter>,
+    )
+    startDelete()
+    confirmDelete()
+    expect(await screen.findByText('Catalog page')).toBeTruthy()
+    // The user really is signed out, and that did not bounce the page to /login.
+    await waitFor(() => expect(signedOut).toHaveBeenCalledWith({ scope: 'local' }))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(screen.getByText('Catalog page')).toBeTruthy()
+    expect(loginRendered).not.toHaveBeenCalled()
   })
 })
 
