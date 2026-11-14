@@ -36,7 +36,7 @@ function renderAccount({ user = USER, auth = {} } = {}) {
 }
 
 const type = (label, text) => fireEvent.change(screen.getByLabelText(label), { target: { value: text } })
-function fillAndSubmit({ current = 'old-secret', next = 'new-secret', confirm = next } = {}) {
+function fillAndSubmit({ current = 'old-secret', next = 'New-secret-9', confirm = next } = {}) {
   type(/^current password/i, current)
   type(/^new password/i, next)
   type(/^confirm new password/i, confirm)
@@ -66,7 +66,7 @@ describe('Change password', () => {
   it('re-checks the current password, then updates and clears the form', async () => {
     const auth = renderAccount()
     fillAndSubmit()
-    await waitFor(() => expect(auth.updatePassword).toHaveBeenCalledWith('new-secret'))
+    await waitFor(() => expect(auth.updatePassword).toHaveBeenCalledWith('New-secret-9'))
     expect(auth.signIn).toHaveBeenCalledWith('member@example.com', 'old-secret')
     expect(auth.signIn.mock.invocationCallOrder[0]).toBeLessThan(auth.updatePassword.mock.invocationCallOrder[0])
     expect(await screen.findByText('Password Updated')).toBeTruthy()
@@ -90,10 +90,29 @@ describe('Change password', () => {
   it('checks the fields before calling Supabase', () => {
     const auth = renderAccount()
     fillAndSubmit({ next: 'abc', confirm: 'abd' })
-    expect(screen.getByText(/use at least 6 characters/i)).toBeTruthy()
+    expect(screen.getByText(/make it stronger: use at least 8 characters/i)).toBeTruthy()
     expect(screen.getByText(/passwords don't match/i)).toBeTruthy()
     expect(auth.signIn).not.toHaveBeenCalled()
     expect(auth.updatePassword).not.toHaveBeenCalled()
+  })
+
+  it.each(['new-secret', 'NEW-SECRET-9', 'New-secret', 'Newsecret9', 'Ne-se-9'])(
+    'blocks the weak new password %j before calling Supabase',
+    (next) => {
+      const auth = renderAccount()
+      fillAndSubmit({ next })
+      expect(screen.getByText(/^make it stronger/i)).toBeTruthy()
+      expect(screen.getByLabelText(/^new password/i).getAttribute('aria-invalid')).toBe('true')
+      expect(document.activeElement).toBe(screen.getByLabelText(/^new password/i))
+      expect(auth.signIn).not.toHaveBeenCalled()
+      expect(auth.updatePassword).not.toHaveBeenCalled()
+    },
+  )
+
+  it('shows the strength meter as the new password is typed', () => {
+    renderAccount()
+    type(/^new password/i, 'New-secret-9')
+    expect(screen.getByText('Strong')).toBeTruthy()
   })
 
   it('shows other failures in plain words, such as a rate limit', async () => {
@@ -108,11 +127,12 @@ describe('Change password', () => {
 
 describe('validatePasswordChange', () => {
   it.each([
-    [{ current: '', next: 'new-secret', confirm: 'new-secret' }, ['current']],
+    [{ current: '', next: 'New-secret-9', confirm: 'New-secret-9' }, ['current']],
     [{ current: 'old-secret', next: '12345', confirm: '12345' }, ['next']],
-    [{ current: 'same-one', next: 'same-one', confirm: 'same-one' }, ['next']],
-    [{ current: 'old-secret', next: 'new-secret', confirm: 'new-secreT' }, ['confirm']],
-    [{ current: 'old-secret', next: 'new-secret', confirm: 'new-secret' }, []],
+    [{ current: 'old-secret', next: 'new-secret', confirm: 'new-secret' }, ['next']],
+    [{ current: 'Same-one-9', next: 'Same-one-9', confirm: 'Same-one-9' }, ['next']],
+    [{ current: 'old-secret', next: 'New-secret-9', confirm: 'New-secret-8' }, ['confirm']],
+    [{ current: 'old-secret', next: 'New-secret-9', confirm: 'New-secret-9' }, []],
   ])('%j → errors on %j', (values, fields) => {
     expect(Object.keys(validatePasswordChange(values)).sort()).toEqual(fields)
   })

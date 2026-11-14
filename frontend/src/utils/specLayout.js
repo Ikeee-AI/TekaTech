@@ -33,3 +33,47 @@ export function specBlocks(content) {
   }
   return blocks
 }
+
+/** The phone page groups spec facts under these headings, in this order. */
+export const SPEC_SECTIONS = ['Display', 'Performance', 'Battery & charging', 'Camera', 'Build & durability', 'Connectivity', 'Other']
+
+// Checked in this order, first match wins: "Front camera" is a camera, "USB charging" is
+// charging, "Display protection" is the display. Labels are matched, never values.
+const SECTION_RULES = [
+  ['Camera', /camera|selfie|video|lens|zoom|aperture|telephoto|ultra-?wide|macro|flash|megapixel|\bois\b/],
+  ['Battery & charging', /batter|charg|\bmah\b|power/],
+  ['Display', /display|screen|resolution|refresh|brightness|\bppi\b|pixel density|\bhdr\b|panel|touch sampling/],
+  ['Connectivity', /wi-?fi|bluetooth|\bnfc\b|\busb\b|\b[2345]g\b|network|\bsim\b|gps|positioning|navigation|infrared|\bir\b|radio|headphone|audio jack|\bport\b|connectivity|band|\besim\b|\blte\b/],
+  ['Performance', /chip|cpu|processor|\bsoc\b|gpu|\bram\b|memory|storage|\brom\b|internal|\bos\b|android|software|platform|antutu|performance|card slot|operating system|update/],
+  ['Build & durability', /build|dimension|weight|size|body|frame|\bback\b|glass|gorilla|\bip\s?\d|\bip rating|water|dust|durab|material|colou?r|finish|thickness|drop|protection|\bmil-?std/],
+]
+
+/** Which SPEC_SECTIONS heading a fact label belongs to ("Other" when nothing matches). */
+export function specSection(label) {
+  const text = (label ?? '').toLowerCase()
+  for (const [section, pattern] of SECTION_RULES) if (pattern.test(text)) return section
+  return 'Other'
+}
+
+/**
+ * A chunk as sections for the phone page: "Label: value" lines grouped under their section
+ * in SPEC_SECTIONS order, and every unlabelled line kept as raw text after them.
+ * Returns { sections: [{ title, items }], text: [line] }. Presentation only.
+ */
+export function specSections(content) {
+  const bySection = new Map()
+  const text = []
+  for (const block of specBlocks(content ?? '')) {
+    if (block.type === 'text') {
+      text.push(block.text)
+      continue
+    }
+    for (const item of block.items) {
+      const title = specSection(item.label)
+      if (!bySection.has(title)) bySection.set(title, [])
+      bySection.get(title).push(item)
+    }
+  }
+  const sections = SPEC_SECTIONS.filter((title) => bySection.has(title)).map((title) => ({ title, items: bySection.get(title) }))
+  return { sections, text }
+}

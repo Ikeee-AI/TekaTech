@@ -16,6 +16,9 @@ from schemas import (
 from supabase_client import supabase
 from auth import get_current_admin_user
 
+# The two GET routes are deliberately public (owner decision, 14 Nov 2026): visitors who are not
+# signed in may browse the catalog. Every AI, comparison and question endpoint needs a session
+# (routers/query.py, comparisons.py, stats.py trending-questions); writes here are admin-only.
 router = APIRouter(prefix="/gadgets", tags=["gadgets"])
 logger = logging.getLogger(__name__)
 
@@ -81,7 +84,7 @@ def create_gadget(gadget: GadgetCreate, user=Depends(get_current_admin_user)):
 @router.patch("/{gadget_id}", response_model=GadgetResponse)
 def update_gadget(gadget_id: UUID, gadget: GadgetUpdate, user=Depends(get_current_admin_user)):
     # exclude_unset, not exclude_none: an omitted field is left alone, while an
-    # explicit null clears release_date / price_php / image_url (GadgetUpdate
+    # explicit null clears an optional field such as price_php or store_url (GadgetUpdate
     # refuses null for the required columns).
     payload = gadget.model_dump(mode="json", exclude_unset=True)
     if not payload:
