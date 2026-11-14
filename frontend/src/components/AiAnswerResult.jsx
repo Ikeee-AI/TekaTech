@@ -14,6 +14,7 @@ import {
   isMissingEvidence,
   removedCitationCount,
 } from '../utils/aiAnswerState'
+import { isHttpUrl } from '../utils/gadgetValidation'
 
 /** "Source: example.com" for a spec sheet link, or plain "Source" if the URL is odd. */
 function sourceLabel(url) {
@@ -317,7 +318,8 @@ export default function AiAnswerResult({
                         </div>
                       )}
                       <p className="text-[15px] text-slate-800 leading-relaxed whitespace-pre-line break-words">{s.content}</p>
-                      {s.source_url && (
+                      {/* Only http(s) becomes a link: a stored javascript:/data: URL must never be clickable. */}
+                      {isHttpUrl(s.source_url) && (
                         <a
                           href={s.source_url}
                           target="_blank"

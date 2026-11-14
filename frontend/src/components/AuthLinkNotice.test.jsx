@@ -15,10 +15,10 @@ const USER = { id: 'u-1', email: 'new.user@example.com', app_metadata: {}, user_
 const CONFIRMED = { kind: 'confirmed' }
 const EXPIRED = { kind: 'error', code: 'otp_expired' }
 
-function renderNotice({ link, pathname = '/', user = null, loading = false, showPage = false }) {
+function renderNotice({ link, pathname = '/', user = null, loading = false, emailLink = null, showPage = false }) {
   return render(
     <MemoryRouter>
-      <AuthContext.Provider value={{ user, loading }}>
+      <AuthContext.Provider value={{ user, loading, emailLink }}>
         <AuthLinkNotice link={link} pathname={pathname} />
         {showPage && <CurrentPage />}
       </AuthContext.Provider>
@@ -52,6 +52,26 @@ describe('AuthLinkNotice: back to the starting page (#196 item 4)', () => {
     expect(window.localStorage.length).toBe(1)
   })
 
+  it('works with an any-browser link (token_hash) once Supabase has accepted it', () => {
+    saveReturnPath('/my-gadgets')
+    renderNotice({ link: { kind: 'otp', type: 'email' }, user: USER, emailLink: { type: 'email', ok: true }, showPage: true })
+    expect(screen.getByTestId('page').textContent).toBe('/my-gadgets')
+  })
+
+  it('does not move while the any-browser link is still being checked', () => {
+    saveReturnPath('/my-gadgets')
+    renderNotice({ link: { kind: 'otp', type: 'email' }, user: null, loading: true, emailLink: null, showPage: true })
+    expect(screen.getByTestId('page').textContent).toBe('/')
+    expect(window.localStorage.length).toBe(1)
+  })
+
+  it('does not move when the link confirmed the email but signed nobody in (another browser)', () => {
+    saveReturnPath('/my-gadgets')
+    renderNotice({ link: CONFIRMED, user: null, showPage: true })
+    expect(screen.getByTestId('page').textContent).toBe('/')
+    expect(window.localStorage.length).toBe(1)
+  })
+
   it('does not move for an expired link', () => {
     saveReturnPath('/my-gadgets')
     renderNotice({ link: EXPIRED, showPage: true })
@@ -74,6 +94,13 @@ describe('AuthLinkNotice', () => {
   it('waits for the session before saying the email is confirmed', () => {
     const { container } = renderNotice({ link: CONFIRMED, user: null, loading: true })
     expect(container.innerHTML).toBe('')
+  })
+
+  it('says the email is confirmed and offers Log In when the link could not sign in (PKCE, other browser)', () => {
+    renderNotice({ link: CONFIRMED, user: null, loading: false })
+    expect(screen.getByText('Email Confirmed')).toBeTruthy()
+    expect(screen.getByText(/Log in to continue/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: /log in/i }).getAttribute('href')).toBe('/login')
   })
 
   it('can be dismissed', () => {
@@ -106,4 +133,23 @@ describe('AuthLinkNotice', () => {
     const { container } = renderNotice({ link: EXPIRED, pathname: '/reset-password' })
     expect(container.innerHTML).toBe('')
   })
+
+  it('any-browser sign-up link: confirmed once Supabase accepted it', () => {
+    renderNotice({ link: { kind: 'otp', type: 'email' }, user: USER, emailLink: { type: 'email', ok: true } })
+    expect(screen.getByText('Email Confirmed')).toBeTruthy()
+  })
+
+  it('any-browser sign-up link: nothing until the check finishes, then expired if refused', () => {
+    const { container } = renderNotice({ link: { kind: 'otp', type: 'email' }, emailLink: null })
+    expect(container.innerHTML).toBe('')
+    cleanup()
+    renderNotice({ link: { kind: 'otp', type: 'email' }, emailLink: { type: 'email', ok: false, code: 'otp_expired' } })
+    expect(screen.getByText('This Email Link Has Expired or Was Already Used')).toBeTruthy()
+  })
+
+  it('leaves an any-browser reset link to the reset page', () => {
+    const { container } = renderNotice({ link: { kind: 'otp', type: 'recovery' }, user: USER, emailLink: { type: 'recovery', ok: true } })
+    expect(container.innerHTML).toBe('')
+  })
 })
+

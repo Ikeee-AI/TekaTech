@@ -1,0 +1,8 @@
+{
+  "name": "tekatech-railway-config",
+  "private": true,
+  "description": "Railway infrastructure-as-code SDK for .railway/railway.ts (used only by `railway config plan/apply`).",
+  "devDependencies": {
+    "railway": "3.16.0"
+  }
+}

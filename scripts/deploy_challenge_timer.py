@@ -135,7 +135,7 @@ def main():
         with tempfile.TemporaryDirectory() as tmp:
             smoke_report = Path(tmp) / "smoke.json"
             smoke = subprocess.run([sys.executable, str(ROOT / "scripts/deployed_smoke.py"),
-                                    "--api-url", "https://tekatech-api.onrender.com",
+                                    "--api-url", "https://tekatech-api-production-549b48c9.up.railway.app",
                                     "--frontend-url", "https://tekatech-web.onrender.com",
                                     "--commit", pr["merge_commit_sha"], "--attempts", "18", "--delay", "10",
                                     "--report", str(smoke_report)],

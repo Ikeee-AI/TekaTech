@@ -26,10 +26,11 @@ jobs:
       SUPABASE_KEY: test-dummy-key
       RATE_LIMIT_STORAGE_URI: memory://
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0  # full history for the gitleaks scan
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.6.0
         with:
           version: '0.12.3'
           enable-cache: true
@@ -74,8 +75,10 @@ jobs:
       VITE_SUPABASE_ANON_KEY: test-publishable-key
       VITE_API_BASE_URL: https://example.invalid
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '22'
           cache: npm
@@ -85,7 +88,7 @@ jobs:
       - name: Unit tests (Vitest, no network)
         run: npm test
       - run: npm run build
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: frontend-ci-build
           path: frontend/dist
@@ -101,8 +104,10 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '22'
           cache: npm
@@ -110,7 +115,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: failure()
         with:
           name: browser-checks-report
@@ -140,8 +145,10 @@ jobs:
       PGPASSWORD: postgres
       PGDATABASE: tekatech_ci
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.12'
       - name: Check PostgreSQL client
@@ -236,32 +243,63 @@ jobs:
     runs-on: ubuntu-latest
     # Repository-level production hooks support this private repository on GitHub Free.
     # Environment secrets on private repositories require an eligible paid GitHub plan.
+    # Backend: Railway (since 12 Nov 2026, docs/devops/railway-migration-plan.md;
+    # service settings in .railway/railway.ts). Frontend: Render.
+    # Secrets are scoped to the steps that use them, never job-wide, so the checkout,
+    # setup and CLI-install steps cannot read them.
     env:
-      BACKEND_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
-      FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
       API_URL: ${{ vars.PRODUCTION_API_URL }}
       FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.12'
-      - name: Trigger Render deployments
+      - name: Check deployment configuration
         shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
         run: |
-          if [[ -z "$BACKEND_HOOK" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
-            echo "Deployment is not configured: add both Render deploy hooks as repository Actions secrets and public URLs as repository Actions variables." >> "$GITHUB_STEP_SUMMARY"
+          if [[ -z "$RAILWAY_TOKEN" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
+            echo "Deployment is not configured: needs secrets RAILWAY_TOKEN and RENDER_FRONTEND_DEPLOY_HOOK, and variables PRODUCTION_API_URL and PRODUCTION_FRONTEND_URL." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          curl --fail --silent --show-error --request POST "$BACKEND_HOOK&ref=${{ github.sha }}" > /dev/null
-          curl --fail --silent --show-error --request POST "$FRONTEND_HOOK&ref=${{ github.sha }}" > /dev/null
-          echo "Deployment requested for commit ${{ github.sha }}. Confirm both Render deploys are live before consultation." >> "$GITHUB_STEP_SUMMARY"
+      - name: Trigger Render frontend deployment
+        env:
+          FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
+        run: curl --fail --silent --show-error --request POST "$FRONTEND_HOOK&ref=${{ github.sha }}" > /dev/null
+      - name: Install Railway CLI (pinned release binary, SHA256-checked)
+        # The release tarball instead of `npm install -g @railway/cli`: the npm package's
+        # postinstall script downloads this same binary, so no install script runs here.
+        # Same version/checksum as rollback.yml; update both together.
+        env:
+          RAILWAY_CLI_VERSION: '5.71.0'
+          RAILWAY_CLI_SHA256: 2e682fd2ddf8d6fdf9e46d9d99d99646ff0022a6abb0c2bca93011348a269fb9
+        run: |
+          curl -fsSLo /tmp/railway.tar.gz "https://github.com/railwayapp/cli/releases/download/v${RAILWAY_CLI_VERSION}/railway-v${RAILWAY_CLI_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+          echo "${RAILWAY_CLI_SHA256}  /tmp/railway.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/railway-cli"
+          tar -xzf /tmp/railway.tar.gz -C "$RUNNER_TEMP/railway-cli" railway
+          "$RUNNER_TEMP/railway-cli/railway" --version
+          echo "$RUNNER_TEMP/railway-cli" >> "$GITHUB_PATH"
+      - name: Deploy backend to Railway
+        timeout-minutes: 15
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway variable set "APP_COMMIT=${{ github.sha }}" --service tekatech-api --environment production --skip-deploys
+          railway up backend --path-as-root --service tekatech-api --environment production --ci
       - name: Verify live commit, database path and CORS
         timeout-minutes: 12
-        run: python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" --commit "${{ github.sha }}" --attempts 30 --delay 10 --report /tmp/deployed-smoke.json
+        run: |
+          python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" --commit "${{ github.sha }}" --attempts 30 --delay 10 --report /tmp/deployed-smoke.json
+          echo "Deployed ${{ github.sha }}: API on Railway ($API_URL), frontend on Render ($FRONTEND_URL)." >> "$GITHUB_STEP_SUMMARY"
       - name: Save deployment verification evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: deployed-smoke-${{ github.sha }}
           path: /tmp/deployed-smoke.json

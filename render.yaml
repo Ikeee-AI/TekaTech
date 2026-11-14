@@ -1,37 +1,8 @@
-# Create a Blueprint from this repository. Credentials are entered in Render.
+# Render Blueprint for the frontend only. Credentials are entered in Render.
 # GitHub Actions triggers deploys only after backend, frontend and SQL checks pass.
+# The API runs on Railway since 12 Nov 2026 (settings in .railway/railway.ts); its
+# Render service was retired on 13 Nov 2026 (docs/devops/railway-migration-plan.md).
 services:
-  - type: web
-    name: tekatech-api
-    runtime: python
-    plan: free
-    region: singapore
-    rootDir: backend
-    buildCommand: pip install uv==0.12.3 && uv sync --frozen --no-dev --python 3.12
-    startCommand: .venv/bin/uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
-    healthCheckPath: /health
-    autoDeployTrigger: 'off'
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.12
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_KEY
-        sync: false
-      - key: CORS_ORIGINS
-        sync: false
-      - key: RATE_LIMIT_STORAGE_URI
-        value: memory://
-      # Rate-limit per visitor, not per Render proxy: key on the X-Forwarded-For entry
-      # Render's proxy appends (rightmost). Client-supplied entries are ignored.
-      # Off until the hop count is confirmed from real traffic (Manuel's review on #136);
-      # steps: docs/deploy-runbook.md "Rate-limit buckets behind the proxy".
-      - key: TRUST_PROXY_HEADERS
-        value: 'false'
-      - key: TRUSTED_PROXY_HOPS
-        value: '1'
   - type: web
     name: tekatech-web
     runtime: static
@@ -52,3 +23,27 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    # Security headers on every response (Render blueprint: one name/value per entry).
+    # The CSP is Report-Only first: violations only appear in the browser console.
+    # Switch to enforced as described in docs/deploy-runbook.md ("Security headers").
+    # connect-src must list the API origin baked in as VITE_API_BASE_URL and the
+    # Supabase project (VITE_SUPABASE_URL; wss for its realtime socket).
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+      - path: /*
+        name: Content-Security-Policy-Report-Only
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://tekatech-api-production-549b48c9.up.railway.app https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'"

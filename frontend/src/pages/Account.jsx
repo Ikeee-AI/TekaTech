@@ -8,7 +8,9 @@ import { TextField } from '../components/ui/FormField'
 import Alert from '../components/ui/Alert'
 import Button from '../components/ui/Button'
 import BackLink from '../components/ui/BackLink'
-import { authErrorMessage, MIN_PASSWORD_LENGTH } from '../utils/authErrors'
+import { authErrorMessage } from '../utils/authErrors'
+import { PASSWORD_HINT } from '../utils/passwordStrength'
+import PasswordStrength from '../components/PasswordStrength'
 import { isWrongPassword, validatePasswordChange } from '../utils/passwordChange'
 
 const EMPTY = { current: '', next: '', confirm: '' }
@@ -80,11 +82,13 @@ export default function Account() {
   }
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="flex flex-col gap-4">
       <BackLink to="/my-gadgets">Back to My Gadgets</BackLink>
+      {/* Two columns on wide screens (rebrand: no tall narrow column with empty sides). */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 
-      <section aria-labelledby="account-title" className="bg-white border border-gray-200 rounded-xl p-6">
-        <h1 id="account-title" className="font-display text-xl font-bold text-gray-900">
+      <section aria-labelledby="account-title" className="bg-white border border-slate-200 rounded-[28px] p-6">
+        <h1 id="account-title" className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900">
           Your Account
         </h1>
         <dl className="mt-4 grid grid-cols-1 sm:grid-cols-[8rem_1fr] gap-x-4 gap-y-2 text-sm">
@@ -117,7 +121,7 @@ export default function Account() {
         </div>
       </section>
 
-      <section aria-labelledby="password-title" className="bg-white border border-gray-200 rounded-xl p-6">
+      <section aria-labelledby="password-title" className="bg-white border border-slate-200 rounded-[28px] p-6">
         <h2 id="password-title" className="font-display text-lg font-bold text-gray-900 mb-1">
           Change Password
         </h2>
@@ -135,17 +139,20 @@ export default function Account() {
             value={values.current}
             onChange={update('current')}
           />
-          <TextField
-            id={FIELD_IDS.next}
-            label="New Password"
-            type="password"
-            required
-            autoComplete="new-password"
-            hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}
-            error={fieldErrors.next}
-            value={values.next}
-            onChange={update('next')}
-          />
+          <div>
+            <TextField
+              id={FIELD_IDS.next}
+              label="New Password"
+              type="password"
+              required
+              autoComplete="new-password"
+              hint={PASSWORD_HINT}
+              error={fieldErrors.next}
+              value={values.next}
+              onChange={update('next')}
+            />
+            <PasswordStrength password={values.next} id="new-password-strength" />
+          </div>
           <TextField
             id={FIELD_IDS.confirm}
             label="Confirm New Password"
@@ -173,6 +180,7 @@ export default function Account() {
           </Button>
         </form>
       </section>
+      </div>
     </div>
   )
 }

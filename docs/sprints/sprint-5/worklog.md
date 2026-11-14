@@ -780,13 +780,13 @@ None.
 | Draft record said "no prompt change" and GK-06 open; #236 shipped gk-v2, which fixes GK-06 | Record would have understated the release | Corrected in the record. Closed |
 | Draft said the Poco x7 Pro would be fixed with #201; the image was fixed 5 Nov, only the release date is still wrong (#201 open) | Limitation misstated | Corrected in the record. Closed |
 | Gitleaks commit counts differ (CI 188, local `rev-list` 223, v1.0.0 local all-refs 307) | Counts can't be compared across releases | Not investigated — Ikeee-AI — open |
-| Tagged before the second-member rollback demonstration, which is listed earlier in the checklist | Stable release exists before its rollback item is proven by a second member | Owner approved tagging on 6 Nov; demo still to be booked — Ikeee-AI with Manuel or Jopher — open |
+| Tagged before the second-member rollback demonstration, which is listed earlier in the checklist | Stable release exists before its rollback item is proven by a second member | Owner approved tagging on 6 Nov; demo still to be booked — Ikeee-AI with Manuel or Jopher — open *(Wrong: Jopher had done it at 11:10–11:17 and posted it on #237 at 11:22. Corrected in the 16:50 entry.)* |
 
 **Decisions**
 - Tag v1.1.0 on `db49bc2` now — Ikeee-AI (owner).
 
 **Blockers / risks**
-- Second-member deploy/rollback demonstration not done — Ikeee-AI with Manuel or Jopher — before Sat 7 Nov 15:00.
+- Second-member deploy/rollback demonstration not done — Ikeee-AI with Manuel or Jopher — before Sat 7 Nov 15:00. *(Wrong: Jopher had done it at 11:10–11:17 and posted it on #237 at 11:22. Corrected in the 16:50 entry.)*
 
 **Plan alignment**
 - S5-IK stable release: **Partial** — tagged, released and verified; rollback demo, known-limitations paste into the release body and final metrics row still open.
@@ -797,3 +797,333 @@ None.
 - Final metrics row (`pipeline-metrics`) — Ikeee-AI — before Sat 7 Nov 15:00.
 - One PR for `tekatech/s5-ik-6nov` (6 Nov logs and the v1.1.0 record) — Ikeee-AI — before Sat 7 Nov 15:00.
 - Update `docs/sprints/sprint-5/consultation.md` (lines 42, 86 still say draft) — Ikeee-AI — with that PR.
+
+## 2026-11-06 16:32 Asia/Manila — release notes, Sprint 5 final metrics, #240 merged
+**Who:** Ikeee-AI (AI-assisted: yes, Claude Code edited the release notes, ran the metrics, opened, gated and merged #240 at the owner's request) · **Task:** S5-IK (stable release) · **Branch:** `tekatech/s5-ik-6nov-2`
+
+**Done**
+- GitHub Release `v1.1.0` body: added a production-verified line, database notes (nothing to apply) and the full "Known limitations" section above the generated PR list (15:45). After #240 merged, its record/changelog links were changed from the branch to `main` (16:32) — https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.1.0
+- Sprint 5 final metrics row (1–6 Nov UTC): PR 1.21 min (61 runs), main 3.25 min (53 runs), success 99.1 % (113/114), 53 deploys, merge-to-live 2.85 min (53 samples), 0 failed deploys — `docs/devops/metrics.md`, `docs/evidence/sprint5-metrics-final.json`. Window overlaps interim 2 almost entirely, so not an independent comparison.
+- Found that two 5 Nov commits never reached `main`: `1eee327` (`pipeline_metrics.py` retries transient `gh api` errors, with tests) and `c05b934` (interim-2 metrics row). They were committed after #235's reviewed head `1cb998a`, so the squash left them out. Cherry-picked into #240 (`607eb44`, `a2f27d8`); `test_pipeline_metrics.py` 6 passed (local).
+- #240 opened with Manuel and Jopher as reviewers; its body asks either of them for a time for the second-member rollback demonstration — https://github.com/Ikeee-AI/TekaTech/pull/240
+- Manuel `APPROVED` #240 on head `8dba2c9` at 16:14 (ran the tests and secret guard; checked the metrics row against the evidence file). Non-blocking note: `CHANGELOG.md` line 7 still said the tag wasn't created.
+- `pr-gate` **PASS** on #240 (manual gate; branch protection not enforced): Manuel's approval on the head commit, three required checks green, one owner (DevOps docs/metrics/script), no SQL, no env files, mergeable. Squash-merged at the owner's instruction → `3d9be35` (08:31:08 UTC, 16:31 Manila).
+- Main CI for `3d9be35` succeeded, every job including deploy (finished 08:41:34 UTC) — https://github.com/Ikeee-AI/TekaTech/actions/runs/42188253567 (added after the entry was first written). Deployed smoke **passed** at 08:41:47 UTC (16:41 Manila) on `3d9be35`: first attempt, readiness and CORS passed, 4 gadgets, database 452.7 ms — `.local/deployed-smoke-3d9be35.json` (local). `v1.1.0` stays on `db49bc2`; `3d9be35` adds docs and the metrics script only.
+- 16:34 follow-up comment on #240 asking Manuel and Jopher again for a demo time — https://github.com/Ikeee-AI/TekaTech/pull/240#issuecomment-6680735822 . No reply by 16:41.
+- Manuel's CHANGELOG note fixed on this branch (`0b587f0`): line 7 now says tagged 6 Nov 15:36 with the release link. Left out of #240 so his approval stayed on the head commit.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Two commits missing from `main` after #235 (no error shown) | Pushed to `tekatech/s5-ik-wrapup` after the reviewed head; the squash only took what was reviewed | Cherry-picked into #240 and reviewed there. Closed. Check `git log <reviewed head>..<branch>` before merging batched branches |
+| A two-dot diff of `tekatech/s5-ik-6nov` against `origin/main` showed #239's files as removed | Branch cut before #239 merged; the PR's three-dot diff was not affected | Merged `origin/main` into the branch before opening #240. Closed |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| `CHANGELOG.md` heading said tagged, line 7 said the tag wasn't created (Manuel's review) | Contradiction on `main` until the fix merges | Fixed on this branch (`0b587f0`), goes in the follow-up PR — Ikeee-AI — open |
+
+**Decisions**
+- Merge #240 before the rollback demonstration; record the demo in a follow-up PR — Ikeee-AI (owner).
+- Merge #240 on Manuel's approval; keep the CHANGELOG fix for the follow-up so the approval isn't made stale — Ikeee-AI (owner).
+
+**Blockers / risks**
+- Second-member deploy/rollback demonstration: no reply from Manuel or Jopher on #240 yet (16:32) — Ikeee-AI with Manuel/Jopher — before Sat 7 Nov 15:00. *(Wrong: Jopher had done it at 11:10–11:17 and posted it on #237 at 11:22. Corrected in the 16:50 entry.)*
+
+**Plan alignment**
+- S5-IK stable release: **Partial** — tag, release notes, record on `main` and final metrics row done; second-member rollback demonstration open.
+
+**Next**
+- Rollback demonstration with Manuel or Jopher, then record it and open the follow-up PR from this branch — before Sat 7 Nov 15:00.
+
+## 2026-11-06 16:50 Asia/Manila — second-member rollback demonstration found done (Jopher); records corrected
+**Who:** Jopher ran the rollbacks (AI-assisted: not stated); Ikeee-AI recorded them (AI-assisted: yes, Claude Code checked the runs and wrote this) · **Task:** S5-IK (stable release), S5-JO · **Branch:** `tekatech/s5-ik-6nov-2`
+
+**Done**
+- **Second-member deploy/rollback demonstration: done by Jopher (`s2100932`)**, `rollback.yml`, every run started and run by `s2100932` (checked with the GitHub API):
+  | When (Manila) | Step | Target | Run | Duration | Result |
+  | --- | --- | --- | --- | --- | --- |
+  | 11:10 | Roll back | `e22758b` (#234) | https://github.com/Ikeee-AI/TekaTech/actions/runs/42154924236 | 1 min 37 s | success |
+  | 11:16 | Roll forward | `1170d19` (#233) | https://github.com/Ikeee-AI/TekaTech/actions/runs/42155490274 | 1 min 41 s | success |
+  | 16:35 | Roll back | `db49bc2` (`v1.1.0`) | https://github.com/Ikeee-AI/TekaTech/actions/runs/42188771228 | 1 min 39 s | success |
+  | 16:38 | Roll forward | `3d9be35` (#240) | https://github.com/Ikeee-AI/TekaTech/actions/runs/42189100078 | 1 min 33 s | success |
+- Jopher's results: https://github.com/Ikeee-AI/TekaTech/issues/237 (11:22) and https://github.com/Ikeee-AI/TekaTech/pull/240 (16:41). The second pair was done at the owner's request in the group chat. Production checked at 16:43: API `/version` and frontend `/version.json` both `3d9be35`.
+- Recorded: `docs/releases/v1.1.0.md` checklist ticked (the last open box), `docs/deploy-runbook.md` demonstration status and Jopher's two tips, Week 5 packet updated.
+- Manuel has not run a rollback (the `rollback.yml` history has only Ikeee-AI on 31 Oct and Jopher on 6 Nov). Not required: the item asks for one of Manuel or Jopher.
+
+**Errors and fixes**
+None.
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| The v1.1.0 record (15:33), the 15:40 and 16:32 entries and both pings said the demonstration was not done, but Jopher had posted it on #237 at 11:22. Claude Code checked only for replies, not #237, and saw the 11:10/11:16 runs in a `main` run list without checking what they were | Two unneeded pings; records understated Jopher's work for about 5 hours | Old lines marked as wrong with a pointer here; record and packet corrected. Closed. Check the linked issue for a task before saying it isn't done |
+| Production was on `db49bc2` from about 16:37 to 16:39 during Jopher's second demonstration, between the #240 deploy and the 16:41 smoke check | None for users (docs/script-only difference); the 16:41 smoke result on `3d9be35` stands | Recorded here. Closed |
+
+**Decisions**
+None.
+
+**Blockers / risks**
+None for the release.
+
+**Plan alignment**
+- S5-IK stable release (`v1.1.0`): **Done** — tagged, released, verified on production, record complete, second-member rollback demonstrated.
+- S5-JO: rollback demonstration delivered (beyond his own row).
+
+**Next**
+- Follow-up PR from this branch (this entry, the record tick, runbook tips, CHANGELOG fix) — Ikeee-AI, review by Manuel/Jopher — before Sat 7 Nov 15:00.
+- Retrospective comments on #238 from Manuel, Mika, Adrian and Ikeee-AI (Jopher's is in); Manuel's paid `/query` sample; Mika's deck archive and handover notes — each owner — before Sat 7 Nov 15:00.
+
+## 2026-11-12 02:03 Asia/Manila — API moved to Railway: setup, cutover, CI deploys, rollback rehearsal; approved PRs merged
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code did the CLI/CI/docs work; Ikeee-AI did every dashboard step, token and approval decision) · **Task:** S5-IK (post-Sprint 5, Railway plan) · **Branch:** `tekatech/railway-plan` → #250; `tekatech/railway-rollback-rehearsal` → #252
+
+Session ran 11 Nov ~23:30 → 12 Nov ~02:00 Manila. Post-Sprint 5 work under the owner-approved plan `docs/devops/railway-migration-plan.md`.
+
+**Done**
+- Railway setup by Ikeee-AI in the dashboard: project `tekatech`, service `tekatech-api`, Southeast Asia (Singapore), 1 replica, replica cap 1 vCPU / 1 GB; Hobby plan and $10 compute usage limit confirmed on the Usage page; 7 service variables entered (no `FAILURE_SIMULATION_ENABLED`). Evidence: owner screenshots (local), plan status note.
+- GitHub secret `RAILWAY_TOKEN` (project token, production environment) and variable `RAILWAY_API_URL` set; free domain https://tekatech-api-production-549b48c9.up.railway.app generated. Evidence: `gh secret list` / `gh variable list` (names only).
+- Parallel run: manual `railway up backend --path-as-root` of `02762f5`; `/health` ok, `/health/ready` database ok, `/version`, 4 gadgets, CORS for `https://tekatech-web.onrender.com` passed. Evidence: commit `02762f5`.
+- **Cutover ~00:33 Manila:** Ikeee-AI set `tekatech-web` `VITE_API_BASE_URL` to the Railway URL and redeployed; the live bundle `index-DfLQOR0w.js` calls only Railway; Ikeee-AI signed in and opened a gadget page in incognito; Railway logs show those requests (200).
+- Code, config and docs: `backend/railway.json`, `backend/.railwayignore`, `/version` reads `APP_COMMIT` (+2 tests), `rlwy_` secret pattern, Railway as the blocking backend deploy in `ci.yml`, `rollback.yml` on Railway, scripts, docs and a scope-change row. Evidence: [#250](https://github.com/Ikeee-AI/TekaTech/pull/250) (approved by Manuel, merged as `c4cce99`); local: 711 backend tests passed, actionlint + shellcheck clean.
+- `PRODUCTION_API_URL` switched to the Railway URL just before merging #250.
+- First automatic Railway deploys from `main`: run [43068554699](https://github.com/Ikeee-AI/TekaTech/actions/runs/43068554699) (`3658c58`, after re-run) and [43070610868](https://github.com/Ikeee-AI/TekaTech/actions/runs/43070610868) (`f836e3b`); smoke passed on both hosts.
+- Ikeee-AI's review: approved Dependabot #244–#247 (all checks green). Merged #250, #244, #245, #246, #248 (Manuel, approved), #242 (Manuel, approved), #241 (approved), then #247 after a rebase.
+- Rollback rehearsal on Railway: back to `3658c58` in **1 min 17 s** ([43071658466](https://github.com/Ikeee-AI/TekaTech/actions/runs/43071658466)), forward to `f836e3b` in **1 min 16 s** ([43071925255](https://github.com/Ikeee-AI/TekaTech/actions/runs/43071925255)), both smoke-tested. Evidence: `docs/evidence/rollback-rehearsal-2026-11-12-railway.md` + 3 screenshots, [#252](https://github.com/Ikeee-AI/TekaTech/pull/252) (awaiting Manuel).
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| First Railway start: `pydantic_core._pydantic_core.ValidationError: 3 validation errors for Settings` (`openai_api_key`, `supabase_url`, `supabase_key` missing) | Variables entered in the Railway dashboard stay *staged* until Deploy is clicked | Owner clicked Deploy; all variables live. Documented in the runbook's Railway section. Fixed |
+| CI `Deploy backend to Railway`: `Invalid RAILWAY_TOKEN. Please check that it is valid and has access to the resource you're trying to use.` (run 43068375474; run 43068554699 attempts 1–2) | Token piped into `gh secret set` from Windows PowerShell 5.1 picked up a trailing CRLF | Third token tested from an unlinked folder, saved with `gh secret set --body`; deploys pass. Old tokens deleted by the owner. Fixed |
+| Main guard on #247's merge commit `f836e3b`: deploy blocked, issue [#251](https://github.com/Ikeee-AI/TekaTech/issues/251) opened | `@dependabot rebase` (lockfile conflict with #246) created a new commit after the approval | Ikeee-AI re-approved the final commit (same jsdom change, checks green); guard and deploy re-run passed. #251 still open: closing it was blocked by Claude Code's permission check; owner to close |
+| #247 `PR policy`: `Reference the issue (Refs #23) or task ID (S2-JO / TTK-01) in the PR title or description.` (twice) | Dependabot's body had no `#n`; the rebase rewrote the body | Added "Refs S5-IK" to the body each time (the policy workflow re-runs on `edited`). Fixed |
+| A local shell command hung (moved to background, stopped) | Stray `cat` waiting on input; no file changed | Re-ran as a script file. Fixed |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Plan section 3 said Railway project tokens are UUIDs, so no secret pattern was possible | The secret guard couldn't catch a leaked token | Tokens start with `rlwy_`; pattern added in #250, plan status note corrected. Resolved |
+| Memory/plan said the move was "required to separate frontend and backend hosting"; the course page doesn't require it (checked 6 Nov) | None now; the owner chose the move anyway | Recorded in `docs/scope-changes.md` (owner decision, $5/month). Resolved |
+| From ~00:33 until the #250 merge, the live API ran branch commit `02762f5`, not `main` | Short "deployed but not merged" window | Closed by merging #250 and the CI deploy of `3658c58`. Resolved |
+| `main.py` is Manuel's area; the `/version` change was written by Ikeee-AI (AI-assisted) | Ownership | Flagged in #250; Manuel reviewed and approved. Resolved |
+
+**Decisions** — Cut over the same night as the parallel run, with Render kept as a 7-day fallback — Ikeee-AI. Manuel reviews #250 and #252 — Ikeee-AI. Railway deploys only from CI (`railway up`), never Railway's GitHub autodeploy, because of the Wait-for-CI deadlock (plan section 4) — Ikeee-AI (plan of 6–7 Nov). The Render API hook stays as an optional, non-blocking fallback until retirement — Ikeee-AI.
+
+**Blockers / risks** — #252 needs Manuel's approval before merge — Manuel — next session. #249 (Jopher) has had changes requested by Mika since 10 Nov 17:57 UTC — Jopher, then Mika. Issues #251 and #243 are open — Ikeee-AI to close. New monthly cost $5 (limit $10) — Ikeee-AI to check Railway Usage weekly. Rate-limit proxy trust stays off on Railway until the hop count is rechecked — Ikeee-AI/Manuel.
+
+**Plan alignment** — Railway plan steps 1–5: **Done** (reviewed, checks, merged, deployed, verified: #250, runs 43068554699 / 43070610868). Plan §5 definition of done: CI deploy done; rollback rehearsal done but its evidence (#252) is not merged yet, so **Partial**; first request after 30+ min idle not yet measured; 7-day usage not yet measured. Step 6 (retire the Render API) not started, due ~19 Nov. No Sprint 5 row changes; this is post-Sprint 5 work.
+
+**Next**
+- Merge #252 after Manuel approves; check the `main` run — Ikeee-AI — 12 Nov evening.
+- Close #251 (and #243 after a check) — Ikeee-AI — 12 Nov.
+- Measure the first request after 30+ min idle, and Railway usage — Ikeee-AI — by 19 Nov.
+- Retire the Render API (suspend the service, remove `RENDER_BACKEND_DEPLOY_HOOK` and the API block in `render.yaml`) after 7 clean days — Ikeee-AI — ~19 Nov.
+- UI rebrand (Impeccable) after the Railway move — Ikeee-AI — not scheduled.
+
+## 2026-11-13 10:12 Asia/Manila — Status check, #243 closed, 8 Nov incident recorded, Dependabot alert #29 dismissed
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code gathered the status, wrote the notes and the incident entry, and ran the `gh` commands; Ikeee-AI approved each action) · **Task:** S5-IK (post-Sprint 5 operations) · **Branch:** `tekatech/railway-rollback-rehearsal` → #252
+
+Short session, ~09:45–10:12 Manila.
+
+**Done**
+- Status check: production serves `f836e3b` (latest `main`). Scheduled `Ops - production health` passed on 9–12 Nov. Open PRs: #252 (Ikeee-AI, all checks green, no review yet) and #249 (Jopher, changes requested). Evidence: runs [42565284577](https://github.com/Ikeee-AI/TekaTech/actions/runs/42565284577), [42768012291](https://github.com/Ikeee-AI/TekaTech/actions/runs/42768012291), [42963658470](https://github.com/Ikeee-AI/TekaTech/actions/runs/42963658470), [43166364726](https://github.com/Ikeee-AI/TekaTech/actions/runs/43166364726).
+- Closed incident issue [#243](https://github.com/Ikeee-AI/TekaTech/issues/243) with a note: on 8 Nov all 12 smoke attempts against the Render API timed out (`TimeoutError`, [run 42448801063](https://github.com/Ikeee-AI/TekaTech/actions/runs/42448801063)); the next daily run passed. The cause was not confirmed.
+- Recorded that failure in `docs/devops/incidents.md` ("2026-11-08: scheduled production health check timed out"): detection 8 Nov 05:01 UTC, recovery within ~24 h (upper bound, daily check), cause not confirmed, prevention, lesson. Evidence: commit `2e4c731`, pushed to #252.
+- Asked Manuel to review #252 (he was already the requested reviewer). Evidence: [comment](https://github.com/Ikeee-AI/TekaTech/pull/252#issuecomment-6841507442).
+- Dependabot alert #29 ([GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249), medium, `minimatch` 10.2.6, `frontend/package-lock.json`, development scope): checked and dismissed as `tolerable_risk` at 02:03 UTC. Reasons: only ESLint uses it, at lint time; it is not in the production build and only gets patterns from our own lint config. No fix fits yet: the fix is only in 11.x, and ESLint 10.14.0 still requires `minimatch ^10.2.6`. No open Dependabot alerts are left.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Dependabot dismissal: `Invalid property /dismissed_comment: Only 280 characters are allowed; 281 were supplied.` (HTTP 422) | Note one character over GitHub's limit | Shortened the note and retried. Fixed |
+| The 8 Nov health-check failure (#243) went 5 days with no record in the incident log | The automatic issue was not looked at on the day; Render logs for that window have aged out | Recorded now with the cause marked "not confirmed"; prevention step 2 in the entry (look at it the same day). Fixed (late) |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #243's own text said to record detection and recovery times in `incidents.md`; no entry existed | Incident log was incomplete | Entry added in `2e4c731` (#252). Resolved once #252 merges |
+| Local `frontend/node_modules` has `eslint@10.13.0`; `main` requires `^10.14.0` (#246) | Local only; CI uses `npm ci` | Run `npm ci` in `frontend/` before the next local lint. Open, Ikeee-AI |
+
+**Decisions** — Close #243: four clean daily runs since, and the API has moved to Railway — Ikeee-AI. Put the incident entry on the #252 branch so one review covers both — Ikeee-AI. Dismiss Dependabot #29 as tolerable risk instead of forcing `minimatch` 11 with `overrides` (ESLint isn't built for that major version; that would risk breaking lint for no security gain) — Ikeee-AI.
+
+**Blockers / risks** — #252 waits on Manuel's approval — Manuel — next session. #249 waits on Jopher's changes — Jopher. #251 (main guard on `f836e3b`) is still open — Ikeee-AI to close. The weekly `npm audit` may still list the same `minimatch` advisory; it is the same harmless finding — Ikeee-AI.
+
+**Plan alignment** — Railway plan section 5: still **Partial** (rollback evidence and the incident entry are in #252, not merged). Step 6 (retire the Render API): not started, due ~19 Nov. No Sprint 5 row changes; post-Sprint 5 work.
+
+**Next**
+- Merge #252 after Manuel approves; check the `main` run — Ikeee-AI — when approved.
+- Close #251 — Ikeee-AI — 13 Nov.
+- Measure the first request after 30+ min idle, and Railway usage — Ikeee-AI — by 19 Nov.
+- Retire the Render API — Ikeee-AI — ~19 Nov.
+- Scope-change entry for moving the pilot past Sprint 5 — Ikeee-AI — not scheduled.
+
+## 2026-11-13 10:35 Asia/Manila — #251 closed
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code checked the run and the review history and wrote the closing note) · **Task:** S5-IK · **Branch:** `tekatech/railway-rollback-rehearsal` → #252
+
+**Done**
+- Closed main-guard issue [#251](https://github.com/Ikeee-AI/TekaTech/issues/251) with a note. Before closing, checked that #247's final commit `a15091b` has Ikeee-AI's approval (the earlier approval was on `2d6cd26`, before `@dependabot rebase`). Also checked that [run 43070610868](https://github.com/Ikeee-AI/TekaTech/actions/runs/43070610868) attempt 2 passed every job: main guard, tests, lint/build, migrations, deploy, browser checks. Production serves `f836e3b`. The original exception is in the 12 Nov entry.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — Close #251: the final commit is approved and the deploy passed — Ikeee-AI.
+
+**Blockers / risks** — #252 waits on Manuel's approval — Manuel. #249 waits on Jopher's changes — Jopher.
+
+**Plan alignment** — No change: Railway plan section 5 is still Partial until #252 merges; Render API retirement is not started (~19 Nov).
+
+**Next** — Same as the 10:12 entry, minus "Close #251".
+
+## 2026-11-13 10:48 Asia/Manila — Railway idle first-request check passed; pilot scope-change row confirmed
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code ran the read-only `curl` timings and `railway logs`, and wrote the evidence) · **Task:** S5-IK (Railway plan section 5) · **Branch:** `tekatech/railway-rollback-rehearsal` → #252
+
+**Done**
+- Checked the pilot scope-change row: it is already in `docs/scope-changes.md` (5 Nov, "moved past Sprint 5", Manuel told on #229). Nothing to add. The "still to record" item in earlier notes was out of date.
+- Railway first request after idle: **0.31 s** for `/health`, after about 20 h 35 min idle. The Render baseline is 42.7 s, and the target was under 5 s. Railway's request log shows no traffic between the 12 Nov 06:11:26 UTC health check and this test at 13 Nov 02:46:16 UTC. Other routes: `/gadgets` first 0.49 s and warm median 0.20 s; `/health/ready` 1.34 s (about 1.1 s of that on the server, which is the Supabase round trip); `/health` warm median 0.17 s. All 14 requests returned 200; read-only, no AI calls. Evidence: `docs/evidence/railway-idle-first-request-2026-11-13.md`; plan section 5 marked done; commit `1fa7440`.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `curl -w` labels came out as `C:/Program Files/Git/health`, with a literal `/n` between lines | Git Bash path conversion rewrote the leading `/` in the label | Cosmetic only; the URLs and timings were correct (all 200, `/version` = `f836e3b`). Read the values as they were. Fixed in reading |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Earlier notes and the "What's next" list said the pilot scope-change row was still missing; it was added on 5 Nov | None; no duplicate row was added | Notes corrected. Resolved |
+| Railway CLI: "Config as Code (railway.json / railway.toml) is deprecated. Prefer Infrastructure as Code (.railway/railway.ts) … Existing files keep working until 2026-12-01." Our deploy relies on `backend/railway.json` (start command, health check, restart policy) | CI deploys could break or lose these settings after 1 Dec 2026 | Migrate to the new format and test it with a CI deploy before 1 Dec. Open, Ikeee-AI |
+
+**Decisions** — Use Railway's own request log (`railway logs --json`) to prove the idle window, instead of assuming it from the health-check schedule — Ikeee-AI. Add the evidence to #252 so one review covers it — Ikeee-AI.
+
+**Blockers / risks** — `railway.json` deprecation, deadline 1 Dec 2026 — Ikeee-AI. #252 waits on Manuel's approval — Manuel. #249 waits on Jopher's changes — Jopher.
+
+**Plan alignment** — Railway plan section 5: CI deploy **Done**; rollback rehearsal and idle check **Done** (evidence in #252, not merged yet); 7-day usage **Not started** (due ~19 Nov); docs merged **Partial** (#252). Step 6 (retire the Render API) not started, ~19 Nov.
+
+**Next**
+- Merge #252 after Manuel approves — Ikeee-AI.
+- Read Railway usage after 7 days and extrapolate to a month — Ikeee-AI (owner's dashboard) — ~19 Nov.
+- Retire the Render API — Ikeee-AI — ~19 Nov.
+- Migrate `backend/railway.json` to the new format, then check with a CI deploy — Ikeee-AI — before 1 Dec.
+
+## 2026-11-13 12:07 Asia/Manila — Railway settings moved to `.railway/railway.ts`; Render API retired
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code did the Railway CLI, repo, test and doc work; Ikeee-AI decided on the early retirement and suspended the Render service in the dashboard) · **Task:** S5-IK (Railway plan steps 6–7) · **Branch:** `tekatech/railway-iac-render-retire` → [#253](https://github.com/Ikeee-AI/TekaTech/pull/253)
+
+**Done**
+- **Railway settings as code:** `railway config pull` (variables unmanaged), then added the start command, `/health` health check (120 s) and 3 restart retries from `backend/railway.json`. `railway config plan` showed only those 5 settings changing (nothing added or destroyed). `railway config apply` at about 02:57 UTC triggered a Railway redeploy of `f836e3b`: SUCCESS at 02:58. `deployed_smoke.py` passed (commit, 4 gadgets, readiness, CORS). A second `plan` reports "already up to date". SDK pinned to `railway@3.16.0` in `.railway/package.json` (3.17.0 was published that morning, so it was skipped).
+- **Repo changes in #253** (commit `8b7007c`, Manuel requested as reviewer): `.railway/` added; `backend/railway.json` deleted; `rollback.yml` now checks that `backend/main.py` reads `APP_COMMIT` instead of checking for `railway.json` (same boundary, checked: `c4cce99`/`3658c58`/`f836e3b` allowed, `c4cce99^`/`53f62e9` refused); Render API block removed from `render.yaml`; fallback steps removed from `ci.yml`/`rollback.yml`; `.railway/**` added to the devops labeler; the 3 tests that guarded `render.yaml` now also check `.railway/railway.ts`; docs updated (runbook, PIPELINE, environments, CLAUDE/AGENTS, backend README drill steps, migration plan step 6 and section 6, scope-change row, demo docs, submission manifest, handoff). Local: 762 backend tests passed, secret guard passed.
+- **Render API retired:** checked that the live frontend bundle `index-PJVRRc1S.js` calls only the Railway API (0 references to the Render API). Repo secret `RENDER_BACKEND_DEPLOY_HOOK` deleted. Ikeee-AI suspended Render `tekatech-api` (`srv-db5v6sijnfac73brl4mg`) at about 12:00 Manila; `tekatech-web` is untouched. Checked at 04:03 UTC: the Render API `/health` returns 503, and production smoke against Railway passed. Evidence: [#253 comment](https://github.com/Ikeee-AI/TekaTech/pull/253), owner screenshot `Screenshot 2026-11-13 115952.png` (local).
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `railway config migrate`: "No Config as Code files found for services in the linked environment." | The service had no config-file path set; `railway.json` was only picked up from each `railway up` upload | Used `railway config pull` and added the settings by hand instead. Fixed |
+| `railway config plan`: "The Railway TypeScript SDK is not installed." | `railway.ts` imports `railway/iac` | Installed `railway@3.16.0` in `.railway/` only (`--ignore-scripts`). Fixed |
+| `Error: This version of railway/iac requires Railway CLI 5.42.1 or newer` (CLI is 5.71.0) | On Windows the npm-installed CLI is a `.cmd` shim; the SDK runs `railway --version` without a shell (ENOENT) | Ran from PowerShell with `$env:_` set to the real `railway.exe`; documented in `.railway/README.md`. Fixed |
+| After the first apply, `plan` still showed `deploy.restartPolicyType (null → "ON_FAILURE")` | Railway stores its defaults as null | Removed that line (ON_FAILURE is the default); `plan` is clean. Fixed |
+| Python edit of `test_proxy_rate_limit.py` failed (`AssertionError`, text not found) | Escaped `\n` in the search string | Edited with the Edit tool instead. Fixed |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Plan step 6 said to keep Render as a 7-day fallback (until about 19 Nov); it was retired after 1 day | No quick switch back to Render | Owner's decision; recorded in `docs/scope-changes.md` and plan step 6. Resolved |
+| The proxy-trust test pinned `TRUST_PROXY_HEADERS='false'` in the Render API block; on Railway these are dashboard variables the repo can't see | Weaker automatic guard | The test now asserts the repo config never sets proxy trust and variables stay unmanaged; dashboard values are a manual runbook check. Manuel to review in #253. Open |
+| Railway reports a resource limit of 2 vCPU / 2 GB (`limitOverride`); earlier notes said a replica cap of 1 vCPU / 1 GB | Possible cost difference | Kept unchanged in `railway.ts`; owner to check Railway → Settings → Resource limits. Open, Ikeee-AI |
+| `backend/tests/*` and `backend/README.md` are Manuel's area | Ownership | Flagged in #253 for his review. Open, Manuel |
+
+**Decisions** — Retire the Render API now instead of about 19 Nov — Ikeee-AI. Suspend rather than delete the Render service — Ikeee-AI. Railway variables stay unmanaged by the IaC file (secrets never in the repo) — Ikeee-AI. Pin the SDK to 3.16.0, not the same-day 3.17.0 — Ikeee-AI. Put this log entry on the #252 branch with the other 13 Nov entries, so #252 and #253 don't conflict in the worklog — Ikeee-AI.
+
+**Blockers / risks** — #252 and #253 need Manuel's approval (Ikeee-AI is contacting him) — Manuel. The first main deploy after #253 is the first one without `railway.json`; watch that the settings stored on Railway are used — Ikeee-AI. Resource limit 2 vCPU / 2 GB to check — Ikeee-AI.
+
+**Plan alignment** — Railway plan: steps 6 (retire Render) and 7 (docs) **Partial**: done and verified in production, waiting for #253's review and merge. Section 5: 7-day usage **Not started** (~19 Nov). The `railway.json` deprecation (deadline 1 Dec) is handled in production.
+
+**Next**
+- Merge #252 and #253 after Manuel approves; watch the main run and the Railway deploy — Ikeee-AI — when approved.
+- Check the Railway resource limit and usage — Ikeee-AI — by 19 Nov.
+- After a few weeks, decide whether to delete the suspended Render `tekatech-api` — Ikeee-AI — not scheduled.
+
+## 2026-11-13 12:19 Asia/Manila — #252 and #253 merged; first deploy without `railway.json` verified
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code ran the merge gate, the merges and the checks; Manuel approved both PRs) · **Task:** S5-IK (Railway plan steps 6–7) · **Branch:** `main`; this log on `tekatech/s5-ik-worklog-13nov`
+
+**Done**
+- Merge gate (`pr-gate`, a manual gate, not enforced protection): both **PASS**. [#252](https://github.com/Ikeee-AI/TekaTech/pull/252): approved by `s2302827-byte` on head `49f764c`; Backend tests, Frontend lint and build, and Database migrations SUCCESS; no SQL/env files. [#253](https://github.com/Ikeee-AI/TekaTech/pull/253): approved by `s2302827-byte` on head `8b7007c`; the same three checks SUCCESS; no SQL/env files; Manuel's test/README files reviewed by Manuel.
+- #252 squash-merged at 04:14:04 UTC as `03ebb34`; #253 at 04:14:27 UTC as `6f3d169` (still CLEAN after #252, no conflict).
+- Main runs: [43364170611](https://github.com/Ikeee-AI/TekaTech/actions/runs/43364170611) (`03ebb34`) and [43364213815](https://github.com/Ikeee-AI/TekaTech/actions/runs/43364213815) (`6f3d169`, 04:14:30 → 04:18:39 UTC) both succeeded on every job: main guard, three checks, deploy and smoke, browser checks. **Merge to live for #253: about 4 min 12 s.**
+- **First deploy without `backend/railway.json`:** Railway deployment at 04:17:35 UTC, SUCCESS. Its settings came from the service itself: start command `uvicorn main:app … --workers 1`, health check `/health` (120 s), 3 restart retries, no config-file mapping. `/version` returns `6f3d16904bd1f6ed826cb628946bcf6cda285311`.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `gh pr view --jq`: `invalid escape sequence "\." in string literal` | jq string escaping inside the shell | Used `[.]` instead of `\.`. Fixed |
+
+**Conflicts and contradictions** — None new. Still open from the 12:07 entry: Railway reports a resource limit of 2 vCPU / 2 GB against the 1 vCPU / 1 GB in earlier notes — Ikeee-AI.
+
+**Decisions** — Merge #252 before #253, then watch #253's main run, because it is the first deploy without `railway.json` — Ikeee-AI.
+
+**Blockers / risks** — None blocking. The resource limit and Railway usage are still to check — Ikeee-AI — by 19 Nov.
+
+**Plan alignment** — Railway plan steps 6 (retire the Render API) and 7 (docs): **Done** (reviewed, checks green, merged, deployed, verified in production). Section 5: CI deploy, rollback rehearsal (#252 merged) and idle check **Done**; 7-day usage **Not started** (~19 Nov). The `railway.json` deprecation (deadline 1 Dec) is **resolved**.
+
+**Next**
+- Check the Railway resource limit (Settings → Resource limits) and usage against the $10 limit — Ikeee-AI — by 19 Nov.
+- Decide later whether to delete the suspended Render `tekatech-api` — Ikeee-AI — not scheduled.
+- UI rebrand (needs the Impeccable hooks decision first) and the custom-domain question — Ikeee-AI — not scheduled.
+
+## 2026-11-13 12:38 Asia/Manila — Railway usage and resource limit checked; limit kept at 2 vCPU / 2 GB
+**Who:** Ikeee-AI (AI-assisted: yes — Ikeee-AI opened the Railway dashboard pages and sent screenshots; Claude Code read them and updated the docs) · **Task:** S5-IK (Railway plan section 5) · **Branch:** `tekatech/s5-ik-worklog-13nov`
+
+**Done**
+- Railway → Project Settings → Usage (about 12:23 Manila): current usage **$0.09** (memory $0.09, CPU $0.00, egress $0.00); Railway's estimated usage for the period **$0.19** (memory $0.18). Well inside the Hobby plan's included $5 and the $10 usage limit. The screen does not show the billing-period dates. Evidence: owner screenshot `Screenshot 2026-11-13 122305.png` (local).
+- `tekatech-api` → Settings → Scale (about 12:33 Manila): Southeast Asia (Singapore), 1 replica, **replica limits 2 vCPU / 2 GB** (plan limit 8 / 8). This matches `.railway/railway.ts` (`cpu: 2, memoryBytes: 2000000000`). Evidence: owner screenshot `Screenshot 2026-11-13 123323.png` (local).
+- Corrected the "1 vCPU / 1 GB" note: `docs/deploy-runbook.md` now states the current limit; `docs/devops/railway-migration-plan.md` keeps the original note with a dated correction.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Notes from 11–12 Nov (runbook, plan, project notes) said replica cap 1 vCPU / 1 GB; Railway shows 2 vCPU / 2 GB | None on cost: Railway bills actual use, and the limit is only a ceiling (usage so far $0.09, CPU $0.00) | Owner keeps 2/2. Docs corrected. Any later change goes through `.railway/railway.ts` + `railway config apply`, not the dashboard sliders (the file would put a dashboard change back). Resolved |
+
+**Decisions** — Keep the replica limit at 2 vCPU / 2 GB — Ikeee-AI.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — Railway plan section 5 "usage after 7 days": **Partial**. After about 1.5 days the estimate is $0.19 for the period, far under $5. The 7-day reading is still due ~19 Nov.
+
+**Next** — Read Railway usage again around 19 Nov and record the 7-day figure — Ikeee-AI.
+
+## 2026-11-13 13:08 Asia/Manila — Post-Sprint 5 metrics row; 11 Nov token incident recorded; #249 nudged
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code ran `pipeline_metrics.py`, wrote the row, the incident entry and the nudge; Ikeee-AI approved each) · **Task:** S5-IK · **Branch:** `tekatech/s5-ik-worklog-13nov`
+
+**Done**
+- Metrics row "Post-Sprint 5 (7–13 Nov UTC)" in `docs/devops/metrics.md`: PR 1.96 min (18 runs), main 2.07 min (5 runs), success 95.7 % (22/23; 6 cancelled/skipped excluded), 4 deploys, merge-to-live 5.15 min (4 samples), 1 failed deploy. Recovery: about 11 min for the failed deploy; within about 24 h (upper bound) for the 8 Nov health-check timeout. Marked as a small sample, not comparable. Evidence: `docs/evidence/post-sprint5-metrics-2026-11-13.json`, commit `e754981`.
+- Incident "2026-11-11: first Railway deploys from CI failed (`Invalid RAILWAY_TOKEN`)" added to `docs/devops/incidents.md`: `c4cce99` run 43068375474 and `3658c58` attempts 1–2 failed; attempt 3 succeeded at 17:39:48 UTC (about 11 min). No user impact. Cause: a CRLF added when the token was piped from PowerShell into `gh secret set`. Prevention: a runbook line (save with `--body`, test the token from a folder that isn't linked).
+- Nudged Jopher on [#249](https://github.com/Ikeee-AI/TekaTech/pull/249): Mika's 10 Nov changes-requested review is still open (most `/login` entry points don't pass `from`). Asked for a fix or an expected date, and offered a hand-over.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| `incidents.md` says every failed production deploy gets an entry; the 11 Nov token failure was only in the worklog | Incomplete incident log | Entry added (13 Nov). The exact time the cause was found was not recorded, so the entry gives a range (17:34–17:38 UTC). Resolved |
+
+**Decisions** — Use 7–13 Nov UTC as the window (right after the Sprint 5 final row's 6 Nov cut-off) — Ikeee-AI.
+
+**Blockers / risks** — #249 waits on Jopher — Jopher.
+
+**Plan alignment** — No task row change; post-Sprint 5 operations.
+
+**Next**
+- Batch this branch (`tekatech/s5-ik-worklog-13nov`: worklog, metrics, incident, runbook) into the next PR — Ikeee-AI.
+- Railway 7-day usage — Ikeee-AI — ~19 Nov.
+- If Jopher doesn't reply, decide on a #249 hand-over — Ikeee-AI.

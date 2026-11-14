@@ -8,7 +8,9 @@ import { TextField } from '../components/ui/FormField'
 import Alert from '../components/ui/Alert'
 import Button from '../components/ui/Button'
 import BackLink from '../components/ui/BackLink'
-import { authErrorMessage, isEmailNotConfirmed, MIN_PASSWORD_LENGTH } from '../utils/authErrors'
+import { authErrorMessage, isEmailNotConfirmed } from '../utils/authErrors'
+import { PASSWORD_HINT, passwordError } from '../utils/passwordStrength'
+import PasswordStrength from '../components/PasswordStrength'
 import { saveReturnPath } from '../utils/returnPath'
 
 // ?mode=signup or ?mode=resend opens the page in that mode (#196); anything else is Log In.
@@ -16,8 +18,8 @@ const LINK_MODES = ['signup', 'resend']
 
 const TITLES = { login: 'Log In', signup: 'Create an Account', resend: 'Resend Confirmation Email' }
 const INTROS = {
-  login: 'Needed to suggest corrections to specs and follow their review.',
-  signup: 'Browsing, comparing and AI questions never require an account — it is only for suggesting corrections.',
+  login: 'Log in to view specs, compare phones, ask the AI and save phones to My Gadgets.',
+  signup: 'A free account lets you view full specs, compare phones, ask the AI (20 questions a day) and save phones.',
   resend: "Enter the email you signed up with and we'll send a new confirmation link.",
 }
 const FAILURE_TITLES = { login: 'Log In Failed', signup: 'Sign Up Failed', resend: 'Could Not Send the Email' }
@@ -50,6 +52,8 @@ export default function Login() {
   })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  // Sign-up only: the new password misses a rule (utils/passwordStrength.js).
+  const [passwordFieldError, setPasswordFieldError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
   // 'confirm' after a successful sign up, 'exists' when the email is already registered,
@@ -66,6 +70,7 @@ export default function Login() {
     setMode(next)
     if (!keepEmail) setEmail('')
     setPassword('')
+    setPasswordFieldError(null)
     setError(null)
     setNotice(null)
     setUnconfirmed(false)
@@ -94,6 +99,16 @@ export default function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    // New accounts must meet every password rule before Supabase is called. Log In does not
+    // check them: accounts made before 14 Nov 2026 may still have a shorter password.
+    if (mode === 'signup') {
+      const weak = passwordError(password)
+      setPasswordFieldError(weak)
+      if (weak) {
+        document.getElementById('password')?.focus()
+        return
+      }
+    }
     setSubmitting(true)
     setError(null)
     setNotice(null)
@@ -132,9 +147,11 @@ export default function Login() {
   }
 
   return (
-    <div className="max-w-sm mx-auto">
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h1 className="font-display text-xl font-bold text-gray-900 mb-1">
+    <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+      <LoginPerks />
+      <div className="flex flex-col">
+      <div className="bg-white border border-slate-200 rounded-[28px] p-6 sm:p-8 flex-1">
+        <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900 mb-1">
           {TITLES[mode]}
         </h1>
         <p className="text-sm text-gray-500 mb-4">{INTROS[mode]}</p>
@@ -160,15 +177,17 @@ export default function Login() {
                 label="Password"
                 type="password"
                 required
-                minLength={MIN_PASSWORD_LENGTH}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                hint={mode === 'signup' ? `At least ${MIN_PASSWORD_LENGTH} characters.` : undefined}
+                hint={mode === 'signup' ? PASSWORD_HINT : undefined}
+                error={mode === 'signup' ? passwordFieldError : undefined}
                 value={password}
                 onChange={(v) => {
                   setPassword(v)
+                  setPasswordFieldError(null)
                   setError(null)
                 }}
               />
+              {mode === 'signup' && <PasswordStrength password={password} id="password-strength" />}
               {mode === 'login' && (
                 <p className="text-right mt-1.5">
                   <Link to="/forgot-password" state={{ email }} className={`${LINK_CLASS} inline-flex items-center min-h-10`}>
@@ -249,6 +268,36 @@ export default function Login() {
       <div className="text-center mt-4">
         <BackLink to="/">Back to Catalog</BackLink>
       </div>
+      </div>
     </div>
+  )
+}
+
+const PERKS = [
+  ['My Gadgets', 'Save the phones you’re considering', 'bg-sage-700 text-white'],
+  ['Saved questions', 'Answers kept for each phone', 'bg-inverse text-inverse-ink'],
+  ['Suggestions', 'Flag a spec that looks wrong', 'bg-pop text-pop-ink'],
+  ['Free', 'No payment, ever. 20 AI questions a day', 'bg-slate-100 text-slate-900'],
+]
+
+// Why sign in (rebrand canvas, 13 Nov 2026). Decorative summary; hidden on phones to keep the form first.
+function LoginPerks() {
+  return (
+    <section aria-label="Why sign in" className="hidden lg:flex flex-col justify-between gap-6 p-8 rounded-[28px] bg-white border border-slate-200">
+      <div>
+        <p className="text-5xl font-extrabold tracking-[-0.055em] leading-[0.98] text-slate-900">Specs you can check.</p>
+        <p className="mt-3 text-base text-slate-600 max-w-sm">
+          Log in to save phones, keep your questions and suggest corrections.
+        </p>
+      </div>
+      <ul className="grid grid-cols-2 gap-2.5">
+        {PERKS.map(([title, text, tone]) => (
+          <li key={title} className={`p-4 rounded-[20px] ${tone}`}>
+            <p className="text-[15px] font-extrabold">{title}</p>
+            <p className="mt-1 text-[13px] opacity-85">{text}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

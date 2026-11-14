@@ -102,3 +102,44 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
   2. Corrected on #210: the SQL reached the live project at about 14:15 UTC, after the merge.
   - Follow-up issue: none opened; the gate change covers it. Optional later: extend `scripts/deployed_smoke.py` with a signed-in check, which needs a test-account token in CI (not planned).
 - **Lesson:** "applied" means nothing without the project ref. The Supabase "PRODUCTION" badge marks a project's main branch, not the live project.
+
+## 2026-11-08: scheduled production health check timed out (Render API)
+
+**Status: resolved by 9 Nov 2026, recorded 13 Nov.** Ops-health failure on production. The cause was not confirmed. Owner: Ikeee-AI.
+
+- **Affected:** production API on Render's free tier, expected commit `3d9be35`. [Run 42448801063](https://github.com/Ikeee-AI/TekaTech/actions/runs/42448801063) (scheduled `Ops - production health`) opened incident issue [#243](https://github.com/Ikeee-AI/TekaTech/issues/243).
+- **Impact:** unknown for users. The check got no response at all: all 12 smoke attempts, 25 s apart (04:57–05:01 UTC), ended in `TimeoutError`. It returned no HTTP error and no wrong commit. Nobody checked the site by hand during the window, and no user report was received.
+- **Timeline (UTC):**
+  - 2026-11-08 04:57: first timed-out attempt.
+  - 2026-11-08 05:01: run failed after attempt 12/12; #243 opened automatically. **Detected** (13:01 Manila).
+  - The issue was not acted on at the time; there was no manual re-run or log check.
+  - 2026-11-09 05:05: next scheduled run ([42565284577](https://github.com/Ikeee-AI/TekaTech/actions/runs/42565284577)) passed. **Recovery: within about 24 h.** This is an upper bound, because the check runs once a day.
+  - 10–12 Nov: daily runs passed ([42768012291](https://github.com/Ikeee-AI/TekaTech/actions/runs/42768012291), [42963658470](https://github.com/Ikeee-AI/TekaTech/actions/runs/42963658470), [43166364726](https://github.com/Ikeee-AI/TekaTech/actions/runs/43166364726)).
+  - 2026-11-13: #243 closed with a note.
+- **Root cause:** not confirmed. The API was not reachable within the smoke timeout for about 5 minutes. The likely causes are a free-tier Render instance that was slow to wake from idle or stalled on Render's side. Render logs for that window were not checked before they aged out.
+- **Fix:** none needed; the service recovered without any change.
+- **Prevention (Ikeee-AI):**
+  1. Since 12 Nov the production API runs on Railway Hobby, which does not sleep when idle (#250). The Render API is only a fallback until about 19 Nov.
+  2. Look at an automatic `incident` issue on the day it opens: re-run the health check by hand and check the host logs while they still cover the window. Without that, recovery time can only be bounded by the next daily run.
+  - Follow-up issue: none.
+- **Lesson:** an automatic issue is only detection. Without someone looking the same day, the cause and the real recovery time are lost.
+
+## 2026-11-11: first Railway deploys from CI failed (`Invalid RAILWAY_TOKEN`)
+
+**Status: resolved 11 Nov 2026, recorded 13 Nov** (from the 12 Nov worklog and the run logs). Failed production deploy; no user impact. Owner: Ikeee-AI.
+
+- **Affected:** #250's merge commit `c4cce99`, [main run 43068375474](https://github.com/Ikeee-AI/TekaTech/actions/runs/43068375474), and the next main commit `3658c58`, [run 43068554699](https://github.com/Ikeee-AI/TekaTech/actions/runs/43068554699) attempts 1 and 2. All failed at the new `Deploy backend to Railway` step. In each run the Render frontend hook had already run and `Verify live commit…` was skipped.
+- **Impact:** none for users. The live API was the Railway build deployed by hand during the cutover (`02762f5`, about 00:33 Manila on 12 Nov), and it kept serving. The frontend rebuilds that ran contained no frontend change (#250 changed no `frontend/` files). For about 11 minutes, `main` was not what the API served.
+- **Timeline (UTC, 11 Nov):**
+  - 17:27:39: main run for `c4cce99` started.
+  - 17:28:55: failed at `Deploy backend to Railway`: `Invalid RAILWAY_TOKEN. Please check that it is valid and has access to the resource you're trying to use.` **Detected** at once, while the owner and Claude Code were watching the first CI deploy.
+  - 17:28:47–17:30:25: `3658c58` run, attempt 1, same error. 17:33:41–17:33:55: attempt 2, after the secret was saved again, same error.
+  - Between 17:34 and 17:38 (exact time not recorded): cause found. A third project token was tested from a folder that wasn't linked, then saved with `gh secret set RAILWAY_TOKEN --body …`.
+  - 17:38:23–17:39:48: attempt 3 succeeded: Railway deploy of `3658c58`, deployed smoke passed. **Recovered: about 11 min** from the first failure (17:28:55 → 17:39:48).
+- **Root cause:** the token was piped into `gh secret set` from Windows PowerShell 5.1, which added a trailing CRLF to the stored secret. Railway's CLI sent the token with the line break and got "Invalid". The token itself was valid; the manual `railway up` during the cutover had worked from a logged-in CLI, not with this secret.
+- **Fix:** a new token saved with `--body` (no pipe). The two earlier tokens were deleted in Railway by the owner.
+- **Prevention (Ikeee-AI):**
+  1. Runbook: save secrets with `--body`, never by piping from PowerShell, and test a new token from a folder that isn't linked first (`docs/deploy-runbook.md`, Railway section; added 13 Nov).
+  - Follow-up issue: none.
+- **Lesson:** a secret can be wrong in ways nobody can see. When a credential that works by hand fails in CI, suspect how it was stored before suspecting the credential.
+

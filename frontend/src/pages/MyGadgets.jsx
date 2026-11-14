@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ArrowRight, Scale, Trash2, ImageOff, Sparkles } from 'lucide-react'
+import { LayoutDashboard, ArrowRight, Scale, Trash2, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
 import Button from '../components/ui/Button'
+import ProductImage from '../components/ProductImage'
 import { friendlyError } from '../utils/requestErrors'
 
 // Same bounds as the Compare page and the backend (MAX_COMPARISON_GADGETS).
@@ -74,7 +75,7 @@ export default function MyGadgets() {
 
   const header = (
     <>
-      <h1 className="font-display text-2xl font-medium text-gray-900 tracking-tight mb-1 flex items-center gap-2">
+      <h1 className="text-4xl font-extrabold tracking-[-0.05em] text-slate-900 mb-1 flex items-center gap-2.5">
         <LayoutDashboard size={22} className="text-sage-700" aria-hidden="true" /> My Gadgets
       </h1>
       <p className="text-sm text-gray-600 mb-6">
@@ -90,7 +91,7 @@ export default function MyGadgets() {
         {header}
         <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4" role="status" aria-label="Loading your gadgets">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-40 rounded-xl bg-white border border-slate-200 animate-pulse" />
+            <div key={i} className="h-40 rounded-3xl bg-white border border-slate-200 animate-pulse" />
           ))}
         </div>
       </div>
@@ -157,7 +158,7 @@ export default function MyGadgets() {
           aria-label="Compare selected gadgets"
           className="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur border-t border-slate-200 shadow-lg"
         >
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="max-w-[1320px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm text-slate-700">
               {canCompare
                 ? `${selected.size} selected`
@@ -185,9 +186,6 @@ export default function MyGadgets() {
 }
 
 function MyGadgetCard({ gadget, selected, removing, onToggle, onRemove }) {
-  const [imgError, setImgError] = useState(false)
-  const showImage = gadget.image_url && !imgError
-
   return (
     <li
       className={`bg-white rounded-xl p-5 border shadow-xs flex flex-col gap-4 ${
@@ -195,13 +193,7 @@ function MyGadgetCard({ gadget, selected, removing, onToggle, onRemove }) {
       }`}
     >
       <div className="flex gap-4">
-        <div className="w-16 h-16 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
-          {showImage ? (
-            <img src={gadget.image_url} alt="" className="w-full h-full object-cover" onError={() => setImgError(true)} />
-          ) : (
-            <ImageOff size={18} className="text-slate-300" aria-hidden="true" />
-          )}
-        </div>
+        <ProductImage src={gadget.image_url} className="w-16 aspect-square shrink-0 !rounded-lg" glyphClassName="w-1/2 h-3/4" padding="p-1.5" />
         <div className="min-w-0 flex flex-col justify-center">
           <span className="font-mono text-xs text-slate-600">{gadget.category}</span>
           <h2 className="text-lg font-bold text-slate-900 truncate">

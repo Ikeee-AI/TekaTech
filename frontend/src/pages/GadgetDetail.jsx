@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { Pencil, Calendar, ImageOff } from 'lucide-react'
+import { Pencil, Calendar, ExternalLink } from 'lucide-react'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
@@ -13,6 +13,14 @@ import Button from '../components/ui/Button'
 import ErrorState from '../components/ui/ErrorState'
 import { timeAgo } from '../utils/timeAgo'
 import { friendlyError } from '../utils/requestErrors'
+import { extractKeySpecs, extractMoreSpecs, extractVariants } from '../utils/keySpecs'
+import { isHttpUrl } from '../utils/gadgetValidation'
+import PriceTag from '../components/PriceTag'
+import KeySpecTiles from '../components/KeySpecTiles'
+import MoreKeySpecs from '../components/MoreKeySpecs'
+import ProductImage from '../components/ProductImage'
+import { withoutDoubledBrand } from '../utils/gadgetName'
+import VariantsList from '../components/VariantsList'
 
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
 
@@ -29,8 +37,7 @@ export default function GadgetDetail() {
   const { user } = useAuth()
   const [state, setState] = useState({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [imgError, setImgError] = useState(false)
-  const [specs, setSpecs] = useState([])
+  const [specs, setSpecs] = useState(null)
   const [now] = useState(() => Date.now())
 
   const gadget = state.gadget
@@ -57,7 +64,7 @@ export default function GadgetDetail() {
       <div className="max-w-3xl mx-auto">
         <BackLink to="/">Back to Catalog</BackLink>
         <ErrorState
-          title={notFound ? 'Gadget Not Found' : "Couldn't Load This Gadget"}
+          title={notFound ? 'Phone Not Found' : "Couldn't Load This Phone"}
           message={notFound ? 'It may have been deleted, or the link is wrong.' : state.error}
           onRetry={notFound ? undefined : () => setAttempt((n) => n + 1)}
           secondaryAction={
@@ -70,88 +77,112 @@ export default function GadgetDetail() {
     )
   }
 
-  const showImage = gadget.image_url && !imgError
-  const oldestVerified = specs.length
-    ? specs.reduce((oldest, s) => (new Date(s.verified_at) < new Date(oldest) ? s.verified_at : oldest), specs[0].verified_at)
+  const specList = specs ?? []
+  const oldestVerified = specList.length
+    ? specList.reduce((oldest, s) => (new Date(s.verified_at) < new Date(oldest) ? s.verified_at : oldest), specList[0].verified_at)
     : null
-  const hasOutdated = specs.some((s) => now - new Date(s.verified_at).getTime() > SIX_MONTHS_MS)
+  const hasOutdated = specList.some((s) => now - new Date(s.verified_at).getTime() > SIX_MONTHS_MS)
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="flex flex-col gap-4">
       <BackLink to="/">Back to Catalog</BackLink>
 
-      <article className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs grid grid-cols-1 sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-6 sm:gap-8">
-        <div className="aspect-square sm:aspect-auto sm:h-60 w-full bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center">
-          {showImage ? (
-            <img src={gadget.image_url} alt={gadget.name} className="h-full w-full object-cover" onError={() => setImgError(true)} />
-          ) : (
-            <span className="flex flex-col items-center gap-2 text-slate-500 text-sm">
-              <ImageOff size={28} aria-hidden="true" />
-              No Photo
-            </span>
-          )}
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-3.5">
+        <article className="bg-white border border-slate-200 rounded-[28px] p-5 sm:p-6 flex flex-col sm:flex-row gap-5 sm:gap-6">
+          <ProductImage
+            src={gadget.image_url}
+            alt={gadget.name}
+            className="w-32 sm:w-40 self-center sm:self-start aspect-[3/4] shrink-0"
+            glyphClassName="w-1/2 h-3/4"
+          />
 
-        <div className="min-w-0 flex flex-col">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-sage-800 bg-sage-50 border border-sage-200 rounded-full px-2.5 py-1 uppercase tracking-wide">
-              {gadget.category}
-            </span>
-            {oldestVerified && (
-              <span
-                className={`text-xs font-semibold rounded-full px-2.5 py-1 border ${
-                  hasOutdated ? 'text-amber-800 bg-amber-50 border-amber-200' : 'text-slate-700 bg-slate-50 border-slate-200'
-                }`}
-              >
-                {hasOutdated ? 'Some Specs May Be Outdated · ' : ''}Verified {timeAgo(oldestVerified)}
-              </span>
-            )}
-          </div>
-
-          <h1 className="text-3xl font-bold text-slate-900 mt-3 break-words">{gadget.name}</h1>
-          <p className="text-slate-600">{gadget.brand}</p>
-
-          <dl className="mt-5 grid grid-cols-2 gap-4">
-            <div>
-              <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">Price</dt>
-              <dd className="text-2xl font-bold text-slate-900 mt-0.5">
-                {gadget.price_php != null ? `Php ${gadget.price_php.toLocaleString()}` : <span className="text-base font-medium text-slate-500">Not listed</span>}
-              </dd>
+          <div className="min-w-0 flex flex-col">
+            <div className="flex flex-wrap items-center gap-2">
+              {specs && (
+                <span className="font-mono text-[11px] font-semibold rounded-full px-2.5 py-1 bg-sage-700 text-white">
+                  {specList.length} SOURCED SPEC{specList.length === 1 ? '' : 'S'}
+                </span>
+              )}
+              {oldestVerified && (
+                <span
+                  className={`text-xs font-semibold rounded-full px-2.5 py-1 border ${
+                    hasOutdated ? 'text-amber-800 bg-amber-50 border-amber-200' : 'text-slate-700 bg-slate-100 border-slate-200'
+                  }`}
+                >
+                  {hasOutdated ? 'Some Specs May Be Outdated · ' : ''}Added {timeAgo(oldestVerified)}
+                </span>
+              )}
             </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">Released</dt>
-              <dd className="flex items-center gap-1.5 text-base font-medium text-slate-800 mt-1.5">
-                {gadget.release_date ? (
-                  <>
-                    <Calendar size={15} aria-hidden="true" className="text-slate-500" /> {formatRelease(gadget.release_date)}
-                  </>
+
+            <h1 className="mt-3 text-4xl sm:text-5xl font-extrabold tracking-[-0.05em] leading-[0.95] text-slate-900 break-words">{withoutDoubledBrand(gadget.name)}</h1>
+            <p className="mt-1.5 text-slate-600">{gadget.brand}</p>
+
+            <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
+              <div>
+                <dt className="text-xs font-semibold text-slate-500">Price</dt>
+                {gadget.price_php != null ? (
+                  <dd className="mt-0.5 text-2xl font-bold tabular-nums text-slate-900">
+                    <PriceTag gadget={gadget} />
+                  </dd>
                 ) : (
-                  <span className="text-slate-500">Not listed</span>
+                  <dd className="mt-1.5 text-base text-slate-500">Not listed</dd>
                 )}
-              </dd>
-            </div>
-          </dl>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold text-slate-500">Released</dt>
+                <dd className="flex items-center gap-1.5 text-base font-medium text-slate-800 mt-1.5">
+                  {gadget.release_date ? (
+                    <>
+                      <Calendar size={15} aria-hidden="true" className="text-slate-500" /> {formatRelease(gadget.release_date)}
+                    </>
+                  ) : (
+                    <span className="text-slate-500">Not listed</span>
+                  )}
+                </dd>
+              </div>
+            </dl>
 
-          <div className="flex flex-wrap gap-3 mt-auto pt-6">
-            {/* Admin-curated catalog: PATCH /gadgets/{id} is admin-only. */}
-            {user?.app_metadata?.is_admin && (
-              <Button as={Link} to={`/gadgets/${id}/edit`} variant="outline" icon={Pencil}>
-                Edit
+            <div className="flex flex-wrap gap-2 mt-auto pt-5">
+              <Button as={Link} to={`/compare?ids=${id}`} variant="primary">
+                Compare
               </Button>
-            )}
-            <DeleteGadgetButton gadget={gadget} onDeleted={() => navigate('/', { replace: true })} />
+              {isHttpUrl(gadget.store_url ?? '') && (
+                <Button as="a" href={gadget.store_url} target="_blank" rel="noopener noreferrer" variant="outline" icon={ExternalLink}>
+                  Official store
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </Button>
+              )}
+              {/* Admin-curated catalog: PATCH /gadgets/{id} is admin-only. */}
+              {user?.app_metadata?.is_admin && (
+                <Button as={Link} to={`/gadgets/${id}/edit`} variant="outline" icon={Pencil}>
+                  Edit
+                </Button>
+              )}
+              <DeleteGadgetButton gadget={gadget} onDeleted={() => navigate('/', { replace: true })} />
+            </div>
           </div>
-        </div>
-      </article>
-      
-      <GadgetChatPanel
-        gadgetId={id}
-        gadgetName={gadget.name}
-        category={gadget.category}
-        suggestions={['What chip does it use?', 'How long does the battery last?', 'Is it water resistant?']}
-      />
+        </article>
 
-      <SpecManager gadgetId={id} onSpecsChange={setSpecs} />
+        {/* specs: null while loading, undefined if the specs couldn't load (SpecManager shows that error). */}
+        {specs !== undefined && (
+          <div className="flex flex-col gap-3.5 min-w-0">
+            <KeySpecTiles keySpecs={extractKeySpecs(specList)} loading={specs === null} />
+            <MoreKeySpecs moreSpecs={extractMoreSpecs(specList)} loading={specs === null} />
+            <VariantsList variants={extractVariants(specList)} />
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-3.5 items-start">
+        <GadgetChatPanel
+          gadgetId={id}
+          gadgetName={withoutDoubledBrand(gadget.name)}
+          category={gadget.category}
+          suggestions={['What chip does it use?', 'How long does the battery last?', 'Is it water resistant?']}
+        />
+
+        <SpecManager gadgetId={id} onSpecsChange={setSpecs} />
+      </div>
     </div>
   )
 }

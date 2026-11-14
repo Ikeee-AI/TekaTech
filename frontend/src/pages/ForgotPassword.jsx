@@ -38,7 +38,7 @@ export default function ForgotPassword() {
   return (
     <div className="max-w-sm mx-auto">
       <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h1 className="font-display text-xl font-bold text-gray-900 mb-1">Forgot Password</h1>
+        <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900 mb-1">Forgot Password</h1>
         <p className="text-sm text-gray-500 mb-4">
           Enter the email you signed up with and we&apos;ll send you a link to set a new password.
         </p>

@@ -93,6 +93,9 @@ def save_spec_text(gadget_id: UUID, payload: SpecIngestRequest) -> dict:
     return {"gadget_id": gadget_id, "chunks_created": len(result.data), "indexing_status": "pending"}
 
 
+# Deliberately public: saved spec text is admin-curated catalog data that the catalog tiles and
+# gadget pages show to visitors who are not signed in. Asking the AI about it (POST /query)
+# needs a session since 14 Nov 2026; reading it does not.
 @router.get("", response_model=list[SpecDocumentResponse])
 def list_specs(gadget_id: UUID):
     result = (

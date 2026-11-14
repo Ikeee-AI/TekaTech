@@ -2,6 +2,19 @@
 
 Owner: project owner (the team's DevOps Engineer, also contributing full-stack code). Chosen baseline: GitHub Actions + free Render API/static frontend + existing Supabase database. The private remote repository, Sprint 1 PR #15 and 13 issues are created. PR checks pass. Both services are linked to main with Render auto-deploy off; GitHub deploy hooks are configured. Main run 38174257006 deployed commit 53f62e9, and exact version, database, CORS and direct-login checks passed; see `docs/evidence/sprint1-main-deployment.json`. Initial provisioning is recorded separately.
 
+## API host: Railway (since 12 Nov 2026)
+
+The API moved from Render to Railway on 12 Nov 2026 ~00:33 Manila ([plan and record](devops/railway-migration-plan.md)). Project `tekatech`, service `tekatech-api`, environment `production`, Singapore, Hobby plan, replica limit 2 vCPU / 2 GB (checked in Settings → Scale on 13 Nov 2026; billing follows actual use, not the limit), compute usage limit $10. URL: https://tekatech-api-production-549b48c9.up.railway.app. Service settings (builder, start command, `/health` health check, restart retries, region, resource limit) live in `.railway/railway.ts` since 13 Nov 2026 (before that `backend/railway.json`); see `.railway/README.md` for `railway config plan` / `apply`. `backend/.railwayignore` keeps `.env` out of uploads.
+
+- **Variables** are set in the Railway dashboard (service → Variables) with the same names as before (`devops/environments.md`). A dashboard change is only *staged* until you click **Deploy** on the banner; until then the running app doesn't see it.
+- **Deploys** come only from CI (`railway up` with the `RAILWAY_TOKEN` repo secret). Don't connect Railway's GitHub autodeploy.
+- **Manual deploy** (owner, CLI signed in with `railway login` and linked with `railway link --project tekatech --service tekatech-api --environment production`): from a clean checkout of the SHA, `railway variable set APP_COMMIT=<sha> --skip-deploys`, then `railway up backend --path-as-root --ci`.
+- **Logs**: `railway logs --service tekatech-api --environment production`.
+- **Saving a token as a GitHub secret** (for example a new `RAILWAY_TOKEN`): use `gh secret set NAME --body "<value>"`. Don't pipe the value in from Windows PowerShell 5.1: it adds a CRLF, and Railway then rejects the token with `Invalid RAILWAY_TOKEN` (incident 11 Nov 2026, `devops/incidents.md`). Test a new token first from a folder that isn't linked, for example `railway whoami` with `RAILWAY_TOKEN` set.
+- **Render API retired 13 Nov 2026:** the old Render service `tekatech-api` was suspended and its deploy hook secret removed, so the host move can no longer be undone by switching URLs. To recover the API, use Railway's own rollback (below) or redeploy a known-good commit with `rollback.yml`.
+
+The setup steps below are the original Render setup and stay as history. Only the frontend (`tekatech-web`) is still on Render.
+
 ## First-time setup
 
 1. GitHub is connected as Ikeee-AI. [TekaTech](https://github.com/Ikeee-AI/TekaTech) is private, both branches are pushed, and [merged PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15) introduced the application/foundation work. Main has the deployed application. The owner-directed initial merge lacked another teammate review; require real review before subsequent merges.
@@ -38,6 +51,8 @@ Wake a sleeping API before consultation. Confirm current free-plan limits on the
 
 ## Rate-limit buckets behind the proxy
 
+> **Railway (since 12 Nov 2026):** proxy trust stays **off** (`TRUST_PROXY_HEADERS=false`). The steps below were written for Render (`Rndr-Id`, Render logs); redo the hop-count check against the Railway URL and `railway logs` before turning it on.
+
 Status: **UNVERIFIED** until the steps below are run against production and recorded. Unit tests prove the key function's logic, not Render's actual header behavior.
 
 Why: Render's proxy is the socket peer of the API, so with the default key every visitor shares one bucket (for example one site-wide 10/minute on `/query`). With `TRUST_PROXY_HEADERS=true` the API keys on the `X-Forwarded-For` entry counted `TRUSTED_PROXY_HOPS` from the right (default 1 = rightmost). Proxies append to this header, so entries a client sends itself are always further left and are ignored; an entry that is missing or not an IP falls back to the socket peer, never to a left-hand entry. IPv6 clients are bucketed per /64. Render's docs do not state the exact `X-Forwarded-For` layout (checked 2026-10-27: [web services](https://render.com/docs/web-services), [logging / `Rndr-Id`](https://render.com/docs/logging#tracing-with-requestid-and-rndr-id), [DDoS protection via Cloudflare](https://render.com/docs/ddos-protection)), so the hop count must be confirmed from real traffic. Uvicorn's own proxy-header rewriting stays off (no `--forwarded-allow-ips`), because trusting every forwarded value would let clients pick their own bucket.
@@ -52,6 +67,32 @@ Verify after the settings are live (no AI calls; `/health/ready` is limited to 3
 
 If any step fails, set `TRUST_PROXY_HEADERS=false` on the API service (restores the previous shared-bucket behavior) and open a finding.
 
+## Security headers (frontend)
+
+`render.yaml` lists the frontend's response headers for `/*`: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Strict-Transport-Security`, `Permissions-Policy` and a `Content-Security-Policy-Report-Only`. No Blueprint was provisioned (see First-time setup, step 5), so these take effect only once they are entered on `tekatech-web` in the Render dashboard (Settings → Headers, path `/*`, one row per header, values copied from `render.yaml`). Headers apply without a rebuild.
+
+The CSP starts in **report-only** mode: the browser reports what it *would* block but blocks nothing. To enforce it:
+
+1. Open the live frontend with DevTools → Console, cache disabled. Walk the main journeys: catalog, gadget detail with an AI answer and source links, compare, log in / log out, a sign-up confirmation or password-reset email link, light and dark theme.
+2. Look for `[Report Only] Refused to …` messages. Each one names the directive and the blocked URL. Expected: none. If the API URL or Supabase project changes, update `connect-src` first.
+3. When a full walk shows no reports, rename the header in the dashboard (and in `render.yaml`) from `Content-Security-Policy-Report-Only` to `Content-Security-Policy`, keep the value, then repeat step 1 and confirm the app still works and the console is clean.
+4. To undo, rename it back to `…-Report-Only` (takes effect on the next request).
+
+`script-src 'self'` works because the pre-paint theme script is a file (`frontend/public/theme-init.js`), not inline. Don't add inline `<script>` blocks to `index.html`.
+
+## Email link templates (any-browser links, 14 Nov 2026)
+
+Why: with the PKCE sign-in flow, the default email links (`{{ .ConfirmationURL }}`) only work in the browser that asked for the email. A reset requested in a private window and opened from Gmail in another window then left no session ("Session not found" on update, 14 Nov 2026). Token-hash links work in any browser or device: the app sends the one-time token to Supabase itself (`verifyOtp`), and the token is taken out of the address bar at once.
+
+Order: deploy the app version that reads `?token_hash=` first, then change the templates. Links already sent keep working (the app still accepts `?code=` and `#access_token=` links).
+
+Supabase → Authentication → Emails (Templates), on each project (prod `lqswcmkzygqmnblaukco`, dev `efdgguybkampozuvqjrz`):
+
+- **Confirm signup**: change the link's `href` to `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email`
+- **Reset Password**: change the link's `href` to `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery`
+
+`{{ .RedirectTo }}` is the address the app asked for (`emailRedirectTo` = the site origin for sign-up, `redirectTo` = `/reset-password` for resets); it must be on Authentication → URL Configuration → Redirect URLs, or Supabase uses the Site URL. Check: request a reset in a private window, open the link from the email client in a normal window; the "Set a New Password" form appears and the update succeeds.
+
 ## Routine deployment
 
 Each issue gets a feature branch and a reviewed PR. Required CI jobs pass before merging. On main the pipeline repeats checks and triggers deployment. Verify the live version and record timestamps; a successful hook request is not deployment completion.
@@ -60,15 +101,21 @@ Each issue gets a feature branch and a reviewed PR. Required CI jobs pass before
 
 Preferred code rollback preserves the reviewed history:
 
-1. Find the last known good deployed commit in Render and the metrics/run log. Identify the broken merged change.
+1. Find the last known good deployed commit in the main run log (and Railway → Deployments for the API, Render for the frontend). Identify the broken merged change.
 2. Create a branch from current main, for example `tekatech/rollback-TTK-10`.
 3. `git revert <BROKEN_COMMIT>` (use the correct merge-parent option only if the change was a merge commit). Do not reset/force-push main.
 4. Open a PR, get another teammate review and passing checks, then merge. The pipeline deploys the reverted main state.
 5. Check `/health`, `/health/ready` (404 is expected if the restored release predates it), `/gadgets`, frontend/API wiring and affected behavior. Record time to recover and an incident postmortem.
 
-For an urgent outage, the DevOps Engineer may redeploy the last known good commit. Preferred: **Actions → Rollback production → Run workflow** with the full 40-character SHA and the reason (incident issue). The workflow (`.github/workflows/rollback.yml`) refuses commits that are not on main or lack successful `Backend tests`, `Frontend lint and build` and `Database migrations` checks, triggers both Render hooks for that exact SHA, and runs the same smoke checks as a release; its summary and artifact are the recovery evidence. Fallback: Render's deploy controls. Immediately reconcile main with a reviewed revert PR so automatic deployment does not restore the broken code. Record the emergency action. Never roll schema backward by dropping tables; inspect compatibility and restore data from backups only with explicit team approval.
+For an urgent outage, the DevOps Engineer may redeploy the last known good commit. Preferred: **Actions → Rollback production → Run workflow** with the full 40-character SHA and the reason (incident issue). The workflow (`.github/workflows/rollback.yml`) refuses commits that are not on main or lack successful `Backend tests`, `Frontend lint and build` and `Database migrations` checks, deploys that exact SHA's backend to Railway and its frontend through the Render hook, and runs the same smoke checks as a release. Commits from before the Railway move (their `/version` doesn't read `APP_COMMIT`, #250) are refused: roll the API back in Railway instead (service → Deployments → three dots on an earlier deployment → **Redeploy**), and the frontend with Render's deploy controls; its summary and artifact are the recovery evidence. Fallback: Railway's and Render's dashboard deploy controls. Immediately reconcile main with a reviewed revert PR so automatic deployment does not restore the broken code. Record the emergency action. Never roll schema backward by dropping tables; inspect compatibility and restore data from backups only with explicit team approval.
 
-Rollback rehearsal status: **RUN on production, 31 October 2026** ([evidence](evidence/rollback-rehearsal-2026-10-31.md)). `rollback.yml` restored `7d2ab44` in 1 min 35 s and rolled forward to `5aa4635` in 1 min 45 s, both smoke-tested. The two commits differed only in docs/evaluation files, so the rehearsal had no user impact; a rollback across a code or schema change has not been rehearsed.
+Rollback rehearsal status on **Railway: RUN on production, 12 November 2026** ([evidence with screenshots](evidence/rollback-rehearsal-2026-11-12-railway.md)): `rollback.yml` restored `3658c58` in 1 min 17 s and rolled forward to `f836e3b` in 1 min 16 s, both smoke-tested; the pair differed only in a frontend test-tool bump.
+
+Earlier, on Render: Rollback rehearsal status: **RUN on production, 31 October 2026** ([evidence](evidence/rollback-rehearsal-2026-10-31.md)). `rollback.yml` restored `7d2ab44` in 1 min 35 s and rolled forward to `5aa4635` in 1 min 45 s, both smoke-tested. The two commits differed only in docs/evaluation files, so the rehearsal had no user impact; a rollback across a code or schema change has not been rehearsed.
+
+Second-member demonstration: **done by Jopher, 6 November 2026.** Jopher (`s2100932`) ran `rollback.yml` on production twice on 6 Nov: (1) 11:10–11:17 Manila, back to `e22758b` in 1 min 37 s ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/42154924236)) and forward to `1170d19` in 1 min 41 s ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/42155490274)), results on [#237](https://github.com/Ikeee-AI/TekaTech/issues/237) at 11:22; (2) 16:35–16:39 Manila, back to the tagged `db49bc2` (`v1.1.0`) in 1 min 39 s ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/42188771228)) and forward to `3d9be35` in 1 min 33 s ([run](https://github.com/Ikeee-AI/TekaTech/actions/runs/42189100078)), results on [#240](https://github.com/Ikeee-AI/TekaTech/pull/240). All four runs succeeded with their built-in smoke checks; each pair differed only in docs/script files, so users saw no change. A rollback across a code or schema change is still not rehearsed.
+
+Tips from that demonstration: the **Run workflow** button only appears after you open **Rollback production** in the Actions workflow list; and the job stays yellow (running) for about a minute while the website rebuilds, which is normal.
 
 ## Database backup and restore
 

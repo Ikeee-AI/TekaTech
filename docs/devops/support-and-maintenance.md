@@ -38,12 +38,12 @@ Same definitions as the sprint plan and [`pilot-plan.md`](pilot-plan.md). Respon
 | **High** | A required journey fails with no workaround (sign-in, ask, compare, specs, corrections, My Gadgets) | Same day | The area owner fixes it in a reviewed PR; entry in `incidents.md` |
 | **Medium / low** | Wording, layout, slow but working, one bad catalog fact | Logged as an issue | Next normal PR |
 
-Not incidents: a cold start of about 40–60 s on the free Render API after idle time; a paused or waking Supabase project (DNS failure, then 521, for a few minutes, see CLAUDE.md "Gotchas"); GitHub status lag during an Actions degradation (check githubstatus.com).
+Not incidents: a slow first request for about a minute right after a Railway deploy; a paused or waking Supabase project (DNS failure, then 521, for a few minutes, see CLAUDE.md "Gotchas"); GitHub status lag during an Actions degradation (check githubstatus.com).
 
 ## 3. First 15 minutes of an incident
 
-1. **Confirm it's real.** Open https://tekatech-web.onrender.com and `https://tekatech-api.onrender.com/health/ready`, and wait about 60 s for a cold start. Run the safe diagnostic in [`troubleshooting.md` §1](../troubleshooting.md) (no secrets, no writes, no AI calls).
-2. **Check what changed.** The latest `main` run and deploy (`gh run list --branch main --limit 5`), and the commit production serves (`python scripts/deployed_smoke.py --api-url https://tekatech-api.onrender.com --frontend-url https://tekatech-web.onrender.com --commit <full sha>`).
+1. **Confirm it's real.** Open https://tekatech-web.onrender.com and `https://tekatech-api-production-549b48c9.up.railway.app/health/ready`. Run the safe diagnostic in [`troubleshooting.md` §1](../troubleshooting.md) (no secrets, no writes, no AI calls).
+2. **Check what changed.** The latest `main` run and deploy (`gh run list --branch main --limit 5`), and the commit production serves (`python scripts/deployed_smoke.py --api-url https://tekatech-api-production-549b48c9.up.railway.app --frontend-url https://tekatech-web.onrender.com --commit <full sha>`).
 3. **Check the providers.** Render, Supabase and OpenAI status pages; the OpenAI balance (prepaid, hard cap, auto-reload off).
 4. **Decide.** If the last deploy caused it, roll back first and investigate after. Otherwise, route to the area owner (section 1).
 5. **Record.** Use the `incident` skill or add an entry to `incidents.md`: detection time, impact, cause, fix, recovery time and a prevention step. The daily `ops-health.yml` opens an `incident` issue by itself when the production smoke check fails.
@@ -87,7 +87,9 @@ Not incidents: a cold start of about 40–60 s on the free Render API after idle
 | Service | What runs there | Plan limits that matter |
 | --- | --- | --- |
 | GitHub `Ikeee-AI/TekaTech` (private) | Code, CI/CD, scheduled ops | Free plan: monthly Actions minutes; no enforced branch protection (manual gate plus the CI "Main guard") |
-| Render `tekatech-web`, `tekatech-api` | Frontend and API, deployed from `main` by deploy hooks | Free: the API sleeps after about 15 min idle |
+| Render `tekatech-web` | Frontend, deployed from `main` by its deploy hook | Free static site |
+| Railway `tekatech-api` (since 12 Nov 2026) | API, deployed from `main` by `railway up` in CI | Hobby $5/month incl. $5 usage; compute usage limit $10; check the Usage page weekly |
+| Render `tekatech-api` | Old API host, fallback until ~19 Nov 2026 | Free; retire after 7 clean days on Railway |
 | Supabase live (`lqswcmkzygqmnblaukco`) and TekaTech-dev (`efdgguybkampozuvqjrz`) | PostgreSQL + pgvector + Auth | Free: no point-in-time recovery or scheduled backups; pauses when inactive |
 | OpenAI | `gpt-5-mini` answers, `text-embedding-3-small` embeddings | Prepaid balance with a hard cap and auto-reload off; production key and smoke key are separate |
 

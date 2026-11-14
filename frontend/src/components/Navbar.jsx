@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, LogIn, LogOut, Menu, X, Search, Sparkles, CornerDownLeft, User, Inbox } from 'lucide-react'
+import { Plus, LogIn, LogOut, Menu, X, Search, Sparkles, CornerDownLeft, User, Inbox, Moon, Sun, Cpu } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { useCorrectionBadges } from '../hooks/useCorrectionBadges'
-import logo from '../assets/logo.webp'
+import { useTheme } from '../hooks/useTheme'
+import ConfirmDialog from './ui/ConfirmDialog'
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
 
@@ -30,16 +31,16 @@ function decisionsLabel(count) {
 }
 
 function navLinkClass({ isActive }) {
-  return `px-3.5 py-2 rounded-lg text-[15px] transition-colors ${focusRing} ${
+  return `px-3.5 py-1.5 rounded-full text-sm font-semibold transition-colors ${focusRing} ${
     isActive
-      ? 'bg-sage-400 text-sage-900 font-semibold'
-      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+      ? 'bg-inverse text-inverse-ink'
+      : 'text-slate-600 hover:text-slate-900 hover:bg-white'
   }`
 }
 
 function mobileLinkClass({ isActive }) {
   return `block px-3 py-2.5 rounded-lg text-base transition-colors ${focusRing} ${
-    isActive ? 'bg-sage-50 text-sage-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+    isActive ? 'bg-inverse text-inverse-ink font-semibold' : 'text-slate-700 hover:bg-slate-100'
   }`
 }
 
@@ -60,6 +61,7 @@ function SearchBar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
+  const { user } = useAuth()
   const inputRef = useRef(null)
   const onCatalog = location.pathname === '/'
   const urlQuery = onCatalog ? (searchParams.get('q') ?? '') : ''
@@ -115,6 +117,23 @@ function SearchBar() {
   function ask() {
     const question = query.trim()
     if (!question) return
+    // Asking the AI needs an account (owner decision, 14 Nov 2026); searching by name does not.
+    // Log in, then come back to this page. The question is dropped, not carried in the URL
+    // (?ask= / ?q=) or the return address.
+    if (!user) {
+      setText('')
+      setSynced('')
+      // ?q= mirrors this box, which now holds the question (or a debounced part of it).
+      const params = new URLSearchParams(location.search)
+      params.delete('ask')
+      params.delete('q')
+      const search = params.toString()
+      toast('Log in to ask the AI.')
+      navigate('/login', {
+        state: { from: { pathname: location.pathname, search: search ? `?${search}` : '', hash: location.hash } },
+      })
+      return
+    }
     // The typed text becomes the question, not a name filter: keeping it as
     // ?q= would filter the catalog by the whole sentence and match nothing.
     setText('')
@@ -135,7 +154,7 @@ function SearchBar() {
         id="gadget-search"
         ref={inputRef}
         type="text"
-        placeholder="Search gadgets, or ask a question and press Enter"
+        placeholder="Search phones, or ask a question and press Enter"
         maxLength={MAX_QUESTION_CHARS}
         value={query}
         onChange={(e) => setText(e.target.value)}
@@ -146,7 +165,7 @@ function SearchBar() {
             ask()
           }
         }}
-        className="w-full bg-slate-100 text-slate-900 placeholder:text-slate-500 text-[15px] pl-10 pr-12 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-sage-600 focus:bg-white focus:ring-1 focus:ring-sage-600 transition-all"
+        className="w-full bg-slate-100 text-slate-900 placeholder:text-slate-500 text-[15px] pl-10 pr-12 py-2.5 rounded-full border border-slate-200 focus:outline-none focus:border-sage-600 focus:ring-1 focus:ring-sage-600 transition-all"
       />
       {query.trim() ? (
         <button
@@ -157,16 +176,33 @@ function SearchBar() {
           onClick={ask}
           aria-label="Ask the AI"
           title="Ask the AI"
-          className={`absolute right-2 flex items-center gap-1 text-xs font-semibold text-sage-700 bg-sage-50 border border-sage-200 rounded-md px-2 py-1 min-h-10 sm:min-h-0 hover:bg-sage-200 transition ${focusRing}`}
+          className={`absolute right-2 flex items-center gap-1 text-xs font-bold text-white bg-sage-700 rounded-full px-3 py-1 min-h-10 sm:min-h-0 hover:bg-sage-800 transition ${focusRing}`}
         >
           <Sparkles size={12} /> Ask <CornerDownLeft size={12} />
         </button>
       ) : (
-        <kbd className="absolute right-3 text-xs text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200 pointer-events-none">
+        <kbd className="absolute right-3 font-mono text-xs text-slate-500 bg-white px-1.5 py-0.5 rounded-md border border-slate-200 pointer-events-none">
           /
         </kbd>
       )}
     </div>
+  )
+}
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+  const dark = theme !== 'light'
+  const label = dark ? 'Switch to light mode' : 'Switch to dark mode'
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(dark ? 'light' : 'dark')}
+      aria-label={label}
+      title={label}
+      className={`w-10 h-10 rounded-full flex items-center justify-center border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition ${focusRing}`}
+    >
+      {dark ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+    </button>
   )
 }
 
@@ -185,6 +221,10 @@ function Navbar() {
   const menuUpdates = unseenDecisions + pendingCount
   const [menuOpen, setMenuOpen] = useState(false)
   const [lastPath, setLastPath] = useState(location.pathname)
+  // Log out asks first (owner decision, 14 Nov 2026); only "Log out" in the dialog signs out.
+  const [confirmLogout, setConfirmLogout] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState(null)
 
   // Close the mobile menu whenever the route changes.
   if (lastPath !== location.pathname) {
@@ -195,15 +235,36 @@ function Navbar() {
   useEffect(() => {
     if (!menuOpen) return
     function handleKey(e) {
-      if (e.key === 'Escape') setMenuOpen(false)
+      // Escape in the log-out dialog closes only the dialog, so focus can return to the menu.
+      if (e.key === 'Escape' && !confirmLogout) setMenuOpen(false)
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [menuOpen])
+  }, [menuOpen, confirmLogout])
+
+  function askToSignOut() {
+    setSignOutError(null)
+    setConfirmLogout(true)
+  }
+
+  function cancelSignOut() {
+    setConfirmLogout(false)
+    setSignOutError(null)
+  }
 
   async function handleSignOut() {
+    setSigningOut(true)
+    setSignOutError(null)
+    try {
+      await signOut()
+    } catch {
+      setSignOutError("We couldn't log you out. Check your connection, then try again.")
+      setSigningOut(false)
+      return
+    }
+    setSigningOut(false)
+    setConfirmLogout(false)
     setMenuOpen(false)
-    await signOut()
     toast.success('Logged out')
     navigate('/')
   }
@@ -211,11 +272,14 @@ function Navbar() {
   const renderLinks = (className) => (
     <>
       <NavLink to="/" end className={className}>
-        Catalog
+        Phones
       </NavLink>
-      <NavLink to="/compare" className={className}>
-        Compare
-      </NavLink>
+      {/* Comparing needs an account (owner, 14 Nov 2026); visitors only browse the catalog. */}
+      {user && (
+        <NavLink to="/compare" className={className}>
+          Compare
+        </NavLink>
+      )}
       {user && (
         <NavLink to="/my-gadgets" className={className}>
           My Gadgets
@@ -231,46 +295,45 @@ function Navbar() {
   )
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap md:flex-nowrap items-center gap-x-6 gap-y-3">
-        <Link to="/" aria-label="TekaTech home" className={`shrink-0 rounded-md ${focusRing}`}>
-          <img src={logo} alt="TekaTech" className="h-10 w-auto" />
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
+      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-2.5">
+        <Link to="/" aria-label="TekaTech home" className={`shrink-0 flex items-center gap-2 rounded-lg ${focusRing}`}>
+          <span className="w-9 h-9 rounded-[10px] bg-sage-700 text-white flex items-center justify-center" aria-hidden="true">
+            <Cpu size={19} strokeWidth={2.4} />
+          </span>
+          <span className="text-xl font-extrabold tracking-[-0.03em] text-slate-900">TekaTech</span>
         </Link>
 
-        <div className="order-last w-full md:order-none md:w-auto md:flex-1 md:max-w-xl">
+        <div className="order-last w-full md:order-none md:w-auto md:flex-1 md:max-w-md">
           <SearchBar />
         </div>
 
-        <nav aria-label="Main" className="hidden lg:flex items-center gap-1 shrink-0">
+        <nav aria-label="Main" className="hidden lg:flex items-center gap-1 shrink-0 p-1 rounded-full bg-slate-100">
           {renderLinks(navLinkClass)}
         </nav>
 
-        <div className="ml-auto flex items-center gap-3 shrink-0">
+        <div className="ml-auto flex items-center gap-2 shrink-0">
+          <ThemeToggle />
           {/* The catalog is curated by admins (scope change, 3 Nov 2026): POST /gadgets is admin-only. */}
           {isAdmin && (
             <Link
               to="/add"
-              aria-label="Add gadget"
-              className={`flex items-center gap-2 bg-sage-700 text-white text-[15px] font-bold px-3 sm:px-5 py-2.5 min-h-10 rounded-lg shadow-md shadow-sage-700/25 ring-2 ring-sage-400/50 hover:bg-sage-800 hover:shadow-lg active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
+              aria-label="Add phone"
+              className={`flex items-center gap-2 bg-sage-700 text-white text-sm font-bold px-3 sm:px-4 py-2 min-h-10 rounded-full hover:bg-sage-800 active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
             >
-              <Plus size={18} strokeWidth={2.5} /> <span className="hidden sm:inline">Add Gadget</span>
+              <Plus size={18} strokeWidth={2.5} /> <span className="hidden sm:inline">Add Phone</span>
             </Link>
           )}
 
           {user ? (
             <div className="hidden lg:flex items-center gap-2">
-              <div className="hidden xl:flex items-center gap-2 bg-slate-100 border border-slate-200 text-slate-600 text-sm px-3 py-1.5 rounded-lg max-w-[260px]">
-                <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
-                <span className="truncate" title={user.email}>
-                  Signed in as <strong className="text-slate-900 font-semibold">{user.email}</strong>
-                </span>
-              </div>
+{/* The signed-in email lives on the Account page and in its tooltip (rebrand: a compact header). */}
               <NavLink
                 to="/my-suggestions"
                 aria-label={mySuggestionsLabel}
                 title={mySuggestionsLabel}
                 className={({ isActive }) =>
-                  `relative p-2 rounded-lg transition ${focusRing} ${
+                  `relative p-2 rounded-full transition ${focusRing} ${
                     isActive ? 'bg-sage-50 text-sage-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
                   }`
                 }
@@ -286,20 +349,21 @@ function Navbar() {
               <NavLink
                 to="/account"
                 aria-label="Your account"
-                title="Your account"
+                title={`Your account (${user.email})`}
                 className={({ isActive }) =>
-                  `w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0 transition ${focusRing} ${
-                    isActive ? 'bg-sage-800 ring-2 ring-sage-300' : 'bg-sage-700 hover:bg-sage-800'
+                  `w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition ${focusRing} ${
+                    isActive ? 'bg-sage-700 text-white ring-2 ring-sage-300' : 'bg-inverse text-inverse-ink hover:opacity-90'
                   }`
                 }
               >
                 <User size={18} aria-hidden="true" />
               </NavLink>
               <button
-                onClick={handleSignOut}
+                type="button"
+                onClick={askToSignOut}
                 aria-label="Log out"
                 title="Log out"
-                className={`p-2 text-slate-500 hover:text-red-600 rounded-lg transition ${focusRing}`}
+                className={`p-2 text-slate-500 hover:text-red-600 rounded-full transition ${focusRing}`}
               >
                 <LogOut size={18} />
               </button>
@@ -308,7 +372,7 @@ function Navbar() {
             <Link
               to="/login"
               state={loginState}
-              className={`hidden lg:flex items-center gap-1.5 px-3.5 py-2 text-[15px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition ${focusRing}`}
+              className={`hidden lg:flex items-center gap-1.5 px-4 py-2 min-h-10 text-sm font-bold bg-inverse text-inverse-ink hover:opacity-90 rounded-full transition ${focusRing}`}
             >
               <LogIn size={18} /> Log In
             </Link>
@@ -356,7 +420,8 @@ function Navbar() {
               <div className="flex items-center justify-between gap-2 px-3">
                 <span className="text-sm text-slate-500 truncate">Signed in as {user.email}</span>
                 <button
-                  onClick={handleSignOut}
+                  type="button"
+                  onClick={askToSignOut}
                   className={`flex items-center gap-1.5 min-h-10 px-2 -mr-2 text-sm text-slate-600 hover:text-red-600 rounded-md transition ${focusRing}`}
                 >
                   <LogOut size={16} /> Log Out
@@ -370,6 +435,18 @@ function Navbar() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Log out of TekaTech?"
+        description="You can log back in at any time. Without an account you can still browse the catalog."
+        confirmLabel="Log out"
+        busyLabel="Logging out…"
+        busy={signingOut}
+        error={signOutError}
+        onConfirm={handleSignOut}
+        onCancel={cancelSignOut}
+      />
     </header>
   )
 }

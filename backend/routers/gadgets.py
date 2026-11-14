@@ -1,14 +1,24 @@
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 import answer_cache
 import cache
-from schemas import GadgetCreate, GadgetUpdate, GadgetResponse, normalize_category
+from schemas import (
+    MAX_BRAND_CHARS,
+    MAX_CATEGORY_CHARS,
+    GadgetCreate,
+    GadgetResponse,
+    GadgetUpdate,
+    normalize_category,
+)
 from supabase_client import supabase
 from auth import get_current_admin_user
 
+# The two GET routes are deliberately public (owner decision, 14 Nov 2026): visitors who are not
+# signed in may browse the catalog. Every AI, comparison and question endpoint needs a session
+# (routers/query.py, comparisons.py, stats.py trending-questions); writes here are admin-only.
 router = APIRouter(prefix="/gadgets", tags=["gadgets"])
 logger = logging.getLogger(__name__)
 
@@ -20,8 +30,14 @@ DETAIL_SAVE_FAILED = "Couldn't save the gadget right now. Try again in a moment.
 # re-reads the list right after a create/edit and must not get a stale copy.
 GADGETS_TTL_SECONDS = 60
 
+# Filter values are part of the public cache key (cache.py), so they are bounded by the
+# longest value a saved gadget can hold (schemas.py): category 60, brand 80.
 @router.get("", response_model=list[GadgetResponse])
-def list_gadgets(response: Response, category: str | None = None, brand: str | None = None):
+def list_gadgets(
+    response: Response,
+    category: str | None = Query(None, max_length=MAX_CATEGORY_CHARS),
+    brand: str | None = Query(None, max_length=MAX_BRAND_CHARS),
+):
     # Same spelling rule as saving (#78), so ?category=smartphone finds "Smartphone".
     category = normalize_category(category) or None
 
@@ -68,7 +84,7 @@ def create_gadget(gadget: GadgetCreate, user=Depends(get_current_admin_user)):
 @router.patch("/{gadget_id}", response_model=GadgetResponse)
 def update_gadget(gadget_id: UUID, gadget: GadgetUpdate, user=Depends(get_current_admin_user)):
     # exclude_unset, not exclude_none: an omitted field is left alone, while an
-    # explicit null clears release_date / price_php / image_url (GadgetUpdate
+    # explicit null clears an optional field such as price_php or store_url (GadgetUpdate
     # refuses null for the required columns).
     payload = gadget.model_dump(mode="json", exclude_unset=True)
     if not payload:

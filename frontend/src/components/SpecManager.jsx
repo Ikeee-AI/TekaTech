@@ -11,7 +11,7 @@ import Alert from './ui/Alert'
 import { TextField, TextAreaField } from './ui/FormField'
 import { friendlyError } from '../utils/requestErrors'
 import { notifyCorrectionsChanged } from '../utils/correctionNotices'
-import { groupSpecsBySource, specBlocks } from '../utils/specLayout'
+import { groupSpecsBySource, specSections } from '../utils/specLayout'
 
 const MAX_SPEC_CHARS = 20_000 // mirrors MAX_RAW_TEXT_LENGTH in backend/routers/specs.py
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
@@ -253,7 +253,7 @@ function AiReadiness({ specs }) {
   }
   if (ready === 0) {
     return (
-      <Alert tone="warning" title="The AI Has No Evidence for This Gadget Yet" className="mb-3">
+      <Alert tone="warning" title="The AI Has No Evidence for This Phone Yet" className="mb-3">
         None of its specs are indexed, so AI answers can&apos;t cite anything about it. Index the specs below to fix this.
       </Alert>
     )
@@ -273,25 +273,36 @@ function sourceLabel(url) {
   }
 }
 
-function SpecContent({ content }) {
+function FactList({ items }) {
   return (
-    <div className="space-y-2">
-      {specBlocks(content).map((block, i) =>
-        block.type === 'facts' ? (
-          <dl key={i} className="grid grid-cols-1 sm:grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 gap-y-1 text-[15px]">
-            {block.items.map((item, j) => (
-              <div key={j} className="contents">
-                <dt className="font-medium text-slate-500 sm:pt-px">{item.label}</dt>
-                <dd className="text-slate-900 break-words mb-1 sm:mb-0">{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : (
-          <p key={i} className="text-[15px] text-slate-800 break-words">
-            {block.text}
-          </p>
-        ),
-      )}
+    <dl className="grid grid-cols-1 sm:grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 gap-y-1 text-[15px]">
+      {items.map((item, j) => (
+        <div key={j} className="contents">
+          <dt className="font-medium text-slate-500 sm:pt-px">{item.label}</dt>
+          <dd className="text-slate-900 break-words mb-1 sm:mb-0">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/** One chunk as a spec sheet: "Label: value" facts under section headings (Display,
+ * Performance, ...), then any unlabelled lines as they were written. */
+function SpecContent({ content }) {
+  const { sections, text } = specSections(content)
+  return (
+    <div className="space-y-3">
+      {sections.map((section) => (
+        <div key={section.title}>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-sage-700 mb-1">{section.title}</h3>
+          <FactList items={section.items} />
+        </div>
+      ))}
+      {text.map((line, i) => (
+        <p key={i} className="text-[15px] text-slate-800 break-words">
+          {line}
+        </p>
+      ))}
     </div>
   )
 }
@@ -327,16 +338,12 @@ function SpecRow({ spec, user, isAdmin, gadgetId, indexingId, indexError, onInde
         </div>
       </div>
 
-      {indexState !== 'indexed' && (
+      {/* Indexing is an admin task: shoppers never see AI-readiness wording (14 Nov 2026). */}
+      {isAdmin && indexState !== 'indexed' && (
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <IndexBadge state={indexState} />
-          {indexState === 'pending' && (
-            <span className="text-sm text-amber-900">
-              The AI can&apos;t use this part yet.{!isAdmin && ' An admin needs to index it.'}
-            </span>
-          )}
-          {isAdmin && (
-            <Button
+          {indexState === 'pending' && <span className="text-sm text-amber-900">The AI can&apos;t use this part yet.</span>}
+          <Button
               variant="outline"
               size="sm"
               icon={Sparkles}
@@ -344,12 +351,11 @@ function SpecRow({ spec, user, isAdmin, gadgetId, indexingId, indexError, onInde
               disabled={indexingId !== null}
               onClick={() => onIndex(gadgetId, spec.id)}
             >
-              {isIndexing ? 'Indexing…' : indexError ? 'Retry Indexing' : 'Index for AI'}
-            </Button>
-          )}
+            {isIndexing ? 'Indexing…' : indexError ? 'Retry Indexing' : 'Index for AI'}
+          </Button>
         </div>
       )}
-      {indexState === 'failed' && (
+      {isAdmin && indexState === 'failed' && (
         <Alert tone="error" title="Indexing Failed — Your Spec Is Saved" className="mt-2.5">
           {indexError}
         </Alert>
@@ -371,7 +377,7 @@ function SpecSourceGroup({ group, defaultOpen, user, isAdmin, gadgetId, indexing
   const mustShow = specs.some((s) => indexingId === s.id || indexErrors[s.id])
   const open = expanded || mustShow
   const ready = specs.filter((s) => s.indexing_status === 'indexed').length
-  // The oldest verification in the group decides "May Be Outdated".
+  // The oldest save date in the group decides "May Be Outdated".
   const oldest = specs.reduce((a, s) => (new Date(s.verified_at) < new Date(a) ? s.verified_at : a), specs[0].verified_at)
   const outdated = now - new Date(oldest).getTime() > SIX_MONTHS_MS
 
@@ -381,7 +387,8 @@ function SpecSourceGroup({ group, defaultOpen, user, isAdmin, gadgetId, indexing
         className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 sm:px-5 py-3 bg-slate-50 ${open ? 'border-b border-slate-200' : ''}`}
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
-          {sourceUrl ? (
+          {/* Only http(s) becomes a link: a stored javascript:/data: URL must never be clickable. */}
+          {isHttpUrl(sourceUrl) ? (
             <a
               href={sourceUrl}
               target="_blank"
@@ -397,28 +404,33 @@ function SpecSourceGroup({ group, defaultOpen, user, isAdmin, gadgetId, indexing
             </span>
           )}
           <span className="inline-flex items-center gap-1 text-sm text-slate-600" title={formatDate(oldest)}>
-            <Calendar size={13} aria-hidden="true" /> Verified {timeAgo(oldest)}
+            <Calendar size={13} aria-hidden="true" /> Added {timeAgo(oldest)}
           </span>
           {outdated && <span className="text-sm text-amber-800 font-semibold">May Be Outdated</span>}
         </div>
         <div className="flex items-center gap-2">
-          {ready === specs.length ? (
-            <IndexBadge state="indexed" />
-          ) : (
-            <span className="text-xs font-semibold text-amber-800">
-              {ready} of {specs.length} ready for AI
-            </span>
-          )}
+          {isAdmin &&
+            (ready === specs.length ? (
+              <IndexBadge state="indexed" />
+            ) : (
+              <span className="text-xs font-semibold text-amber-800">
+                {ready} of {specs.length} ready for AI
+              </span>
+            ))}
           <button
             type="button"
             onClick={() => setExpanded(!open)}
             disabled={mustShow}
             aria-expanded={open}
             aria-controls={rowsId}
-            aria-label={`${open ? 'Hide' : 'Show'} ${specs.length} spec part${specs.length === 1 ? '' : 's'} from ${sourceUrl ? sourceLabel(sourceUrl) : 'no source link'}`}
-            className="inline-flex items-center gap-1 min-h-10 sm:min-h-8 px-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-200/70 disabled:opacity-60 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+            aria-label={
+              isAdmin
+                ? `${open ? 'Hide' : 'Show'} ${specs.length} spec part${specs.length === 1 ? '' : 's'} from ${sourceUrl ? sourceLabel(sourceUrl) : 'no source link'}`
+                : `${open ? 'Hide' : 'Show'} specs from ${sourceUrl ? sourceLabel(sourceUrl) : 'no source link'}`
+            }
+            className="inline-flex items-center gap-1 min-h-11 sm:min-h-8 px-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-200/70 disabled:opacity-60 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
           >
-            {specs.length} part{specs.length === 1 ? '' : 's'}
+            {isAdmin ? `${specs.length} part${specs.length === 1 ? '' : 's'}` : open ? 'Hide' : 'Show'}
             <ChevronDown size={16} aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`} />
           </button>
         </div>
@@ -464,7 +476,11 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
         onSpecsChange?.(data)
       })
       .catch((err) => {
-        if (!background) setState({ status: 'error', specs: [], error: friendlyError(err) })
+        if (!background) {
+          setState({ status: 'error', specs: [], error: friendlyError(err) })
+          // undefined = couldn't load (not "no specs"), so the page doesn't claim nothing is stated.
+          onSpecsChange?.(undefined)
+        }
       })
   }, [gadgetId, onSpecsChange])
 
@@ -534,11 +550,11 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   const { status, specs } = state
 
   return (
-    <section aria-labelledby="specs-title" className="mt-8">
+    <section aria-labelledby="specs-title" className="min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
         <h2 id="specs-title" className="text-xl font-bold text-slate-900 flex items-center gap-2">
           <FileText size={20} className="text-sage-700" aria-hidden="true" /> Specifications
-          {status === 'ready' && <span className="text-sm font-medium text-slate-500">({specs.length})</span>}
+          {isAdmin && status === 'ready' && <span className="text-sm font-medium text-slate-500">({specs.length})</span>}
         </h2>
         {/* Admin-curated catalog (scope change, 3 Nov 2026): only admins add specs.
             Everyone else contributes by suggesting corrections, which needs an account. */}
@@ -603,11 +619,13 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
         <div className="text-center bg-white border border-slate-300 border-dashed rounded-xl px-6 py-10">
           <FileText size={24} className="mx-auto text-slate-400" aria-hidden="true" />
           <p className="font-semibold text-slate-800 mt-2">No Specs Yet</p>
-          <p className="text-sm text-slate-600 mt-1">Add a spec sheet so the AI can answer questions about this gadget.</p>
+          <p className="text-sm text-slate-600 mt-1">
+            {isAdmin ? 'Add a spec sheet so the AI can answer questions about this phone.' : 'The TekaTech team hasn’t added specs for this phone yet.'}
+          </p>
         </div>
       )}
 
-      {status === 'ready' && specs.length > 0 && <AiReadiness specs={specs} />}
+      {isAdmin && status === 'ready' && specs.length > 0 && <AiReadiness specs={specs} />}
 
       {isAdmin && status === 'ready' && specs.some((sp) => sp.indexing_status !== 'indexed') && (
         <div className="flex flex-wrap items-center gap-3 mb-3">

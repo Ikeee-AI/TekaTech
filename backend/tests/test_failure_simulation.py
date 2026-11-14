@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from config import Settings, settings
+from conftest import real_session_lookup, signed_in_as
 from routers.query import (
     DETAIL_TIMEOUT,
     DETAIL_UNAVAILABLE,
@@ -40,7 +41,10 @@ def enabled(monkeypatch):
 
 
 def _ask(client, headers, who=ADMIN):
-    with patch("routers.query.client") as mock_client, patch("routers.query.get_optional_user", return_value=who):
+    """who=None asks anonymously (no session override, so the real get_current_user answers)."""
+    if who is None:
+        headers = {k: v for k, v in headers.items() if k.lower() != "authorization"}
+    with patch("routers.query.client") as mock_client, signed_in_as(who):
         mock_client.embeddings.create.return_value = _embedding()
         mock_client.chat.completions.create.return_value = _completion()
         resp = client.post("/query", json={"question": "How many cores?"}, headers=headers)
@@ -55,8 +59,10 @@ def test_disabled_by_default():
 
 
 def test_production_service_never_enables_it():
-    render_yaml = (Path(__file__).resolve().parents[2] / "render.yaml").read_text(encoding="utf-8")
-    assert "FAILURE_SIMULATION" not in render_yaml.upper()
+    # Production config in the repo: render.yaml (frontend) and .railway/railway.ts (API, since 13 Nov 2026).
+    root = Path(__file__).resolve().parents[2]
+    for config in (root / "render.yaml", root / ".railway" / "railway.ts"):
+        assert "FAILURE_SIMULATION" not in config.read_text(encoding="utf-8").upper(), config.name
 
 
 def test_header_is_ignored_while_the_setting_is_off(client, fake_supabase):
@@ -66,12 +72,15 @@ def test_header_is_ignored_while_the_setting_is_off(client, fake_supabase):
     mock_client.chat.completions.create.assert_called_once()
 
 
-def test_anonymous_caller_is_ignored_even_when_enabled(client, fake_supabase, enabled):
+def test_anonymous_caller_is_refused_before_the_drill_even_when_enabled(client, fake_supabase, enabled):
+    # /query needs a session since 14 Nov 2026: the header changes nothing for an anonymous caller.
     _matching_spec(fake_supabase)
     resp, mock_client = _ask(client, {"X-Simulate-Failure": "timeout"}, who=None)
-    assert resp.status_code == 200
+    assert resp.status_code == 401
+    assert resp.json() == {"detail": "Login required"}
     assert "X-Simulated-Failure" not in resp.headers
-    mock_client.chat.completions.create.assert_called_once()
+    mock_client.embeddings.create.assert_not_called()
+    mock_client.chat.completions.create.assert_not_called()
 
 
 def test_non_admin_is_ignored_even_when_enabled(client, fake_supabase, enabled):
@@ -90,13 +99,15 @@ def test_unknown_mode_is_ignored_for_non_admins_and_while_disabled(client, fake_
     assert resp.status_code == 200
 
 
-def test_ordinary_requests_do_no_extra_auth_lookup(client, fake_supabase, enabled):
+@pytest.mark.parametrize("headers", [{}, {"X-Simulate-Failure": "timeout"}])
+def test_each_request_does_exactly_one_session_lookup(client, fake_supabase, enabled, headers):
+    # The drill reuses the route's session user, so the header adds no second Supabase lookup.
     _matching_spec(fake_supabase)
-    with patch("routers.query.client") as mock_client, patch("routers.query.get_optional_user") as lookup:
+    with patch("routers.query.client") as mock_client, real_session_lookup(ADMIN) as lookup:
         mock_client.embeddings.create.return_value = _embedding()
         mock_client.chat.completions.create.return_value = _completion()
-        client.post("/query", json={"question": "How many cores?"}, headers={"Authorization": "Bearer x"})
-    lookup.assert_not_called()
+        client.post("/query", json={"question": "How many cores?"}, headers={"Authorization": "Bearer x", **headers})
+    lookup.assert_called_once_with("x")
 
 
 # --- enabled + admin: each mode returns the real contract and never calls OpenAI ---

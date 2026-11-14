@@ -37,8 +37,13 @@ def _rows_for(user_id: str):
     )
 
 
+# Every /me GET calls Supabase Auth on each request: a per-client cap a normal session never hits.
+AUTHED_READ_LIMIT = "120/minute"
+
+
 @router.get("")
-def list_my_gadgets(user=Depends(get_current_user)):
+@limiter.limit(AUTHED_READ_LIMIT)
+def list_my_gadgets(request: Request, user=Depends(get_current_user)):
     """The caller's gadgets, most recently added first: [{"added_at", "gadget": {...}}]."""
     try:
         rows = _rows_for(str(user.id))
@@ -107,7 +112,8 @@ THREAD_TURNS_SHOWN = 20
 
 
 @router.get("/{gadget_id}/questions")
-def list_my_gadget_questions(gadget_id: UUID, user=Depends(get_current_user)):
+@limiter.limit(AUTHED_READ_LIMIT)
+def list_my_gadget_questions(request: Request, gadget_id: UUID, user=Depends(get_current_user)):
     """The caller's latest questions about one gadget, oldest first (chat order), at most 20:
     [{"id", "question", "asked_at", "response": QueryResponse}]."""
     try:

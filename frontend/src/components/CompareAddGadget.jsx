@@ -62,14 +62,14 @@ export default function CompareAddGadget({ excludeIds, onAdd, buttonRef }) {
         aria-expanded={open}
         aria-controls={panelId}
       >
-        Add Gadget
+        Add Phone
       </Button>
 
       {open && (
         <div
           id={panelId}
           role="group"
-          aria-label="Add a gadget to this comparison"
+          aria-label="Add a phone to this comparison"
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
               e.stopPropagation()
@@ -116,7 +116,7 @@ export default function CompareAddGadget({ excludeIds, onAdd, buttonRef }) {
             )}
             {catalog.status === 'ready' && choices.length === 0 && (
               <p className="text-sm text-slate-600 py-2">
-                {q ? 'No other gadget matches that search.' : 'Every catalog gadget is already in this comparison.'}
+                {q ? 'No other phone matches that search.' : 'Every catalog phone is already in this comparison.'}
               </p>
             )}
             {catalog.status === 'ready' && choices.length > 0 && (

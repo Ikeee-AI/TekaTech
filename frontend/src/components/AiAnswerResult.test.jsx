@@ -81,6 +81,18 @@ describe('AiAnswerResult with a grounded answer', () => {
     expect(screen.getByText('Answer based on 1 cited spec')).toBeTruthy()
     expect(screen.queryByText(GK_LABEL)).toBeNull()
   })
+
+  it('links only http(s) source URLs, so a stored javascript: URL is never clickable', () => {
+    const sources = [
+      { gadget_name: 'Pixel 9', content: 'Battery: 4700 mAh', similarity: 0.8, source_url: 'https://store.google.com/pixel' },
+      { gadget_name: 'Pixel 9', content: 'Screen: 6.3 in', similarity: 0.7, source_url: 'javascript:alert(1)' },
+    ]
+    renderResult({ ...GROUNDED, sources }, { sourcesOpen: true })
+    const links = screen.getAllByRole('link', { name: /source:/i })
+    expect(links).toHaveLength(1)
+    expect(links[0].getAttribute('href')).toBe('https://store.google.com/pixel')
+    expect(links[0].getAttribute('rel')).toBe('noreferrer')
+  })
 })
 
 describe('AiAnswerResult with a general-knowledge answer', () => {

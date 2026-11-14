@@ -1,7 +1,9 @@
 name: Rollback production
 
-# Emergency redeploy of a known-good main commit to both Render services,
-# followed by the same smoke checks as a normal release. Afterwards main must
+# Emergency redeploy of a known-good main commit: API to Railway, frontend to
+# Render, followed by the same smoke checks as a normal release. Only commits whose
+# /version reads APP_COMMIT (the Railway change, #250) can go to Railway; for older
+# ones use Railway's dashboard rollback (docs/deploy-runbook.md). Afterwards main must
 # be reconciled with a reviewed revert PR (docs/deploy-runbook.md), otherwise
 # the next merge redeploys the broken code.
 
@@ -33,20 +35,22 @@ jobs:
     env:
       SHA: ${{ inputs.sha }}
       REASON: ${{ inputs.reason }}
-      BACKEND_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
-      FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
+      # RAILWAY_TOKEN and the Render hook are step-scoped below, never job-wide.
       API_URL: ${{ vars.PRODUCTION_API_URL }}
       FRONTEND_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.12'
       - name: Verify the target is a checked commit on main
         env:
           GH_TOKEN: ${{ github.token }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
         run: |
           if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo "::error::Provide the full 40-character lowercase commit SHA."; exit 1
@@ -60,13 +64,40 @@ jobs:
               echo "::error::$SHA has no successful '$check' check run; refusing to deploy it."; exit 1
             fi
           done
-          if [[ -z "$BACKEND_HOOK" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
-            echo "::error::Deploy hooks or production URL variables are not configured."; exit 1
+          if [[ -z "$RAILWAY_TOKEN" || -z "$FRONTEND_HOOK" || -z "$API_URL" || -z "$FRONTEND_URL" ]]; then
+            echo "::error::RAILWAY_TOKEN, the frontend deploy hook or production URL variables are not configured."; exit 1
           fi
-      - name: Trigger Render deployments of the target commit
+          # /version must read APP_COMMIT (added with the Railway move, #250), or the smoke
+          # check can't confirm the deployed commit. (Until 13 Nov 2026 this checked for
+          # backend/railway.json, which .railway/railway.ts replaced.)
+          if ! git show "$SHA:backend/main.py" 2>/dev/null | grep -q "APP_COMMIT"; then
+            echo "::error::$SHA predates the Railway API (its /version does not read APP_COMMIT). Roll the API back in the Railway dashboard instead (docs/deploy-runbook.md)."; exit 1
+          fi
+      - name: Check out the target commit
+        run: git checkout --detach "$SHA"
+      - name: Trigger Render frontend deployment of the target commit
+        env:
+          FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
+        run: curl --fail --silent --show-error --request POST "$FRONTEND_HOOK&ref=$SHA" > /dev/null
+      - name: Install Railway CLI (pinned release binary, SHA256-checked)
+        # Same pinned binary and checksum as the ci.yml deploy job; update both together.
+        env:
+          RAILWAY_CLI_VERSION: '5.71.0'
+          RAILWAY_CLI_SHA256: 2e682fd2ddf8d6fdf9e46d9d99d99646ff0022a6abb0c2bca93011348a269fb9
         run: |
-          curl --fail --silent --show-error --request POST "$BACKEND_HOOK&ref=$SHA" > /dev/null
-          curl --fail --silent --show-error --request POST "$FRONTEND_HOOK&ref=$SHA" > /dev/null
+          curl -fsSLo /tmp/railway.tar.gz "https://github.com/railwayapp/cli/releases/download/v${RAILWAY_CLI_VERSION}/railway-v${RAILWAY_CLI_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+          echo "${RAILWAY_CLI_SHA256}  /tmp/railway.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/railway-cli"
+          tar -xzf /tmp/railway.tar.gz -C "$RUNNER_TEMP/railway-cli" railway
+          "$RUNNER_TEMP/railway-cli/railway" --version
+          echo "$RUNNER_TEMP/railway-cli" >> "$GITHUB_PATH"
+      - name: Deploy the target commit's backend to Railway
+        timeout-minutes: 15
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway variable set "APP_COMMIT=$SHA" --service tekatech-api --environment production --skip-deploys
+          railway up backend --path-as-root --service tekatech-api --environment production --ci
       - name: Verify live commit, database path and CORS
         run: |
           python scripts/deployed_smoke.py --api-url "$API_URL" --frontend-url "$FRONTEND_URL" \
@@ -80,7 +111,7 @@ jobs:
             echo '```json'; cat /tmp/rollback-smoke.json 2>/dev/null || echo '{"status": "no report"}'; echo '```'
             echo "**Next:** open a reviewed revert PR so main matches production, and record detection/recovery times in docs/devops/incidents.md."
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: rollback-smoke-${{ inputs.sha }}

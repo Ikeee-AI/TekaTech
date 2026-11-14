@@ -1,19 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Sparkles,
-  SlidersHorizontal,
-  RotateCcw,
   ChevronDown,
   X,
   ArrowRight,
   Scale,
   PackagePlus,
   SearchX,
-  ImageOff,
   BadgeCheck,
   BookmarkPlus,
   BookmarkCheck,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+  SlidersHorizontal,
+  Droplets,
+  MoreHorizontal,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
@@ -21,29 +25,54 @@ import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
 import Button from '../components/ui/Button'
 import DeleteGadgetButton from '../components/DeleteGadgetButton'
+import KeySpecTiles from '../components/KeySpecTiles'
+import ProductImage from '../components/ProductImage'
+import PriceTag from '../components/PriceTag'
 import { CatalogSkeleton } from '../components/Skeleton'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useAuth } from '../hooks/useAuth'
 import AIAnswerPanel from '../components/AIAnswerPanel'
 import TrendingQuestions from '../components/TrendingQuestions'
+import SignInPrompt from '../components/SignInPrompt'
+import HowItWorks from '../components/HowItWorks'
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { friendlyError } from '../utils/requestErrors'
-import { gadgetDisplayName } from '../utils/gadgetName'
+import { gadgetDisplayName, withoutDoubledBrand } from '../utils/gadgetName'
+import { formatPeso } from '../utils/formatPeso'
+import { extractKeySpecs, extractMoreSpecs, KEY_SPECS } from '../utils/keySpecs'
+import { BATTERY_OPTIONS, CHARGING_OPTIONS, SPEC_SORTS, applySpecFilters, hiddenNote, sortBySpec } from '../utils/specFilters'
+import { heroCandidates } from '../utils/heroPicks'
 
 const SUGGESTED_QUESTIONS = [
-  'Which gadget has the best battery life?',
+  'Which phone has the best battery life?',
   'What phones support fast charging?',
-  'Compare display quality across gadgets',
+  'Compare display quality across phones',
 ]
 
-const PAGE_SIZE = 6
-const HISTOGRAM_BINS = 11
+const PAGE_SIZE = 12
+// Spec counts for the cards and the featured phone come from one request per gadget.
+// Fine for today's small, admin-curated catalog; past this many, cards skip the count
+// (a spec count on GET /gadgets would remove the extra requests — backend follow-up).
+const SPEC_FETCH_LIMIT = 24
+const BRAND_TILES = 6
+// Featured hero: one phone at a time, shuffled, a new one every 8 seconds. Only phones whose
+// specs fill at least 3 of the 4 key-spec tiles (heroCandidates), else any with saved specs.
+export const HERO_ROTATE_MS = 8000
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
 // Widens a small icon button's touch area to about 40px without changing its look.
 const hitArea = "relative before:absolute before:-inset-2.5 before:content-['']"
 
+// Brand tiles share one neutral style; colour means "selected" only (14 Nov 2026): the
+// pressed tile takes the accent fill. Exported for the tile test.
+export const BRAND_TILE_STYLE = 'bg-white text-slate-900 border-slate-200 hover:border-slate-400'
+export const BRAND_TILE_SELECTED_STYLE = 'bg-sage-700 text-white border-sage-700'
+// Makes a card's name link cover the whole card (one tap target); other controls sit above it.
+const stretchedLink =
+  "after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-sage-600"
+
 function formatPrice(value) {
-  return `Php ${Math.round(value).toLocaleString()}`
+  return formatPeso(value) ?? '—'
 }
 
 function formatRelease(date) {
@@ -58,15 +87,25 @@ function formatRelease(date) {
 function countBy(list, key) {
   const counts = new Map()
   for (const item of list) counts.set(item[key], (counts.get(item[key]) ?? 0) + 1)
-  return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
 }
 
-// Gadgets without a price sort last in both directions, not first as Php 0.
+// Gadgets without a price sort last in both directions, not first as ₱0.
 function comparePrices(a, b, direction) {
   const aMissing = a.price_php == null
   const bMissing = b.price_php == null
   if (aMissing || bMissing) return aMissing === bMissing ? 0 : aMissing ? 1 : -1
   return (a.price_php - b.price_php) * direction
+}
+
+// Fisher-Yates. Called from the specs request's callback, never during render.
+function shuffled(list) {
+  const out = [...list]
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
 }
 
 function toggleInSet(set, value) {
@@ -77,9 +116,14 @@ function toggleInSet(set, value) {
 }
 
 export default function GadgetList() {
-  useDocumentTitle('Catalog')
+  useDocumentTitle('Phones')
   const { user } = useAuth()
   const isAdmin = Boolean(user?.app_metadata?.is_admin)
+  // Signed-out visitors may only browse the catalog (owner decision, 14 Nov 2026): asking the
+  // AI, comparing, phone pages and My Gadgets open the sign-in prompt instead.
+  const signedIn = Boolean(user)
+  const [signInPromptOpen, setSignInPromptOpen] = useState(false)
+  const requireSignIn = () => setSignInPromptOpen(true)
   const [gadgets, setGadgets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -87,10 +131,15 @@ export default function GadgetList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') ?? ''
   const askedQuestion = searchParams.get('ask')
-  const [categories, setCategories] = useState(new Set())
   const [brands, setBrands] = useState(new Set())
   const [maxPrice, setMaxPrice] = useState(null)
   const [sortBy, setSortBy] = useState('name')
+  // Spec filters (owner decision, 14 Nov 2026): read from the saved sources; null/false = off.
+  const [minBattery, setMinBattery] = useState(null)
+  const [minCharging, setMinCharging] = useState(null)
+  const [waterOnly, setWaterOnly] = useState(false)
+  // On a phone the filters collapse behind a Filters button.
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [lastQuery, setLastQuery] = useState(query)
 
@@ -100,7 +149,6 @@ export default function GadgetList() {
     setPage(1)
   }
   const [selected, setSelected] = useState(new Set())
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const navigate = useNavigate()
   const topRef = useRef(null)
 
@@ -116,9 +164,31 @@ export default function GadgetList() {
     setAttempt((n) => n + 1)
   }
 
+  // Saved specs per gadget: the "N sourced specs" chips and the featured phone's key-spec tiles.
+  // null = still loading. A failed request leaves that gadget without a count.
+  const [specsById, setSpecsById] = useState(null)
+  // Shuffled ids of the phones with saved specs: the featured hero's rotation order.
+  const [heroOrder, setHeroOrder] = useState([])
+  useEffect(() => {
+    if (gadgets.length === 0 || typeof api.getSpecs !== 'function') return undefined
+    let cancelled = false
+    const ids = gadgets.slice(0, SPEC_FETCH_LIMIT).map((g) => g.id)
+    Promise.allSettled(ids.map((id) => api.getSpecs(id))).then((results) => {
+      if (cancelled) return
+      const map = {}
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled' && Array.isArray(r.value)) map[ids[i]] = r.value
+      })
+      setSpecsById(map)
+      setHeroOrder(shuffled(heroCandidates(ids, map)))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [gadgets])
+
   // My Gadgets: which catalog gadgets the signed-in user has on their dashboard.
   // null = not loaded (or signed out); the card buttons wait for it before showing a state.
-  const location = useLocation()
   const [myIds, setMyIds] = useState(null)
   const [savingId, setSavingId] = useState(null)
   const userId = user?.id ?? null
@@ -138,7 +208,7 @@ export default function GadgetList() {
 
   async function toggleMine(gadget) {
     if (!user) {
-      navigate('/login', { state: { from: location } })
+      requireSignIn()
       return
     }
     const inList = myIds?.has(gadget.id)
@@ -180,20 +250,12 @@ export default function GadgetList() {
     })
   }
 
-  const categoryCounts = useMemo(() => countBy(gadgets, 'category'), [gadgets])
   const brandCounts = useMemo(() => countBy(gadgets, 'brand'), [gadgets])
 
   const priceStats = useMemo(() => {
     const prices = gadgets.map((g) => g.price_php).filter((p) => p != null)
     if (prices.length === 0) return null
-    const min = Math.min(...prices)
-    const max = Math.max(...prices)
-    const bins = Array(HISTOGRAM_BINS).fill(0)
-    for (const p of prices) {
-      const i = max === min ? 0 : Math.min(HISTOGRAM_BINS - 1, Math.floor(((p - min) / (max - min)) * HISTOGRAM_BINS))
-      bins[i] += 1
-    }
-    return { min, max, bins, peak: Math.max(...bins) }
+    return { min: Math.min(...prices), max: Math.max(...prices) }
   }, [gadgets])
 
   // The slider moves in steps counted from the lowest price, so its top stop can fall just short of
@@ -207,20 +269,40 @@ export default function GadgetList() {
   const priceLimit = maxPrice ?? priceStats?.max ?? null
   const priceFilterActive = priceStats && maxPrice != null && maxPrice < priceStats.max
 
-  const filtered = useMemo(() => {
+  // Battery, charging, water rating etc. per gadget, parsed once from the specs already fetched.
+  const moreById = useMemo(() => {
+    if (!specsById) return null
+    return Object.fromEntries(Object.entries(specsById).map(([id, specs]) => [id, extractMoreSpecs(specs)]))
+  }, [specsById])
+  const specsLoading = specsById === null && typeof api.getSpecs === 'function'
+  const specFiltersActive = minBattery != null || minCharging != null || waterOnly
+
+  const { filtered, hiddenText } = useMemo(() => {
     const q = query.toLowerCase()
     let list = gadgets.filter((g) => {
-      if (categories.size > 0 && !categories.has(g.category)) return false
       if (brands.size > 0 && !brands.has(g.brand)) return false
       if (priceFilterActive && (g.price_php == null || g.price_php > maxPrice)) return false
       return g.name.toLowerCase().includes(q) || g.brand.toLowerCase().includes(q)
     })
+    const specResult = applySpecFilters(list, moreById, { minBattery, minCharging, waterResistant: waterOnly })
+    list = specResult.list
     if (sortBy === 'price-low') list = [...list].sort((a, b) => comparePrices(a, b, 1))
     else if (sortBy === 'price-high') list = [...list].sort((a, b) => comparePrices(a, b, -1))
     else if (sortBy === 'newest') list = [...list].sort((a, b) => (b.release_date ?? '').localeCompare(a.release_date ?? ''))
+    else if (SPEC_SORTS[sortBy]) list = sortBySpec(list, moreById, sortBy)
     else list = [...list].sort((a, b) => a.name.localeCompare(b.name))
-    return list
-  }, [gadgets, query, categories, brands, priceFilterActive, maxPrice, sortBy])
+    return { filtered: list, hiddenText: hiddenNote(specResult) }
+  }, [gadgets, query, brands, priceFilterActive, maxPrice, sortBy, moreById, minBattery, minCharging, waterOnly])
+
+  // Featured phones, in the shuffled rotation order. Built from the specs already fetched;
+  // a deleted gadget drops out without reshuffling the rest.
+  const featured = useMemo(() => {
+    if (!specsById) return []
+    const byId = new Map(gadgets.map((g) => [g.id, g]))
+    return heroOrder
+      .filter((id) => byId.has(id) && specsById[id]?.length > 0)
+      .map((id) => ({ gadget: byId.get(id), specs: specsById[id], keySpecs: extractKeySpecs(specsById[id]) }))
+  }, [gadgets, specsById, heroOrder])
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
@@ -232,12 +314,17 @@ export default function GadgetList() {
     [selected, gadgets],
   )
 
-  const hasFilters = query || categories.size > 0 || brands.size > 0 || priceFilterActive
+  const hasFilters = query || brands.size > 0 || priceFilterActive || specFiltersActive
+  const activeFilterCount = [priceFilterActive, minBattery != null, minCharging != null, waterOnly].filter(Boolean).length
 
   function toggleSelect(id) {
+    if (!signedIn) {
+      requireSignIn()
+      return
+    }
     setSelected((prev) => {
       if (!prev.has(id) && prev.size >= 3) {
-        toast.error('You can compare up to 3 gadgets at a time')
+        toast.error('You can compare up to 3 phones at a time')
         return prev
       }
       return toggleInSet(prev, id)
@@ -271,26 +358,33 @@ export default function GadgetList() {
 
   function clearFilters() {
     setQuery('')
-    setCategories(new Set())
     setBrands(new Set())
     setMaxPrice(null)
+    setMinBattery(null)
+    setMinCharging(null)
+    setWaterOnly(false)
     setPage(1)
   }
 
   function ask(question) {
+    if (!signedIn) {
+      requireSignIn()
+      return
+    }
     setAskedQuestion(question)
-    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    topRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+  }
+
+  function specCount(id) {
+    if (!specsById) return undefined
+    return specsById[id] ? specsById[id].length : undefined
   }
 
   if (loading) return <CatalogSkeleton />
   if (error) {
     return (
       <div className="max-w-2xl mx-auto">
-        <ErrorState
-          title="Couldn't Load the Catalog"
-          message={error}
-          onRetry={retryLoad}
-        />
+        <ErrorState title="Couldn't Load the Catalog" message={error} onRetry={retryLoad} />
       </div>
     )
   }
@@ -301,7 +395,7 @@ export default function GadgetList() {
       <EmptyState
         icon={PackagePlus}
         title="Welcome to TekaTech"
-        description="The TekaTech team is adding gadgets and their sourced specs. Check back soon to browse, ask questions and compare devices."
+        description="The TekaTech team is adding phones and their sourced specs. Check back soon to browse, ask questions and compare."
       />
     )
   }
@@ -311,276 +405,275 @@ export default function GadgetList() {
       <EmptyState
         icon={PackagePlus}
         title="Welcome to TekaTech"
-        description="Your gadget catalog is empty. Add your first device to start building spec-grounded comparisons."
+        description="Your catalog is empty. Add your first phone to start building spec-grounded comparisons."
         action={
-          <Link
-            to="/add"
-            className={`inline-flex items-center gap-1.5 bg-sage-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-sage-800 active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
-          >
-            Add Your First Gadget
-          </Link>
+          <Button as={Link} to="/add" variant="primary">
+            Add Your First Phone
+          </Button>
         }
       />
     )
   }
 
+  // A shared ?ask= link opens the AI panel only for signed-in users; visitors see the catalog.
+  const activeQuestion = signedIn ? askedQuestion : null
+  const showHero = !hasFilters && !activeQuestion
+
   return (
-    <div ref={topRef} className={`scroll-mt-24 ${selected.size > 0 ? 'pb-28' : ''}`}>
-      <div className="grid grid-cols-1 lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[19rem_minmax(0,1fr)] gap-8 items-start">
-        {/* Filter panel */}
-        <aside aria-label="Filters" className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-          <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs flex flex-col gap-6">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-              {/* Below lg the heading holds a disclosure button; from lg the filters are always
-                  shown, so a plain heading avoids announcing a toggle that does nothing. */}
-              <h2 className="lg:hidden text-xl font-semibold text-slate-900 tracking-tight">
-                <button
-                  type="button"
-                  onClick={() => setFiltersOpen((o) => !o)}
-                  aria-expanded={filtersOpen}
-                  aria-controls="catalog-filters"
-                  className={`flex items-center gap-1.5 min-h-10 rounded ${focusRing}`}
-                >
-                  <SlidersHorizontal size={18} className="text-sage-700" />
-                  Filters
-                  {hasFilters && (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-emerald-600" aria-hidden="true" />
-                      <span className="sr-only">(active)</span>
-                    </>
-                  )}
-                  <ChevronDown size={16} className={`text-slate-500 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
-                </button>
-              </h2>
-              <h2 className="hidden lg:flex items-center gap-1.5 text-xl font-semibold text-slate-900 tracking-tight">
-                <SlidersHorizontal size={18} className="text-sage-700" /> Filters
-              </h2>
+    <div ref={topRef} className={`scroll-mt-24 flex flex-col gap-7 ${selected.size > 0 ? 'pb-28' : ''}`}>
+      <h1 className="sr-only">TekaTech phone catalog</h1>
+      {/* Announces the result count when filters change; silent when none are set. */}
+      <p role="status" className="sr-only">
+        {hasFilters ? `${filtered.length} ${filtered.length === 1 ? 'phone matches' : 'phones match'} your filters.${hiddenText ? ` ${hiddenText}` : ''}` : ''}
+      </p>
+
+      {showHero && <HowItWorks signedIn={signedIn} />}
+
+      {showHero &&
+        (featured.length > 0 ? (
+          <FeaturedHero
+            items={featured}
+            selectedIds={selected}
+            onToggleCompare={(g) => toggleSelect(g.id)}
+            onAsk={(g) => ask(`What are the key specs of the ${gadgetDisplayName(g)}?`)}
+            onRequireSignIn={signedIn ? undefined : requireSignIn}
+          />
+        ) : (
+          specsById === null && typeof api.getSpecs === 'function' && (
+            <div className="h-[380px] rounded-[28px] bg-white border border-slate-200 animate-pulse" aria-hidden="true" />
+          )
+        ))}
+
+      {activeQuestion ? (
+        <AIAnswerPanel question={activeQuestion} onClose={() => setAskedQuestion(null)} />
+      ) : (
+        signedIn && (
+        <div className="flex flex-col gap-2">
+          <TrendingQuestions onSelect={ask} />
+          <div className="flex overflow-x-auto sm:flex-wrap gap-1.5 -mx-1 px-1 pb-1 sm:pb-0">
+            {SUGGESTED_QUESTIONS.map((q) => (
               <button
-                type="button"
-                onClick={clearFilters}
-                className={`font-mono text-xs font-medium text-slate-600 hover:text-sage-700 transition-colors flex items-center gap-1 min-h-10 lg:min-h-0 px-1 rounded ${focusRing}`}
+                key={q}
+                onClick={() => ask(q)}
+                className={`flex shrink-0 items-center gap-1.5 text-sm font-semibold text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 rounded-full px-3.5 py-1.5 min-h-11 sm:min-h-9 whitespace-nowrap transition active:scale-95 ${focusRing}`}
               >
-                Reset <RotateCcw size={12} />
+                <Sparkles size={13} className="text-sage-700" aria-hidden="true" /> {q}
               </button>
+            ))}
+          </div>
+        </div>
+        )
+      )}
+
+      <section aria-labelledby="brands-heading">
+        <h2 id="brands-heading" className="text-2xl font-extrabold tracking-[-0.035em] text-slate-900 mb-3">
+          Shop by brand
+        </h2>
+        {/* Phones: one scrolling row, so the phone cards come up sooner. */}
+        <div className="flex overflow-x-auto -mx-1 px-1 pb-1 sm:pb-0 gap-2.5 sm:gap-3 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] sm:overflow-visible">
+          <BrandTile
+            label="All phones"
+            count={gadgets.length}
+            pressed={brands.size === 0}
+            onClick={() => updateFilter(setBrands)(new Set())}
+          />
+          {brandCounts.slice(0, BRAND_TILES).map(([brand, count]) => (
+            <BrandTile
+              key={brand}
+              label={brand}
+              count={count}
+              pressed={brands.has(brand)}
+              onClick={() => updateFilter(setBrands)(toggleInSet(brands, brand))}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="catalog-heading" className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 id="catalog-heading" className="text-2xl font-extrabold tracking-[-0.035em] text-slate-900">
+            {hasFilters ? 'Matching phones' : 'All phones'}{' '}
+            <span className="text-base font-medium text-slate-500">
+              {filtered.length} {filtered.length === 1 ? 'phone' : 'phones'}
+            </span>
+          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((open) => !open)}
+              aria-expanded={filtersOpen}
+              aria-controls="catalog-filters"
+              className={`sm:hidden flex items-center gap-2 bg-white text-slate-900 text-sm font-semibold px-4 min-h-10 rounded-full border border-slate-200 ${focusRing}`}
+            >
+              <SlidersHorizontal size={15} aria-hidden="true" />
+              Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </button>
+            <div className="relative">
+              <label htmlFor="sort-select" className="sr-only">
+                Sort by
+              </label>
+              <select
+                id="sort-select"
+                value={sortBy}
+                onChange={(e) => updateFilter(setSortBy)(e.target.value)}
+                className="bg-white text-slate-900 text-sm font-semibold py-2 pl-4 pr-9 min-h-10 rounded-full appearance-none cursor-pointer border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sage-600"
+              >
+                <option value="name">Name (A → Z)</option>
+                <option value="newest">Newest first</option>
+                <option value="price-low">Price (low → high)</option>
+                <option value="price-high">Price (high → low)</option>
+                <option value="battery">Battery (high → low)</option>
+                <option value="charging">Charging (fast → slow)</option>
+                <option value="weight">Weight (light → heavy)</option>
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            </div>
+          </div>
+        </div>
+
+        <div id="catalog-filters" className={`${filtersOpen ? 'flex' : 'hidden'} sm:flex flex-wrap items-center gap-2`}>
+          {priceStats && priceStats.max > priceStats.min && (
+            <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-full pl-4 pr-3 min-h-10">
+              <label htmlFor="price-range" className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+                Max Price
+              </label>
+              <input
+                id="price-range"
+                type="range"
+                aria-valuetext={formatPrice(priceLimit)}
+                min={priceStats.min}
+                max={priceStats.max}
+                step={priceStep}
+                value={priceLimit}
+                onChange={(e) => setPriceFromSlider(Number(e.target.value))}
+                className="w-28 sm:w-36 accent-sage-700"
+              />
+              <span className="text-sm font-semibold tabular-nums text-slate-900 min-w-[5.5rem] text-right">
+                {priceFilterActive ? formatPrice(priceLimit) : 'Any'}
+              </span>
+            </div>
+          )}
+          <SpecSelect
+            id="battery-filter"
+            label="Battery"
+            value={minBattery}
+            options={BATTERY_OPTIONS}
+            unit="mAh"
+            disabled={specsLoading}
+            onChange={updateFilter(setMinBattery)}
+          />
+          <SpecSelect
+            id="charging-filter"
+            label="Charging"
+            value={minCharging}
+            options={CHARGING_OPTIONS}
+            unit="W"
+            disabled={specsLoading}
+            onChange={updateFilter(setMinCharging)}
+          />
+          <button
+            type="button"
+            onClick={() => updateFilter(setWaterOnly)(!waterOnly)}
+            aria-pressed={waterOnly}
+            disabled={specsLoading}
+            className={`flex items-center gap-2 text-sm font-semibold px-4 min-h-10 rounded-full border transition disabled:opacity-50 disabled:cursor-not-allowed ${focusRing} ${
+              waterOnly ? 'bg-inverse text-inverse-ink border-inverse' : 'bg-white text-slate-900 border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <Droplets size={15} aria-hidden="true" />
+            Water resistant (IP67+)
+          </button>
+          {specsLoading && <span className="text-xs font-medium text-slate-500">Loading specs…</span>}
+        </div>
+
+        {hasFilters && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {query && <FilterPill label={`Search: "${query}"`} onRemove={() => setQuery('')} />}
+            {[...brands].map((b) => (
+              <FilterPill
+                key={`b-${b}`}
+                label={`Brand: ${b}`}
+                onRemove={() => updateFilter(setBrands)(toggleInSet(brands, b))}
+              />
+            ))}
+            {priceFilterActive && (
+              <FilterPill label={`Up to ${formatPrice(maxPrice)}`} onRemove={() => updateFilter(setMaxPrice)(null)} />
+            )}
+            {minBattery != null && (
+              <FilterPill label={`Battery ≥ ${minBattery.toLocaleString('en-US')} mAh`} onRemove={() => updateFilter(setMinBattery)(null)} />
+            )}
+            {minCharging != null && (
+              <FilterPill label={`Charging ≥ ${minCharging} W`} onRemove={() => updateFilter(setMinCharging)(null)} />
+            )}
+            {waterOnly && <FilterPill label="Water resistant (IP67+)" onRemove={() => updateFilter(setWaterOnly)(false)} />}
+            <button
+              onClick={clearFilters}
+              className={`text-sm font-semibold text-slate-600 hover:text-slate-900 px-2 min-h-10 sm:min-h-8 underline rounded ${focusRing}`}
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-[28px] border border-slate-200">
+            <EmptyState
+              icon={SearchX}
+              title="No Phones Match Your Filters"
+              description={hiddenText ?? 'Try a different search or clear your filters.'}
+              action={
+                <Button onClick={clearFilters} variant="secondary">
+                  Clear Filters
+                </Button>
+              }
+            />
+          </div>
+        ) : (
+          <>
+            {hiddenText && <p className="text-sm text-slate-600">{hiddenText}</p>}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,270px),1fr))] gap-3.5">
+              {pageItems.map((g) => (
+                <GadgetCard
+                  key={g.id}
+                  gadget={g}
+                  specCount={specCount(g.id)}
+                  selected={selected.has(g.id)}
+                  onToggle={() => toggleSelect(g.id)}
+                  onAsk={() => ask(`What are the key specs of the ${gadgetDisplayName(g)}?`)}
+                  onDeleted={handleDeleted}
+                  // Visitors see the button too (it opens the sign-in prompt); signed-in users once their list loads.
+                  mine={!user ? false : myIds ? myIds.has(g.id) : null}
+                  saving={savingId === g.id}
+                  onToggleMine={() => toggleMine(g)}
+                  onRequireSignIn={signedIn ? undefined : requireSignIn}
+                />
+              ))}
             </div>
 
-            <div id="catalog-filters" className={`${filtersOpen ? 'flex' : 'hidden'} lg:flex flex-col gap-6`}>
-              <CheckboxGroup
-                title="Category"
-                items={categoryCounts}
-                selected={categories}
-                onToggle={(value) => updateFilter(setCategories)(toggleInSet(categories, value))}
-                prominent
-              />
-
-              <CheckboxGroup
-                title="Brand"
-                items={brandCounts}
-                selected={brands}
-                onToggle={(value) => updateFilter(setBrands)(toggleInSet(brands, value))}
-              />
-
-              {priceStats && priceStats.max > priceStats.min && (
-                <div className="flex flex-col gap-2 bg-slate-100 p-3.5 rounded-lg border border-slate-200">
-                  <div className="flex justify-between items-center font-mono text-xs">
-                    <label htmlFor="price-range" className="text-slate-600 font-medium">
-                      Max Price
-                    </label>
-                    <span className="text-sage-700 font-bold">{formatPrice(priceLimit)}</span>
-                  </div>
-                  <svg className="w-full h-8 text-sage-700" viewBox={`0 0 ${HISTOGRAM_BINS * 10} 28`} aria-hidden="true">
-                    {priceStats.bins.map((count, i) => {
-                      const height = count === 0 ? 2 : 4 + (count / priceStats.peak) * 24
-                      const binStart = priceStats.min + ((priceStats.max - priceStats.min) / HISTOGRAM_BINS) * i
-                      const inRange = binStart <= priceLimit
-                      return (
-                        <rect
-                          key={i}
-                          x={i * 10 + 2}
-                          y={28 - height}
-                          width="6"
-                          height={height}
-                          rx="1"
-                          fill="currentColor"
-                          opacity={inRange ? 0.35 + (count / priceStats.peak) * 0.65 : 0.12}
-                        />
-                      )
-                    })}
-                  </svg>
-                  <input
-                    id="price-range"
-                    type="range"
-                    aria-valuetext={formatPrice(priceLimit)}
-                    min={priceStats.min}
-                    max={priceStats.max}
-                    step={priceStep}
-                    value={priceLimit}
-                    onChange={(e) => setPriceFromSlider(Number(e.target.value))}
-                    className="w-full accent-sage-700"
-                  />
-                  <div className="flex justify-between font-mono text-[11px] text-slate-600">
-                    <span>{formatPrice(priceStats.min)}</span>
-                    <span>{formatPrice(priceStats.max)}</span>
-                  </div>
-                </div>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span className="font-mono text-xs font-medium text-slate-600">
+                Showing {pageStart + 1}–{pageStart + pageItems.length} of {filtered.length} phone
+                {filtered.length === 1 ? '' : 's'}
+              </span>
+              {pageCount > 1 && (
+                <nav className="flex flex-wrap justify-center items-center gap-1.5" aria-label="Pagination">
+                  <PageButton disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
+                    Prev
+                  </PageButton>
+                  {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
+                    <PageButton key={n} active={n === currentPage} onClick={() => setPage(n)}>
+                      {n}
+                    </PageButton>
+                  ))}
+                  <PageButton disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>
+                    Next
+                  </PageButton>
+                </nav>
               )}
             </div>
-          </div>
-        </aside>
-
-        {/* Catalog */}
-        <section className="min-w-0 flex flex-col gap-8">
-          {/* Announces the result count when filters change; silent when none are set. */}
-          <p role="status" className="sr-only">
-            {hasFilters ? `${filtered.length} ${filtered.length === 1 ? 'gadget matches' : 'gadgets match'} your filters` : ''}
-          </p>
-          <div className="flex flex-col gap-3 bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-3xl font-bold tracking-tight text-slate-900">Gadget Catalog</h1>
-                  <span className="font-mono text-sm bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-semibold">
-                    {gadgets.length} device{gadgets.length === 1 ? '' : 's'}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-slate-600">AI answers link to the saved specs they use. Optional general-knowledge answers are labelled.</p>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <label htmlFor="sort-select" className="text-slate-600 font-mono text-xs">
-                  Sort By:
-                </label>
-                <div className="relative">
-                  <select
-                    id="sort-select"
-                    value={sortBy}
-                    onChange={(e) => updateFilter(setSortBy)(e.target.value)}
-                    className="bg-slate-100 text-slate-900 font-mono text-sm font-medium py-1.5 pl-3 pr-8 min-h-10 sm:min-h-0 rounded-lg appearance-none cursor-pointer border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sage-600"
-                  >
-                    <option value="name">Name (A → Z)</option>
-                    <option value="newest">Release Date (Newest)</option>
-                    <option value="price-low">Price (Low → High)</option>
-                    <option value="price-high">Price (High → Low)</option>
-                  </select>
-                  <ChevronDown size={14} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" />
-                </div>
-              </div>
-            </div>
-
-            {hasFilters && (
-              <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200">
-                <span className="font-mono text-xs text-slate-500 font-medium">Active Filters:</span>
-                {query && (
-                  <FilterPill label={`Search: "${query}"`} onRemove={() => setQuery('')} />
-                )}
-                {[...categories].map((c) => (
-                  <FilterPill
-                    key={`c-${c}`}
-                    label={`Category: ${c}`}
-                    onRemove={() => updateFilter(setCategories)(toggleInSet(categories, c))}
-                  />
-                ))}
-                {[...brands].map((b) => (
-                  <FilterPill
-                    key={`b-${b}`}
-                    label={`Brand: ${b}`}
-                    onRemove={() => updateFilter(setBrands)(toggleInSet(brands, b))}
-                  />
-                ))}
-                {priceFilterActive && (
-                  <FilterPill
-                    label={`Up to ${formatPrice(maxPrice)}`}
-                    onRemove={() => updateFilter(setMaxPrice)(null)}
-                  />
-                )}
-                <button
-                  onClick={clearFilters}
-                  className={`font-mono text-xs text-slate-600 hover:text-red-600 ml-1 px-1 min-h-10 sm:min-h-0 transition-colors underline rounded ${focusRing}`}
-                >
-                  Clear All Filters
-                </button>
-              </div>
-            )}
-          </div>
-
-          {askedQuestion ? (
-            <AIAnswerPanel question={askedQuestion} onClose={() => setAskedQuestion(null)} />
-          ) : (
-            <div>
-              <TrendingQuestions onSelect={ask} />
-              <div className="flex flex-wrap gap-1.5">
-                {SUGGESTED_QUESTIONS.map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => ask(q)}
-                    className={`flex items-center gap-1 text-sm font-medium text-sage-700 bg-sage-50 hover:bg-sage-200 border border-sage-200 rounded-full px-2.5 py-1 min-h-10 sm:min-h-8 transition active:scale-95 ${focusRing}`}
-                  >
-                    <Sparkles size={11} /> {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {filtered.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200">
-              <EmptyState
-                icon={SearchX}
-                title="No Gadgets Match Your Filters"
-                description="Try a different search or clear your filters."
-                action={
-                  <button
-                    onClick={clearFilters}
-                    className={`text-sm font-medium px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition active:scale-95 ${focusRing}`}
-                  >
-                    Clear Filters
-                  </button>
-                }
-              />
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,23rem),1fr))] gap-6">
-                {pageItems.map((g) => (
-                  <GadgetCard
-                    key={g.id}
-                    gadget={g}
-                    selected={selected.has(g.id)}
-                    onToggle={() => toggleSelect(g.id)}
-                    onAsk={() => ask(`What are the key specs of the ${gadgetDisplayName(g)}?`)}
-                    onDeleted={handleDeleted}
-                    // Visitors see the button too (it leads to log in); signed-in users once their list loads.
-                    mine={!user ? false : myIds ? myIds.has(g.id) : null}
-                    saving={savingId === g.id}
-                    onToggleMine={() => toggleMine(g)}
-                  />
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white px-6 py-4 rounded-xl border border-slate-200 shadow-xs">
-                <span className="font-mono text-xs font-medium text-slate-800">
-                  Showing {pageStart + 1}–{pageStart + pageItems.length} of {filtered.length} device
-                  {filtered.length === 1 ? '' : 's'}
-                </span>
-                {pageCount > 1 && (
-                  <nav className="flex flex-wrap justify-center items-center gap-1.5" aria-label="Pagination">
-                    <PageButton disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
-                      Prev
-                    </PageButton>
-                    {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
-                      <PageButton key={n} active={n === currentPage} onClick={() => setPage(n)}>
-                        {n}
-                      </PageButton>
-                    ))}
-                    <PageButton disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>
-                      Next
-                    </PageButton>
-                  </nav>
-                )}
-              </div>
-            </>
-          )}
-        </section>
-      </div>
+          </>
+        )}
+      </section>
 
       {selectedGadgets.length > 0 && (
         <CompareTray
@@ -590,65 +683,283 @@ export default function GadgetList() {
           onCompare={() => navigate(`/compare?ids=${[...selected].join(',')}`)}
         />
       )}
+
+      <SignInPrompt open={signInPromptOpen} onClose={() => setSignInPromptOpen(false)} />
     </div>
   )
 }
 
-function CheckboxGroup({ title, items, selected, onToggle, prominent = false }) {
-  if (items.length === 0) return null
+/**
+ * Featured hero: rotates through the phones with saved specs (already shuffled by the caller),
+ * one every HERO_ROTATE_MS with a cross-fade. WCAG 2.2.2: a visible Pause/Play control, and the
+ * rotation also waits while the pointer is over the hero or keyboard focus is inside it. With
+ * prefers-reduced-motion there is no auto-rotation; Prev/Next buttons appear instead.
+ * Changes are deliberately not announced (no aria-live): the user did not ask for them.
+ * All slides share one grid cell, so the hero is as tall as its tallest slide and never jumps.
+ */
+export function FeaturedHero({ items, selectedIds, onToggleCompare, onAsk, onRequireSignIn }) {
+  const reducedMotion = usePrefersReducedMotion()
+  const [index, setIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [focusInside, setFocusInside] = useState(false)
+  const count = items.length
+  const current = count > 0 ? index % count : 0
+  const rotating = count > 1 && !reducedMotion && !paused && !hovered && !focusInside
+
+  useEffect(() => {
+    if (!rotating) return undefined
+    const timer = setInterval(() => setIndex((i) => (i + 1) % count), HERO_ROTATE_MS)
+    return () => clearInterval(timer)
+  }, [rotating, count])
+
+  const show = (i) => setIndex(((i % count) + count) % count)
+
   return (
-    <fieldset className="flex flex-col gap-1.5 border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
-      <legend className="font-mono text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1.5">
-        {title}
-      </legend>
-      <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
-        {items.map(([value, count]) => {
-          const checked = selected.has(value)
-          return (
-            <label
-              key={value}
-              className={`flex items-center justify-between px-2 py-1.5 rounded-lg border cursor-pointer transition-colors ${
-                checked && prominent
-                  ? 'bg-emerald-50 border-emerald-200 text-slate-900'
-                  : 'border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              } ${prominent ? 'text-sm' : 'text-sm'}`}
-            >
-              <span className="flex items-center gap-2 min-w-0">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => onToggle(value)}
-                  className="w-4 h-4 rounded border-slate-300 accent-sage-700"
-                />
-                <span className={`truncate ${checked ? 'font-medium text-slate-900' : ''}`}>{value}</span>
-              </span>
-              <span
-                className={`font-mono text-xs px-1.5 py-0.5 rounded ${
-                  checked
-                    ? 'bg-white text-emerald-800 border border-emerald-200 font-semibold'
-                    : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {count}
-              </span>
-            </label>
-          )
-        })}
+    <section
+      aria-roledescription="carousel"
+      aria-label="Featured phones"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocusInside(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setFocusInside(false)
+      }}
+      className="flex flex-col gap-3"
+    >
+      <div className="grid">
+        {items.map((item, i) => (
+          <HeroSlide
+            key={item.gadget.id}
+            item={item}
+            active={i === current}
+            position={`${i + 1} of ${count}`}
+            selected={selectedIds.has(item.gadget.id)}
+            onToggleCompare={() => onToggleCompare(item.gadget)}
+            onAsk={() => onAsk(item.gadget)}
+            onRequireSignIn={onRequireSignIn}
+          />
+        ))}
       </div>
-    </fieldset>
+
+      {count > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {reducedMotion ? (
+            <>
+              <Button size="sm" variant="subtle" icon={ChevronLeft} onClick={() => show(current - 1)} aria-label="Previous featured phone">
+                Prev
+              </Button>
+              <Button size="sm" variant="subtle" icon={ChevronRight} onClick={() => show(current + 1)} aria-label="Next featured phone">
+                Next
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="sm"
+              variant="subtle"
+              icon={paused ? Play : Pause}
+              onClick={() => setPaused((p) => !p)}
+              aria-label={paused ? 'Play featured phones rotation' : 'Pause featured phones rotation'}
+            >
+              {paused ? 'Play' : 'Pause'}
+            </Button>
+          )}
+          <div className="flex flex-wrap items-center gap-1 ml-1">
+            {items.map((item, i) => (
+              <button
+                key={item.gadget.id}
+                type="button"
+                onClick={() => show(i)}
+                aria-label={`Show featured phone ${i + 1} of ${count}: ${item.gadget.name}`}
+                aria-current={i === current ? 'true' : undefined}
+                className={`flex items-center justify-center w-7 h-10 sm:h-8 rounded-full ${focusRing}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`block h-2.5 rounded-full transition-all ${
+                    i === current ? 'w-5 bg-sage-700' : 'w-2.5 bg-slate-400 hover:bg-slate-600'
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, onRequireSignIn }) {
+  const { gadget, specs, keySpecs } = item
+  const price = formatPeso(gadget.price_php)
+  const gated = Boolean(onRequireSignIn)
+  const name = withoutDoubledBrand(gadget.name)
+  return (
+    <div
+      role="group"
+      aria-roledescription="slide"
+      aria-label={`${position}: ${gadget.name}`}
+      aria-hidden={active ? undefined : true}
+      inert={!active}
+      className={`col-start-1 row-start-1 grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-3.5 transition-[opacity,visibility] duration-700 ease-in-out ${
+        active ? 'opacity-100 visible' : 'opacity-0 invisible'
+      }`}
+    >
+      <article className="lg:col-span-2 relative overflow-hidden flex flex-col justify-end sm:min-h-[340px] lg:min-h-[384px] p-5 sm:p-8 rounded-[28px] bg-white border border-slate-200">
+        {/* The photo only from the sm breakpoint: on phones the hero stays compact. */}
+        <ProductImage
+          src={gadget.image_url}
+          className="max-sm:hidden absolute right-6 sm:right-10 top-6 sm:top-8 w-36 sm:w-44 aspect-[3/4]"
+          glyphClassName="w-2/3 h-2/3"
+        />
+        <div className="relative sm:max-w-[55%] lg:max-w-md">
+          <span className="inline-block px-2.5 py-1 rounded-full bg-sage-700 text-white font-mono text-xs font-semibold">
+            {specs.length} SOURCED SPEC{specs.length === 1 ? '' : 'S'}
+          </span>
+          <h2 className="mt-3 text-3xl sm:text-6xl font-extrabold tracking-[-0.045em] sm:tracking-[-0.055em] leading-[0.95] text-slate-900 break-words">
+            {gated ? (
+              <button type="button" onClick={onRequireSignIn} aria-haspopup="dialog" className={`text-left hover:underline rounded ${focusRing}`}>
+                {name}
+              </button>
+            ) : (
+              <Link to={`/gadgets/${gadget.id}`} className={`hover:underline rounded ${focusRing}`}>
+                {name}
+              </Link>
+            )}
+          </h2>
+          <p className="mt-1.5 sm:mt-2 text-base text-slate-600">{gadget.brand}</p>
+          {/* Prices in the sans face with tabular figures: mono spacing read as "₱ 2 2 , 9 9 9". */}
+          <p className={`mt-3 sm:mt-4 ${price ? 'text-2xl sm:text-3xl font-bold tabular-nums text-slate-900' : 'text-base text-slate-500'}`}>
+            <PriceTag gadget={gadget} empty="No price yet" />
+          </p>
+          <div className="mt-4 sm:mt-5 flex flex-wrap gap-2">
+            {gated ? (
+              <Button variant="primary" size="lg" onClick={onRequireSignIn} aria-haspopup="dialog" className="!px-5 sm:!px-6">
+                View specs
+              </Button>
+            ) : (
+              <Button as={Link} to={`/gadgets/${gadget.id}`} variant="primary" size="lg" className="!px-5 sm:!px-6">
+                View specs
+              </Button>
+            )}
+            <Button
+              size="lg"
+              onClick={onToggleCompare}
+              aria-pressed={gated ? undefined : selected}
+              aria-haspopup={gated ? 'dialog' : undefined}
+              icon={selected ? BadgeCheck : Scale}
+              className="!px-5 sm:!px-6"
+            >
+              {selected ? 'In Compare' : 'Compare'}
+            </Button>
+            {/* Two actions on phones; Ask AI is on the phone page and the card's "more" menu. */}
+            <Button
+              size="lg"
+              variant="ghost"
+              icon={Sparkles}
+              onClick={onAsk}
+              aria-haspopup={gated ? 'dialog' : undefined}
+              aria-label={`Ask AI about ${gadget.name}`}
+              className="max-sm:hidden"
+            >
+              Ask AI
+            </Button>
+          </div>
+        </div>
+      </article>
+      <HeroSpecStrip keySpecs={keySpecs} gadgetName={gadget.name} />
+      <div className="hidden sm:block lg:col-span-2">
+        <KeySpecTiles keySpecs={keySpecs} gadgetName={gadget.name} size="lg" />
+      </div>
+    </div>
+  )
+}
+
+/** Phones only: the four key specs as a small 2×2 grid instead of the large tiles. */
+function HeroSpecStrip({ keySpecs, gadgetName }) {
+  return (
+    <ul aria-label={`${gadgetName} key specs summary`} className="sm:hidden grid grid-cols-2 gap-2">
+      {KEY_SPECS.map((spec) => {
+        const found = keySpecs?.[spec.id]
+        return (
+          <li key={spec.id} className="rounded-2xl bg-white border border-slate-200 px-3.5 py-2.5 min-w-0">
+            <p className="text-xs font-semibold text-slate-500">{spec.label}</p>
+            {found ? (
+              <p className="text-lg font-extrabold tabular-nums text-slate-900 truncate">
+                {found.value}
+                {found.unit && <span className="text-sm font-semibold"> {found.unit}</span>}
+              </p>
+            ) : (
+              <p className="text-sm text-slate-500">Not stated</p>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+export function BrandTile({ label, count, pressed, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={pressed}
+      className={`flex shrink-0 min-w-[9.5rem] sm:min-w-0 items-center justify-between gap-3 text-left px-4 sm:px-5 py-3 sm:py-4 min-h-11 rounded-3xl border transition active:scale-[0.98] ${focusRing} ${
+        pressed ? BRAND_TILE_SELECTED_STYLE : BRAND_TILE_STYLE
+      }`}
+    >
+      <span className="min-w-0">
+        <span className="block text-base sm:text-lg font-extrabold tracking-[-0.025em] truncate">{label}</span>
+        <span className="text-xs tabular-nums opacity-80">
+          {count} {count === 1 ? 'phone' : 'phones'}
+        </span>
+      </span>
+      <ArrowRight size={18} aria-hidden="true" className="shrink-0" />
+    </button>
+  )
+}
+
+/** A labelled "at least" select for a spec filter; an empty value means any. */
+function SpecSelect({ id, label, value, options, unit, disabled, onChange }) {
+  return (
+    <div
+      className={`relative flex items-center bg-white border border-slate-200 rounded-full pl-4 min-h-10 focus-within:ring-2 focus-within:ring-sage-600 ${
+        disabled ? 'opacity-50' : ''
+      }`}
+    >
+      <label htmlFor={id} className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+        {label}
+      </label>
+      <select
+        id={id}
+        value={value ?? ''}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
+        className="appearance-none bg-transparent text-slate-900 text-sm font-semibold py-2 pl-2 pr-9 min-h-10 rounded-full cursor-pointer focus:outline-none disabled:cursor-not-allowed"
+      >
+        <option value="">Any</option>
+        {options.map((n) => (
+          <option key={n} value={n}>
+            {n.toLocaleString('en-US')}+ {unit}
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
+    </div>
   )
 }
 
 function FilterPill({ label, onRemove }) {
   return (
-    <span className="flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 py-1 rounded-md font-mono text-xs text-sage-700 font-medium">
+    <span className="flex items-center gap-1.5 bg-white border border-slate-200 pl-3 pr-2 py-1 rounded-full text-sm font-medium text-slate-800">
       {label}
       <button
         onClick={onRemove}
         aria-label={`Remove filter ${label}`}
-        className={`text-slate-600 hover:text-slate-800 flex items-center p-1 -m-1 rounded ${hitArea} ${focusRing}`}
+        className={`text-slate-600 hover:text-slate-900 flex items-center p-1 -m-1 rounded-full ${hitArea} ${focusRing}`}
       >
-        <X size={12} />
+        <X size={13} />
       </button>
     </span>
   )
@@ -660,10 +971,10 @@ function PageButton({ children, active = false, disabled = false, onClick }) {
       onClick={onClick}
       disabled={disabled}
       aria-current={active ? 'page' : undefined}
-      className={`px-3 py-1.5 min-h-10 min-w-10 sm:min-h-0 sm:min-w-0 rounded font-mono text-xs transition-colors ${focusRing} ${
+      className={`px-3.5 min-h-10 min-w-10 rounded-full font-mono text-sm transition-colors ${focusRing} ${
         active
-          ? 'bg-sage-700 text-white font-semibold shadow-xs'
-          : 'bg-slate-100 border border-slate-200 text-slate-700 font-medium hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-100'
+          ? 'bg-inverse text-inverse-ink font-semibold'
+          : 'bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed'
       }`}
     >
       {children}
@@ -671,112 +982,220 @@ function PageButton({ children, active = false, disabled = false, onClick }) {
   )
 }
 
-function SpecCell({ label, value, sub }) {
-  return (
-    <div className="flex flex-col min-w-0">
-      <span className="font-mono text-[11px] text-slate-600 uppercase tracking-wider font-medium">{label}</span>
-      <span className="font-mono text-sm text-slate-900 font-semibold truncate">{value}</span>
-      {sub && <span className="font-mono text-[11px] text-slate-600 truncate">{sub}</span>}
-    </div>
-  )
-}
-
-export function GadgetCard({ gadget, selected, onToggle, onAsk, onDeleted, mine, saving, onToggleMine }) {
-  const [imgError, setImgError] = useState(false)
-  const showImage = gadget.image_url && !imgError
+// The whole card is one link to the phone page (its name link is stretched over the card);
+// onRequireSignIn is set for signed-out visitors, and then the card, View specs, Compare,
+// Ask AI and Save open the sign-in prompt instead of acting. Phones show two actions (View
+// specs, Compare) plus a "more" menu with Ask AI and Save; from sm up they show in a row.
+export function GadgetCard({ gadget, specCount, selected, onToggle, onAsk, onDeleted, mine, saving, onToggleMine, onRequireSignIn }) {
+  const gated = Boolean(onRequireSignIn)
   const release = formatRelease(gadget.release_date)
+  const price = formatPeso(gadget.price_php)
+  const name = withoutDoubledBrand(gadget.name)
+  const ask = gated ? onRequireSignIn : onAsk
 
   return (
     <article
-      className={`relative bg-white rounded-xl p-6 border shadow-xs flex flex-col justify-between hover:shadow-md transition-all group ${
-        selected ? 'border-sage-400 ring-1 ring-sage-400' : 'border-slate-200 hover:border-slate-300'
+      className={`relative bg-white rounded-3xl p-3.5 border flex flex-col gap-3 transition-all group ${
+        selected ? 'border-sage-700 ring-2 ring-sage-700' : 'border-slate-200 hover:border-slate-300'
       }`}
     >
-      <div className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span className="font-mono text-xs bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded font-medium">
-              {gadget.category}
-            </span>
-            {release && <span className="font-mono text-xs text-slate-500 shrink-0">Rel. {release}</span>}
-          </div>
-          {selected && (
-            <span className="flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-mono text-xs font-semibold shrink-0">
-              <BadgeCheck size={13} className="text-emerald-700" /> In Compare
-            </span>
+      <ProductImage src={gadget.image_url} className="aspect-[4/3]" glyphClassName="w-14 h-24">
+        {specCount !== undefined && (
+          <span
+            className={`absolute left-2.5 top-2.5 px-2.5 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-semibold ${
+              specCount > 0 ? 'text-sage-700' : 'text-slate-500'
+            }`}
+          >
+            {specCount > 0 ? `${specCount} sourced spec${specCount === 1 ? '' : 's'}` : 'No specs yet'}
+          </span>
+        )}
+        {selected && (
+          <span className="absolute right-2.5 top-2.5 flex items-center gap-1 px-2.5 py-1 rounded-full bg-sage-700 text-white text-[11px] font-semibold">
+            <BadgeCheck size={12} aria-hidden="true" /> In Compare
+          </span>
+        )}
+      </ProductImage>
+
+      <div className="min-w-0 px-1">
+        <h3 className="text-lg font-extrabold tracking-[-0.03em] text-slate-900 truncate">
+          {gated ? (
+            <button
+              type="button"
+              onClick={onRequireSignIn}
+              aria-haspopup="dialog"
+              aria-label={gadget.name}
+              className={`text-left group-hover:underline rounded focus-visible:outline-none ${stretchedLink}`}
+            >
+              {name}
+            </button>
+          ) : (
+            <Link
+              to={`/gadgets/${gadget.id}`}
+              aria-label={gadget.name}
+              className={`group-hover:underline rounded focus-visible:outline-none ${stretchedLink}`}
+            >
+              {name}
+            </Link>
           )}
-        </div>
-
-        <div className="flex gap-5">
-          <div className="w-24 h-24 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
-            {showImage ? (
-              <img
-                src={gadget.image_url}
-                alt={gadget.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <ImageOff size={22} className="text-slate-300" />
-            )}
-          </div>
-          <div className="flex flex-col justify-center min-w-0">
-            <h3 className="text-xl font-bold text-slate-900 tracking-tight truncate">
-              <Link to={`/gadgets/${gadget.id}`} className={`hover:underline rounded ${focusRing}`}>
-                {gadget.name}
-              </Link>
-            </h3>
-            <span className="font-mono text-xs text-sage-700 font-semibold truncate">{gadget.brand}</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 bg-slate-100 border border-slate-200 px-3.5 py-3 rounded-lg">
-          <SpecCell label="Brand" value={gadget.brand} />
-          <SpecCell label="Price" value={gadget.price_php != null ? formatPrice(gadget.price_php) : '—'} />
-          <SpecCell label="Released" value={release ?? '—'} />
-        </div>
+        </h3>
+        <p className="text-sm text-slate-600 truncate">
+          {gadget.brand}
+          {release ? ` · ${release}` : ''}
+        </p>
+        <p className={`mt-1.5 ${price ? 'text-xl font-bold tabular-nums text-slate-900' : 'text-sm text-slate-500'}`}>
+          <PriceTag gadget={gadget} empty="No price yet" />
+        </p>
       </div>
 
-      {mine !== null && (
-        <Button
-          variant={mine ? 'subtle' : 'outline'}
-          size="sm"
-          icon={mine ? BookmarkCheck : BookmarkPlus}
-          loading={saving}
-          disabled={saving}
-          aria-pressed={mine}
-          onClick={onToggleMine}
-          aria-label={`${gadget.name}: ${mine ? 'in My Gadgets, select to remove' : 'add to My Gadgets'}`}
-          className="w-full mt-5"
+      <div className="relative z-10 flex items-center gap-2 mt-auto">
+        {gated ? (
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onRequireSignIn}
+            aria-haspopup="dialog"
+            aria-label={`Details for ${gadget.name}`}
+            className="flex-1 !min-h-11 sm:!min-h-9"
+          >
+            View specs
+          </Button>
+        ) : (
+          <Button
+            as={Link}
+            to={`/gadgets/${gadget.id}`}
+            variant="primary"
+            size="sm"
+            aria-label={`Details for ${gadget.name}`}
+            className="flex-1 !min-h-11 sm:!min-h-9"
+          >
+            View specs
+          </Button>
+        )}
+        <label
+          className={`flex items-center gap-2 min-h-11 sm:min-h-9 px-3.5 rounded-full border cursor-pointer select-none text-sm font-semibold focus-within:ring-2 focus-within:ring-sage-600 ${
+            selected ? 'bg-sage-700 text-white border-sage-700' : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
+          }`}
         >
-          {mine ? 'In My Gadgets' : 'Add to My Gadgets'}
-        </Button>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-5 mt-5 border-t border-slate-200">
-        <label className="flex items-center gap-2 min-h-9 cursor-pointer select-none rounded-md focus-within:ring-2 focus-within:ring-sage-600 px-1 -mx-1">
           <input
             type="checkbox"
             checked={selected}
-            onChange={onToggle}
+            onChange={gated ? onRequireSignIn : onToggle}
             aria-label={`Compare ${gadget.name}`}
-            className="w-5 h-5 rounded border-slate-300 accent-sage-700 focus:outline-none"
+            className="w-4 h-4 rounded accent-slate-900 focus:outline-none"
           />
-          <span className="text-sm text-slate-800 font-semibold">Compare</span>
+          Compare
         </label>
-        <div className="flex items-center gap-2">
+        <CardMoreMenu gadget={gadget} onAsk={ask} gated={gated} mine={mine} saving={saving} onToggleMine={onToggleMine} />
+      </div>
+
+      <div className="relative z-10 hidden sm:flex items-center gap-1.5 border-t border-slate-200 pt-2.5">
+        {/* aria-label, not an sr-only span: a span's leading space is dropped when the
+            accessible name is computed, so it read "Ask AIabout …" (#207). */}
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={Sparkles}
+          onClick={ask}
+          aria-haspopup={gated ? 'dialog' : undefined}
+          aria-label={`Ask AI about ${gadget.name}`}
+        >
+          Ask AI
+        </Button>
+        {mine !== null && <SaveButton gadget={gadget} mine={mine} saving={saving} onToggleMine={onToggleMine} />}
+        <div className="ml-auto">
           <DeleteGadgetButton gadget={gadget} onDeleted={onDeleted} size="sm" iconOnly />
-          {/* aria-label, not an sr-only span: a span's leading space is dropped when the
-              accessible name is computed, so it read "Ask AIabout …" (#207). */}
-          <Button variant="subtle" size="sm" icon={Sparkles} onClick={onAsk} aria-label={`Ask AI about ${gadget.name}`}>
-            Ask AI
-          </Button>
-          <Button as={Link} to={`/gadgets/${gadget.id}`} variant="primary" size="sm" aria-label={`Details for ${gadget.name}`}>
-            Details <ArrowRight size={14} aria-hidden="true" />
-          </Button>
         </div>
       </div>
     </article>
+  )
+}
+
+function SaveButton({ gadget, mine, saving, onToggleMine, className = '' }) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      icon={mine ? BookmarkCheck : BookmarkPlus}
+      loading={saving}
+      disabled={saving}
+      aria-pressed={mine}
+      onClick={onToggleMine}
+      aria-label={`${gadget.name}: ${mine ? 'in My Gadgets, select to remove' : 'add to My Gadgets'}`}
+      className={`${mine ? 'text-sage-700' : ''} ${className}`}
+    >
+      {mine ? 'Saved' : 'Save'}
+    </Button>
+  )
+}
+
+/**
+ * Phones only (hidden from sm up): a "more" button that shows Ask AI and Save under it.
+ * A disclosure, not an ARIA menu: Tab moves through the two buttons; Escape or a tap
+ * outside closes it, and Escape returns focus to the "more" button.
+ */
+function CardMoreMenu({ gadget, onAsk, gated, mine, saving, onToggleMine }) {
+  const [open, setOpen] = useState(false)
+  const panelId = useId()
+  const wrapperRef = useRef(null)
+  const triggerRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return undefined
+    function onPointerDown(e) {
+      if (!wrapperRef.current?.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [open])
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="relative sm:hidden"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && open) {
+          e.stopPropagation()
+          setOpen(false)
+          triggerRef.current?.focus()
+        }
+      }}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-label={`More actions for ${gadget.name}`}
+        className={`flex items-center justify-center w-11 h-11 rounded-full border border-slate-300 bg-white text-slate-800 hover:bg-slate-100 ${focusRing}`}
+      >
+        <MoreHorizontal size={18} aria-hidden="true" />
+      </button>
+      {open && (
+        <div
+          id={panelId}
+          className="absolute right-0 bottom-full mb-2 z-20 w-48 flex flex-col gap-1 p-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl animate-fade-in"
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={Sparkles}
+            onClick={() => {
+              setOpen(false)
+              onAsk()
+            }}
+            aria-haspopup={gated ? 'dialog' : undefined}
+            aria-label={`Ask AI about ${gadget.name}`}
+            className="w-full !justify-start !min-h-11"
+          >
+            Ask AI
+          </Button>
+          {mine !== null && (
+            <SaveButton gadget={gadget} mine={mine} saving={saving} onToggleMine={onToggleMine} className="w-full !justify-start !min-h-11" />
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -785,48 +1204,44 @@ function CompareTray({ gadgets, onRemove, onClear, onCompare }) {
   return (
     <aside
       aria-label="Compare tray"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-4xl bg-white/95 backdrop-blur-md rounded-xl p-3.5 border border-slate-200 shadow-2xl animate-fade-in"
+      className="fixed bottom-5 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-4xl bg-white/95 backdrop-blur-md rounded-full p-2 pl-5 border border-slate-200 shadow-2xl animate-fade-in"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 font-mono text-sm shrink-0">
-            <Scale size={18} className="text-emerald-800" />
-            <span className="font-bold uppercase tracking-wider text-slate-900">Compare</span>
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {gadgets.map((g, i) => (
-              <span key={g.id} className="flex items-center gap-1.5">
-                {i > 0 && <span className="font-mono text-xs text-slate-500 font-bold">VS</span>}
-                <span className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg text-slate-900 text-sm shadow-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                  <span className="font-semibold">{g.name}</span>
-                  <button
-                    onClick={() => onRemove(g.id)}
-                    aria-label={`Remove ${g.name} from comparison`}
-                    className={`text-slate-600 hover:text-red-700 ml-0.5 p-1 -m-1 transition-colors rounded ${hitArea} ${focusRing}`}
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+          <span className="flex items-center gap-1.5 text-sm font-bold text-slate-900 shrink-0">
+            <Scale size={17} className="text-sage-700" aria-hidden="true" /> Compare
+          </span>
+          {gadgets.map((g, i) => (
+            <span key={g.id} className="flex items-center gap-1.5">
+              {i > 0 && <span className="font-mono text-xs text-slate-500 font-bold">VS</span>}
+              <span className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 pl-3 pr-2 py-1 rounded-full text-slate-900 text-sm">
+                <span className="font-semibold">{g.name}</span>
+                <button
+                  onClick={() => onRemove(g.id)}
+                  aria-label={`Remove ${g.name} from comparison`}
+                  className={`text-slate-600 hover:text-red-700 p-1 -m-1 transition-colors rounded-full ${hitArea} ${focusRing}`}
+                >
+                  <X size={12} />
+                </button>
               </span>
-            ))}
-          </div>
+            </span>
+          ))}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={onClear}
-            className={`font-mono text-xs text-slate-500 hover:text-red-600 px-1 py-1 min-h-10 sm:min-h-0 transition-colors font-medium rounded ${focusRing}`}
+            className={`text-sm text-slate-600 hover:text-slate-900 px-3 min-h-10 font-semibold rounded-full ${focusRing}`}
           >
             Clear ({gadgets.length})
           </button>
-          <button
+          <Button
+            variant="primary"
             onClick={onCompare}
             disabled={!canCompare}
             title={canCompare ? undefined : 'Select at least 2 to compare'}
-            className={`bg-sage-400 text-sage-900 hover:bg-[#73a082] text-sm px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-sage-400 ${focusRing}`}
           >
-            Compare Now ({gadgets.length}) <ArrowRight size={16} />
-          </button>
+            Compare now ({gadgets.length}) <ArrowRight size={16} aria-hidden="true" />
+          </Button>
         </div>
       </div>
     </aside>

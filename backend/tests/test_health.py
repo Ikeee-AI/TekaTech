@@ -8,6 +8,18 @@ def test_deployed_version_reports_host_commit(client, monkeypatch):
     assert client.get("/version").json() == {"commit": "abc123"}
 
 
+def test_deployed_version_prefers_app_commit_for_railway(client, monkeypatch):
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "render-sha")
+    monkeypatch.setenv("APP_COMMIT", "railway-sha")
+    assert client.get("/version").json() == {"commit": "railway-sha"}
+
+
+def test_deployed_version_without_host_commit_is_local(client, monkeypatch):
+    monkeypatch.delenv("APP_COMMIT", raising=False)
+    monkeypatch.delenv("RENDER_GIT_COMMIT", raising=False)
+    assert client.get("/version").json() == {"commit": "local"}
+
+
 def test_nan_literal_in_body_is_422_not_500(client, fake_supabase):
     """Python's JSON parser accepts bare NaN; the 422 that echoes it must still encode."""
     resp = client.post(
