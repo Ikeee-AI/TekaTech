@@ -2073,3 +2073,23 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — Partial.
 
 **Next** — #275 review, merge, then the owner checks the Account page (hard refresh).
+
+## 2026-11-15 05:13 Asia/Manila — #275 merged and live
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** #213 follow-up · **Branch:** `main`
+
+**Done**
+- Jopher **approved #275 on its final commit `c1c4880`** (05:00). Squash-merged → `12d5710`.
+- Main run [43640868249](https://github.com/Ikeee-AI/TekaTech/actions/runs/43640868249): all jobs success, incl. main guard and deploy. API `/version` → `12d5710`.
+- The live frontend bundle contains the new column layout.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — None.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — Merged and deployed. The owner's check on the real page (hard refresh + screenshot) is pending.
+
+**Next** — Owner: confirm the Account page layout. Owner: retro by Mon 16 Nov 15:00.
