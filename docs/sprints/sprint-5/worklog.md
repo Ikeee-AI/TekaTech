@@ -1749,3 +1749,35 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #201: **Done** except images (deferred to #202). Issue left open for the owner to close.
 
 **Next** — Close #201 or keep it open for images (owner). Update the admin form price-source hint (Ikeee-AI). Optionally add ROG Phone 9 Pro battery and Galaxy A-series chip names from official pages (content).
+
+## 2026-11-15 00:22 Asia/Manila — #201 follow-ups: PR #270 (launch-price flag, price-source hint, (n) citations); SQL applied dev + prod
+**Who:** Ikeee-AI (AI-assisted: yes; the owner ran the production SQL) · **Task:** #201 follow-ups · **Branch:** `tekatech/s5-ik-catalog-followups` ([#270](https://github.com/Ikeee-AI/TekaTech/pull/270), `7dab479`)
+
+**Done**
+- [#270](https://github.com/Ikeee-AI/TekaTech/pull/270) opened, reviewers Manuel + Mika:
+  - `backend/sql/gadget_price_launch.sql` (`price_is_launch boolean not null default false`, replay-safe, in `assemble_sql.py` before `lock_browser_roles.sql`, documented in `docs/database.md`).
+  - API field: default false on reads; left out of writes unless used; null refused.
+  - Admin "Launch Price" checkbox; price-source hint now allows a named PH outlet.
+  - PriceTag "launch price · …".
+  - `normalize_paren_citations()`: `(n)` → `[n]` only when an answer has no `[n]` at all. CLAUDE.md/AGENTS.md updated together.
+  - **Local:** 923 backend and 562 frontend tests, lint, build and secret guard all pass.
+- SQL **dev** (`efdgguybkampozuvqjrz`): run by the assistant → "Success. No rows returned"; check: boolean / NOT NULL / default false, 0 flagged.
+- SQL **prod** (`lqswcmkzygqmnblaukco`): **run by the owner** (screenshot 00:21) → "Success. No rows returned"; read-only check by the assistant: boolean / NOT NULL / default false, 0 of 24 flagged. Production API still 200 on `/gadgets` and `/gadgets/{id}`.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Running the SQL on production was denied by the Claude Code permission check | Production schema changes need the owner's own action | The owner clicked Run in the prepared editor tab. Resolved |
+| Navigation blocked by a "Leave site?" dialog (unsaved dev query) | SQL Editor keeps unsaved edits | Opened prod in a new tab instead. Resolved |
+| 2 new frontend tests failed (`'price_is_launch' in payload`) | The key exists with value undefined (dropped by JSON) | Tests check `toBeUndefined()`. Resolved |
+
+**Conflicts and contradictions** — None new. The form hint now matches the owner's price rule.
+
+**Decisions** — Explicit `price_is_launch` flag instead of guessing from "no store link" — Ikeee-AI. Narrow `(n)` rewrite in the backend; prompt unchanged — Ikeee-AI.
+
+**Blockers / risks** — #270 needs a non-author approval on its final commit (main guard) — Manuel / Mika.
+
+**Plan alignment** — #201 follow-ups: Partial (code reviewed-pending; SQL done on dev + prod; the 15 launch flags get ticked after deploy).
+
+**Next** — Review #270 (Manuel/Mika). After merge + deploy: tick "Launch Price" on the 15 phones in `docs/catalog-data/launch-prices-2026-11-14.json` and check the label on production — Ikeee-AI.
