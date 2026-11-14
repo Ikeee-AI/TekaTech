@@ -1553,3 +1553,27 @@ Short session, ~09:45–10:12 Manila.
 - Re-review #249 on `2be365a` — Mika and Manuel; then Ikeee-AI merges.
 - Check the 7 unpushed local branches against `main` and delete the ones already merged — Ikeee-AI — optional.
 - Sprint 5 retro (#238) due Mon 16 Nov 15:00, the owner's own entry still missing — Ikeee-AI.
+
+## 2026-11-14 20:16 Asia/Manila — 7 unpushed local branches checked and deleted
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S5-IK repo housekeeping · **Branch:** local only (log on `tekatech/s5-ik-worklog-batch`)
+
+**Done**
+- Checked the 7 never-pushed local branches left from the worktree prune: `tekatech/s5-ik-signin-gating` (784a22c), `-password-logout` (3f7abce), `-login-required-backend` (52460a7), `-content-pages` (70dff73), `-sourced-prices` (450a59d), `-spec-filters` (9023570), `-ui-polish` (3bcffc7).
+- Evidence they are merged: every tip is an ancestor of #266's head `7a65b87` (`git merge-base --is-ancestor`); [#266](https://github.com/Ikeee-AI/TekaTech/pull/266) is MERGED as `eba1fa6`, which is in `origin/main` and live. GitHub keeps `7a65b87` at `refs/pull/266/head`, so the commits stay recoverable.
+- Further safety checks: none on the remote, no PRs from any of them, none checked out, no worktrees left. Deleted all 7 with `git branch -D`. Current branch and working tree unchanged.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| First check (`git merge-tree` of each branch with `main`) reported all 7 as differing | The branches were combined into one before the squash merge and `main` changed afterwards, so a direct merge conflicts; the diffs were conflict output, not missing work | Switched to an ancestry check against #266's head. Resolved |
+
+**Conflicts and contradictions** — None (local-only branches, no PRs or teammates affected).
+
+**Decisions** — Delete the 7 branches after a double check — Ikeee-AI.
+
+**Blockers / risks** — None. Restore with `git branch <name> <sha>` if ever needed (SHAs above).
+
+**Plan alignment** — Housekeeping, no task row. Done.
+
+**Next** — None for this item. Open items unchanged from the 20:06 entry (#254 Manuel, #249 Mika/Manuel, retro #238).
