@@ -431,13 +431,29 @@ def _generate_answer(system_prompt: str, user_content: str):
 
 # The grounded prompt's "not in the specs" reply when general knowledge is allowed (prompts.py,
 # GK_FALLBACK_VERSION). The token is matched case-insensitively with whatever a model may wrap
-# a one-word reply in: straight or curly quotes, backticks, bold asterisks and a trailing
-# period, colon or exclamation mark.
+# a one-word reply in: straight or curly quotes, backticks, bold asterisks and trailing
+# punctuation. The wrapper marks directly around the token (with spaces inside them, as in
+# `" NOT_IN_SPECS "`) are part of the match, so removing it leaves no orphan quote or `**`.
 _SENTINEL_QUOTES = "\"'`*“”‘’"
 _SENTINEL_TOKEN = re.compile(
-    rf"[{_SENTINEL_QUOTES}]*\b{re.escape(NOT_IN_SPECS_SENTINEL)}\b[{_SENTINEL_QUOTES}]*[.:!]?[ \t]*",
+    rf"(?P<open>[{_SENTINEL_QUOTES}]*)(?P<inner>[ \t]*)\b{re.escape(NOT_IN_SPECS_SENTINEL)}\b"
+    rf"(?P<punct>[.:!?]*)(?P<space>[ \t]*)(?P<close>[{_SENTINEL_QUOTES}]*)",
     re.IGNORECASE,
 )
+
+
+def _drop_sentinel(match: re.Match) -> str:
+    """Replacement for one sentinel token: a space, plus whatever after it is not its wrapper."""
+    opened, closed = match["open"], match["close"]
+    # Without an opening mark, a mark after a space opens the next quoted phrase: keep it.
+    kept_close = closed if (closed and not opened and match["space"]) else ""
+    # Punctuation inside a quoted sentinel ("NOT_IN_SPECS.") goes with it. Otherwise it ends the
+    # surrounding sentence, so it stays unless nothing (or a sentence end) precedes the token.
+    before = match.string[: match.start()].rstrip(" \t")
+    ends_sentence = before and before[-1] not in ".:!?\n"
+    punct = "" if (opened and closed) else (match["punct"] if ends_sentence else "")
+    # Spaces either side; _without_sentinel collapses the doubles afterwards.
+    return " " + punct + " " + kept_close
 
 
 def _is_not_in_specs(answer: str) -> bool:
@@ -448,9 +464,20 @@ def _is_not_in_specs(answer: str) -> bool:
 
 
 def _without_sentinel(answer: str) -> tuple[str, int]:
-    """Remove sentinel tokens a longer answer carries anyway; returns (text, how many removed)."""
-    cleaned, count = _SENTINEL_TOKEN.subn("", answer)
-    return (cleaned.strip(), count) if count else (answer, 0)
+    """Remove sentinel tokens a longer answer carries anyway; returns (text, how many removed).
+
+    The wrapper marks go with the token, then the spacing it leaves behind is tidied: doubled
+    spaces, a space before punctuation, and punctuation doubled by the removal (":." to ":").
+    """
+    cleaned, count = _SENTINEL_TOKEN.subn(_drop_sentinel, answer)
+    if not count:
+        return answer, 0
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r"[ \t]+([.,;:!?])", r"\1", cleaned)
+    cleaned = re.sub(r"([,;:!?])\.", r"\1", cleaned)
+    cleaned = re.sub(r"[ \t]+\n", "\n", cleaned)
+    cleaned = re.sub(r"(?m)^ (?=\S)", "", cleaned)
+    return cleaned.strip(), count
 
 
 def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":

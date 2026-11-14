@@ -358,7 +358,10 @@ def markdown_report(report):
 # "verified" claims, uses only the markup AnswerText.jsx renders, and refuses an unknown
 # product. Optional expected_facts trace to sources.json, so a known answer is also checked
 # against a stored source.
-GK_CASE_TYPES = ("known", "comparison", "unknown", "citation_bait", "plain", "off_topic")
+GK_CASE_TYPES = ("known", "comparison", "unknown", "citation_bait", "plain", "off_topic", "stays_grounded")
+# "stays_grounded" (GK-09, gkf-v2): asked with the flag on, but the stored specs answer part of
+# it, so the reply must be the grounded one (answer_basis "specs", cited, not labelled as general
+# knowledge). None of the GK-answer checks apply to it; it is scored by score_stays_grounded().
 # Any citation style, not only the [n] the grounded mode uses: [1], [2][3], [1,2], [1-3], [^1],
 # (1), superscript footnote digits.
 GK_CITATION = re.compile(
@@ -394,7 +397,7 @@ GK_HEDGE = re.compile(
 GK_BAD_MARKUP = re.compile(r"^\s*(#|\||\d+[.)]\s)", re.MULTILINE)
 GK_TARGETS = {"cases_passed": 1.0, "no_citations": 1.0, "labelled": 1.0,
               "unknown_refusal": 1.0, "no_verified_claims": 1.0, "off_topic_declined": 1.0,
-              "basis_general_knowledge": 1.0, "real_product_answered": 1.0}
+              "basis_general_knowledge": 1.0, "real_product_answered": 1.0, "stayed_grounded": 1.0}
 # POST /query labels every reply with answer_basis ("specs", "general_knowledge" or "none").
 # A GK case only scores the general-knowledge path when the reply says it took that path: a
 # grounded answer (retrieval found specs) or the canned no-match reply is not a GK answer, even
@@ -410,12 +413,46 @@ def gk_case_type(case):
     return kind
 
 
+GK_GROUNDED_BASIS = "specs"
+
+
+def score_stays_grounded(case, answer, removed=0, basis=None):
+    """Score a `stays_grounded` case: GK was allowed, but the specs answer part of the question,
+    so verified data must not be replaced by a general-knowledge answer. Structural checks only:
+    answer_basis "specs" (when recorded), not labelled as general knowledge, at least one [n]
+    citation and none stripped by the backend; expected_facts (traced to sources.json) present;
+    with requires_missing_note, the answer says what is not stated."""
+    sentences = [s for s in SENTENCE.split(answer.replace("**", "")) if s.strip()]
+    problems = []
+    if basis is not None and basis != GK_GROUNDED_BASIS:
+        problems.append(f"answer_basis is {basis!r}, not {GK_GROUNDED_BASIS!r} "
+                        "(stored specs answered part of this; general knowledge replaced them)")
+    if sentences and GK_LABEL.search(sentences[0]):
+        problems.append("labelled as general knowledge although the specs answer part of it")
+    if not CITATION.search(answer):
+        problems.append("cites no snippet")
+    if removed:
+        problems.append(f"{removed} citation marker(s) removed by the backend")
+    checks = {"stayed_grounded": not problems}
+    missing = [fact for fact in case.get("expected_facts", []) if not has_fact(answer, fact)]
+    if missing:
+        problems.append(f"missing fact(s) {missing}")
+    if "expected_facts" in case:
+        checks["known_facts"] = not missing
+    if case.get("requires_missing_note") and not ABSTAIN.search(answer):
+        problems.append("must say which gadget's spec is not stated in the sources")
+    return {"id": case["id"], "type": gk_case_type(case), "passed": not problems,
+            "problems": problems, "checks": checks, "removed_citations": int(removed)}
+
+
 def score_gk_case(case, answer, removed=0, basis=None):
     """Score one general-knowledge answer. `removed` is how many citation markers the backend
     stripped (POST /query "invalid_citations_removed"); in this mode every marker is a
     failure, so a stripped one fails the case instead of hiding behind the cleaned text.
     `basis` is the reply's answer_basis when the answers file records it (None: not recorded,
     not checked); anything but "general_knowledge" fails the case."""
+    if gk_case_type(case) == "stays_grounded":
+        return score_stays_grounded(case, answer, removed, basis)
     text = answer.replace("**", "")
     lines = [line for line in text.splitlines() if line.strip()]
     sentences = [s for s in SENTENCE.split(text) if s.strip()]
@@ -490,7 +527,14 @@ def evaluate_gk(cases, answers, removed=None, basis=None):
     results = []
     for case in cases["cases"]:
         answer = answers.get(case["id"])
-        if answer is None:
+        if answer is None and gk_case_type(case) == "stays_grounded":
+            checks = {"stayed_grounded": False}
+            if "expected_facts" in case:
+                checks["known_facts"] = False
+            results.append({"id": case["id"], "type": "stays_grounded", "passed": False,
+                            "problems": ["no answer"], "checks": checks,
+                            "removed_citations": int(removed.get(case["id"], 0))})
+        elif answer is None:
             checks = {"no_citations": False, "labelled": False, "no_verified_claims": False}
             if case.get("should_refuse"):
                 checks["unknown_refusal"] = False
@@ -515,7 +559,7 @@ def evaluate_gk(cases, answers, removed=None, basis=None):
 
     metrics = {"cases_passed": metric(r["passed"] for r in results)}
     for key in ("no_citations", "labelled", "unknown_refusal", "no_verified_claims", "off_topic_declined",
-                "known_facts", "basis_general_knowledge", "real_product_answered"):
+                "known_facts", "basis_general_knowledge", "real_product_answered", "stayed_grounded"):
         metrics[key] = metric(r["checks"][key] for r in results if key in r["checks"])
     by_type = {}
     for kind in GK_CASE_TYPES:
@@ -555,7 +599,8 @@ def markdown_gk_report(report):
             ("Off-topic request declined", "off_topic_declined"),
             ("No 'verified' or TekaTech-data claims", "no_verified_claims"),
             ("Expected facts present (traced to sources.json)", "known_facts"),
-            ("Reply answer_basis is general_knowledge (when recorded)", "basis_general_knowledge")]
+            ("Reply answer_basis is general_knowledge (when recorded)", "basis_general_knowledge"),
+            ("Partly answered by specs: stayed grounded and cited", "stayed_grounded")]
     for label, key in rows:
         row, target = m[key], report["targets"].get(key)
         lines.append(f"| {label} | {'n/a' if row['rate'] is None else row['rate']} | "
@@ -597,7 +642,7 @@ def run_gk(args, answers_file):
     print(" | ".join(f"{key}: {m[key]['passed']} of {m[key]['total']}"
                      for key in ("cases_passed", "no_citations", "labelled", "unknown_refusal",
                                  "no_verified_claims", "off_topic_declined", "known_facts",
-                                 "basis_general_knowledge", "real_product_answered")))
+                                 "basis_general_knowledge", "real_product_answered", "stayed_grounded")))
     print("Targets met" if report["targets_met"] else "Targets NOT met")
     if args.report:
         args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")
