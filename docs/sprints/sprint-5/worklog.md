@@ -1966,3 +1966,32 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #202 upload: live and usable on production; photos still to pick. CI compile gap: **Done**.
 
 **Next** — Pick official press-kit photos (owner OK per file) and upload. Delete-account test with a throwaway account (owner). Owner: retro by Mon 15:00.
+
+## 2026-11-15 04:10 Asia/Manila — 6 official photos uploaded via #272 (no proxied images left); #202 closed
+**Who:** Ikeee-AI (AI-assisted: yes; owner OK'd downloading official candidates) · **Task:** #202 · **Branch:** production data
+
+**Done**
+- Uploaded through the new admin "Upload Photo" control on production:
+  - **Galaxy A36:** Samsung US Newsroom press-kit colour line-up.
+  - **Galaxy A56:** samsung.com/ph product gallery PNG.
+  - **realme 13 Pro+, 14 Pro, 14 Pro+:** realme.com/global product images.
+  - **vivo X200 Pro:** vivo PH e-store listing.
+- Each was viewed before upload (no text or feature art) and is under 2 MB. All 6 serve HTTP 200 with the correct type from `gadget-images`. No catalog image uses `imgs.search.brave.com` any more.
+- Rejected candidates deleted from scratch. Recorded and **#202 closed** ([comment](https://github.com/Ikeee-AI/TekaTech/issues/202)).
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Opening a press-kit image link made Chrome save `A36-5G_Color-Lockup_RGB-scaled.jpg` to Downloads | The S3 object is served with `Content-Disposition: attachment` | Told the owner; moved to the Recycle Bin at the owner's request. Headers are checked before opening links now. Resolved |
+| Supabase serves uploads with `Cache-Control: private, no-cache`, not the one year the code sends | Storage option not applied as expected | Harmless. Open, low (Ikeee-AI) |
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — Use official brand sources only (newsroom press kits, brand product pages, brand e-store) — owner.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — #202: **Done** (link check + upload + photos on production).
+
+**Next** — Delete-account test with a throwaway account (owner). Owner: retro by Mon 15:00.
