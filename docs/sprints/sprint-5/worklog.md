@@ -1610,3 +1610,26 @@ Short session, ~09:45–10:12 Manila.
 - Finish the retest: confirm from the spam email, sign in, check "X of 20 questions left" — owner + assistant — tonight.
 - Open a PR for `tekatech/s5-ik-spam-hint` (or batch it) and ask Mika to review — Ikeee-AI.
 - Decide on a Brevo sending domain — owner — before more real sign-ups.
+
+## 2026-11-14 21:29 Asia/Manila — Production sign-up retest passed (quota display verified)
+**Who:** Ikeee-AI (AI-assisted: yes; the owner did the sign-up, email confirmation and sign-in) · **Task:** S5-IK #266 follow-up (live sign-up retest) · **Branch:** none (production check); log on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- Retest finished on production (https://tekatech-web.onrender.com): sign-up with a password meeting the checklist → confirmation email (found in spam, see the 21:17 entry) → link confirmed → signed in. **Owner confirmed** the "X of 20 questions left" display works.
+- Assistant screenshot of the owner's tab: Compare page (Infinix Note 50 Pro 5G+ vs Galaxy S24) shows "10 of 20 AI questions left today", an AI trade-off answer with citations [1]–[3] and "Answer based on 3 cited specs". Sign-in-only AI/compare and the 20/day quota work for a signed-in non-admin user.
+
+**Errors and fixes** — None in the app. (Email deliverability is the open item from the 21:17 entry.)
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Infinix Note 50 Pro 5G+ shows "Not stated by source" for RAM, storage, main camera and display | Comparisons with that phone are thin | Catalog content, #201 (Manuel). Open |
+
+**Decisions** — None.
+
+**Blockers / risks** — None for #266.
+
+**Plan alignment** — #266 owner requirements (passwords, sign-in-only AI/compare, 20/day quota): **Done**, including the live sign-up retest, ahead of the Sun 15 Nov 09:00 deadline.
+
+**Next** — PR for `tekatech/s5-ik-spam-hint` (Mika to review) — Ikeee-AI. Decide on a Brevo sending domain — owner. Infinix spec gaps under #201 — Manuel.
