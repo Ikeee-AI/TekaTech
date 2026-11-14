@@ -1781,3 +1781,24 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #201 follow-ups: Partial (code reviewed-pending; SQL done on dev + prod; the 15 launch flags get ticked after deploy).
 
 **Next** — Review #270 (Manuel/Mika). After merge + deploy: tick "Launch Price" on the 15 phones in `docs/catalog-data/launch-prices-2026-11-14.json` and check the label on production — Ikeee-AI.
+
+## 2026-11-15 00:41 Asia/Manila — #270 merged and live; 15 launch prices flagged
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** #201 follow-ups · **Branch:** `main`
+
+**Done**
+- Jopher **approved #270 on its final commit `7dab479`** (00:28). Squash-merged → `e968025`. Main run [43616361281](https://github.com/Ikeee-AI/TekaTech/actions/runs/43616361281): all jobs success, incl. main guard and deploy. API `/version` → `e968025`; `price_is_launch` present (false by default).
+- Frontend live: the edit page has the "Launch Price" checkbox and the new price-source hint.
+- Ticked "Launch Price" on the 15 phones in `docs/catalog-data/launch-prices-2026-11-14.json` through the admin form (name checked before each save). API check: 15 of 24 flagged, 0 mismatches; still 24 priced, 23 dated.
+- Production phone page (POCO X7 Pro): "₱16,999 · launch price · revu.com.ph · checked 14 Nov". Noted on [#201](https://github.com/Ikeee-AI/TekaTech/issues/201).
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — None new.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — #201 follow-ups: **Done** (reviewed on the final commit, checks green, merged, deployed, verified on production).
+
+**Next** — #201 left open only for images (#202) — owner to close or keep. Mika: #267, #249. Owner: retro #238 by Mon 16 Nov 15:00.
