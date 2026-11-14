@@ -1893,3 +1893,45 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — Catalog content: Done. #271/#272: Partial (PRs open). Railway 7-day check: Done (about 3 days of data).
 
 **Next** — Pre-review findings → fix if needed. Teammate reviews. Bucket SQL (dev by the assistant, prod by the owner). Owner: retro.
+
+## 2026-11-15 03:31 Asia/Manila — #271 (delete account UI) and #272 (photo upload) merged and live; #273 re-approval pending; dev bucket created
+**Who:** Ikeee-AI (AI-assisted: yes; code by sub-agents, pre-reviewed by an AI pre-review agent) · **Task:** #213 frontend, #202 upload, CI compile gap · **Branch:** `main`
+
+**Done**
+- **AI pre-review** of #271/#272: both "ready for human review"; fixes recommended.
+  - #271 (`703849e`): a **real bug** — the user landed on /login after deleting — fixed by navigating first, then local sign-out on leave. Also: local-scope sign-out, admin note with a disabled button, a same-tick double-submit test. 606 frontend tests.
+  - #272 (`21dffde`): tests pin the admin check before the body is read; temp files closed on 413 or disconnect (new 400); `uv.lock` back to revision 5; tests for the 503 paths; AVIF extension fallback. 960 backend / 623 frontend tests.
+- **Jopher approved #271 (`703849e`) and #272 (`21dffde`) on their final commits** (03:15–03:16). Manuel and Mika had not reviewed yet; Jopher was added to #272 at the owner's request.
+- **Merged:**
+  - #271 → `90eb54c`, run [43631913806](https://github.com/Ikeee-AI/TekaTech/actions/runs/43631913806).
+  - #272 → `1ecec2e`, run [43631951386](https://github.com/Ikeee-AI/TekaTech/actions/runs/43631951386).
+  - All jobs success on both, incl. main guard and deploy.
+- **Production:** API `/version` → `1ecec2e`; anonymous `POST /gadgets/{id}/image` → 401; `/gadgets` 200. The live frontend bundle contains "Delete My Account" and "Upload Photo".
+- **Storage bucket `gadget-images`:**
+  - **Dev** (`efdgguybkampozuvqjrz`), run by the assistant: public true, 2097152, jpeg/png/webp/avif, 0 storage.objects policies.
+  - **Prod:** the SQL is loaded in the editor for the owner to run (the classifier blocks the assistant from running prod SQL). Until then, uploads on prod answer 503.
+- **[#273](https://github.com/Ikeee-AI/TekaTech/pull/273):** CI compileall now covers every backend module (10 existing modules were never compiled, plus `image_upload.py`).
+  - The first commit failed actionlint (shellcheck SC2035 on a bare `*.py`); fixed to `./*.py` (`9ecccad`), CI green.
+  - Jopher's approval is on `4e6bb58`; re-approval of `9ecccad` requested.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `SC2035:info:1:41: Use ./*glob* or -- *glob* so names with dashes won't become options` | Bare glob in a workflow `run:` | `./*.py`. Resolved; re-approval needed |
+| Pre-review: wrong landing page after delete (/login) | Sign-out raced the router transition | Fixed in `703849e`. Resolved |
+| Chrome screenshot timeouts on the Supabase tabs | Heavy page | Verified with a fresh screenshot. Resolved |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #272 spans Manuel's (upload security), Jopher's (endpoint) and Mika's (form) areas; merged on Jopher's approval only | Manuel's and Mika's reviews were not waited for | Owner chose to merge; their reviews are still welcome post-merge. Open |
+
+**Decisions** — Merge #271/#272 on Jopher's final-commit approvals — owner.
+
+**Blockers / risks** — The prod bucket is needed before real uploads work (owner). #273 needs re-approval.
+
+**Plan alignment** — #213: **Done** (backend #254 + frontend #271 live); end-to-end delete with a throwaway account not yet run on production. #202 upload: live in code; working on prod after the bucket.
+
+**Next** — Owner: run the bucket SQL on prod. Then re-upload photos for the 7 proxied phones. Throwaway-account delete test on production. Jopher: re-approve #273. Owner: retro.
