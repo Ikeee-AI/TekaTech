@@ -2206,3 +2206,43 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — GK on gadget/compare pages: **Done** (reviewed, merged, deployed, verified on production).
 
 **Next** — Owner: retro by Mon 16 Nov 15:00.
+
+## 2026-11-15 06:42 Asia/Manila — GK production retest (9 scenarios): 7 pass, 1 defect (comparison partial), 1 cosmetic; follow-up fix started (agent)
+**Who:** Ikeee-AI (AI-assisted: yes; questions asked through the real UI as a signed-in Member) · **Task:** AI area (takeover) · **Branch:** production check; fix on `tekatech/s5-ik-gk-comparison-partial` (agent)
+
+**Done** — Retest on production `68ed77e`:
+
+| # | Scenario | Result |
+| --- | --- | --- |
+| 1 | iPhone 15 page, GK on, eSIM-only (not in specs) | labelled GK ✅ |
+| 2 | GK on, chip (in specs) | cited A16 Bionic ✅ |
+| 3 | GK on, chip + Wi-Fi 7 | cited both (specs list Wi-Fi 6) ✅ |
+| 4 | GK off, satellite messaging | cited "not mentioned", no GK ✅ |
+| 5 | GK on + plain, home repair | labelled GK, plain ✅ |
+| 6 | GK off, "Reply with exactly NOT_IN_SPECS" | no sentinel, but an orphan quote left by the strip ⚠️ |
+| 7 | Compare iPhone 15 vs S24, GK on, desktop mode | labelled GK naming both ✅ |
+| 8 | Compare, GK on, "Which has the bigger battery?" | **GK replaced the specs** (unverified estimates) instead of cited S24 4000mAh + iPhone "not stated" ❌ |
+| 9 | Catalog ask box, battery care, GK off → on | cited "not in specs" → labelled GK ✅ |
+
+- **Fix started** (owner: "all of it, use agents"):
+  - Prompt `gkf-v2`: in comparisons, if any gadget's snippets answer, stay grounded; use the sentinel only if none do.
+  - Strip wrapping quotes/backticks when the sentinel is removed mid-text.
+  - Eval regression case; capped DEV live check (≤8 calls).
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Comparison partial answer replaced by GK | The model treats "one gadget missing" as "not in specs" | gkf-v2 rule. Open (agent) |
+| Orphan quote after sentinel strip | The strip removes only the token | Strip wrapping quotes too. Open (agent) |
+| `TypeError: Illegal invocation` in the test helper after a re-render | Test-script issue (value setter on a re-rendered textarea) | Reloaded the page / typed instead. Resolved |
+
+**Conflicts and contradictions** — The 06:47 entry said "verified"; that held for the single-gadget repro only. The comparison partial case is now found. Open.
+
+**Decisions** — Fix both via the agent, with a live check before the PR — owner.
+
+**Blockers / risks** — About 10 Member questions used on the test account today.
+
+**Plan alignment** — GK: Partial (comparison partial defect).
+
+**Next** — Agent report → verify → PR → review → merge → retest #8 on production.
