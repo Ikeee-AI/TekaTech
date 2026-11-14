@@ -34,6 +34,7 @@ EXPECTED = {
     ("POST", "/gadgets"): ADMIN,
     ("PATCH", "/gadgets/{gadget_id}"): ADMIN,
     ("DELETE", "/gadgets/{gadget_id}"): ADMIN,
+    ("POST", "/gadgets/{gadget_id}/image"): ADMIN,
     ("GET", "/gadgets/{gadget_id}/specs"): PUBLIC,
     ("POST", "/gadgets/{gadget_id}/specs"): ADMIN,
     ("POST", "/gadgets/{gadget_id}/specs/{spec_id}/index"): ADMIN,

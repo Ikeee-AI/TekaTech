@@ -86,6 +86,7 @@ export default function EditGadget() {
           submitLabel="Save Changes"
           onCancel={() => navigate(`/gadgets/${id}`)}
           isEdit
+          uploadImage={(file) => api.uploadGadgetImage(id, file)}
         />
       </div>
 

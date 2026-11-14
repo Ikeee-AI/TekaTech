@@ -113,6 +113,23 @@ select has_function_privilege('anon', 'public.keyword_match_spec_documents(vecto
 
 The backend works before this step. Until the function exists, a question with no vector match logs one warning ("Keyword fallback unavailable") and returns the usual "no relevant specs" answer. Applying it needs no deploy or restart.
 
+### Adding gadget photo uploads (Supabase Storage bucket)
+
+Admins can upload a gadget photo (`POST /gadgets/{gadget_id}/image`, 15 Nov 2026, issue #202). The API stores it in a **public** Supabase Storage bucket named `gadget-images` and sets the gadget's `image_url` to the object's public URL. The bucket must exist in each Supabase project; it is not part of the numbered list above, because the `storage` schema exists only in Supabase and CI's plain Postgres would fail on it. That is why the file lives in `backend/sql/manual/` and is **not** registered in `assemble_sql.py`.
+
+Paste `backend/sql/manual/gadget_images_bucket.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It inserts the bucket (`on conflict (id) do update`, safe to re-run) with `public = true`, a 2 MB `file_size_limit` (2097152 bytes) and `allowed_mime_types` JPEG, PNG, WebP and AVIF, then selects the row so you can see it. It changes no table or data in `public`. Until it runs, every upload answers 503 "Couldn't store the photo right now" and the gadget is left unchanged; pasting an image link keeps working. Applying it needs no deploy or restart.
+
+Do **not** add a storage policy for this bucket. The backend uploads with the service-role key, which bypasses RLS, and only after `get_current_admin_user`; a public bucket serves reads through its public URL without any policy. An `insert`/`update`/`delete` (or `select`) policy on `storage.objects` would let browser sessions write or list photos directly, around the API's size and magic-byte checks. Check it with:
+
+```sql
+select id, public, file_size_limit, allowed_mime_types from storage.buckets where id = 'gadget-images';
+-- 1 row: true, 2097152, {image/jpeg,image/png,image/webp,image/avif}
+select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects'
+  and (qual ilike '%gadget-images%' or with_check ilike '%gadget-images%');  -- expect 0
+```
+
+The frontend CSP already allows the photos (`img-src 'self' https: data:` in `render.yaml`); the upload itself goes to the API, which `connect-src` lists.
+
 Generate a single pasteable setup file in PowerShell from the repository root:
 
 ```powershell

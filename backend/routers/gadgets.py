@@ -1,10 +1,18 @@
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 import answer_cache
 import cache
+from image_upload import (
+    FORM_FIELD,
+    IMAGE_TYPES,
+    MAX_IMAGE_BYTES,
+    ImageUpload,
+    read_image_upload,
+)
+from rate_limit import limiter
 from schemas import (
     MAX_BRAND_CHARS,
     MAX_CATEGORY_CHARS,
@@ -110,3 +118,88 @@ def delete_gadget(gadget_id: UUID, user=Depends(get_current_admin_user)):
     answer_cache.invalidate_gadget(gadget_id)
     if not result.data:
         raise HTTPException(status_code=404, detail="Gadget not found")
+
+
+# Admin photo upload (#202). Public bucket in Supabase Storage, created by hand in each project
+# (sql/manual/gadget_images_bucket.sql, docs/database.md). The backend writes with the
+# service-role key, so the bucket needs no write policy and must not get one.
+IMAGE_BUCKET = "gadget-images"
+# The object name is the file's own hash, so its bytes never change: browsers and the CDN may keep it a year.
+IMAGE_CACHE_SECONDS = 31536000
+DETAIL_IMAGE_STORE_FAILED = "Couldn't store the photo right now. The gadget was not changed. Try again in a moment."
+
+_IMAGE_UPLOAD_OPENAPI = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "required": [FORM_FIELD],
+                    "properties": {
+                        FORM_FIELD: {
+                            "type": "string",
+                            "format": "binary",
+                            "description": f"JPEG, PNG, WebP or AVIF, at most {MAX_IMAGE_BYTES // (1024 * 1024)} MB.",
+                        }
+                    },
+                }
+            }
+        },
+    }
+}
+
+
+@router.post("/{gadget_id}/image", response_model=GadgetResponse, openapi_extra=_IMAGE_UPLOAD_OPENAPI)
+@limiter.limit("20/hour")
+def upload_gadget_image(
+    request: Request,
+    gadget_id: UUID,
+    # Order matters: the admin check runs before the body is read.
+    user=Depends(get_current_admin_user),
+    image: ImageUpload = Depends(read_image_upload),
+):
+    """Store one photo for the gadget and point its image_url at it; returns the updated gadget.
+
+    413 over 2 MB, 415 not a JPEG/PNG/WebP/AVIF (by magic bytes; SVG always refused), 422 no file,
+    404 unknown gadget, 503 storage or database failure (the gadget is then left unchanged).
+    """
+    try:
+        found = supabase.table("gadgets").select("id").eq("id", str(gadget_id)).execute()
+    except Exception as exc:
+        logger.warning("Gadget lookup before image upload failed: %s", type(exc).__name__, exc_info=True)
+        raise HTTPException(status_code=503, detail=DETAIL_SAVE_FAILED) from None
+    if not found.data:
+        raise HTTPException(status_code=404, detail="Gadget not found")
+
+    path = f"gadgets/{gadget_id}/{image.sha256[:32]}.{image.extension}"
+    try:
+        bucket = supabase.storage.from_(IMAGE_BUCKET)
+        bucket.upload(
+            path,
+            image.data,
+            file_options={
+                "content-type": IMAGE_TYPES[image.extension],
+                "cache-control": str(IMAGE_CACHE_SECONDS),
+                # Same name = same bytes, so uploading the same photo again just succeeds.
+                "upsert": "true",
+            },
+        )
+        public_url = bucket.get_public_url(path).rstrip("?")
+    except Exception as exc:
+        # Type only: storage errors can echo request details.
+        logger.warning("Gadget image upload failed: %s", type(exc).__name__)
+        raise HTTPException(status_code=503, detail=DETAIL_IMAGE_STORE_FAILED) from None
+
+    try:
+        result = supabase.table("gadgets").update({"image_url": public_url}).eq("id", str(gadget_id)).execute()
+    except Exception as exc:
+        logger.warning("Gadget image_url update failed: %s", type(exc).__name__, exc_info=True)
+        raise HTTPException(status_code=503, detail=DETAIL_SAVE_FAILED) from None
+    finally:
+        # Same invalidation as update_gadget.
+        cache.invalidate("gadgets", "stats")
+        answer_cache.invalidate_gadget(gadget_id)
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Gadget not found")
+    return result.data[0]
