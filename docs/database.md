@@ -56,8 +56,9 @@ Run these in Supabase SQL Editor as the project postgres owner:
 7. `backend/sql/user_gadgets.sql` (My Gadgets, 3 Nov 2026: one table, private to the backend)
 8. `backend/sql/user_questions.sql` (per-gadget AI conversation, 3 Nov 2026: one table, private to the backend)
 9. `backend/sql/gadget_price_source.sql` (sourced prices, 14 Nov 2026: three nullable columns on `gadgets`)
-10. `backend/sql/api_access.sql` (restricts RPC/table grants)
-11. `backend/sql/lock_browser_roles.sql` (always last: removes every browser-role right in `public`, including tables no file names, and stops Supabase's defaults from granting new objects to the browser; 14 Nov 2026)
+10. `backend/sql/gadget_price_launch.sql` (launch prices, 15 Nov 2026: one boolean column on `gadgets`, default false)
+11. `backend/sql/api_access.sql` (restricts RPC/table grants)
+12. `backend/sql/lock_browser_roles.sql` (always last: removes every browser-role right in `public`, including tables no file names, and stops Supabase's defaults from granting new objects to the browser; 14 Nov 2026)
 
 ### Browser-role lock (14 Nov 2026)
 
@@ -89,6 +90,16 @@ Existing projects need only step 9, and it must run **before** the backend that 
 select column_name, data_type from information_schema.columns
 where table_schema = 'public' and table_name = 'gadgets'
   and column_name in ('price_source_url', 'price_checked_at', 'store_url');  -- 3 rows
+```
+
+### Adding the launch-price flag to an existing project
+
+Projects set up before 15 November 2026 need only step 10, and it must run **before** the frontend that sends `price_is_launch` is deployed (an admin save that ticks "Launch price" would otherwise fail). Paste `backend/sql/gadget_price_launch.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It adds `price_is_launch boolean not null default false` to `gadgets` (`add column if not exists`, safe to re-run) and reloads the PostgREST schema cache. Existing rows get `false`; no other data changes. Check it with:
+
+```sql
+select column_name, data_type, is_nullable, column_default from information_schema.columns
+where table_schema = 'public' and table_name = 'gadgets' and column_name = 'price_is_launch';
+-- 1 row: boolean, NO, false
 ```
 
 ### Adding the keyword fallback to an existing project

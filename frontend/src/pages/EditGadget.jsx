@@ -23,6 +23,7 @@ function toFormValues(g) {
     price_source_url: g.price_source_url ?? '',
     price_checked_at: g.price_checked_at ?? '',
     store_url: g.store_url ?? '',
+    price_is_launch: Boolean(g.price_is_launch),
   }
 }
 

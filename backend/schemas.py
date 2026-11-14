@@ -121,6 +121,10 @@ class GadgetBase(BaseModel):
     price_source_url: Optional[str] = None
     price_checked_at: Optional[date] = None
     store_url: Optional[str] = None
+    # Launch price (15 Nov 2026, sql/gadget_price_launch.sql): true when price_php is the phone's
+    # launch SRP rather than a price on sale now (it is no longer sold). The UI labels it.
+    # Defaults to False so rows from a database without the column still read correctly.
+    price_is_launch: bool = False
 
     # Runs on create and on every response, so rows saved before #78
     # ("smartphone") are shown as "Smartphone" too.
@@ -137,6 +141,8 @@ class GadgetCreate(BaseModel):
     price_source_url: Optional[str] = None
     price_checked_at: Optional[date] = None
     store_url: Optional[str] = None
+    # Left out of the insert unless set (exclude_none), like the price-source columns.
+    price_is_launch: Optional[bool] = None
 
     # Declaration order matters: the length check runs before category normalization.
     _clean_text = field_validator("name", "brand", "category")(_clean_required_text)
@@ -162,6 +168,15 @@ class GadgetUpdate(BaseModel):
     price_source_url: Optional[str] = None
     price_checked_at: Optional[date] = None
     store_url: Optional[str] = None
+    price_is_launch: Optional[bool] = None
+
+    @field_validator("price_is_launch", mode="before")
+    @classmethod
+    def launch_flag_not_null(cls, value):
+        # The column is NOT NULL: an explicit null is refused here instead of failing in the database.
+        if value is None:
+            raise PydanticCustomError("launch_flag_null", "Choose whether this is a launch price.")
+        return value
 
     @field_validator("name", "brand", "category", mode="before")
     @classmethod

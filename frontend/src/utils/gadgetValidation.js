@@ -8,11 +8,12 @@ export const GADGET_FIELD_LABELS = {
   price_source_url: 'Price Source URL',
   price_checked_at: 'Price Checked On',
   store_url: 'Official Store Link',
+  price_is_launch: 'Launch Price',
 }
 
 export const EMPTY_GADGET = {
   name: '', brand: '', category: '', release_date: '', price_php: '', image_url: '',
-  price_source_url: '', price_checked_at: '', store_url: '',
+  price_source_url: '', price_checked_at: '', store_url: '', price_is_launch: false,
 }
 
 export function isHttpUrl(value) {
@@ -132,6 +133,12 @@ export function toGadgetPayload(form, initialValues = null) {
     price_source_url: (form.price_source_url ?? '').trim() || undefined,
     price_checked_at: form.price_checked_at || undefined,
     store_url: (form.store_url ?? '').trim() || undefined,
+    // Sent only when ticked, or on edit when it changed, so a database without
+    // gadget_price_launch.sql keeps accepting saves that don't use the flag.
+    price_is_launch: form.price_is_launch ? true : undefined,
+  }
+  if (initialValues && Boolean(initialValues.price_is_launch) !== Boolean(form.price_is_launch)) {
+    payload.price_is_launch = Boolean(form.price_is_launch)
   }
   if (initialValues) {
     for (const field of OPTIONAL_FIELDS) {

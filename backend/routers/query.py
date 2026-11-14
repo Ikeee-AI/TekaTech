@@ -11,7 +11,7 @@ from pydantic_core import PydanticCustomError
 import ai_quota
 import answer_cache
 from auth import get_current_user
-from citations import strip_invalid_citations
+from citations import normalize_paren_citations, strip_invalid_citations
 from config import settings
 from keyword_search import build_keyword_query
 from prompts import GK_PROMPT_VERSION, PROMPT_VERSION, build_general_knowledge_prompt, build_system_prompt
@@ -729,6 +729,10 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     # The model can cite a snippet number it was never given, which the UI would render as a
     # dead citation. Drop those markers (matches are numbered 1..len(matches)) and report how
     # many, so an evaluation can count them instead of seeing only the cleaned text.
+    # An answer cited only as "(1)" would show its citations as plain text; make them [n] first.
+    answer, paren_citations = normalize_paren_citations(answer, len(matches))
+    if paren_citations:
+        logger.warning("Rewrote %d '(n)' citation marker(s) to [n] in a /query answer", paren_citations)
     answer, invalid_citations_removed = strip_invalid_citations(answer, len(matches))
     if invalid_citations_removed:
         logger.warning("Removed %d out-of-range citation marker(s) from a /query answer", invalid_citations_removed)

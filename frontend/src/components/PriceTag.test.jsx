@@ -55,3 +55,21 @@ describe('PriceTag', () => {
     expect(screen.getByText('No price yet')).toBeTruthy()
   })
 })
+
+describe('PriceTag launch price (15 Nov 2026)', () => {
+  it('labels a launch price before its source', () => {
+    render(<p><PriceTag gadget={{ price_php: 56990, price_is_launch: true, price_source_url: 'https://www.technobaboy.com/2023/09/13/x/', price_checked_at: '2026-11-14' }} /></p>)
+    expect(screen.getByText(/launch price ·/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: /technobaboy\.com/ })).toBeTruthy()
+  })
+
+  it('labels a launch price without a source too', () => {
+    render(<p><PriceTag gadget={{ price_php: 56990, price_is_launch: true }} /></p>)
+    expect(screen.getByText('launch price · source not given')).toBeTruthy()
+  })
+
+  it('adds nothing for a current price', () => {
+    render(<p><PriceTag gadget={{ price_php: 49990, price_source_url: 'https://www.samsung.com/ph/x/' }} /></p>)
+    expect(screen.queryByText(/launch price/)).toBeNull()
+  })
+})

@@ -28,3 +28,30 @@ def strip_invalid_citations(answer: str, snippet_count: int) -> tuple[str, int]:
         return ""
 
     return _MARKER.sub(replace, answer), removed
+
+
+# "(1)" right after a space, ending at a space, punctuation or the end of the text.
+_PAREN_MARKER = re.compile(r"(?<=[ \t])\((\d+)\)(?=[\s.,;:!?]|$)")
+
+
+def normalize_paren_citations(answer: str, snippet_count: int) -> tuple[str, int]:
+    """Turn "(n)" into "[n]" when the model cited that way and nothing else.
+
+    The prompt forbids "(1)", but a model occasionally uses it for a whole answer (seen on
+    production, 15 Nov 2026, vivo X200 Pro). AnswerText.jsx only renders [n], so those citations
+    showed as plain text. The rewrite is deliberately narrow: only when the answer has no [n]
+    marker at all, and only for numbers 1..snippet_count, so a "(2)" inside a normal [n]-cited
+    answer, or one that is not a snippet number, is left alone. Returns (answer, number_rewritten).
+    """
+    if snippet_count < 1 or _MARKER.search(answer):
+        return answer, 0
+    rewritten = 0
+
+    def replace(match: re.Match) -> str:
+        nonlocal rewritten
+        if 1 <= int(match.group(1)) <= snippet_count:
+            rewritten += 1
+            return f"[{match.group(1)}]"
+        return match.group(0)
+
+    return _PAREN_MARKER.sub(replace, answer), rewritten
