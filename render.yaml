@@ -24,8 +24,8 @@ services:
         source: /*
         destination: /index.html
     # Security headers on every response (Render blueprint: one name/value per entry).
-    # The CSP is Report-Only first: violations only appear in the browser console.
-    # Switch to enforced as described in docs/deploy-runbook.md ("Security headers").
+    # The CSP is enforced (it was Report-Only from 13 Nov 2026 until a clean walk on 14 Nov).
+    # To roll back, rename it to Content-Security-Policy-Report-Only (docs/deploy-runbook.md, "Security headers").
     # connect-src must list the API origin baked in as VITE_API_BASE_URL and the
     # Supabase project (VITE_SUPABASE_URL; wss for its realtime socket).
     headers:
@@ -45,5 +45,5 @@ services:
         name: Permissions-Policy
         value: camera=(), microphone=(), geolocation=()
       - path: /*
-        name: Content-Security-Policy-Report-Only
+        name: Content-Security-Policy
         value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://tekatech-api-production-549b48c9.up.railway.app https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'"
