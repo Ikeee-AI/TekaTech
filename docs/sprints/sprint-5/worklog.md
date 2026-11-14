@@ -1802,3 +1802,28 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #201 follow-ups: **Done** (reviewed on the final commit, checks green, merged, deployed, verified on production).
 
 **Next** — #201 left open only for images (#202) — owner to close or keep. Mika: #267, #249. Owner: retro #238 by Mon 16 Nov 15:00.
+
+## 2026-11-15 01:35 Asia/Manila — #267 (check-spam hint) merged and live; nudges; #201 closed
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** auth email deliverability (short-term), review coordination · **Branch:** `main`
+
+**Done**
+- Posted:
+  - Retro reminder to Mika and Adrian on #238 (deadline Mon 16 Nov 15:00).
+  - Asked Jopher to review #267.
+  - Asked Mika to re-review #249 on `2be365a`.
+- Closed #201; the 7 proxied images were noted on #202.
+- Jopher **approved #267 on its final commit `fd87235`** (01:23). Squash-merged → `0e722c6`. Main run [43621207605](https://github.com/Ikeee-AI/TekaTech/actions/runs/43621207605): all jobs success, incl. main guard and deploy. API `/version` → `0e722c6`.
+- Live frontend: the Login chunk (`Login-Bj5wiZJ0.js`) contains "check your spam folder too" twice (the Account Created and resent notices).
+- The owner's retro is drafted from the worklog (scratchpad), waiting for the owner's edit and OK; not posted.
+
+**Errors and fixes** — The first check looked in the main bundle (0 matches); the Login page is a separate chunk (2 matches). Resolved.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — Close #201 and move the images to #202 — owner.
+
+**Blockers / risks** — #249 waits on Mika. The real deliverability fix (a sending domain) is still the owner's decision.
+
+**Plan alignment** — #267: **Done** (reviewed on the final commit, checks green, merged, deployed, verified).
+
+**Next** — Owner: post the retro. Mika: #249. After Mon 15:00: fill in the retrospective table — Ikeee-AI.
