@@ -2327,3 +2327,37 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — GK on gadget/compare pages: **Done** (reviewed, merged, deployed, verified on production in both directions).
 
 **Next** — Owner: today's deadline and the retro by Mon 16 Nov 15:00.
+
+## 2026-11-15 07:31 Asia/Manila — Repository rules for the final video: option C (keep in-repo enforcement); evidence documented (#278)
+**Who:** Ikeee-AI (AI-assisted: yes; owner decision) · **Task:** final video Part 6 · **Branch:** `tekatech/s5-ik-repo-rules-evidence`
+
+**Done**
+- **Final-video brief read.** Gap found: Part 6 asks for branch protection / required approvals / required checks.
+- **Rechecked:** branch protection, rulesets and branch rules all return HTTP 403 "Upgrade to GitHub Pro or make this repository public…" (private repo, GitHub Free).
+- **Security scan:**
+  - Tracked-file guard passed.
+  - gitleaks 8.30.1 full history (`--all`, 667 commits, 9.35 MB): **no leaks** (`.local/gitleaks-2026-11-15.json`).
+- **Privacy check before going public:** no personal emails in files, but commit metadata holds the owner's personal Gmail, three USLS student emails and one teammate Gmail; Manuel's full name appears in the docs.
+- **Options given:** A public (needs team consent), B Pro (Student Pack free / $4 paid), C keep. **Owner chose C.**
+- [#278](https://github.com/Ikeee-AI/TekaTech/pull/278):
+  - `PIPELINE.md` gains a 15 Nov status: the 403 recheck, the decision and reasons, and a table of in-repo enforcement (main guard, deploy.needs, PR policy, secret scans, actionlint, review requests).
+  - Guard evidence: blocks #63/#144/#251/#268 and the #254 → #269 runs.
+  - The honest limit: the gate is at deploy, not at the Merge button.
+  - Jopher requested.
+- Closed #268 with its resolution.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| The brief wants rules "enforced before merging"; GitHub Free can't lock the Merge button on a private repo | A grader may mark Part 6 weaker | Show the guard + PR policy + live block evidence and state the limit plainly. Open, owner |
+
+**Decisions** — Option C (no public repo, no Pro) — owner.
+
+**Blockers / risks** — See the conflict. #278 review.
+
+**Plan alignment** — Final video prep: Part 6 evidence ready (pending #278 merge).
+
+**Next** — Merge #278; continue with the submission prep when the owner sends the GitHub tools.
