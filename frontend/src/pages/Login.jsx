@@ -219,7 +219,8 @@ export default function Login() {
         <div aria-live="polite" className={notice ? 'mt-4' : ''}>
           {notice === 'confirm' && (
             <Alert tone="success" title="Account Created">
-              Check your email for a confirmation link, then log in here.
+              Check your email for a confirmation link, then log in here. It can take a few minutes, so check your
+              spam folder too.
             </Alert>
           )}
           {notice === 'exists' && (
@@ -243,7 +244,7 @@ export default function Login() {
           {notice === 'resent' && (
             <Alert tone="success" title="Check Your Email">
               If this email has an account that isn&apos;t confirmed yet, a new confirmation link is on its way. Use the
-              link in the most recent email.
+              link in the most recent email, and check your spam folder too.
             </Alert>
           )}
         </div>
