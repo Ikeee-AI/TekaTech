@@ -361,3 +361,30 @@ def test_shipped_scope_file_covers_only_known_cases_and_known_keys():
     known = {c["id"] for c in json.loads((adapter.EVAL_DIR / "cases.json").read_text(encoding="utf-8"))["cases"]}
     assert set(cases) <= known and cases
     assert set(names) == {"iphone-15", "galaxy-s24-ph"}
+
+
+# --- sign-in (14 Nov 2026): POST /query needs a session ---
+
+class _Reply:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return b"{}"
+
+
+@pytest.mark.parametrize("token, expected", [("admin-access-token", "Bearer admin-access-token"), ("", None)])
+def test_the_access_token_comes_from_the_environment_as_a_bearer_header(monkeypatch, token, expected):
+    sent = []
+
+    def fake_urlopen(request, timeout):
+        sent.append(request)
+        return _Reply()
+
+    monkeypatch.setenv(adapter.TOKEN_ENV, token)
+    monkeypatch.setattr(adapter, "urlopen", fake_urlopen)
+    adapter.http_json("POST", "http://127.0.0.1:8000/query", {"question": "x"})
+    assert sent[0].get_header("Authorization") == expected

@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     # The URI may embed a password; rate_limit.py only ever logs its scheme and host.
     rate_limit_storage_uri: str = "memory://"
 
+    # AI questions (POST /query) each signed-in non-admin user may ask per UTC day (resets at
+    # 08:00 Manila). Stored with the rate limits above. Env: AI_DAILY_QUESTION_LIMIT. See ai_quota.py.
+    ai_daily_question_limit: int = Field(default=20, ge=1, le=10000)
+
     # Failure drill for POST /query (see README "Failure drill"). Off unless set to true, and even
     # then only a logged-in admin sending the X-Simulate-Failure header can trigger it. Never set
     # this on the production service: .railway/railway.ts (the API since 13 Nov 2026) and

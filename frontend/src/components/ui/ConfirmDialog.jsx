@@ -6,7 +6,7 @@ import Alert from './Alert'
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-function DialogPanel({ title, description, confirmLabel, busy, error, onConfirm, onCancel, children }) {
+function DialogPanel({ title, description, confirmLabel, busyLabel, busy, error, onConfirm, onCancel, children }) {
   const panelRef = useRef(null)
   const cancelRef = useRef(null)
   const titleId = useId()
@@ -84,7 +84,7 @@ function DialogPanel({ title, description, confirmLabel, busy, error, onConfirm,
             Cancel
           </Button>
           <Button variant="dangerSolid" onClick={onConfirm} loading={busy}>
-            {busy ? 'Deleting…' : confirmLabel}
+            {busy ? busyLabel : confirmLabel}
           </Button>
         </div>
       </div>
@@ -96,9 +96,10 @@ function DialogPanel({ title, description, confirmLabel, busy, error, onConfirm,
  * Confirmation step for destructive actions. Rendered in a portal as a modal
  * alertdialog: focus is trapped inside, Escape and the backdrop cancel (unless
  * the action is in flight), and any server error is shown inline so the user
- * can retry or back out without losing context.
+ * can retry or back out without losing context. `busyLabel` is the confirm button's text
+ * while the action runs (default "Deleting…"; the Navbar's log-out uses "Logging out…").
  */
-export default function ConfirmDialog({ open, confirmLabel = 'Delete', ...props }) {
+export default function ConfirmDialog({ open, confirmLabel = 'Delete', busyLabel = 'Deleting…', ...props }) {
   if (!open) return null
-  return createPortal(<DialogPanel confirmLabel={confirmLabel} {...props} />, document.body)
+  return createPortal(<DialogPanel confirmLabel={confirmLabel} busyLabel={busyLabel} {...props} />, document.body)
 }

@@ -2,7 +2,7 @@
 // ended sign-in in the same browser showed the form, then failed with "Session not found"
 // (production, 14 Nov 2026).
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 const auth = vi.hoisted(() => ({ value: {} }))
@@ -43,5 +43,24 @@ describe('ResetPassword', () => {
   it('shows the invalid-link message when nobody is signed in', () => {
     show({ user: null, recoveryActive: false })
     expect(screen.getByRole('link', { name: /Request a New Link/ })).toBeTruthy()
+  })
+
+  it('blocks a weak new password and shows the strength meter', () => {
+    show({ user: USER, recoveryActive: true })
+    fireEvent.change(screen.getByLabelText(/^New Password/), { target: { value: 'weakpass' } })
+    fireEvent.change(screen.getByLabelText(/^Confirm New Password/), { target: { value: 'weakpass' } })
+    expect(screen.getByText('Weak')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /Update Password/ }))
+    expect(screen.getByText(/^Make it stronger/)).toBeTruthy()
+    expect(auth.value.updatePassword).not.toHaveBeenCalled()
+  })
+
+  it('updates a password that meets every rule', () => {
+    show({ user: USER, recoveryActive: true, updatePassword: vi.fn().mockResolvedValue(undefined) })
+    fireEvent.change(screen.getByLabelText(/^New Password/), { target: { value: 'Strong-pass-12' } })
+    fireEvent.change(screen.getByLabelText(/^Confirm New Password/), { target: { value: 'Strong-pass-12' } })
+    expect(screen.getByText('Strong')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /Update Password/ }))
+    expect(auth.value.updatePassword).toHaveBeenCalledWith('Strong-pass-12')
   })
 })

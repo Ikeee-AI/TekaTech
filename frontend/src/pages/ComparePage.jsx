@@ -10,14 +10,16 @@ import BackLink from '../components/ui/BackLink'
 import Button from '../components/ui/Button'
 import AIComparisonPanel from '../components/AIComparisonPanel'
 import CompareAddGadget from '../components/CompareAddGadget'
-import PhoneGlyph from '../components/PhoneGlyph'
+import ProductImage from '../components/ProductImage'
+import PriceTag from '../components/PriceTag'
 import { friendlyError } from '../utils/requestErrors'
 import { formatPeso } from '../utils/formatPeso'
-import { extractKeySpecs } from '../utils/keySpecs'
+import { extractKeySpecs, extractMoreSpecs } from '../utils/keySpecs'
+import { barWidths, plainRow, specRows } from '../utils/compareRows'
+import { withoutDoubledBrand } from '../utils/gadgetName'
 
 // Matches the backend's MAX_COMPARISON_GADGETS (routers/comparisons.py).
 const MAX_COMPARE_GADGETS = 5
-const NOT_STATED = 'Not stated by source'
 
 // Card and bar colour per position (theme tokens): 1st = accent (lime / cobalt),
 // 2nd = cobalt in dark / ink in light, then pale lime, surface, inverse.
@@ -55,53 +57,6 @@ function formatDate(date) {
   return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
-/** Largest number in a key-spec value ("128–512" → 512, "256 GB–1 TB" → 1024), for bar lengths. */
-function magnitude(found) {
-  if (!found) return null
-  const parts = [...found.value.matchAll(/(\d+(?:\.\d+)?)\s*(TB)?/gi)].map((m) => Number(m[1]) * (m[2] ? 1024 : 1))
-  return parts.length ? Math.max(...parts) : null
-}
-
-function keyRow(id, label, keySpecsList) {
-  return {
-    label,
-    key: true,
-    cells: keySpecsList.map((k) => {
-      if (k === undefined) return { text: '…', missing: true, n: null, source: null }
-      const found = k?.[id]
-      if (!found) return { text: NOT_STATED, missing: true, n: null, source: null }
-      return { text: `${found.value}${found.unit ? ` ${found.unit}` : ''}`, missing: false, n: magnitude(found), source: [found.source, found.variants && 'base model'].filter(Boolean).join(' · ') || null }
-    }),
-  }
-}
-
-function plainRow(label, gadgets, get, { missingText = 'Not listed', source = 'catalog' } = {}) {
-  return {
-    label,
-    cells: gadgets.map((g) => {
-      const value = get(g)
-      return value == null ? { text: missingText, missing: true, n: null, source: null } : { text: value, missing: false, n: null, source }
-    }),
-  }
-}
-
-/** Bar fill per cell: proportional where every phone states a number, full when stated, empty when not. */
-function barWidths(row) {
-  const nums = row.cells.map((c) => c.n)
-  const allNumeric = nums.every((n) => n != null && n > 0)
-  const max = allNumeric ? Math.max(...nums) : null
-  return row.cells.map((c) => {
-    if (c.missing) return 0
-    return allNumeric ? Math.round((c.n / max) * 100) : 100
-  })
-}
-
-function GadgetPicture({ gadget, className }) {
-  const [failedSrc, setFailedSrc] = useState(null)
-  if (!gadget.image_url || failedSrc === gadget.image_url) return <PhoneGlyph className={className} />
-  return <img src={gadget.image_url} alt="" className="h-full w-full object-cover" onError={() => setFailedSrc(gadget.image_url)} />
-}
-
 function PhoneCard({ gadget, index, onRemove, side, notch }) {
   const style = SLOT_STYLES[index % SLOT_STYLES.length]
   const right = side === 'right'
@@ -110,20 +65,19 @@ function PhoneCard({ gadget, index, onRemove, side, notch }) {
     <section
       aria-label={gadget.name}
       className={`${notch ?? ''} relative flex items-center gap-4 sm:gap-5 p-4 sm:p-5 rounded-[26px] min-w-0 ${style.card} ${
-        right ? 'flex-row-reverse text-right sm:pl-20' : notch ? 'sm:pr-20' : ''
+        // Room for the × button so long names never run under it (phones: 56 px, desktop: clear of the VS cut-out).
+        right ? 'flex-row-reverse text-right pl-14 sm:pl-20' : notch ? 'pr-14 sm:pr-20' : 'pr-14'
       }`}
     >
-      <div className="shrink-0 w-16 h-24 sm:w-20 sm:h-28 rounded-2xl bg-black/10 overflow-hidden flex items-center justify-center">
-        <GadgetPicture gadget={gadget} className="w-10 h-16 sm:w-12 sm:h-20" />
-      </div>
+      <ProductImage src={gadget.image_url} className="shrink-0 w-16 sm:w-20 aspect-[3/4]" glyphClassName="w-2/3 h-2/3" padding="p-2" />
       <div className="min-w-0 flex-1">
         <p className="font-mono text-[11px] font-semibold opacity-85 uppercase truncate">{gadget.brand}</p>
         <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-[-0.04em] leading-none break-words">
           <Link to={`/gadgets/${gadget.id}`} className="hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current">
-            {gadget.name}
+            {withoutDoubledBrand(gadget.name)}
           </Link>
         </h2>
-        <p className={`mt-2 font-mono ${price ? 'text-lg sm:text-xl' : 'text-sm opacity-85'}`}>{price ?? 'No price listed'}</p>
+        <p className={`mt-2 ${price ? 'text-lg sm:text-xl font-bold tabular-nums' : 'text-sm opacity-85'}`}><PriceTag gadget={gadget} empty="No price listed" sourceClassName="opacity-85" /></p>
       </div>
       <button
         type="button"
@@ -193,6 +147,7 @@ function FaceOff({ gadgets, rows }) {
               <p className={`text-[15px] ${ca.missing ? 'italic text-slate-500' : 'font-bold text-slate-900'}`}>
                 <span className="sr-only">{a.name}: </span>
                 {ca.text}
+                {ca.higher && <HigherTag />}
               </p>
               <div className="mt-1.5 h-1.5 rounded-full bg-slate-200 overflow-hidden">
                 <div className={`h-full rounded-full ${SLOT_STYLES[0].bar}`} style={{ width: `${wa}%` }} />
@@ -206,6 +161,7 @@ function FaceOff({ gadgets, rows }) {
               <p className={`text-[15px] ${cb.missing ? 'italic text-slate-500' : 'font-bold text-slate-900'}`}>
                 <span className="sr-only">{b.name}: </span>
                 {cb.text}
+                {cb.higher && <HigherTag />}
               </p>
               <div className="mt-1.5 h-1.5 rounded-full bg-slate-200 overflow-hidden flex justify-end">
                 <div className={`h-full rounded-full ${SLOT_STYLES[1].bar}`} style={{ width: `${wb}%` }} />
@@ -219,8 +175,25 @@ function FaceOff({ gadgets, rows }) {
   )
 }
 
+/** Subtle tag on the single largest battery/charging value, shown only when every phone states it. */
+function HigherTag() {
+  return (
+    <span className="ml-1.5 inline-block align-middle font-mono text-[10px] font-semibold uppercase tracking-wider text-sage-800 bg-sage-50 border border-sage-200 rounded-full px-1.5 py-0.5">
+      Higher
+    </span>
+  )
+}
+
 function CellValue({ cell, lowest }) {
   if (cell.missing) return <span className="italic text-slate-500">{cell.text}</span>
+  if (cell.higher) {
+    return (
+      <>
+        {cell.text}
+        <HigherTag />
+      </>
+    )
+  }
   if (!lowest) return cell.text
   return (
     <span className="inline-flex flex-col items-start gap-0.5">
@@ -337,7 +310,7 @@ export default function ComparePage() {
     for (const g of gadgets) {
       api
         .getSpecs(g.id)
-        .then((specs) => !cancelled && setKeySpecsById((prev) => ({ ...prev, [g.id]: extractKeySpecs(specs) })))
+        .then((specs) => !cancelled && setKeySpecsById((prev) => ({ ...prev, [g.id]: { ...extractKeySpecs(specs), ...extractMoreSpecs(specs) } })))
         .catch(() => !cancelled && setKeySpecsById((prev) => ({ ...prev, [g.id]: null })))
     }
     return () => {
@@ -438,10 +411,7 @@ export default function ComparePage() {
   const cheapestPrice = strictlyLowestPrice(gadgets)
   const keySpecsList = gadgets.map((g) => keySpecsById[g.id])
   const rows = [
-    keyRow('ram', 'RAM', keySpecsList),
-    keyRow('storage', 'Storage', keySpecsList),
-    keyRow('camera', 'Main camera', keySpecsList),
-    keyRow('refresh', 'Display', keySpecsList),
+    ...specRows(keySpecsList),
     plainRow('Price', gadgets, (g) => formatPeso(g.price_php)),
     plainRow('Released', gadgets, (g) => formatDate(g.release_date)),
     plainRow('Brand', gadgets, (g) => g.brand),
@@ -455,7 +425,7 @@ export default function ComparePage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 ref={headingRef} tabIndex={-1} className="text-4xl font-extrabold tracking-[-0.05em] text-slate-900 focus:outline-none">
-            Comparing {gadgets.length} {gadgets.length === 1 ? 'Gadget' : 'Gadgets'}
+            Comparing {gadgets.length} {gadgets.length === 1 ? 'Phone' : 'Phones'}
           </h1>
           <p className="mt-1 text-sm text-slate-600">Side by side from official sources. Gaps are shown, never filled in.</p>
         </div>
@@ -516,8 +486,9 @@ export default function ComparePage() {
             </div>
             {showFaceOff ? <FaceOff gadgets={gadgets} rows={rows} /> : <SpecTable gadgets={gadgets} rows={rows} cheapestPrice={cheapestPrice} />}
             <p className="px-4 sm:px-5 py-3 text-xs text-slate-500 border-t border-slate-200">
-              Highlighted rows are the four key specs, read from each phone&apos;s saved sources.
-              {showFaceOff ? ' Bars compare numbers only where both sources state them.' : ''}
+              Highlighted rows are the four key specs; every spec row is read from each phone&apos;s saved sources.
+              {showFaceOff ? ' Bars compare numbers only where both sources state them; weight, chip and water resistance bars only show the value is stated.' : ''}
+              {' '}&ldquo;Higher&rdquo; marks the bigger battery or charging figure when every source states one.
             </p>
           </section>
 

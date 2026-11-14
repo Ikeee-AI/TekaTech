@@ -34,6 +34,11 @@ names each case's gadgets, they are looked up by name in GET /gadgets, and the i
 "gadget_ids". Cases the file does not list stay unscoped. A name that matches no gadget, or more than
 one, stops the run before any question is asked.
 
+Sign-in (14 Nov 2026): POST /query needs a signed-in user, and a non-admin may ask only 20 AI
+questions per day. Set TEKATECH_ACCESS_TOKEN to an ADMIN account's access token (admins are exempt
+from the daily limit); it is read from the environment only, sent as a Bearer header and never
+printed. Without it every question is recorded as an HTTP 401 error.
+
 The output also carries "invalid_citations_removed" per case: the backend strips citation markers
 that point outside the retrieved snippets, so an evaluator must count those removals itself or
 the valid-citation rate would be 100% by construction.
@@ -41,6 +46,7 @@ the valid-citation rate would be 100% by construction.
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -56,6 +62,7 @@ UNMAPPED = 0  # not a pack id, so the runner reports it as a citation outside th
 QUERY_DELAY_SECONDS = 6.5  # /query allows 10 per minute per client
 TIMEOUT_SECONDS = 90  # a cold start on the free host can take ~45 s
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+TOKEN_ENV = "TEKATECH_ACCESS_TOKEN"
 
 
 class ApiError(Exception):
@@ -66,7 +73,11 @@ class ApiError(Exception):
 
 def http_json(method, url, body=None):
     data = json.dumps(body).encode("utf-8") if body is not None else None
-    request = Request(url, data=data, method=method, headers={"Content-Type": "application/json"})
+    headers = {"Content-Type": "application/json"}
+    token = os.environ.get(TOKEN_ENV, "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    request = Request(url, data=data, method=method, headers=headers)
     try:
         with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
             return json.loads(response.read().decode("utf-8"))
@@ -285,6 +296,9 @@ def main(argv=None, http=http_json, sleep=time.sleep):
     if not args.yes:
         print("Plan only. Re-run with --yes to ask them.")
         return 0
+    if not os.environ.get(TOKEN_ENV, "").strip():
+        print(f"Warning: {TOKEN_ENV} is not set; POST /query needs a signed-in (admin) user, so each "
+              "question will fail with HTTP 401.", file=sys.stderr)
 
     basis = {}
     answers, removed, errors, models = collect(api_base, cases, snippets, http, sleep, gk=gk, basis=basis, scope=scope)

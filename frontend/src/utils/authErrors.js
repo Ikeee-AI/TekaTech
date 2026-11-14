@@ -2,8 +2,11 @@
 // Only sentences written here, or Supabase's own short `message` string, reach the
 // screen, so a stack trace or raw response body is never displayed.
 
-/** Supabase's default minimum password length; signup (Login.jsx) and reset use the same rule. */
-export const MIN_PASSWORD_LENGTH = 6
+import { PASSWORD_HINT } from './passwordStrength'
+
+// The password rules (and MIN_PASSWORD_LENGTH, kept here for existing imports) live in
+// passwordStrength.js since 14 Nov 2026.
+export { MIN_PASSWORD_LENGTH } from './passwordStrength'
 
 /** Turns a Supabase AuthError (or a network failure) into a sentence for the user. */
 export function authErrorMessage(err, fallback = 'Something went wrong. Please try again.') {
@@ -13,6 +16,13 @@ export function authErrorMessage(err, fallback = 'Something went wrong. Please t
   }
   if (err.status === 429 || err.code === 'over_email_send_rate_limit' || err.code === 'over_request_rate_limit') {
     return 'Too many requests. Wait a minute, then try again.'
+  }
+  if (err.code === 'weak_password' || err.name === 'AuthWeakPasswordError') {
+    // Supabase lists why: 'length', 'characters' and/or 'pwned' (leaked-password check, if enabled).
+    if (err.reasons?.includes('pwned')) {
+      return 'This password has appeared in a data breach. Choose a different one.'
+    }
+    return `That password is too weak. Use ${PASSWORD_HINT.charAt(0).toLowerCase()}${PASSWORD_HINT.slice(1)}`
   }
   if (err.code === 'same_password') return 'Choose a password that is different from your current one.'
   if (err.name === 'AuthSessionMissingError' || err.code === 'session_not_found' || err.code === 'session_expired') {

@@ -20,6 +20,9 @@ function toFormValues(g) {
     release_date: g.release_date ?? '',
     price_php: g.price_php != null ? String(g.price_php) : '',
     image_url: g.image_url ?? '',
+    price_source_url: g.price_source_url ?? '',
+    price_checked_at: g.price_checked_at ?? '',
+    store_url: g.store_url ?? '',
   }
 }
 

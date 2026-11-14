@@ -6,6 +6,7 @@ import { validateAnswerResponse } from '../utils/aiAnswerState'
 import { questionTooLongError } from '../utils/questionLimits'
 import { suggestFollowUps } from '../utils/followUps'
 import AiAnswerResult from './AiAnswerResult'
+import AiUsageBadge from './AiUsageBadge'
 
 export default function AIAnswerPanel({ question, onClose }) {
   // A follow-up chosen from the suggestions replaces the searched question (prop) on
@@ -90,6 +91,7 @@ export default function AIAnswerPanel({ question, onClose }) {
             <Sparkles size={14} aria-hidden="true" /> AI Answer
           </h2>
           <p className="text-lg font-semibold text-slate-900 mt-1 break-words">&ldquo;{askedQuestion}&rdquo;</p>
+          <AiUsageBadge className="mt-2" />
           <p className="flex items-start gap-1.5 mt-1.5 text-xs text-slate-600">
             <Info size={14} aria-hidden="true" className="shrink-0 mt-px text-slate-500" />
             <span>
