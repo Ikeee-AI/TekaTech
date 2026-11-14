@@ -66,6 +66,26 @@ Workflow supply chain (13 Nov 2026, branch `tekatech/s5-ik-ci-supply-chain`): ev
 
 Protect main: one other teammate review, dismiss stale approvals, required `Backend tests`, `Frontend lint and build`, `Database migrations` statuses, no force pushes, no routine direct commits. The repository is connected, but GitHub returned HTTP 403 requiring Pro or public visibility for branch protection on this private repository. Those controls are not enabled; rulesets return the same 403 (checked 2026-10-17). Reviewed PRs are still the team policy, and the **main guard** job enforces it at deployment time: it cannot prevent a push to main, but a commit without a merged, teammate-approved PR is not deployed and opens a `process` issue (verified against history: allows `68b4c5a`/PR #16, blocks direct push `ed37f45` and unreviewed PR #15 merge `53f62e9`). The owner requested merging Sprint 1 PR #15 after passing checks; record that exception honestly because owner authorization does not satisfy the course's other-teammate review requirement. Resolve plan/visibility with the team before claiming an enforced gate.
 
+**Status 15 Nov 2026 (rechecked for the final video; owner decision: keep this setup).**
+- **Still unavailable.** GitHub returns HTTP 403 "Upgrade to GitHub Pro or make this repository public to enable this feature." for all three of: branch protection (`/branches/main/protection`), rulesets (`/rulesets`) and branch rules (`/rules/branches/main`).
+- **Why the repo was not made public.** A full-history scan is clean (gitleaks 8.30.1, 667 commits, `--all`, no leaks; the tracked-file guard also passed). But publishing would expose every member's commit email (personal and school addresses), and that cannot be undone without rewriting history.
+- **Why not Pro.** GitHub Pro (paid, or free via the Student Developer Pack) was not taken before the deadline.
+- **What enforces the rules, all in the repository:**
+
+  | Rule | Where | Effect |
+  | --- | --- | --- |
+  | Reviewed PR, teammate approval on the **final** commit (stale approvals don't count) | `ci.yml` job `main-guard` | Runs on every push to main; `deploy` `needs` it, so an unreviewed change never reaches production. It opens a `process` issue |
+  | Required checks pass before deploy | `ci.yml` `deploy.needs: [backend, frontend, database, main-guard]` | Any failing check skips the deploy |
+  | Issue/task linked, no `.env`, SQL changes carry instructions, pipeline changes flagged | `pr-review.yml` job `PR policy` | Fails the PR check |
+  | Secrets never committed | `scripts/check_secrets.py` + gitleaks full-history scan in `Backend tests` | Fails CI |
+  | Workflow files valid | actionlint + shellcheck in `Backend tests` | Fails CI |
+  | Reviewer requested by area | `labeler.yml` | Automatic review request |
+
+- **Evidence that the guard works.** It has blocked an unreviewed change four times, each with an automatic issue: [#63](https://github.com/Ikeee-AI/TekaTech/issues/63) (`28132c9`), [#144](https://github.com/Ikeee-AI/TekaTech/issues/144) (`ab785a8`), [#251](https://github.com/Ikeee-AI/TekaTech/issues/251) (`f836e3b`) and [#268](https://github.com/Ikeee-AI/TekaTech/issues/268) (`b84a2bc`).
+  - In the most recent case, PR #254 was merged with its approval on an older commit. Run [43607550071](https://github.com/Ikeee-AI/TekaTech/actions/runs/43607550071) failed at the main guard, the deploy was skipped, and production stayed on `9704823`.
+  - The code went live only with the next reviewed PR (#269, run [43610686214](https://github.com/Ikeee-AI/TekaTech/actions/runs/43610686214)).
+- **The honest limit.** GitHub's Merge button is not disabled for unreviewed PRs. The gate is at deployment, not at merge.
+
 Dependency caching and parallel jobs are enabled. Older PR runs on the same ref are cancelled for fast feedback. Main runs are serialized and not cancelled in progress; if several merges queue up, GitHub concurrency keeps the latest pending run. This coalesces superseded pending commits while ensuring the latest main state reaches production. Record that behavior when measuring throughput. Use separate staging credentials before adding preview deployments; never point previews at writable production data by accident.
 
 ## Manual release workflows
