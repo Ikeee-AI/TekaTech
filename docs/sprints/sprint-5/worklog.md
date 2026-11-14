@@ -2110,3 +2110,38 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #213 follow-up: **Done** (verified on production by the owner).
 
 **Next** — Owner: retro by Mon 16 Nov 15:00.
+
+## 2026-11-15 06:00 Asia/Manila — General-knowledge fallback found broken on gadget/compare pages; fix in progress (AI agent, takeover)
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** AI area (taken over from Adrian) · **Branch:** `tekatech/s5-ik-gk-scoped-fallback` (agent, no PR per owner)
+
+**Done**
+- **Repro on production** (`12d5710`): Galaxy S24 page, "Allow General Knowledge" on, asked "Does the Galaxy S24 support Samsung DeX?" → spec-grounded "The provided spec snippets do not state whether… I can't determine DeX support…" (2 cited specs). No GK answer.
+- **Root cause:** `backend/routers/query.py` runs GK only when retrieval returns no chunks (`not matches and allow_general_knowledge`). Scoped questions use `SCOPED_MATCH_THRESHOLD = -1.0` (#88), so any gadget with specs always returns chunks.
+  - On 2 Nov GK was verified on a gadget with no specs (Pixel 9).
+  - Since the catalog reached 23/23 coverage, GK can never fire on gadget or compare pages.
+  - The catalog ask box (threshold 0.25) is unaffected.
+- **Fix in progress** (AI agent, worktree):
+  - When GK is on, the grounded prompt gets a sentinel rule: `NOT_IN_SPECS` when the snippets don't answer at all. The backend then calls the existing GK path.
+  - GK off is unchanged; the sentinel never reaches the user.
+  - Prompt version bump, tests, an eval regression case, CLAUDE/AGENTS docs.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| GK toggle has no effect on gadget/compare pages | GK gated on zero retrieval matches; scoped retrieval always returns matches once a gadget has specs | Sentinel-based fallback. Open (agent) |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| The 2 Nov record says GK "working" on production | True then (gadget without specs); not true after the catalog filled | Recorded. Open until the fix is live |
+| Owner: "no PR" vs. the main guard requiring a reviewed PR to deploy | The fix can't reach production without a reviewed PR | Branch only for now; the owner decides when to PR. Open |
+
+**Decisions** — Take over the AI side and fix with agents; no PR for now — owner.
+
+**Blockers / risks** — Deploying needs a reviewed PR (main guard).
+
+**Plan alignment** — In progress.
+
+**Next** — Agent report → check → owner decides on deploy.
