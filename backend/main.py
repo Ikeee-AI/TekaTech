@@ -18,7 +18,7 @@ from rate_limit import limiter, verify_storage_reachable
 from ai_quota import LIMIT_HEADER as AI_LIMIT_HEADER, REMAINING_HEADER as AI_REMAINING_HEADER
 from request_id import REQUEST_ID_HEADER, RequestIdMiddleware
 from security_headers import SecurityHeadersMiddleware
-from routers import admin, ai_usage, gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets
+from routers import admin, ai_usage, gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets, my_account
 from supabase_client import supabase
 
 logger = logging.getLogger(__name__)
@@ -98,6 +98,7 @@ app.include_router(techspecs.router)
 app.include_router(my_gadgets.router)
 app.include_router(ai_usage.router)
 app.include_router(admin.router)
+app.include_router(my_account.router)
 
 @app.get("/health")
 def health_check():

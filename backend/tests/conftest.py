@@ -91,6 +91,15 @@ class FakeSupabase:
         self.ranges = []
         self.in_filters = []
         self.rpc_calls = []
+        # supabase.auth.admin.delete_user (routers/my_account.py): records the ids it was asked to delete
+        self.deleted_users = []
+        self.delete_user_error = None
+        self.auth = SimpleNamespace(admin=SimpleNamespace(delete_user=self._delete_user))
+
+    def _delete_user(self, user_id, *a, **k):
+        if self.delete_user_error:
+            raise self.delete_user_error
+        self.deleted_users.append(user_id)
 
     def set_response(self, table, operation, data):
         """Configure what .execute() should return for a given table + operation.
@@ -145,6 +154,7 @@ def fake_supabase(monkeypatch):
     import routers.query as query_module
     import routers.stats as stats_module
     import routers.my_gadgets as my_gadgets_module
+    import routers.my_account as my_account_module
     import routers.admin as admin_module
 
     monkeypatch.setattr(gadgets_module, "supabase", fake)
@@ -154,6 +164,7 @@ def fake_supabase(monkeypatch):
     monkeypatch.setattr(query_module, "supabase", fake)
     monkeypatch.setattr(stats_module, "supabase", fake)
     monkeypatch.setattr(my_gadgets_module, "supabase", fake)
+    monkeypatch.setattr(my_account_module, "supabase", fake)
     monkeypatch.setattr(admin_module, "supabase", fake)
     return fake
 
