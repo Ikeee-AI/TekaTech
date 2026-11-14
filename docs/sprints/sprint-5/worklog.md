@@ -1847,3 +1847,49 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #249: merged, deployed, bundle-verified; the journey check on production is pending.
 
 **Next** — Jopher (or owner) to click through: open a phone page → Log In → Sign Up → confirm email → lands back on that phone page. Owner: post the retro.
+
+## 2026-11-15 02:54 Asia/Manila — Takeovers via agents (#271 delete-account UI, #272 photo upload), metrics row, ROG Ally deleted, spec gaps filled, Railway usage
+**Who:** Ikeee-AI (AI-assisted: yes; code built by Claude Code sub-agents in isolated worktrees, checked by Ikeee-AI) · **Task:** #213 frontend, #202 upload (takeovers), weekly metrics, catalog content, Railway cost · **Branch:** see below
+
+**Done**
+- **Takeover notices:** #213 frontend half (from Jopher) and #202 upload part (from Jopher/Mika). Ikeee-AI added as assignee on both.
+- **[#271](https://github.com/Ikeee-AI/TekaTech/pull/271)** (`tekatech/s5-ik-delete-account-ui`, `dbfa74e`): "Delete My Account" on /account.
+  - Flow: password re-check → `DELETE /me/account` → sign-out; 409 admin message.
+  - **Local:** 603 frontend tests, lint, build.
+  - Reviewers: Jopher and Manuel.
+- **[#272](https://github.com/Ikeee-AI/TekaTech/pull/272)** (`tekatech/s5-ik-image-upload`, `68db787`): admin `POST /gadgets/{id}/image` to the public Supabase Storage bucket `gadget-images`.
+  - Limits: 2 MB streamed limit; magic-byte type check (JPEG/PNG/WebP/AVIF, SVG refused); new `python-multipart`.
+  - Bucket SQL: manual file `backend/sql/manual/gadget_images_bucket.sql`, not assembled.
+  - **Local:** 950 backend and 614 frontend tests, lint, build.
+  - Reviewers: Manuel and Mika.
+  - The bucket SQL has not been applied anywhere yet.
+- **Metrics:** `tekatech/s5-ik-metrics-2026-11-15` (`fca546d`, pushed, no PR under the batch rule).
+  - Row for 13 Nov 04:45 UTC – 14 Nov 18:36 UTC: PR 1.25 min (27 runs), main 3.13 min (16), success 95.3% (41/43), 15 deploys, merge-to-live 3.30 min, 0 failed deploys.
+  - Main-guard block on `b84a2bc` (#254): live 36 min 56 s later via `69621cf`. Recovery N/A (no incident).
+  - The agent corrected the brief: #258/#259 merged 13 Nov; there is no PR #268.
+- **ROG Ally deleted** from production (owner confirmed the cascade): admin Delete → "Delete Gadget". API: 404 for the gadget; 23 gadgets, all Smartphone; coverage 23/23. Row and spec text kept in the local snapshot.
+- **Spec gaps filled** (admin Add Specs → Index, official sources):
+  - ROG Phone 9 Pro battery "Equivalent 5,800 mAh (typical)", 65W wired / 15W wireless (rog.asus.com spec page).
+  - Galaxy A56 Exynos 1580 and Galaxy A36 Snapdragon 6 Gen 3 (samsung.com/hk_en product news).
+  - Re-asked on production: all three now answered with citations.
+- **Railway usage** (5 Nov – 5 Dec cycle): /usr/bin/bash.20 so far (memory /usr/bin/bash.1976, CPU /usr/bin/bash.0037, egress /usr/bin/bash.0011); estimated /usr/bin/bash.40;  included on Hobby; compute limit /usr/bin/bash.20/0. The 2 vCPU / 2 GB limit is fine.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Samsung global newsroom fetch timed out | Slow page | Used Samsung HK's official product news page. Resolved |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| #213 frontend and #202 upload belonged to Jopher/Mika | Ownership | Takeover with notice; credited in the PRs; teammate reviews requested. Open |
+
+**Decisions** — Delete ROG Ally (owner). Use agents for the takeovers (owner). Keep #272's bucket step manual and out of CI (Ikeee-AI).
+
+**Blockers / risks** — #271 and #272 need reviews on their final commits. #272 needs the bucket SQL on dev, then prod, before a real upload works. A pre-review agent is checking both PRs.
+
+**Plan alignment** — Catalog content: Done. #271/#272: Partial (PRs open). Railway 7-day check: Done (about 3 days of data).
+
+**Next** — Pre-review findings → fix if needed. Teammate reviews. Bucket SQL (dev by the assistant, prod by the owner). Owner: retro.
