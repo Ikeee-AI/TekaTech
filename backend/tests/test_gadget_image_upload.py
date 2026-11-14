@@ -188,3 +188,153 @@ def test_upload_is_rate_limited(client, fake_supabase, gadget):
     codes = [_upload(client, gadget["id"], PNG).status_code for _ in range(21)]
     assert codes[:20] == [200] * 20
     assert codes[20] == 429
+
+
+# --- Review follow-ups (PR #272) ---------------------------------------------------------------
+
+OVERSIZED_PNG = PNG + b"\x00" * (MAX_IMAGE_BYTES + 1)
+NON_ADMIN = SimpleNamespace(id="u-1", email="u@example.com", app_metadata={}, user_metadata={})
+
+
+@pytest.mark.parametrize("data", [OVERSIZED_PNG, GIF, SVG], ids=["oversized", "gif", "svg"])
+def test_non_admin_is_403_before_the_body_is_checked(client, fake_supabase, gadget, data):
+    # If read_image_upload ran before the admin check, these would be 413/415 instead.
+    with signed_in_as(NON_ADMIN):
+        resp = _upload(client, gadget["id"], data)
+    assert resp.status_code == 403
+    assert fake_supabase.uploads == [] and fake_supabase.writes == []
+
+
+@pytest.mark.parametrize("data", [OVERSIZED_PNG, GIF, SVG], ids=["oversized", "gif", "svg"])
+def test_anonymous_is_401_before_the_body_is_checked(client, fake_supabase, gadget, data):
+    with signed_in_as(None):
+        resp = _upload(client, gadget["id"], data)
+    assert resp.status_code == 401
+    assert fake_supabase.uploads == []
+
+
+@pytest.fixture
+def spooled_files(monkeypatch):
+    """Every temporary file the multipart parser opens, to check they are all closed afterwards."""
+    import starlette.formparsers as formparsers
+
+    opened = []
+    real = formparsers.SpooledTemporaryFile
+
+    def recording(*args, **kwargs):
+        f = real(*args, **kwargs)
+        opened.append(f)
+        return f
+
+    monkeypatch.setattr(formparsers, "SpooledTemporaryFile", recording)
+    return opened
+
+
+def _multipart_head(filename="x.png"):
+    return f'--b\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\n\r\n'.encode() + PNG
+
+
+def _read_from_messages(messages):
+    """Run read_image_upload on a raw ASGI request fed chunk by chunk (TestClient sends one chunk)."""
+    import asyncio
+
+    from fastapi import HTTPException
+    from starlette.requests import Request
+
+    from image_upload import read_image_upload
+
+    async def receive():
+        return messages.pop(0)
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/gadgets/x/image",
+        "headers": [(b"content-type", b"multipart/form-data; boundary=b")],
+    }
+    with pytest.raises(HTTPException) as caught:
+        asyncio.run(read_image_upload(Request(scope, receive)))
+    return caught.value
+
+
+def test_mid_stream_cut_off_is_413_and_closes_the_parser_temp_files(spooled_files):
+    from image_upload import DETAIL_TOO_LARGE
+
+    chunk = {"type": "http.request", "body": b"\x00" * (512 * 1024), "more_body": True}
+    # The file part opens after the first chunk; 10 x 512 KB = 5 MB, far over the cap, and the
+    # spool rolls over to a disk file on the way.
+    messages = [{"type": "http.request", "body": _multipart_head(), "more_body": True}] + [dict(chunk) for _ in range(10)]
+    error = _read_from_messages(messages)
+    assert error.status_code == 413
+    assert error.detail == DETAIL_TOO_LARGE
+    assert len(spooled_files) == 1
+    assert all(f.closed for f in spooled_files)
+
+
+def test_client_disconnect_mid_upload_is_400_and_closes_temp_files(spooled_files):
+    from image_upload import DETAIL_INTERRUPTED
+
+    error = _read_from_messages(
+        [
+            {"type": "http.request", "body": _multipart_head(), "more_body": True},
+            {"type": "http.disconnect"},
+        ]
+    )
+    assert error.status_code == 400
+    assert error.detail == DETAIL_INTERRUPTED
+    assert len(spooled_files) == 1 and all(f.closed for f in spooled_files)
+
+
+class _FailingQuery:
+    """Wraps a FakeQuery and raises on execute() for one operation."""
+
+    def __init__(self, inner, fail_on):
+        self._inner = inner
+        self._fail_on = fail_on
+
+    def __getattr__(self, name):
+        attr = getattr(self._inner, name)
+        if not callable(attr):
+            return attr
+
+        def call(*a, **k):
+            result = attr(*a, **k)
+            return self if result is self._inner else result
+
+        return call
+
+    def execute(self):
+        if self._inner._operation == self._fail_on:
+            raise RuntimeError("database unavailable")
+        return self._inner.execute()
+
+
+def _fail_gadgets(fake_supabase, monkeypatch, operation):
+    real_table = fake_supabase.table
+
+    def table(name):
+        query = real_table(name)
+        return _FailingQuery(query, operation) if name == "gadgets" else query
+
+    monkeypatch.setattr(fake_supabase, "table", table)
+
+
+def test_gadget_lookup_failure_is_503_and_nothing_is_stored(client, fake_supabase, gadget, monkeypatch):
+    _fail_gadgets(fake_supabase, monkeypatch, "select")
+    resp = _upload(client, gadget["id"], PNG)
+    assert resp.status_code == 503
+    assert "database" not in resp.json()["detail"]
+    assert fake_supabase.uploads == [] and fake_supabase.writes == []
+
+
+def test_image_url_update_failure_after_upload_is_503(client, fake_supabase, gadget, monkeypatch):
+    _fail_gadgets(fake_supabase, monkeypatch, "update")
+    cache.get_or_load("gadgets", ("one", gadget["id"]), 60, lambda: "stale")
+    resp = _upload(client, gadget["id"], PNG)
+    assert resp.status_code == 503
+    assert "database" not in resp.json()["detail"]
+    # The photo was stored (uploading it again is harmless: same bytes, same name) ...
+    assert len(fake_supabase.uploads) == 1
+    # ... and the gadget cache is still dropped, since a failed call may have written.
+    _, hit = cache.get_or_load("gadgets", ("one", gadget["id"]), 60, lambda: "fresh")
+    assert not hit

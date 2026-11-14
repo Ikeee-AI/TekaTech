@@ -11,11 +11,17 @@ export const UPLOAD_WRONG_TYPE = 'Choose a JPEG, PNG, WebP or AVIF photo.'
 export const UPLOAD_SVG = "SVG images aren't accepted (they can contain scripts). Choose a JPEG, PNG, WebP or AVIF photo."
 export const UPLOAD_EMPTY = 'The file is empty.'
 
+// Used only when the browser reports no type (some report "" for .avif).
+const EXTENSION_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif' }
+
 /** An error message for a file the API would refuse, or null when it looks fine. */
 export function validateImageFile(file) {
   if (!file) return UPLOAD_WRONG_TYPE
-  const type = (file.type || '').toLowerCase()
-  if (type === 'image/svg+xml' || /\.svgz?$/i.test(file.name || '')) return UPLOAD_SVG
+  const name = file.name || ''
+  let type = (file.type || '').toLowerCase()
+  if (type === 'image/svg+xml' || /\.svgz?$/i.test(name)) return UPLOAD_SVG
+  // No reported type: go by the extension. The API's magic-byte check is still the real check.
+  if (!type) type = EXTENSION_TYPES[name.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1]] ?? ''
   if (!ALLOWED_IMAGE_TYPES.includes(type)) return UPLOAD_WRONG_TYPE
   if (file.size === 0) return UPLOAD_EMPTY
   if (file.size > MAX_IMAGE_BYTES) return UPLOAD_TOO_LARGE

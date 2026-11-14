@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from fastapi import HTTPException, Request
 from starlette.datastructures import UploadFile
 from starlette.formparsers import MultiPartException, MultiPartParser
+from starlette.requests import ClientDisconnect
 
 MAX_IMAGE_BYTES = 2 * 1024 * 1024  # 2 MB, the same number as the bucket's file_size_limit
 # Room for the multipart boundary and part headers around the file itself.
@@ -41,6 +42,7 @@ DETAIL_WRONG_TYPE = "Upload a JPEG, PNG, WebP or AVIF photo."
 DETAIL_SVG = "SVG images aren't accepted (they can contain scripts). Upload a JPEG, PNG, WebP or AVIF photo."
 DETAIL_NO_FILE = f"Send one image file as multipart/form-data in the field '{FORM_FIELD}'."
 DETAIL_EMPTY = "The file is empty."
+DETAIL_INTERRUPTED = "The upload was interrupted. Try again."
 
 
 @dataclass(frozen=True)
@@ -94,17 +96,31 @@ def validate_image(data: bytes) -> ImageUpload:
     return ImageUpload(data=data, extension=extension, content_type=IMAGE_TYPES[extension])
 
 
+class _TooLarge(MultiPartException):
+    """The body passed MAX_REQUEST_BYTES while streaming in."""
+
+
+class _Interrupted(MultiPartException):
+    """The client went away before the body was complete."""
+
+
 async def _bounded_stream(request: Request):
+    # Both stops are MultiPartException subclasses on purpose: MultiPartParser.parse() closes the
+    # temporary files it already opened only for MultiPartException (or OSError). An HTTPException
+    # or ClientDisconnect raised here would skip that cleanup.
     received = 0
-    async for chunk in request.stream():
-        received += len(chunk)
-        if received > MAX_REQUEST_BYTES:
-            raise HTTPException(status_code=413, detail=DETAIL_TOO_LARGE)
-        yield chunk
+    try:
+        async for chunk in request.stream():
+            received += len(chunk)
+            if received > MAX_REQUEST_BYTES:
+                raise _TooLarge(DETAIL_TOO_LARGE)
+            yield chunk
+    except ClientDisconnect:
+        raise _Interrupted(DETAIL_INTERRUPTED) from None
 
 
 async def read_image_upload(request: Request) -> ImageUpload:
-    """FastAPI dependency: the one image in the `file` field, validated (413 / 415 / 422)."""
+    """FastAPI dependency: the one image in the `file` field, validated (400 / 413 / 415 / 422)."""
     content_type = request.headers.get("content-type", "")
     if not content_type.lower().startswith("multipart/form-data"):
         raise HTTPException(status_code=422, detail=DETAIL_NO_FILE)
@@ -122,6 +138,12 @@ async def read_image_upload(request: Request) -> ImageUpload:
     parser = MultiPartParser(request.headers, _bounded_stream(request), max_files=1, max_fields=0)
     try:
         form = await parser.parse()
+    except _TooLarge:
+        raise HTTPException(status_code=413, detail=DETAIL_TOO_LARGE) from None
+    except _Interrupted:
+        raise HTTPException(status_code=400, detail=DETAIL_INTERRUPTED) from None
+    except ClientDisconnect:  # belt and braces: should already arrive as _Interrupted
+        raise HTTPException(status_code=400, detail=DETAIL_INTERRUPTED) from None
     except MultiPartException:
         raise HTTPException(status_code=422, detail=DETAIL_NO_FILE) from None
 

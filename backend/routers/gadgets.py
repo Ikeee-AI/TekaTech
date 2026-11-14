@@ -161,7 +161,7 @@ def upload_gadget_image(
 ):
     """Store one photo for the gadget and point its image_url at it; returns the updated gadget.
 
-    413 over 2 MB, 415 not a JPEG/PNG/WebP/AVIF (by magic bytes; SVG always refused), 422 no file,
+    400 upload interrupted, 413 over 2 MB, 415 not a JPEG/PNG/WebP/AVIF (by magic bytes; SVG always refused), 422 no file,
     404 unknown gadget, 503 storage or database failure (the gadget is then left unchanged).
     """
     try:

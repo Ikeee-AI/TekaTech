@@ -36,8 +36,25 @@ describe('validateImageFile (#202)', () => {
     ['anim.gif', 'image/gif'],
     ['doc.pdf', 'application/pdf'],
     ['noext', ''],
+    ['anim.gif', ''],
+    ['photo.avif.exe', ''],
   ])('refuses %s', (name, type) => {
     expect(validateImageFile(file(name, type))).toBe(UPLOAD_WRONG_TYPE)
+  })
+
+  it.each(['photo.avif', 'PHOTO.JPG', 'photo.jpeg', 'photo.png', 'photo.webp'])(
+    'falls back to the extension when the browser reports no type: %s',
+    (name) => {
+      expect(validateImageFile(file(name, ''))).toBeNull()
+    },
+  )
+
+  it('still applies the size limit to a file with no reported type', () => {
+    expect(validateImageFile(file('photo.avif', '', MAX_IMAGE_BYTES + 1))).toBe(UPLOAD_TOO_LARGE)
+  })
+
+  it('trusts a reported type over the extension', () => {
+    expect(validateImageFile(file('photo.png', 'image/gif'))).toBe(UPLOAD_WRONG_TYPE)
   })
 
   it('refuses an empty file and no file', () => {
