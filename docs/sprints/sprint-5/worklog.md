@@ -1935,3 +1935,34 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #213: **Done** (backend #254 + frontend #271 live); end-to-end delete with a throwaway account not yet run on production. #202 upload: live in code; working on prod after the bucket.
 
 **Next** — Owner: run the bucket SQL on prod. Then re-upload photos for the 7 proxied phones. Throwaway-account delete test on production. Jopher: re-approve #273. Owner: retro.
+
+## 2026-11-15 03:49 Asia/Manila — Prod photo bucket created (owner); #273 merged and live; photo search paused
+**Who:** Ikeee-AI (AI-assisted: yes; the owner ran the prod bucket SQL) · **Task:** #202 rollout, CI compile gap · **Branch:** `main`
+
+**Done**
+- **Prod bucket `gadget-images`:**
+  - The first "done" had not run: the public URL still said "Bucket not found", and the prepared tab showed the old result.
+  - The owner then ran the SQL in a fresh editor on TekaTech · PRODUCTION (screenshot 03:40): `gadget-images | true | 2097152 | [jpeg, png, webp, avif]`.
+  - Outside check: the public URL now says "Object not found" (bucket exists). Uploads work on production.
+- Jopher **re-approved #273 on its final commit `9ecccad`** (03:45). Squash-merged → `3091f14`. Main run [43633837459](https://github.com/Ikeee-AI/TekaTech/actions/runs/43633837459): all jobs success, incl. main guard and deploy. The log shows `compileall -q ./*.py routers scripts`. API `/version` → `3091f14`.
+- **Photo search for the 6 proxied phones: paused.**
+  - Samsung A56/A36 product pages are gone (PH/US/UK).
+  - The global Newsroom downloads are event photos.
+  - Lead: the Samsung US Newsroom press kit (`A36-5G_Color-Lockup_RGB-scaled.jpg`).
+  - Nothing downloaded; downloads need the owner's OK per file.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Prod bucket still `"Bucket not found"` after the first "done" | Run did not execute in the prepared tab | The owner ran it in a fresh editor and confirmed with a screenshot. Resolved |
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — None new.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — #202 upload: live and usable on production; photos still to pick. CI compile gap: **Done**.
+
+**Next** — Pick official press-kit photos (owner OK per file) and upload. Delete-account test with a throwaway account (owner). Owner: retro by Mon 15:00.
