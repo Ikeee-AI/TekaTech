@@ -67,6 +67,8 @@ describe('Resend confirmation email (#196)', () => {
     fireEvent.click(screen.getByRole('button', { name: /resend confirmation email/i }))
     await waitFor(() => expect(auth.resendConfirmation).toHaveBeenCalledWith('new.user@example.com'))
     expect(await screen.findByText(/a new confirmation link is on its way/i)).toBeTruthy()
+    // Brevo mail from a Gmail sender is often filed as spam, so every "check your email" says where to look.
+    expect(screen.getByText(/check your spam folder too/i)).toBeTruthy()
     expect(screen.queryByRole('button', { name: /resend confirmation email/i })).toBeNull()
   })
 
