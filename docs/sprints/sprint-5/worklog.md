@@ -2278,3 +2278,29 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — Partial (PR open).
 
 **Next** — Review and merge #277; repeat retest scenario 8 on production.
+
+## 2026-11-15 07:02 Asia/Manila — Decision: ship #277 as is; mixed GK answer deferred; AI behaviour locked for today's deadline
+**Who:** Ikeee-AI (owner decision) · **Task:** AI area · **Branch:** none
+
+**Done**
+- Explained to the owner:
+  - Comparisons still use GK when no gadget's specs cover the question.
+  - Partly covered comparisons stay grounded, with "not stated" for the rest.
+  - The daily quota counts one per question, however many AI calls run behind it (including GK fallback and cache hits).
+  - The answer cache: exact + similar (≥ 0.95, grounded only), scoped, 1 h TTL, invalidated on spec writes, in memory.
+- **Owner decision:**
+  - Proceed with #277 unchanged.
+  - The "mixed answer" (cited part + labelled GK line for the gadget with missing specs) is deferred.
+  - Lock the AI side after #277 ships, because of a deadline today.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — Ship #277 as is; defer the mixed answer; freeze AI changes after it — owner.
+
+**Blockers / risks** — #277 has no review yet (CI green, mergeable).
+
+**Plan alignment** — #277 pending review.
+
+**Next** — Review → "merge 277" → production retest of scenario 8. Then freeze.
