@@ -2180,3 +2180,29 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — Partial (PR open).
 
 **Next** — Review and merge #276; re-ask DeX on production with GK on. Optional: clean the DEV stand-in rows.
+
+## 2026-11-15 06:34 Asia/Manila — #276 (GK fallback fix) merged, live and verified on production
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** AI area (takeover) · **Branch:** `main`
+
+**Done**
+- Jopher **approved #276 on its final commit `d6254f2`** (06:20). Squash-merged → `68ed77e`.
+- Main run [43647932582](https://github.com/Ikeee-AI/TekaTech/actions/runs/43647932582): all jobs success, incl. main guard and deploy. API `/version` → `68ed77e`.
+- **Production check** (same repro as the bug): Galaxy S24 page, Allow General Knowledge on, "Does the Galaxy S24 support Samsung DeX?"
+  - Answer: **"General knowledge: not from saved specs, unverified — … The Galaxy S24 typically supports Samsung DeX … wired and wireless modes … check Samsung's official spec page…"**
+  - Labelled, no citations. **Bug fixed.**
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `CDP sendCommand "Runtime.evaluate" timed out after 45000ms` | The check script waited longer than the tool limit | Read the page afterwards; the question had been sent once. Resolved |
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — None.
+
+**Blockers / risks** — Manuel's review of the sentinel handling is still welcome after the merge. Cost: two chat calls per GK-on, not-in-specs question.
+
+**Plan alignment** — GK on gadget/compare pages: **Done** (reviewed, merged, deployed, verified on production).
+
+**Next** — Owner: retro by Mon 16 Nov 15:00.
