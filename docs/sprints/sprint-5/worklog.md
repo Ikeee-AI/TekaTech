@@ -2093,3 +2093,20 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — Merged and deployed. The owner's check on the real page (hard refresh + screenshot) is pending.
 
 **Next** — Owner: confirm the Account page layout. Owner: retro by Mon 16 Nov 15:00.
+
+## 2026-11-15 05:15 Asia/Manila — Account layout confirmed by the owner
+**Who:** Ikeee-AI · **Task:** #213 follow-up · **Branch:** none (production check)
+
+**Done** — The owner checked the Account page after #275 (`12d5710`) and confirmed the layout is good. Delete My Account is aligned with Change Password.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — None.
+
+**Blockers / risks** — None.
+
+**Plan alignment** — #213 follow-up: **Done** (verified on production by the owner).
+
+**Next** — Owner: retro by Mon 16 Nov 15:00.
