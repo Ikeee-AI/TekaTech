@@ -95,6 +95,23 @@ class FakeSupabase:
         self.deleted_users = []
         self.delete_user_error = None
         self.auth = SimpleNamespace(admin=SimpleNamespace(delete_user=self._delete_user))
+        # supabase.storage.from_(bucket).upload/get_public_url (gadget photo upload):
+        # uploads are recorded as (bucket, path, data, file_options); set storage_error to make upload raise.
+        self.uploads = []
+        self.storage_error = None
+        self.storage = SimpleNamespace(from_=self._bucket)
+
+    def _bucket(self, bucket_id):
+        def upload(path, file, file_options=None):
+            if self.storage_error:
+                raise self.storage_error
+            self.uploads.append((bucket_id, path, file, file_options or {}))
+            return SimpleNamespace(path=path, full_path=f"{bucket_id}/{path}")
+
+        def get_public_url(path, options=None):
+            return f"https://example.supabase.co/storage/v1/object/public/{bucket_id}/{path}?"
+
+        return SimpleNamespace(upload=upload, get_public_url=get_public_url)
 
     def _delete_user(self, user_id, *a, **k):
         if self.delete_user_error:

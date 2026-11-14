@@ -12,6 +12,7 @@ dependencies = [
     "openai>=3.46.0",
     "pydantic-settings>=2.16.2",
     "python-dotenv>=1.2.4",
+    "python-multipart>=0.0.33",
     "redis>=8.1.0",
     "slowapi>=0.1.10",
     "supabase>=2.34.0",

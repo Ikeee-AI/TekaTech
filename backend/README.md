@@ -90,7 +90,7 @@ Environment variables (no secret values committed):
 
 Count with the matching encoder: `count_embedding_tokens` for anything headed to `embed_texts`, `count_chat_tokens` for anything headed into a prompt.
 
-Rate limits: `/query` 10/min; spec ingestion, spec indexing and comparison creation 20/hour each; `GET /comparisons/{slug}` 60/min; signed-in GETs (`/corrections/mine`, `/me/gadgets`, `/me/gadgets/{id}/questions`) 120/min. `memory://` is per-process and correct only for a single worker; use a shared store (e.g. Redis) for multi-worker deploys. Startup aborts if a configured shared store is unreachable — no silent fallback.
+Rate limits: `/query` 10/min; spec ingestion, spec indexing, comparison creation and gadget photo upload 20/hour each; `GET /comparisons/{slug}` 60/min; signed-in GETs (`/corrections/mine`, `/me/gadgets`, `/me/gadgets/{id}/questions`) 120/min. `memory://` is per-process and correct only for a single worker; use a shared store (e.g. Redis) for multi-worker deploys. Startup aborts if a configured shared store is unreachable — no silent fallback.
 
 ## Failure drill
 
@@ -183,6 +183,7 @@ Routes marked "none" are public; all others need a valid Supabase bearer token. 
 | `/gadgets/{id}` | GET | none | path `id` | 200 `GadgetResponse` | 404 |
 | `/gadgets/{id}` | PATCH | admin | `GadgetUpdate`: only sent fields change; explicit `null` clears `release_date`, `price_php`, `image_url` | 200 `GadgetResponse` | 400 (no fields), 401, 403, 404, 422 (incl. `null` name/brand/category), 503 |
 | `/gadgets/{id}` | DELETE | admin | path `id` | 204 | 401, 403, 404 |
+| `/gadgets/{id}/image` | POST | admin | `multipart/form-data`, one file in field `file`: JPEG, PNG, WebP or AVIF (decided by magic bytes, not name or Content-Type; SVG refused), at most 2 MB (the request is cut off while reading, or refused up front by `Content-Length`). Stored in the public Storage bucket `gadget-images` at `gadgets/{id}/{sha256 prefix}.{ext}` (cache 1 year), then `image_url` is set to its public URL. 20/hour | 200 `GadgetResponse` (as PATCH) | 400 (upload interrupted), 401, 403, 404 (no such gadget; nothing stored), 413 (over 2 MB), 415 (not an allowed image, or SVG), 422 (no `file` field, extra fields, empty file), 429, 503 (storage or database failure; the gadget is unchanged). Needs the manual bucket step in `docs/database.md` |
 | `/gadgets/{id}/specs` | GET | none | path `id` | 200 list | — |
 | `/gadgets/{id}/specs` | POST | admin | `{"raw_text": "...", "source_url": "..."}` (`source_url` optional, http(s), max 2000 chars) | 201 `{"gadget_id", "chunks_created", "indexing_status"}` | 400, 401, 403, 404, 422, 429 |
 | `/gadgets/{id}/specs/{spec_id}/index` | POST | admin | path ids | 200 `{"id", "indexing_status"}` | 401, 403, 404, 409, 422, 429, 503 |

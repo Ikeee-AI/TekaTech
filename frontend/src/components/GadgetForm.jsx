@@ -4,6 +4,7 @@ import Button from './ui/Button'
 import Alert from './ui/Alert'
 import { TextField, ErrorSummary } from './ui/FormField'
 import ImageLinkPreview from './ImageLinkPreview'
+import ImageUploadField from './ImageUploadField'
 import { GADGET_FIELD_LABELS, isHttpUrl, validateGadget, toGadgetPayload } from '../utils/gadgetValidation'
 import { friendlyError } from '../utils/requestErrors'
 
@@ -13,9 +14,15 @@ import { friendlyError } from '../utils/requestErrors'
  * A failed submit moves focus to the error summary so keyboard and screen
  * reader users land on the list of problems. Server errors show inline above
  * the buttons and keep everything the user typed.
+ *
+ * `uploadImage(file)` (edit only) shows the photo upload (#202): an upload needs the gadget's id,
+ * so the edit page passes a function bound to it.
  */
-export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCancel, isEdit = false }) {
+export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCancel, isEdit = false, uploadImage = null }) {
   const [form, setForm] = useState(initialValues)
+  // What the server holds now. An upload saves image_url at once, so it becomes the baseline:
+  // clearing the field afterwards must still send null to remove the uploaded photo.
+  const [savedValues, setSavedValues] = useState(initialValues)
   const [touched, setTouched] = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [, setSubmitCount] = useState(0)
@@ -58,7 +65,7 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
     setServerError(null)
     try {
       // On edit, emptied optional fields go out as null so the saved value is cleared.
-      await onSubmit(toGadgetPayload(form, isEdit ? initialValues : null))
+      await onSubmit(toGadgetPayload(form, isEdit ? savedValues : null))
     } catch (err) {
       setServerError(friendlyError(err))
       setSubmitting(false)
@@ -159,6 +166,15 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
       />
       {isHttpUrl(imageUrl) && (
         <ImageLinkPreview url={imageUrl} status={imageStatus} onResult={(url, status) => setImageCheck({ url, status })} />
+      )}
+      {isEdit && uploadImage && (
+        <ImageUploadField
+          uploadImage={uploadImage}
+          onUploaded={(url) => {
+            update('image_url')(url)
+            setSavedValues((v) => ({ ...v, image_url: url }))
+          }}
+        />
       )}
 
       {serverError && (
