@@ -37,7 +37,7 @@ function formatDate(value) {
  * Admins see up front that they can't delete here (the button is disabled); the backend's 409
  * stays handled as a fallback, e.g. when the flag was added after this page loaded.
  */
-function DeleteAccountSection({ user, isAdmin }) {
+function DeleteAccountSection({ user, isAdmin, className = '' }) {
   const { signIn, signOut } = useAuth()
   const navigate = useNavigate()
   const [password, setPassword] = useState('')
@@ -151,7 +151,10 @@ function DeleteAccountSection({ user, isAdmin }) {
   }
 
   return (
-    <section aria-labelledby="delete-account-title" className="bg-white border border-red-200 rounded-[28px] p-6">
+    <section
+      aria-labelledby="delete-account-title"
+      className={`flex flex-col bg-white border border-red-200 rounded-[28px] p-6 ${className}`}
+    >
       <h2 id="delete-account-title" className="font-display text-lg font-bold text-red-700 mb-1">
         Delete My Account
       </h2>
@@ -164,7 +167,7 @@ function DeleteAccountSection({ user, isAdmin }) {
           {ADMIN_DELETE_MESSAGE}
         </Alert>
       )}
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="flex flex-1 flex-col gap-4">
         <input type="email" name="username" autoComplete="username" value={user.email ?? ''} readOnly hidden />
         <TextField
           id={DELETE_PASSWORD_ID}
@@ -192,7 +195,7 @@ function DeleteAccountSection({ user, isAdmin }) {
           icon={Trash2}
           disabled={deleting || isAdmin}
           aria-describedby={isAdmin ? 'delete-account-admin-note' : undefined}
-          className="w-full"
+          className="w-full mt-auto"
         >
           Delete My Account
         </Button>
@@ -280,11 +283,14 @@ export default function Account() {
   return (
     <div className="flex flex-col gap-4">
       <BackLink to="/my-gadgets">Back to My Gadgets</BackLink>
-      {/* Two columns on wide screens (rebrand: no tall narrow column with empty sides). Change Password spans
-          two rows there, so Delete My Account sits right under Your Account instead of below a gap. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      {/* Two columns on wide screens (rebrand: no tall narrow column with empty sides): Your Account with
+          Delete My Account under it on the left, Change Password on the right. The columns stretch to the same
+          height and the delete card fills the rest, so its bottom lines up with Change Password's. On phones the
+          left column is display:contents and `order` keeps Account, Change Password, Delete. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="contents lg:flex lg:flex-col lg:gap-4">
 
-      <section aria-labelledby="account-title" className="bg-white border border-slate-200 rounded-[28px] p-6">
+      <section aria-labelledby="account-title" className="order-1 lg:order-none bg-white border border-slate-200 rounded-[28px] p-6">
         <h1 id="account-title" className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900">
           Your Account
         </h1>
@@ -318,7 +324,10 @@ export default function Account() {
         </div>
       </section>
 
-      <section aria-labelledby="password-title" className="bg-white border border-slate-200 rounded-[28px] p-6 lg:row-span-2">
+      <DeleteAccountSection user={user} isAdmin={isAdmin} className="order-3 lg:order-none lg:flex-1" />
+      </div>
+
+      <section aria-labelledby="password-title" className="order-2 lg:order-none bg-white border border-slate-200 rounded-[28px] p-6">
         <h2 id="password-title" className="font-display text-lg font-bold text-gray-900 mb-1">
           Change Password
         </h2>
@@ -378,7 +387,6 @@ export default function Account() {
         </form>
       </section>
 
-      <DeleteAccountSection user={user} isAdmin={isAdmin} />
       </div>
     </div>
   )
