@@ -64,7 +64,7 @@ def test_reference_answers_through_query_meet_every_gk_target(client, fake_supab
     assert report["metrics"]["basis_general_knowledge"] == {"passed": total, "total": total, "rate": 1.0}
     assert report["metrics"]["off_topic_declined"] == {"passed": 1, "total": 1, "rate": 1.0}
     assert report["metrics"]["unknown_refusal"] == {"passed": 1, "total": 1, "rate": 1.0}
-    assert report["metrics"]["real_product_answered"] == {"passed": 1, "total": 1, "rate": 1.0}
+    assert report["metrics"]["real_product_answered"] == {"passed": 2, "total": 2, "rate": 1.0}
 
 
 def test_citation_the_backend_strips_still_fails_the_gk_case(client, fake_supabase, openai_mock):
@@ -76,6 +76,40 @@ def test_citation_the_backend_strips_still_fails_the_gk_case(client, fake_supaba
     case = next(r for r in report["results"] if r["id"] == "GK-04")
     assert not case["passed"] and not case["checks"]["no_citations"]
     assert not report["targets_met"]
+
+
+def _gk08_through_scoped_query(client, fake_supabase, openai_mock, *model_replies):
+    """Ask GK-08 the way `eval_adapter.py --mode gk --scope prompts/eval/gk_scope.json` does:
+    scoped to the Galaxy S24, which has specs, so retrieval returns its nearest chunks."""
+    case = next(c for c in GK_CASES["cases"] if c["id"] == "GK-08")
+    fake_supabase.set_response(
+        "_rpc", None, [{"gadget_id": GADGET_A, "content": "6.2-inch display.", "source_url": None, "similarity": 0.1}])
+    fake_supabase.set_response("gadgets", "select", [{"id": GADGET_A, "name": "Galaxy S24", "brand": "Samsung"}])
+    openai_mock.embeddings.create.return_value = SimpleNamespace(
+        data=[SimpleNamespace(embedding=[1.0, 0.0])], usage=SimpleNamespace(total_tokens=7))
+    openai_mock.chat.completions.create.side_effect = [_completion(r) for r in model_replies]
+    resp = client.post("/query", json={"question": case["query"], "allow_general_knowledge": True,
+                                       "gadget_ids": [GADGET_A]})
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    one_case = {**GK_CASES, "cases": [case]}
+    return runner.evaluate_gk(one_case, {"GK-08": data["answer"]}, {"GK-08": data["invalid_citations_removed"]},
+                              {"GK-08": data["answer_basis"]})
+
+
+def test_gk_08_scoped_sentinel_reaches_the_general_knowledge_answer(client, fake_supabase, openai_mock):
+    report = _gk08_through_scoped_query(client, fake_supabase, openai_mock, "NOT_IN_SPECS", GK_REFERENCE["GK-08"])
+    assert report["targets_met"], report["failures"]
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": 1, "total": 1, "rate": 1.0}
+
+
+def test_gk_08_grounded_not_stated_reply_still_fails(client, fake_supabase, openai_mock):
+    # The 15 Nov production reply shape: the model did not use the sentinel.
+    report = _gk08_through_scoped_query(
+        client, fake_supabase, openai_mock,
+        "The provided spec snippets do not state whether the Galaxy S24 supports Samsung DeX [1].")
+    assert not report["targets_met"]
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": 0, "total": 1, "rate": 0.0}
 
 
 def test_cases_answered_from_saved_specs_are_not_counted_as_gk(client, fake_supabase, openai_mock):

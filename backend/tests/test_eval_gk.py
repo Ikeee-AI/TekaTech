@@ -34,7 +34,8 @@ def test_reference_answers_pass_every_gk_case():
     assert report["metrics"]["cases_passed"] == {"passed": total, "total": total, "rate": 1.0}
     assert report["metrics"]["off_topic_declined"] == {"passed": 1, "total": 1, "rate": 1.0}
     assert report["metrics"]["unknown_refusal"]["total"] == 1
-    assert report["metrics"]["real_product_answered"] == {"passed": 1, "total": 1, "rate": 1.0}
+    # GK-07 (Pixel 9) and GK-08 (scoped DeX question, gk-cases-v4).
+    assert report["metrics"]["real_product_answered"] == {"passed": 2, "total": 2, "rate": 1.0}
 
 
 def test_gk_set_covers_every_case_kind():
@@ -166,9 +167,9 @@ def test_markdown_gk_report_states_versions_and_denominators():
     report = gk_with(**{"GK-01": LABEL + " The iPhone 15 uses the A16 [1]."})
     report.update(provider="reference", model="none", prompt_version="gk-v1", origin="reference")
     md = runner.markdown_gk_report(report)
-    assert "| Prompt version | gk-v1 |" in md and "| Cases version | gk-cases-v3 |" in md
-    assert "| No citation markers | 0.857 | 6 / 7 | 1.0 |" in md
-    assert "| Real product not refused as unknown | 1.0 | 1 / 1 | 1.0 |" in md
+    assert "| Prompt version | gk-v1 |" in md and "| Cases version | gk-cases-v4 |" in md
+    assert "| No citation markers | 0.875 | 7 / 8 | 1.0 |" in md
+    assert "| Real product not refused as unknown | 1.0 | 2 / 2 | 1.0 |" in md
     assert "**GK-01** (known)" in md
 
 
@@ -273,8 +274,37 @@ def test_real_product_refused_as_unknown_fails():
     case = result(report, "GK-07")
     assert not case["passed"] and not case["checks"]["real_product_answered"]
     assert "refuses a real product as unknown" in case["problems"]
-    assert report["metrics"]["real_product_answered"] == {"passed": 0, "total": 1, "rate": 0.0}
+    assert report["metrics"]["real_product_answered"] == {"passed": 1, "total": 2, "rate": 0.5}
     assert not report["targets_met"]
+
+
+def test_scoped_dex_question_answered_from_specs_fails_gk_08():
+    # Recorded on production, 15 Nov 2026 (Galaxy S24 page, toggle on): the scoped question got
+    # a grounded "not stated" reply with citations instead of a general-knowledge answer.
+    grounded = ("The provided spec snippets do not state whether the Galaxy S24 supports Samsung DeX. "
+                "They cover the display [1] and battery [2].")
+    report = runner.evaluate_gk(GK_CASES, {**GK_REFERENCE, "GK-08": grounded}, basis={"GK-08": "specs"})
+    case = result(report, "GK-08")
+    assert not case["passed"]
+    assert not case["checks"]["basis_general_knowledge"]
+    assert not case["checks"]["labelled"] and not case["checks"]["no_citations"]
+    assert not report["targets_met"]
+
+
+def test_gk_08_is_scoped_to_the_galaxy_s24_and_asserts_no_dex_fact():
+    import importlib.util as util
+    spec_ = util.spec_from_file_location("eval_adapter", ROOT / "scripts/eval_adapter.py")
+    adapter = util.module_from_spec(spec_)
+    spec_.loader.exec_module(adapter)
+    names, cases = adapter.load_scope(EVAL / "gk_scope.json")
+    assert set(cases) <= {c["id"] for c in GK_CASES["cases"]}
+    assert cases == {"GK-08": ["galaxy-s24-ph"]}
+    # The scope key is the pack's gadget key, and the catalog name is part of the pack's label.
+    assert names["galaxy-s24-ph"] in SOURCES["gadgets"]["galaxy-s24-ph"]["label"]
+    gk08 = next(c for c in GK_CASES["cases"] if c["id"] == "GK-08")
+    assert gk08["should_not_refuse"] and "expected_facts" not in gk08 and "trace" not in gk08
+    # No DeX spec is in the verified pack, so nothing about DeX may be expected.
+    assert not any("dex" in s["text"].lower() for s in SOURCES["snippets"])
 
 
 def test_real_product_check_only_applies_to_flagged_cases():

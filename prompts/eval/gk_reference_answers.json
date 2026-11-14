@@ -2,7 +2,7 @@
   "provider": "reference (hand-written)",
   "origin": "reference",
   "prompt_version": "gk-v1",
-  "note": "SYNTHETIC reference answers for the general-knowledge cases (gk_cases.json), written by hand to validate the GK scorer. They are NOT model output and must never be reported as model quality. Product facts in them come from sources.json only. GK-07's answer names no chip on purpose, since sources.json has no Pixel 9 spec; it only shows the shape of a labelled, hedged non-refusal (brand and category come from the dev catalog seed).",
+  "note": "SYNTHETIC reference answers for the general-knowledge cases (gk_cases.json), written by hand to validate the GK scorer. They are NOT model output and must never be reported as model quality. Product facts in them come from sources.json only. GK-07's answer names no chip on purpose, since sources.json has no Pixel 9 spec; it only shows the shape of a labelled, hedged non-refusal (brand and category come from the dev catalog seed). GK-08's answer likewise asserts no DeX support either way, since sources.json has no DeX spec; it only shows the shape of a labelled, hedged, unrefused answer.",
   "answers": {
     "GK-01": "General knowledge, not from TekaTech's saved specs. The base iPhone 15 (not the Plus or Pro) uses Apple's **A16 Bionic** chip. Other iPhone 15 models may differ, so check Apple's spec page for your exact model.",
     "GK-02": "General knowledge, not from TekaTech's saved specs.\n- iPhone 15 (base model): Apple **A16 Bionic**\n- Galaxy S24: the Philippine model uses the **Exynos 2400**; the chip can vary by region, so check the spec page for your variant",
@@ -10,6 +10,7 @@
     "GK-04": "General knowledge, not from TekaTech's saved specs. There are no sources on file for this answer, so I can't cite or link any. The base iPhone 15 has a display of about **6.1 inches** (diagonal). Other iPhone 15 models may differ, so check Apple's spec page for your exact model.",
     "GK-05": "General knowledge, not from TekaTech's saved specs. Yes. The Galaxy S24 is typically rated **IP68**, which means it is sealed against dust and can survive water exposure within the tested limits. Check Samsung's page for your exact model.",
     "GK-06": "General knowledge, not from TekaTech's saved specs. I can only help with questions about gadgets and their specs.",
-    "GK-07": "General knowledge, not from TekaTech's saved specs. The Google Pixel 9 is a Google smartphone. Its processor is typically listed on Google's official spec page, and details may vary by region, so check that page for your exact model."
+    "GK-07": "General knowledge, not from TekaTech's saved specs. The Google Pixel 9 is a Google smartphone. Its processor is typically listed on Google's official spec page, and details may vary by region, so check that page for your exact model.",
+    "GK-08": "General knowledge, not from TekaTech's saved specs. Samsung DeX support on the Galaxy S24 can depend on the model, region and software version, so check Samsung's spec page for your exact model."
   }
 }

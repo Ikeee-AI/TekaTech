@@ -12,7 +12,13 @@ import pytest
 
 import answer_cache
 from conftest import signed_in_as
-from prompts import GK_PROMPT_VERSION, PROMPT_VERSION, build_general_knowledge_prompt, build_system_prompt
+from prompts import (
+    GK_FALLBACK_VERSION,
+    GK_PROMPT_VERSION,
+    PROMPT_VERSION,
+    build_general_knowledge_prompt,
+    build_system_prompt,
+)
 from routers.query import (
     ANSWER_MAX_COMPLETION_TOKENS,
     ANSWER_MODEL,
@@ -117,9 +123,11 @@ def test_flag_on_with_matches_still_gives_the_grounded_answer(client, fake_supab
     assert len(data["sources"]) == 1
     assert data["retrieval"] == "vector"
     system, user = _chat_messages(openai_mock)
-    assert system["content"] == build_system_prompt(False)
+    # With the flag the grounded prompt carries the NOT_IN_SPECS fallback rule (gkf-v1).
+    assert system["content"] == build_system_prompt(False, allow_general_knowledge=True)
     assert user["content"].startswith("Spec snippets:")
     assert len(_history(fake_supabase)) == 1
+    openai_mock.chat.completions.create.assert_called_once()
 
 
 def test_grounded_answers_are_labelled_specs_with_and_without_the_flag(client, fake_supabase, openai_mock):
@@ -205,7 +213,9 @@ def test_no_match_answer_is_never_served_with_the_flag(client, fake_supabase, op
 
 def test_scopes_differ_only_by_the_flag():
     off = answer_cache.scope_key(None, False, PROMPT_VERSION, EMBEDDING_MODEL, ANSWER_MODEL)
-    on = answer_cache.scope_key(None, False, f"{PROMPT_VERSION}+{GK_PROMPT_VERSION}", EMBEDDING_MODEL, ANSWER_MODEL)
+    on = answer_cache.scope_key(
+        None, False, f"{PROMPT_VERSION}+{GK_FALLBACK_VERSION}+{GK_PROMPT_VERSION}", EMBEDDING_MODEL, ANSWER_MODEL
+    )
     assert off != on
 
 
