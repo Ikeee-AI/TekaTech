@@ -93,3 +93,49 @@ describe('Resend confirmation email (#196)', () => {
     expect(screen.getByText('Could Not Send the Email')).toBeTruthy()
   })
 })
+
+describe('Sign-up password rules (14 Nov 2026)', () => {
+  it.each(['short1!', 'alllowercase1!', 'ALLUPPERCASE1!', 'NoNumbers!!', 'NoSymbols123'])(
+    'blocks the weak password %j with a field error and never calls Supabase',
+    (password) => {
+      const auth = renderLogin({ url: '/login?mode=signup' })
+      type(/email/i, 'new.user@example.com')
+      type(/^password/i, password)
+      fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }))
+      expect(screen.getByText(/^make it stronger/i)).toBeTruthy()
+      expect(screen.getByLabelText(/^password/i).getAttribute('aria-invalid')).toBe('true')
+      expect(auth.signUp).not.toHaveBeenCalled()
+    },
+  )
+
+  it('shows the strength meter and signs up once every rule passes', async () => {
+    const auth = renderLogin({
+      url: '/login?mode=signup',
+      auth: { signUp: vi.fn().mockResolvedValue({ user: { identities: [{}] }, session: null }) },
+    })
+    type(/email/i, 'new.user@example.com')
+    type(/^password/i, 'Abcdef1!')
+    expect(screen.getByText('Good')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }))
+    await waitFor(() => expect(auth.signUp).toHaveBeenCalledWith('new.user@example.com', 'Abcdef1!'))
+  })
+
+  it('maps Supabase weak_password to a plain sentence', async () => {
+    const weak = Object.assign(new Error('Password should contain…'), { code: 'weak_password', reasons: ['characters'] })
+    renderLogin({ url: '/login?mode=signup', auth: { signUp: vi.fn().mockRejectedValue(weak) } })
+    type(/email/i, 'new.user@example.com')
+    type(/^password/i, 'Abcdef1!')
+    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }))
+    expect(await screen.findByText(/that password is too weak/i)).toBeTruthy()
+    expect(screen.queryByText('Password should contain…')).toBeNull()
+  })
+
+  it('does not apply the new rules to Log In (older accounts keep their passwords)', async () => {
+    const auth = renderLogin()
+    type(/email/i, 'old.user@example.com')
+    type(/^password/i, 'secret')
+    fireEvent.click(screen.getByRole('button', { name: /^log in$/i }))
+    await waitFor(() => expect(auth.signIn).toHaveBeenCalledWith('old.user@example.com', 'secret'))
+    expect(screen.queryByText(/password strength/i)).toBeNull()
+  })
+})

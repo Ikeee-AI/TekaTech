@@ -35,7 +35,7 @@ npm run test:e2e
 
 - Playwright builds the app and serves it on `127.0.0.1:4174` with **fake service addresses** (`api.e2e.test`, `supabase.e2e.test`), set in `playwright.config.js`. They override your local `frontend/.env`, so the checks can't reach dev, production, Supabase or OpenAI.
 - `support/fakeApi.js` answers every API call inside the browser: two sample gadgets with one spec each, and the `POST /query` replies each check needs.
-- No login, no database, no paid model calls.
+- No real login, no database, no paid model calls. Phone pages and compare are members-only (14 Nov 2026), so `useFakeApi` stores a fake, never-expiring session in local storage before each page loads; it is never sent anywhere real.
 
 ## Why the fake replies can be trusted
 

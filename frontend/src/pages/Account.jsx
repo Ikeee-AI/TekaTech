@@ -8,7 +8,9 @@ import { TextField } from '../components/ui/FormField'
 import Alert from '../components/ui/Alert'
 import Button from '../components/ui/Button'
 import BackLink from '../components/ui/BackLink'
-import { authErrorMessage, MIN_PASSWORD_LENGTH } from '../utils/authErrors'
+import { authErrorMessage } from '../utils/authErrors'
+import { PASSWORD_HINT } from '../utils/passwordStrength'
+import PasswordStrength from '../components/PasswordStrength'
 import { isWrongPassword, validatePasswordChange } from '../utils/passwordChange'
 
 const EMPTY = { current: '', next: '', confirm: '' }
@@ -137,17 +139,20 @@ export default function Account() {
             value={values.current}
             onChange={update('current')}
           />
-          <TextField
-            id={FIELD_IDS.next}
-            label="New Password"
-            type="password"
-            required
-            autoComplete="new-password"
-            hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}
-            error={fieldErrors.next}
-            value={values.next}
-            onChange={update('next')}
-          />
+          <div>
+            <TextField
+              id={FIELD_IDS.next}
+              label="New Password"
+              type="password"
+              required
+              autoComplete="new-password"
+              hint={PASSWORD_HINT}
+              error={fieldErrors.next}
+              value={values.next}
+              onChange={update('next')}
+            />
+            <PasswordStrength password={values.next} id="new-password-strength" />
+          </div>
           <TextField
             id={FIELD_IDS.confirm}
             label="Confirm New Password"

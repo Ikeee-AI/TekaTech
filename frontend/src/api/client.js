@@ -6,6 +6,9 @@ import { trackRequest } from './serverStatus'
 // slashes are trimmed so `${API_BASE}${path}` can't produce a double slash.
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
 
+// Fired after every AI question (answered or refused), so the "X of 20 left today" badge refreshes.
+export const AI_USAGE_EVENT = 'tekatech:ai-usage-changed'
+
 async function request(path, options = {}) {
   const { data: { session } } = await supabase.auth.getSession()
   const headers = { "Content-Type": "application/json", ...options.headers }
@@ -60,7 +63,15 @@ export const api = {
   getAdminOverview: () => request(`/admin/overview`),
   createComparisonLink: (gadgetIds) => request(`/comparisons`, { method: "POST", body: JSON.stringify({ gadget_ids: gadgetIds }) }),
   getComparisonBySlug: (slug) => request(`/comparisons/${slug}`),
-  askQuestion: (data) => request(`/query`, { method: "POST", body: JSON.stringify(data) }),
+  askQuestion: async (data) => {
+    try {
+      return await request(`/query`, { method: "POST", body: JSON.stringify(data) })
+    } finally {
+      if (typeof window !== "undefined") window.dispatchEvent(new Event(AI_USAGE_EVENT))
+    }
+  },
+  // { limit, remaining, resets_at } for the signed-in user; all null for admins (no daily limit).
+  getAiUsage: () => request(`/me/ai-usage`),
   getSpecCoverage: () => request(`/stats/spec-coverage`),
   getTrendingQuestions: () => request(`/stats/trending-questions`),
   // My Gadgets: the session user's personal list of catalog gadgets (backend scopes to the caller).

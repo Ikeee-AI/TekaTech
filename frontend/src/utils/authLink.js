@@ -1,4 +1,4 @@
-import { classifyAuthLink, readLegacyLinkTokens } from './authErrors'
+import { classifyAuthLink, readEmailLinkOtp, readLegacyLinkTokens } from './authErrors'
 
 // Read once, when the app first loads. supabaseClient.js imports this module, so it runs
 // before createClient(): supabase-js exchanges a confirmation or reset link's `?code=…`
@@ -33,6 +33,47 @@ function takeLegacyLinkTokens() {
     window.history.replaceState(window.history.state, '', url)
   }
   return tokens
+}
+
+/**
+ * The one-time token of an any-browser email link (`?token_hash=…&type=…`), or null. Taken
+ * out of the address bar at once, so it can't leak through history or a shared URL, and a
+ * refresh doesn't resend a used token. supabaseClient.js verifies it.
+ */
+export const emailLinkOtp = typeof window === 'undefined' ? null : takeEmailLinkOtp()
+
+function takeEmailLinkOtp() {
+  const otp = readEmailLinkOtp(window.location.search)
+  if (otp) {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('token_hash')
+    url.searchParams.delete('type')
+    window.history.replaceState(window.history.state, '', url)
+  }
+  return otp
+}
+
+// A password-recovery session made by a link in this tab. sessionStorage, so it survives
+// openResetForm()'s page load but not a new tab or a closed browser.
+const RECOVERY_KEY = 'tekatech:recovery'
+
+/** Marks (or clears) that this tab holds a fresh password-recovery session. */
+export function setRecoveryActive(active) {
+  try {
+    if (active) sessionStorage.setItem(RECOVERY_KEY, '1')
+    else sessionStorage.removeItem(RECOVERY_KEY)
+  } catch {
+    // storage blocked: the flag lasts for this page only (ResetPassword also checks state)
+  }
+}
+
+/** True when a reset link created a recovery session in this tab. */
+export function isRecoveryActive() {
+  try {
+    return sessionStorage.getItem(RECOVERY_KEY) === '1'
+  } catch {
+    return false
+  }
 }
 
 /**

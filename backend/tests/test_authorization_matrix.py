@@ -43,11 +43,11 @@ EXPECTED = {
     ("GET", "/corrections/pending-count"): ADMIN,
     ("GET", "/corrections"): ADMIN,
     ("PATCH", "/corrections/{correction_id}"): ADMIN,
-    ("POST", "/comparisons"): PUBLIC,
-    ("GET", "/comparisons/{slug}"): PUBLIC,
-    ("POST", "/query"): PUBLIC,
+    ("POST", "/comparisons"): USER,
+    ("GET", "/comparisons/{slug}"): USER,
+    ("POST", "/query"): USER,
     ("GET", "/stats/spec-coverage"): PUBLIC,
-    ("GET", "/stats/trending-questions"): PUBLIC,
+    ("GET", "/stats/trending-questions"): USER,
     ("GET", "/techspecs/search"): ADMIN,
     ("POST", "/techspecs/import"): ADMIN,
     ("GET", "/me/gadgets"): USER,
@@ -55,6 +55,7 @@ EXPECTED = {
     ("DELETE", "/me/gadgets/{gadget_id}"): USER,
     ("GET", "/me/gadgets/{gadget_id}/questions"): USER,
     ("DELETE", "/me/gadgets/{gadget_id}/questions"): USER,
+    ("GET", "/me/ai-usage"): USER,
     ("GET", "/admin/overview"): ADMIN,
 }
 
@@ -82,10 +83,10 @@ def _allowed(level, caller):
 def _app_routes():
     """Every APIRoute the app serves: its own, plus each included router's (prefixes are baked into the path)."""
     from main import app
-    from routers import admin, comparisons, corrections, gadgets, my_gadgets, query, specs, stats, techspecs
+    from routers import admin, ai_usage, comparisons, corrections, gadgets, my_gadgets, query, specs, stats, techspecs
 
     routes = [r for r in app.routes if isinstance(r, APIRoute)]
-    for module in (gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets, admin):
+    for module in (gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets, ai_usage, admin):
         routes += [r for r in module.router.routes if isinstance(r, APIRoute)]
     return routes
 

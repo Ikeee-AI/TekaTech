@@ -11,6 +11,7 @@ import openai
 import pytest
 
 import answer_cache
+from conftest import signed_in_as
 from prompts import GK_PROMPT_VERSION, PROMPT_VERSION, build_general_knowledge_prompt, build_system_prompt
 from routers.query import (
     ANSWER_MAX_COMPLETION_TOKENS,
@@ -259,8 +260,7 @@ def test_simulated_empty_answer_reports_no_basis(client, fake_supabase, openai_m
     from config import settings
 
     admin = SimpleNamespace(id="admin-1", app_metadata={"is_admin": True})
-    with patch.object(settings, "failure_simulation_enabled", True), \
-            patch("routers.query.get_optional_user", return_value=admin):
+    with patch.object(settings, "failure_simulation_enabled", True), signed_in_as(admin):
         resp = client.post(
             "/query",
             json={"question": "Anything", "allow_general_knowledge": True},

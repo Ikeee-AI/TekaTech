@@ -11,6 +11,12 @@ import Navbar from './Navbar'
 // No signed-in user, so the correction badges never call the API; the mock only keeps
 // the real Supabase client from being created in tests.
 vi.mock('../api/client', () => ({ api: {} }))
+// Signed-in renders would start the correction-badge polling; it is not under test here.
+vi.mock('../hooks/useCorrectionBadges', () => ({
+  useCorrectionBadges: () => ({ unseenDecisions: 0, pendingCount: 0 }),
+}))
+
+const MEMBER = { id: 'u-1', email: 'member@example.com', app_metadata: {}, user_metadata: {} }
 
 function LocationProbe() {
   const location = useLocation()
@@ -18,6 +24,7 @@ function LocationProbe() {
   return (
     <>
       <output data-testid="location">{location.pathname + location.search}</output>
+      <output data-testid="state">{JSON.stringify(location.state ?? null)}</output>
       <button type="button" onClick={() => navigate('/?q=phone')}>
         external q
       </button>
@@ -28,10 +35,10 @@ function LocationProbe() {
   )
 }
 
-function renderNavbar(initialEntry = '/') {
+function renderNavbar(initialEntry = '/', { user = null } = {}) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <AuthContext.Provider value={{ user: null, signOut: vi.fn() }}>
+      <AuthContext.Provider value={{ user, signOut: vi.fn() }}>
         <Navbar />
         <LocationProbe />
       </AuthContext.Provider>
@@ -73,13 +80,41 @@ describe('Navbar search', () => {
   })
 
   it('turns the text into a question on Enter and clears the box', () => {
-    renderNavbar('/?q=old&sort=name')
+    renderNavbar('/?q=old&sort=name', { user: MEMBER })
     fireEvent.change(input(), { target: { value: 'which has the best battery' } })
     fireEvent.keyDown(input(), { key: 'Enter' })
     expect(currentUrl()).toBe('/?sort=name&ask=which+has+the+best+battery')
     expect(input().value).toBe('')
     act(() => vi.advanceTimersByTime(500))
     expect(currentUrl()).toBe('/?sort=name&ask=which+has+the+best+battery')
+  })
+
+  it('sends an anonymous Ask to /login, keeping the question out of the URL', () => {
+    renderNavbar('/?q=old&sort=name')
+    fireEvent.change(input(), { target: { value: 'which has the best battery' } })
+    fireEvent.keyDown(input(), { key: 'Enter' })
+    expect(currentUrl()).toBe('/login')
+    const state = JSON.parse(screen.getByTestId('state').textContent)
+    // Returns to the catalog the user was on, minus the question and the box's ?q=.
+    expect(state.from).toMatchObject({ pathname: '/', search: '?sort=name' })
+    expect(screen.getByTestId('state').textContent).not.toMatch(/battery/)
+    act(() => vi.advanceTimersByTime(500))
+    expect(currentUrl()).toBe('/login')
+  })
+
+  it('sends an anonymous click on the Ask button to /login too', () => {
+    renderNavbar('/compare')
+    fireEvent.change(input(), { target: { value: 'best camera' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ask the AI' }))
+    expect(currentUrl()).toBe('/login')
+    expect(JSON.parse(screen.getByTestId('state').textContent).from).toMatchObject({ pathname: '/compare', search: '' })
+  })
+
+  it('keeps plain name search available without an account', () => {
+    renderNavbar()
+    fireEvent.change(input(), { target: { value: 'pixel' } })
+    act(() => vi.advanceTimersByTime(250))
+    expect(currentUrl()).toBe('/?q=pixel')
   })
 
   it('shows a ?q= change made elsewhere, such as back/forward or Clear filters', () => {

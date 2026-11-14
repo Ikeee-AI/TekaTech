@@ -229,3 +229,132 @@ export function extractKeySpecs(specs) {
 export function countKeySpecs(keySpecs) {
   return Object.values(keySpecs ?? {}).filter(Boolean).length
 }
+
+// More key specs for the phone page, compare rows and catalog filters (owner decision,
+// 14 Nov 2026): battery, wired charging, chip, weight, water resistance, screen size.
+// Same rules as the four tiles: only what the source states, the base/first variant,
+// the source site kept, null otherwise. `amount` is the number behind a numeric value,
+// for bars, sorting and filters.
+export const MORE_SPECS = [
+  { id: 'battery', label: 'Battery' },
+  { id: 'charging', label: 'Charging' },
+  { id: 'chip', label: 'Chip' },
+  { id: 'weight', label: 'Weight' },
+  { id: 'water', label: 'Water resistance' },
+  { id: 'screen', label: 'Screen size' },
+]
+
+function trimDecimal(n) {
+  return String(Number(n.toFixed(2)))
+}
+
+const MAH = /(?<![\d.,])(\d{1,2},?\d{3})[ \t]*mAh\b/i
+
+// "Battery: 5450mAh/21.37Wh (rated); 5600mAh/21.96Wh (typical)" → 5600: the typical capacity
+// when the line names one, otherwise the first capacity that isn't the rated/minimum one.
+function batteryIn(value) {
+  // ", " splits clauses but keeps "4,000mAh" whole.
+  const clauses = value.split(/;|,(?=\s)/).filter((c) => MAH.test(c))
+  const pick = clauses.find((c) => /\btyp/i.test(c)) ?? clauses.find((c) => !/\b(?:rated|min)/i.test(c)) ?? clauses[0]
+  return pick ? Number(pick.match(MAH)[1].replace(',', '')) : null
+}
+
+// Labels that describe something other than the phone's own wired charging power.
+const NOT_WIRED = /wireless|magsafe|\bqi|protocol|port|connector|reverse|time/i
+
+const MORE_PARSERS = {
+  battery(text) {
+    for (const { label, value } of segments(text, { keepSemicolons: true }).map(labelled)) {
+      if (!/battery/i.test(label) || /type|removable/i.test(label)) continue
+      const mah = batteryIn(value)
+      if (mah) return { value: String(mah), unit: 'mAh', amount: mah }
+    }
+    // An unlabelled sentence: "4000mAh battery".
+    const m = text.match(/(?<![\d.,])(\d{1,2},?\d{3})[ \t]*mAh[ \t]+battery\b/i)
+    if (m) {
+      const mah = Number(m[1].replace(',', ''))
+      return { value: String(mah), unit: 'mAh', amount: mah }
+    }
+    return null
+  },
+  charging(text) {
+    // Wired only, the highest power the line states ("45W SUPERVOOC, 33W SUPERVOOC" → 45).
+    // A minimum adapter ("with a 20W adapter or higher") is not the phone's charging power.
+    // segments() splits on ";", so "; wireless 50W AIRVOOC" becomes an unlabelled part and is skipped.
+    for (const { label, value } of segments(text).map(labelled)) {
+      if (!/charg/i.test(label) || NOT_WIRED.test(label) || /or higher/i.test(value)) continue
+      const wired = value.split(/\bwireless\b/i)[0]
+      const watts = [...wired.matchAll(/(?<![\d.])(\d{1,3})[ \t]*W\b/g)].map((m) => Number(m[1])).filter((w) => w >= 5)
+      if (watts.length) {
+        const max = Math.max(...watts)
+        return { value: String(max), unit: 'W', amount: max }
+      }
+    }
+    return null
+  },
+  chip(text) {
+    for (const { label, value } of segments(text).map(labelled)) {
+      if (!/^\s*(?:chip|chipset|soc|processor|platform)\b/i.test(label)) continue
+      const name = value
+        .split(/[(,]/)[0]
+        .replace(/\s+\d+(?:\.\d+)?\s*GHz.*$/i, '')
+        .replace(/\s+(?:mobile platform|chip|processor)\s*\.?\s*$/i, '')
+        .replace(/[.\s]+$/, '')
+        .trim()
+      if (/[a-z]/i.test(name) && /\d|bionic|elite/i.test(name)) return { value: name, unit: '' }
+    }
+    // An unlabelled Apple sentence: "A16 Bionic chip."
+    const m = text.match(/\b(A\d{2}(?: Bionic| Pro)?) chip\b/)
+    return m ? { value: m[1], unit: '' } : null
+  },
+  weight(text) {
+    for (const { label, value } of segments(text).map(labelled)) {
+      if (!/^\s*weight\b/i.test(label)) continue
+      // The first weight listed is the base/first finish ("185.5 g (leather); 190 g (glass)").
+      const m = value.match(/(?<![\d.])(\d{2,4}(?:\.\d{1,2})?)[ \t]*(?:g|grams)\b/i)
+      if (m) return { value: trimDecimal(Number(m[1])), unit: 'g', amount: Number(m[1]) }
+    }
+    return null
+  },
+  water(text) {
+    // Every IP code the text states, e.g. "IP69, IP68, IP66 rated" → IP66 / IP68 / IP69.
+    const codes = [...new Set([...text.matchAll(/\bIP([0-6X])([0-9])\b/gi)].map((m) => `IP${m[1].toUpperCase()}${m[2]}`))].sort()
+    if (codes.length === 0) return null
+    return { value: codes.join(' / '), unit: '', codes }
+  },
+  screen(text) {
+    // The display's diagonal: the first inch size on a display/screen line
+    // ("6.7" full rectangle (6.5" with rounded corners)" → 6.7).
+    const size = /(?<![\d.])(\d{1,2}(?:\.\d{1,2})?)[ \t]*(?:-?[ \t]*inch(?:es)?\b|["”″])/i
+    for (const segment of segments(text)) {
+      const { label } = labelled(segment)
+      if (!/display|screen/i.test(label || segment) || /to-body|ratio|protect|glass/i.test(label)) continue
+      const m = segment.match(size)
+      if (m && Number(m[1]) >= 3 && Number(m[1]) <= 20) return { value: trimDecimal(Number(m[1])), unit: 'in', amount: Number(m[1]) }
+    }
+    return null
+  },
+}
+
+/** True when a stated IP rating means water resistant to IP67 or better (IP67, IP68, IP69, IPX7…). */
+export function isWaterResistant(water) {
+  return Boolean(water?.codes?.some((code) => Number(code.slice(-1)) >= 7))
+}
+
+/**
+ * specs: the gadget's saved spec chunks ({ content, source_url }).
+ * Returns { battery, charging, chip, weight, water, screen }, each
+ * { value, unit, source, amount? } or null when no saved source states it.
+ */
+export function extractMoreSpecs(specs) {
+  const result = Object.fromEntries(MORE_SPECS.map((s) => [s.id, null]))
+  for (const spec of specs ?? []) {
+    const text = spec?.content ?? ''
+    for (const id of Object.keys(MORE_PARSERS)) {
+      if (result[id]) continue
+      const found = MORE_PARSERS[id](text)
+      if (found) result[id] = { ...found, source: sourceSite(spec.source_url) }
+    }
+  }
+  return result
+}

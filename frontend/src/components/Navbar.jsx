@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth'
 import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { useCorrectionBadges } from '../hooks/useCorrectionBadges'
 import { useTheme } from '../hooks/useTheme'
+import ConfirmDialog from './ui/ConfirmDialog'
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
 
@@ -59,6 +60,7 @@ function SearchBar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
+  const { user } = useAuth()
   const inputRef = useRef(null)
   const onCatalog = location.pathname === '/'
   const urlQuery = onCatalog ? (searchParams.get('q') ?? '') : ''
@@ -114,6 +116,23 @@ function SearchBar() {
   function ask() {
     const question = query.trim()
     if (!question) return
+    // Asking the AI needs an account (owner decision, 14 Nov 2026); searching by name does not.
+    // Log in, then come back to this page. The question is dropped, not carried in the URL
+    // (?ask= / ?q=) or the return address.
+    if (!user) {
+      setText('')
+      setSynced('')
+      // ?q= mirrors this box, which now holds the question (or a debounced part of it).
+      const params = new URLSearchParams(location.search)
+      params.delete('ask')
+      params.delete('q')
+      const search = params.toString()
+      toast('Log in to ask the AI.')
+      navigate('/login', {
+        state: { from: { pathname: location.pathname, search: search ? `?${search}` : '', hash: location.hash } },
+      })
+      return
+    }
     // The typed text becomes the question, not a name filter: keeping it as
     // ?q= would filter the catalog by the whole sentence and match nothing.
     setText('')
@@ -198,6 +217,10 @@ function Navbar() {
   const menuUpdates = unseenDecisions + pendingCount
   const [menuOpen, setMenuOpen] = useState(false)
   const [lastPath, setLastPath] = useState(location.pathname)
+  // Log out asks first (owner decision, 14 Nov 2026); only "Log out" in the dialog signs out.
+  const [confirmLogout, setConfirmLogout] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState(null)
 
   // Close the mobile menu whenever the route changes.
   if (lastPath !== location.pathname) {
@@ -208,15 +231,36 @@ function Navbar() {
   useEffect(() => {
     if (!menuOpen) return
     function handleKey(e) {
-      if (e.key === 'Escape') setMenuOpen(false)
+      // Escape in the log-out dialog closes only the dialog, so focus can return to the menu.
+      if (e.key === 'Escape' && !confirmLogout) setMenuOpen(false)
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [menuOpen])
+  }, [menuOpen, confirmLogout])
+
+  function askToSignOut() {
+    setSignOutError(null)
+    setConfirmLogout(true)
+  }
+
+  function cancelSignOut() {
+    setConfirmLogout(false)
+    setSignOutError(null)
+  }
 
   async function handleSignOut() {
+    setSigningOut(true)
+    setSignOutError(null)
+    try {
+      await signOut()
+    } catch {
+      setSignOutError("We couldn't log you out. Check your connection, then try again.")
+      setSigningOut(false)
+      return
+    }
+    setSigningOut(false)
+    setConfirmLogout(false)
     setMenuOpen(false)
-    await signOut()
     toast.success('Logged out')
     navigate('/')
   }
@@ -226,9 +270,12 @@ function Navbar() {
       <NavLink to="/" end className={className}>
         Phones
       </NavLink>
-      <NavLink to="/compare" className={className}>
-        Compare
-      </NavLink>
+      {/* Comparing needs an account (owner, 14 Nov 2026); visitors only browse the catalog. */}
+      {user && (
+        <NavLink to="/compare" className={className}>
+          Compare
+        </NavLink>
+      )}
       {user && (
         <NavLink to="/my-gadgets" className={className}>
           My Gadgets
@@ -272,10 +319,10 @@ function Navbar() {
           {isAdmin && (
             <Link
               to="/add"
-              aria-label="Add gadget"
+              aria-label="Add phone"
               className={`flex items-center gap-2 bg-sage-700 text-white text-sm font-bold px-3 sm:px-4 py-2 min-h-10 rounded-full hover:bg-sage-800 active:scale-95 transition ${focusRing} focus-visible:ring-offset-2`}
             >
-              <Plus size={18} strokeWidth={2.5} /> <span className="hidden sm:inline">Add Gadget</span>
+              <Plus size={18} strokeWidth={2.5} /> <span className="hidden sm:inline">Add Phone</span>
             </Link>
           )}
 
@@ -313,7 +360,8 @@ function Navbar() {
                 <User size={18} aria-hidden="true" />
               </NavLink>
               <button
-                onClick={handleSignOut}
+                type="button"
+                onClick={askToSignOut}
                 aria-label="Log out"
                 title="Log out"
                 className={`p-2 text-slate-500 hover:text-red-600 rounded-full transition ${focusRing}`}
@@ -372,7 +420,8 @@ function Navbar() {
               <div className="flex items-center justify-between gap-2 px-3">
                 <span className="text-sm text-slate-500 truncate">Signed in as {user.email}</span>
                 <button
-                  onClick={handleSignOut}
+                  type="button"
+                  onClick={askToSignOut}
                   className={`flex items-center gap-1.5 min-h-10 px-2 -mr-2 text-sm text-slate-600 hover:text-red-600 rounded-md transition ${focusRing}`}
                 >
                   <LogOut size={16} /> Log Out
@@ -386,6 +435,18 @@ function Navbar() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Log out of TekaTech?"
+        description="You can log back in at any time. Without an account you can still browse the catalog."
+        confirmLabel="Log out"
+        busyLabel="Logging out…"
+        busy={signingOut}
+        error={signOutError}
+        onConfirm={handleSignOut}
+        onCancel={cancelSignOut}
+      />
     </header>
   )
 }
