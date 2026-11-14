@@ -1440,3 +1440,55 @@ Short session, ~09:45–10:12 Manila.
 - Switch the CSP from Report-Only to enforced after a few days without reports — Ikeee-AI.
 - Re-approval of #256 — Manuel or Mika; review of #263 — Manuel; rebase of #254 — Manuel.
 - Optional: a custom sending domain in Brevo — owner.
+
+## 2026-11-14 13:25 Asia/Manila — #266 merged and live; price-source columns, Supabase password policy and official PH prices applied
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code drove the Supabase dashboard in Chrome at the owner's request) · **Task:** S5-IK (owner requirements of 14 Nov, deadline Sun 15 Nov morning) · **Branch:** `tekatech/s5-ik-signin-required` → `main`; log on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- `backend/sql/gadget_price_source.sql` applied by hand in the SQL Editor **before** the merge, dev (`efdgguybkampozuvqjrz`) then prod (`lqswcmkzygqmnblaukco`): "Success. No rows returned" on both. Check query on both: `price_source_url` text, `price_checked_at` date, `store_url` text, constraints `gadgets_price_source_url_http` and `gadgets_store_url_http`. Prod also: 0 `anon`/`authenticated` grants on `gadgets` (browser-role lock from #263 intact).
+- [#266](https://github.com/Ikeee-AI/TekaTech/pull/266) squash-merged at 12:42 as `eba1fa6` (head `7a65b87` pinned; approved by Manuel at 10:51 and Mika at 11:28, both after the last commit at 06:15; all PR checks green). Main run [43557973917](https://github.com/Ikeee-AI/TekaTech/actions/runs/43557973917): main guard, backend tests, frontend lint/build, database migrations, browser checks, deploy + smoke all success.
+- Production checks after deploy: API `/version` → `eba1fa6`; signed-out `POST /query` → `401`; `GET /gadgets` → `200`, 24 phones, `store_url` field present.
+- Supabase Auth → Sign In / Providers → Email, **prod and dev**: minimum password length 6 → **8**; password requirements none → **"Lowercase, uppercase letters, digits and symbols"**. Both re-read after a page reload. The app's symbol list (`frontend/src/utils/passwordStrength.js`) already matches Supabase's and is covered by a test.
+- **Owner verified on the live site: a weak password is refused at sign-up.**
+- `docs/catalog-data/prices-2026-11-14.sql` applied (owner: "apply the prices"). Dev: ran clean, 0 rows matched (statements match prod ids + names). Prod: previous values recorded first, then the file ran; check query returned 9 rows. Production API: 9 of 24 phones carry a sourced price, all with a store link.
+
+  | Phone | Before | After (PHP) |
+  | --- | --- | --- |
+  | ROG Phone 9 Pro | NULL | 62,995 |
+  | iPhone 16 | NULL | 62,990 |
+  | Find X8 (16+512; 12+256 has no price on the store) | NULL | 54,999 |
+  | Galaxy S25 | 51,990 | 45,976.50 |
+  | X200 FE | NULL | 44,999 |
+  | Reno14 5G | NULL | 31,999 |
+  | Rog Ally | 45,000 | 30,995 |
+  | Reno14 F 5G | NULL | 21,999 |
+  | Infinix Note 50 Pro 5G+ | 20,000 | 17,548 |
+
+  Before: `price_source_url`, `price_checked_at`, `store_url` were NULL on all nine. These "before" values are the rollback.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Navigation blocked by a "Leave site?" dialog (dev SQL tab) | Unsaved query left in the editor | Opened prod in a new tab; later discarded only an already-run verification query. Resolved |
+| Prod password policy still showed 6 / "Select an option" after the first Save | The first Save click (by screen position) did not register | Re-entered both values, clicked Save by element reference, re-read after reload: 8 / symbols. Resolved |
+| One screenshot call timed out (`computer` tool did not respond in time) | Page busy right after Run | Read the result as page text instead. Resolved |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Prices SQL is keyed on prod ids, so dev gets no sourced prices | Dev catalog differs from prod for prices | Accepted; dev is for testing flows, not catalog data. Open, low |
+| 15 of 24 phones have no official PH price | Those keep their old price labelled "source not given" | Accepted for now. Open, owner |
+
+**Decisions** — Apply the price-source schema to dev then prod before merging #266 — Ikeee-AI. Squash-merge #266 like #258/#259 — Ikeee-AI. Set the same password policy on dev as on prod so both reject the same passwords — Ikeee-AI. Apply the 9 official prices — Ikeee-AI.
+
+**Blockers / risks** — #263 needs Manuel's review; #256 needs re-approval; #254 needs Manuel's rebase; #249 has changes requested (Jopher). None block the Sunday deadline.
+
+**Plan alignment** — Owner requirements of 14 Nov 04:20 (passwords, logout confirm, sign-in-only AI/compare, rotating hero) plus the 20/day AI quota and critique items: **Done** — reviewed, checks green, merged, deployed, verified on production (weak-password refusal checked by the owner). Ahead of the Sun 15 Nov morning deadline.
+
+**Next**
+- Finish the live sign-up retest: strong password → confirm email → "X of 20 questions left" shows after sign-in — Ikeee-AI — before Sun 15 Nov 09:00.
+- Switch the CSP from Report-Only to enforced after a few clean days — Ikeee-AI.
+- Reviews: #263 (Manuel), #256 re-approval (Manuel or Mika), #254 rebase (Manuel), #249 (Jopher).
+- Sprint 5 retro (#238) entries due Mon 16 Nov 15:00, the owner's own still missing — Ikeee-AI.
