@@ -2145,3 +2145,38 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — In progress.
 
 **Next** — Agent report → check → owner decides on deploy.
+
+## 2026-11-15 06:18 Asia/Manila — GK fallback fix built (agent), live-checked on DEV, PR #276 opened
+**Who:** Ikeee-AI (AI-assisted: yes; built by the AI agent, checked by Ikeee-AI; live check approved by the owner) · **Task:** AI area (takeover) · **Branch:** `tekatech/s5-ik-gk-scoped-fallback` (`d6254f2`)
+
+**Done**
+- **Agent build:** prompt rule `gkf-v1` (`NOT_IN_SPECS` sentinel, only with GK on); backend detection calls the existing GK path; GK off is unchanged (prompt SHA test); eval case GK-08; docs.
+  - Backend tests 994 passed (34 new), re-run by Ikeee-AI. Frontend unchanged (634 tests).
+- **Live check on DEV** (owner-approved, about 10 real calls, about $0.02):
+  - Method: in-process API with the branch code and DEV settings, a stand-in admin, cache bypassed.
+  - Results:
+    - DeX and charger questions (GK on) → **general_knowledge**, labelled.
+    - Genshin (GK on) → grounded; in-spec and partial questions → grounded.
+    - GK off → unchanged.
+    - Unscoped IP68 → grounded.
+    - No sentinel leak.
+  - Side effect: a few user_questions rows on DEV for the stand-in user id `…c0de`.
+- The owner approved a PR → [#276](https://github.com/Ikeee-AI/TekaTech/pull/276) with the evidence table; Manuel and Jopher requested.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `ModuleNotFoundError: No module named 'main'` | Script outside backend/ | PYTHONPATH set. Resolved |
+| `AttributeError: 'dict' object has no attribute 'id'` (8×500, before any AI call) | Stand-in user was a dict, the app expects an object | SimpleNamespace like conftest. Resolved (no credit spent) |
+| `UnicodeEncodeError: 'charmap' codec can't encode character '‑'` | Windows console encoding when printing an answer | PYTHONIOENCODING=utf-8; one question repeated. Resolved |
+
+**Conflicts and contradictions** — The owner first said "no PR", then approved opening one so the fix can deploy (main guard needs a reviewed PR). Resolved.
+
+**Decisions** — Sentinel approach; no PROMPT_VERSION bump (separate `gkf-v1` label, since "v2" is already used by an unshipped attempt) — Ikeee-AI (agent proposal, accepted).
+
+**Blockers / risks** — #276 needs a non-author approval on the final commit. Cost: two chat calls per GK-on, not-in-specs question.
+
+**Plan alignment** — Partial (PR open).
+
+**Next** — Review and merge #276; re-ask DeX on production with GK on. Optional: clean the DEV stand-in rows.
