@@ -11,6 +11,7 @@ import BackLink from '../components/ui/BackLink'
 import { authErrorMessage, isEmailNotConfirmed } from '../utils/authErrors'
 import { PASSWORD_HINT, passwordError } from '../utils/passwordStrength'
 import PasswordStrength from '../components/PasswordStrength'
+import { saveReturnPath } from '../utils/returnPath'
 
 // ?mode=signup or ?mode=resend opens the page in that mode (#196); anything else is Log In.
 const LINK_MODES = ['signup', 'resend']
@@ -23,6 +24,8 @@ const INTROS = {
 }
 const FAILURE_TITLES = { login: 'Log In Failed', signup: 'Sign Up Failed', resend: 'Could Not Send the Email' }
 
+const AUTH_PAGES = ['/login', '/forgot-password', '/reset-password']
+
 const LINK_CLASS =
   'text-sm font-medium text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
 
@@ -34,8 +37,9 @@ export default function Login() {
   const location = useLocation()
   // Return to the exact page that sent the user here, query string and hash
   // included (e.g. /compare?ids=…), not just its path.
+  // Never the log-in or password pages themselves, which would leave the user on them.
   const fromLocation = location.state?.from
-  const from = fromLocation?.pathname
+  const from = fromLocation?.pathname && !AUTH_PAGES.includes(fromLocation.pathname)
     ? { pathname: fromLocation.pathname, search: fromLocation.search ?? '', hash: fromLocation.hash ?? '' }
     : null
   // With no page to return to, admins land on the catalog they curate and everyone
@@ -75,6 +79,8 @@ export default function Login() {
   // Neutral on purpose: the same message whether or not the address has an account.
   async function sendConfirmation() {
     await resendConfirmation(email)
+    // The new link should bring the user back to the page they came from too (#196).
+    if (from) saveReturnPath(from)
     setError(null)
     setUnconfirmed(false)
     setNotice('resent')
@@ -125,6 +131,9 @@ export default function Login() {
           toast.success('Account created')
           navigate(landing(data.user), { replace: true })
         } else {
+          // Confirmation email sent: remember where the user came from, so the link
+          // brings them back there (AuthLinkNotice) instead of the catalog (#196).
+          if (from) saveReturnPath(from)
           switchMode('login')
           setNotice('confirm')
         }

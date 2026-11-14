@@ -46,6 +46,7 @@ function mobileLinkClass({ isActive }) {
 
 // How long typing must pause before the text is written to ?q=.
 const SEARCH_SYNC_DELAY_MS = 250
+const AUTH_PAGES = ['/login', '/forgot-password', '/reset-password']
 
 // The catalog's search lives in the URL (?q= filters, ?ask= opens the AI answer),
 // so this bar can drive the catalog from any page.
@@ -208,6 +209,9 @@ function ThemeToggle() {
 function Navbar() {
   const navigate = useNavigate()
   const location = useLocation()
+  // Log In remembers this page, to return after logging in or confirming a new account (#196).
+  // Not from the log-in and password pages themselves, which would send the user back to them.
+  const loginState = AUTH_PAGES.includes(location.pathname) ? undefined : { from: location }
   const { user, signOut } = useAuth()
   const isAdmin = user?.app_metadata?.is_admin
   const { unseenDecisions, pendingCount } = useCorrectionBadges(user, location.pathname)
@@ -372,6 +376,7 @@ function Navbar() {
           ) : (
             <Link
               to="/login"
+              state={loginState}
               className={`hidden lg:flex items-center gap-1.5 px-4 py-2 min-h-10 text-sm font-bold bg-inverse text-inverse-ink hover:opacity-90 rounded-full transition ${focusRing}`}
             >
               <LogIn size={18} /> Log In
@@ -428,7 +433,7 @@ function Navbar() {
                 </button>
               </div>
             ) : (
-              <NavLink to="/login" className={mobileLinkClass}>
+              <NavLink to="/login" state={loginState} className={mobileLinkClass}>
                 Log In
               </NavLink>
             )}

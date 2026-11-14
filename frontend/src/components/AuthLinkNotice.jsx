@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LogIn, Mail, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { initialAuthLink, initialPathname } from '../utils/authLink'
+import { takeReturnPath } from '../utils/returnPath'
 import Alert from './ui/Alert'
 import Button from './ui/Button'
 
@@ -22,12 +23,17 @@ function clearLinkErrorFromUrl() {
  *   is no code verifier), the address is still confirmed, so say so and offer Log In;
  * - an expired or used link: a plain message, plus a way to get a new link.
  * A bad password-reset link is left to ResetPassword, which has its own message.
+ * After a working link, the user is taken back to the page they signed up from, if this
+ * browser remembers one (utils/returnPath.js); the notice stays on top of that page.
  * `link` and `pathname` default to what the URL held when the app loaded (utils/authLink.js).
  */
 export default function AuthLinkNotice({ link = initialAuthLink, pathname = initialPathname }) {
   const { user, loading, emailLink } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [dismissed, setDismissed] = useState(false)
   const [initial] = useState(() => (pathname === '/reset-password' || link?.type === 'recovery' ? null : link))
+  const returned = useRef(false)
   // An any-browser link (?token_hash=…) is only "confirmed" once Supabase has accepted it.
   const notice =
     dismissed || !initial
@@ -44,6 +50,15 @@ export default function AuthLinkNotice({ link = initialAuthLink, pathname = init
   useEffect(() => {
     if (noticeKind === 'error') clearLinkErrorFromUrl()
   }, [noticeKind])
+
+  // Back to the page the user signed up from (#196 item 4), once the link has signed them in
+  // here. Not for a link opened in another browser: that one confirms but signs nobody in.
+  useEffect(() => {
+    if (returned.current || noticeKind !== 'confirmed' || loading || !user) return
+    returned.current = true
+    const path = takeReturnPath()
+    if (path) navigate(path, { replace: true })
+  }, [noticeKind, loading, user, navigate])
 
   if (!notice || notice.kind === 'pending') return null
   // Wait for the session supabase-js creates from the link before saying who is signed in.
@@ -69,7 +84,7 @@ export default function AuthLinkNotice({ link = initialAuthLink, pathname = init
           title="Email Confirmed"
           action={
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="primary" icon={LogIn} as={Link} to="/login" onClick={dismiss}>
+              <Button size="sm" variant="primary" icon={LogIn} as={Link} to="/login" state={{ from: location }} onClick={dismiss}>
                 Log In
               </Button>
               {dismissButton}
@@ -89,10 +104,10 @@ export default function AuthLinkNotice({ link = initialAuthLink, pathname = init
           title="This Email Link Has Expired or Was Already Used"
           action={
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="primary" icon={Mail} as={Link} to="/login?mode=resend" onClick={dismiss}>
+              <Button size="sm" variant="primary" icon={Mail} as={Link} to="/login?mode=resend" state={{ from: location }} onClick={dismiss}>
                 Send a New Link
               </Button>
-              <Button size="sm" variant="secondary" icon={LogIn} as={Link} to="/login" onClick={dismiss}>
+              <Button size="sm" variant="secondary" icon={LogIn} as={Link} to="/login" state={{ from: location }} onClick={dismiss}>
                 Log In
               </Button>
               {dismissButton}

@@ -161,7 +161,8 @@ function scrollToSpecs() {
  * Specifications section instead of reloading the page. */
 function NoEvidenceNotice({ specTargets }) {
   const { user } = useAuth() ?? {}
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const { pathname } = location
   const targets = specTargets ?? []
   return (
     <Alert tone="warning" title="No Evidence Found">
@@ -191,7 +192,7 @@ function NoEvidenceNotice({ specTargets }) {
         </ul>
       ) : (
         <p className="mt-1.5">
-          <Link to="/login" className={linkClass}>
+          <Link to="/login" state={{ from: location }} className={linkClass}>
             <LogIn size={14} aria-hidden="true" /> Log in to add specs
           </Link>
         </p>
