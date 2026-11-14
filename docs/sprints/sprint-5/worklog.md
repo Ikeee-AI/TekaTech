@@ -2246,3 +2246,35 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — GK: Partial (comparison partial defect).
 
 **Next** — Agent report → verify → PR → review → merge → retest #8 on production.
+
+## 2026-11-15 06:53 Asia/Manila — gkf-v2 built (agent), live-checked on DEV by Ikeee-AI, PR #277 opened
+**Who:** Ikeee-AI (AI-assisted: yes; built by the AI agent; the live check was run by Ikeee-AI under the owner's approval) · **Task:** AI area (takeover) · **Branch:** `tekatech/s5-ik-gk-comparison-partial` (`cd65ff7`)
+
+**Done**
+- **Agent:**
+  - `gkf-v2` rule: in comparisons/multi-part questions stay grounded if any gadget/part is answered.
+  - Orphan-quote cleanup around a stripped sentinel.
+  - Eval GK-09 (`stays_grounded`) + `score_stays_grounded` in `scripts/eval_runner.py`.
+  - **Local:** backend 1009 passed (15 new); frontend unchanged.
+- The agent did not run the paid live check: it only accepts paid calls approved by the owner directly. The owner had approved it ("okay all of it"), so Ikeee-AI ran it: 5 `/query` requests on DEV, about $0.02, with the agent's capped script.
+- **Live results:**
+  - (a) battery comparison → **specs**, S24 4000mAh [1] + iPhone "not listed" (the production defect fixed).
+  - (b) DeX comparison → GK; (c) S24 DeX → GK; (d) S24 battery → specs.
+  - (e) GK off injection → clean.
+  - No sentinel leak. In (a) the model wrote the sentinel mid-answer and the cleanup removed it.
+- [#277](https://github.com/Ikeee-AI/TekaTech/pull/277) opened; Manuel and Jopher requested.
+
+**Errors and fixes** — None new.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — Ikeee-AI ran the paid check directly (the owner's approval was given to Ikeee-AI) — Ikeee-AI.
+
+**Blockers / risks**
+- #277 review.
+- A single-gadget multi-part question that the specs partly answer now stays grounded, so the missing part gets no GK answer (accepted trade-off).
+- A minor double space may remain after a mid-answer sentinel strip (not visible).
+
+**Plan alignment** — Partial (PR open).
+
+**Next** — Review and merge #277; repeat retest scenario 8 on production.
