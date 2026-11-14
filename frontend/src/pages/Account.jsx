@@ -280,7 +280,8 @@ export default function Account() {
   return (
     <div className="flex flex-col gap-4">
       <BackLink to="/my-gadgets">Back to My Gadgets</BackLink>
-      {/* Two columns on wide screens (rebrand: no tall narrow column with empty sides). */}
+      {/* Two columns on wide screens (rebrand: no tall narrow column with empty sides). Change Password spans
+          two rows there, so Delete My Account sits right under Your Account instead of below a gap. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 
       <section aria-labelledby="account-title" className="bg-white border border-slate-200 rounded-[28px] p-6">
@@ -317,7 +318,7 @@ export default function Account() {
         </div>
       </section>
 
-      <section aria-labelledby="password-title" className="bg-white border border-slate-200 rounded-[28px] p-6">
+      <section aria-labelledby="password-title" className="bg-white border border-slate-200 rounded-[28px] p-6 lg:row-span-2">
         <h2 id="password-title" className="font-display text-lg font-bold text-gray-900 mb-1">
           Change Password
         </h2>
