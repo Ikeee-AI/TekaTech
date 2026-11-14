@@ -1995,3 +1995,26 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #202: **Done** (link check + upload + photos on production).
 
 **Next** — Delete-account test with a throwaway account (owner). Owner: retro by Mon 15:00.
+
+## 2026-11-15 04:37 Asia/Manila — Delete-account verified on production; layout fix PR #274
+**Who:** Ikeee-AI (AI-assisted: yes); the owner ran the deletion with a test account · **Task:** #213 · **Branch:** `tekatech/s5-ik-account-layout`
+
+**Done**
+- **Live delete test:** the owner signed in with tonight's test account (Member) and used Delete My Account; the owner reports "Deletion Successful".
+- Read-only check by the assistant: production Supabase → Authentication → Users loads the other accounts and the test account is no longer listed.
+- #213 is complete end to end (backend #254 + frontend #271).
+- **Owner's UI feedback** (screenshot 04:35): on wide screens the Delete card sat in a new grid row under the tall Change Password card, leaving a gap.
+  - Fix: `lg:row-span-2` on Change Password. **Local:** lint clean, Account tests 29/29, build OK.
+  - PR [#274](https://github.com/Ikeee-AI/TekaTech/pull/274) (`e3b1600`), Jopher requested.
+
+**Errors and fixes** — None.
+
+**Conflicts and contradictions** — None.
+
+**Decisions** — Use the existing test account rather than a new email (the owner has no spare address) — owner.
+
+**Blockers / risks** — #274 needs review.
+
+**Plan alignment** — #213: **Done** (reviewed, merged, deployed, verified on production).
+
+**Next** — #274 review + merge, then check the layout on production. Owner: retro by Mon 15:00.
