@@ -50,3 +50,31 @@ def test_other_forms_are_not_touched(answer):
 
 def test_answer_without_markers_is_unchanged():
     assert strip_invalid_citations("The sources don't say.", 3) == ("The sources don't say.", 0)
+
+
+# "(n)" safety net (15 Nov 2026): the X200 Pro answer on production cited "(1)" throughout.
+from citations import normalize_paren_citations
+
+
+def test_paren_only_answer_becomes_bracket_citations():
+    answer = "It has a 6000 mAh battery (1). It supports 90W charging (2)."
+    assert normalize_paren_citations(answer, 2) == ("It has a 6000 mAh battery [1]. It supports 90W charging [2].", 2)
+
+
+def test_paren_markers_left_alone_when_the_answer_already_uses_brackets():
+    answer = "Chip: Dimensity 9400 [1]. SIM slots (2) are listed."
+    assert normalize_paren_citations(answer, 3) == (answer, 0)
+
+
+def test_paren_number_outside_the_snippets_is_left_alone():
+    answer = "It has a 6000 mAh battery (1) and (7) colours."
+    assert normalize_paren_citations(answer, 2) == ("It has a 6000 mAh battery [1] and (7) colours.", 1)
+
+
+def test_parens_inside_words_or_values_are_not_touched():
+    answer = "Clock 1 x 3.6GHz(1) and model CPH(2)."
+    assert normalize_paren_citations(answer, 3) == (answer, 0)
+
+
+def test_no_snippets_means_no_rewrite():
+    assert normalize_paren_citations("General answer (1).", 0) == ("General answer (1).", 0)

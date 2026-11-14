@@ -92,3 +92,45 @@ def test_non_admin_cannot_write_a_price_source(client, fake_supabase):
         else:
             app.dependency_overrides[get_current_user] = original
     assert fake_supabase.writes == []
+
+
+# Launch prices (15 Nov 2026, sql/gadget_price_launch.sql).
+
+def test_create_with_launch_flag_saves_it(client, fake_supabase):
+    fake_supabase.set_response("gadgets", "insert", [sample_gadget()])
+    resp = client.post("/gadgets", json={**VALID, "price_php": 56990, "price_is_launch": True})
+    assert resp.status_code == 201
+    assert fake_supabase.writes[-1][2]["price_is_launch"] is True
+
+
+def test_create_without_launch_flag_leaves_the_column_out(client, fake_supabase):
+    """Like the price-source columns: a database without gadget_price_launch.sql keeps accepting
+    gadgets that don't use the flag."""
+    fake_supabase.set_response("gadgets", "insert", [sample_gadget()])
+    resp = client.post("/gadgets", json={**VALID, "price_php": 49990})
+    assert resp.status_code == 201
+    assert "price_is_launch" not in fake_supabase.writes[-1][2]
+
+
+def test_update_can_set_and_clear_the_launch_flag(client, fake_supabase):
+    gadget_id = str(uuid4())
+    fake_supabase.set_response("gadgets", "update", [sample_gadget()])
+    assert client.patch(f"/gadgets/{gadget_id}", json={"price_is_launch": True}).status_code == 200
+    assert fake_supabase.writes[-1][2] == {"price_is_launch": True}
+    assert client.patch(f"/gadgets/{gadget_id}", json={"price_is_launch": False}).status_code == 200
+    assert fake_supabase.writes[-1][2] == {"price_is_launch": False}
+
+
+def test_update_refuses_a_null_launch_flag(client, fake_supabase):
+    resp = client.patch(f"/gadgets/{uuid4()}", json={"price_is_launch": None})
+    assert resp.status_code == 422
+
+
+def test_response_defaults_the_launch_flag_to_false(client, fake_supabase):
+    """A row read before the column exists has no price_is_launch; the API still answers false."""
+    row = sample_gadget()
+    row.pop("price_is_launch", None)
+    fake_supabase.set_response("gadgets", "select", [row])
+    resp = client.get(f"/gadgets/{row['id']}")
+    assert resp.status_code == 200
+    assert resp.json()["price_is_launch"] is False

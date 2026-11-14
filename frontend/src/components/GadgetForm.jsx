@@ -109,7 +109,7 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
           type="url"
           inputMode="url"
           placeholder="https://www.samsung.com/ph/…"
-          hint="The brand's official PH page you read the price from."
+          hint="Where you read the price: the brand's official PH page first; if the brand published none, a named PH tech news site."
         />
         <TextField
           {...fieldProps('price_checked_at')}
@@ -117,6 +117,27 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
           type="date"
           hint="The day you read that price."
         />
+      </div>
+
+      <div className="flex items-start gap-3">
+        <input
+          id="price_is_launch"
+          type="checkbox"
+          checked={Boolean(form.price_is_launch)}
+          onChange={(e) => update('price_is_launch')(e.target.checked)}
+          aria-describedby="price_is_launch-hint"
+          className="mt-1 h-4 w-4 shrink-0 accent-current"
+        />
+        <div>
+          <label htmlFor="price_is_launch" className="flex items-baseline gap-1.5 text-sm font-semibold text-slate-800">
+            {GADGET_FIELD_LABELS.price_is_launch}
+            <span className="text-xs font-medium text-slate-500">(Optional)</span>
+          </label>
+          <p id="price_is_launch-hint" className="text-xs text-slate-500 mt-0.5">
+            Tick when the phone is no longer sold and the price is its launch price (base model, regular, not promo).
+            The phone page then shows it as “launch price”.
+          </p>
+        </div>
       </div>
 
       <TextField
