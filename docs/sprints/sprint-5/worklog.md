@@ -1633,3 +1633,44 @@ Short session, ~09:45–10:12 Manila.
 **Plan alignment** — #266 owner requirements (passwords, sign-in-only AI/compare, 20/day quota): **Done**, including the live sign-up retest, ahead of the Sun 15 Nov 09:00 deadline.
 
 **Next** — PR for `tekatech/s5-ik-spam-hint` (Mika to review) — Ikeee-AI. Decide on a Brevo sending domain — owner. Infinix spec gaps under #201 — Manuel.
+
+## 2026-11-14 23:06 Asia/Manila — #254 merged but deploy blocked by main guard; CSP enforced on production; #201 decisions posted; reviews requested
+**Who:** Ikeee-AI (AI-assisted: yes; the owner told the assistant to do the CSP switch and answer #201 itself) · **Task:** S5-IK integration (#254), CSP enforcement (#261 follow-up), #201 decisions, #267 PR · **Branch:** `main`; `tekatech/s5-ik-spam-hint` (PR #267); `tekatech/s5-ik-csp-enforce` (PR #269); log on `tekatech/s5-ik-worklog-batch`
+
+**Done**
+- [#267](https://github.com/Ikeee-AI/TekaTech/pull/267) opened (spam-folder hint, `fd87235`), Mika requested.
+- Manuel acted at 20:14 Manila: **approved #249 on its latest commit `2be365a`**, and merged `main` into #254 (`f9acaf4`). Assistant checked the resolution: both routers, both auth-matrix rows, identical CLAUDE/AGENTS line. CI green.
+- [#254](https://github.com/Ikeee-AI/TekaTech/pull/254) squash-merged → `b84a2bc` (owner instruction). Main run [43607550071](https://github.com/Ikeee-AI/TekaTech/actions/runs/43607550071) **failed at "Main guard (reviewed PR required)"**, so deploy was skipped. Production stays on `9704823` (`/version` checked); `b84a2bc` is on `main`, undeployed.
+- Asked Mika on #267 to review #267 and re-review #249 ([comment](https://github.com/Ikeee-AI/TekaTech/pull/267#issuecomment-6879258661)).
+- **CSP enforced on production.** Before: a `securitypolicyviolation` listener in the owner's signed-in Chrome showed 0 violations (catalog, gadget page, Compare, My Gadgets, My Suggestions, Account, How it works, both themes), and every loaded origin was allowed. Then, in the Render dashboard → `tekatech-web` → Headers, the assistant renamed `Content-Security-Policy-Report-Only` → `Content-Security-Policy` (value unchanged, matches `render.yaml`) and saved. `curl -I` → `content-security-policy`, no report-only. After: reload and the same walk with 0 violations; fonts, `theme-init.js` and images from 9 brand hosts load. Repo record: [#269](https://github.com/Ikeee-AI/TekaTech/pull/269) (`ea0d384`, render.yaml + runbook), Manuel requested. Rollback: rename back in the dashboard.
+- **#201:** found Manuel finished on 13 Nov (24 gadgets, coverage 24/24, rechecked now); it was waiting on the owner's answers, not on Manuel. Decisions posted ([comment](https://github.com/Ikeee-AI/TekaTech/issues/201#issuecomment-6879372671)):
+  - Delete the old POCO X7 Pro and iPhone 15 blocks.
+  - ROG Ally means the original 2023 RC71L. Keep the price only if the official ASUS PH page states it, otherwise clear it; don't delete the gadget for now.
+  - Prices only from official PH brand pages; dates from the brand newsroom or a named PH outlet; source URLs kept.
+  - Spot-checks OK.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Main guard: "PR #254 by @s2302827-byte was merged without another teammate's approval on its final commit." | Jopher's approval was on `40e99e9`; Manuel's conflict fix `f9acaf4` had no approval. The assistant had wrongly said the older approval would do | Needs a non-author approval on `f9acaf4` (Jopher, or the owner), then re-run the failed run. Open, owner |
+| `DELETE /me/account` anonymous → 404 on production | Expected: `b84a2bc` is not deployed, so the route doesn't exist yet | Resolves with the deploy above |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Memory/notes said #201 was waiting on Manuel; it was waiting on the owner since 13 Nov | Day lost on the catalog | Answers posted. Resolved |
+| ROG Ally (category `Console`) shows in a catalog described as phones only; nothing filters by category | Off-scope item in the catalog | Keep for now; decide later. Open, owner |
+| Live CSP is set in the Render dashboard; `render.yaml` is only a record | Repo says report-only until #269 merges | #269. Open, Manuel review |
+
+**Decisions** — Enforce the CSP now instead of waiting until about 16 Nov, after two clean walks — owner (delegated to the assistant). #201 answers as above — owner (delegated to the assistant). Merge #254 — owner.
+
+**Blockers / risks** — #254 not live until a final-commit approval. #249 and #267 wait on Mika. #269 waits on Manuel. Email-link landing and log out/in were not walked under the enforced CSP; Supabase is in `connect-src`.
+
+**Plan alignment** — CSP enforcement: **Done** on production (verified), repo record pending review. #254 (#213 backend): Partial, merged but not deployed. #201: Partial, waiting on Manuel's follow-ups.
+
+**Next**
+- Get a non-author approval on #254 `f9acaf4` (Jopher or owner), then `gh run rerun 43607550071 --failed` and verify `DELETE /me/account` anonymous → 401 — owner/Ikeee-AI.
+- Owner: next sign-in/out or email link, watch for CSP errors in the console.
+- Mika: #267, #249. Manuel: #269, #201 follow-ups.
