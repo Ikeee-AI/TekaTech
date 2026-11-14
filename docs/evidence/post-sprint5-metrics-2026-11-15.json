@@ -1,0 +1,42 @@
+{
+  "repo": "Ikeee-AI/TekaTech",
+  "window": [
+    "2026-11-13T04:45:00Z",
+    "2026-11-14T18:36:00Z"
+  ],
+  "workflow": "ci.yml",
+  "pr_pipeline_avg_min": 1.25,
+  "pr_run_count": 27,
+  "main_pipeline_avg_min": 3.13,
+  "main_run_count": 16,
+  "success_rate_pct": 95.3,
+  "success_numerator": 41,
+  "success_denominator": 43,
+  "cancelled_or_skipped_runs": 0,
+  "production_deploys": 15,
+  "deploy_runs": [
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43623339174",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43621207605",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43616361281",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43610686214",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43591230190",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43591210471",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43561947092",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43557973917",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43491690511",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43471205739",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43470624502",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43470139562",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43441661541",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43430362252",
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43375738624"
+  ],
+  "merge_to_live_avg_min": 3.3,
+  "lead_time_samples": 15,
+  "failed_deploys": 0,
+  "failed_deploy_runs": [],
+  "ci_failures_on_main": [
+    "https://github.com/Ikeee-AI/TekaTech/actions/runs/43607550071"
+  ],
+  "recovery_min": null
+}
