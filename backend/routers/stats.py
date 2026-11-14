@@ -1,8 +1,11 @@
 from collections import Counter
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Depends, Query, Response
+
+from auth import get_current_user
 
 import cache
+from routers.query import PRIVATE_QUESTION_PLACEHOLDER
 from supabase_client import supabase
 
 router = APIRouter(prefix="/stats", tags=["stats"])
@@ -13,11 +16,17 @@ STATS_TTL_SECONDS = 60
 STATS_CACHE_CONTROL = f"public, max-age={STATS_TTL_SECONDS}"
 
 
-def _mark(response: Response, hit: bool) -> None:
-    response.headers["Cache-Control"] = STATS_CACHE_CONTROL
+# Trending questions need a signed-in user (14 Nov 2026), so browsers may keep them but a
+# shared cache (CDN/proxy) must not hand them to an anonymous visitor.
+TRENDING_CACHE_CONTROL = f"private, max-age={STATS_TTL_SECONDS}"
+
+
+def _mark(response: Response, hit: bool, cache_control: str = STATS_CACHE_CONTROL) -> None:
+    response.headers["Cache-Control"] = cache_control
     response.headers["X-Cache"] = "HIT" if hit else "MISS"
 
 
+# Stays public: a covered/total gadget count is catalog data and reveals no question.
 @router.get("/spec-coverage")
 def spec_coverage(response: Response):
     data, hit = cache.get_or_load("stats", ("spec-coverage",), STATS_TTL_SECONDS, _load_spec_coverage)
@@ -35,13 +44,15 @@ def _load_spec_coverage():
     return {"covered": covered, "total": total}
 
 
-# Bounded because the route is public and `limit` is part of the cache key: an
+# Bounded because any signed-in user can call it and `limit` is part of the cache key: an
 # unbounded value would let callers fill the stats cache with one entry per number.
 TRENDING_DEFAULT = 5
 TRENDING_MAX = 10
 # Same cap /query puts on new questions (MAX_QUESTION_CHARS in routers/query.py).
 # Rows saved before that cap can be longer; they are shortened for display here.
 TRENDING_QUESTION_MAX_CHARS = 150
+# A question must have been asked this many times before it is shown to other users.
+TRENDING_MIN_COUNT = 2
 
 
 def _shorten(question: str) -> str:
@@ -50,12 +61,18 @@ def _shorten(question: str) -> str:
     return question[: TRENDING_QUESTION_MAX_CHARS - 1].rstrip() + "…"
 
 
+# Signed-in users only (owner decision, 14 Nov 2026): it shows what other people asked the AI,
+# and the AI features themselves now need a session. Anonymous callers get 401.
 @router.get("/trending-questions")
-def trending_questions(response: Response, limit: int = Query(TRENDING_DEFAULT, ge=1, le=TRENDING_MAX)):
+def trending_questions(
+    response: Response,
+    limit: int = Query(TRENDING_DEFAULT, ge=1, le=TRENDING_MAX),
+    user=Depends(get_current_user),
+):
     data, hit = cache.get_or_load(
         "stats", ("trending-questions", limit), STATS_TTL_SECONDS, lambda: _load_trending(limit)
     )
-    _mark(response, hit)
+    _mark(response, hit, TRENDING_CACHE_CONTROL)
     return data
 
 
@@ -72,7 +89,13 @@ def _load_trending(limit: int):
     if not history:
         return []
 
-    # Count how often each question (normalized) was asked, keep the original casing
+    # Private turns (a signed-in user's saved gadget question) are stored as a placeholder and
+    # never shown. Everything else is counted by normalized text, keeping the original casing.
+    history = [
+        h
+        for h in history
+        if (h.get("query_text") or "").strip() and h["query_text"].strip() != PRIVATE_QUESTION_PLACEHOLDER
+    ]
     normalized_counts = Counter(h["query_text"].strip().lower() for h in history)
     seen_original = {}
     for h in history:
@@ -80,5 +103,8 @@ def _load_trending(limit: int):
         if key not in seen_original:
             seen_original[key] = h["query_text"].strip()
 
-    ranked = sorted(normalized_counts.items(), key=lambda x: x[1], reverse=True)[:limit]
+    # Privacy: a question asked only once may be personal ("is this OK for my son's ...?"), so
+    # only questions asked at least TRENDING_MIN_COUNT times can appear on the shared list.
+    repeated = [(key, count) for key, count in normalized_counts.items() if count >= TRENDING_MIN_COUNT]
+    ranked = sorted(repeated, key=lambda x: x[1], reverse=True)[:limit]
     return [{"question": _shorten(seen_original[key]), "count": count} for key, count in ranked]

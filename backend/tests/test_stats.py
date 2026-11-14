@@ -38,15 +38,36 @@ def test_trending_questions_ranks_by_frequency(client, fake_supabase):
     resp = client.get("/stats/trending-questions")
     assert resp.status_code == 200
     data = resp.json()
-    assert data[0] == {"question": "Which has better battery?", "count": 2}
-    assert data[1] == {"question": "Compare cameras", "count": 1}
+    # "Compare cameras" was asked once, so it stays off the public list (privacy).
+    assert data == [{"question": "Which has better battery?", "count": 2}]
+
+
+def test_trending_questions_hides_one_off_questions(client, fake_supabase):
+    fake_supabase.set_response(
+        "query_history",
+        "select",
+        [{"query_text": f"Is it safe for my son Juan, age {i}?", "created_at": "2026-01-01T00:00:00"} for i in range(5)],
+    )
+    resp = client.get("/stats/trending-questions")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_trending_questions_never_shows_the_private_placeholder(client, fake_supabase):
+    from routers.query import PRIVATE_QUESTION_PLACEHOLDER
+
+    rows = [{"query_text": PRIVATE_QUESTION_PLACEHOLDER, "created_at": "2026-01-01T00:00:00"}] * 6
+    rows += [{"query_text": "Battery life?", "created_at": "2026-01-01T00:00:00"}] * 2
+    fake_supabase.set_response("query_history", "select", rows)
+    resp = client.get("/stats/trending-questions")
+    assert resp.json() == [{"question": "Battery life?", "count": 2}]
 
 
 def test_trending_questions_respects_limit(client, fake_supabase):
     fake_supabase.set_response(
         "query_history",
         "select",
-        [{"query_text": f"Question {i}", "created_at": "2026-01-01T00:00:00"} for i in range(10)],
+        [{"query_text": f"Question {i}", "created_at": "2026-01-01T00:00:00"} for i in range(10)] * 2,
     )
     resp = client.get("/stats/trending-questions?limit=3")
     assert resp.status_code == 200
@@ -57,7 +78,7 @@ def test_trending_questions_default_is_five(client, fake_supabase):
     fake_supabase.set_response(
         "query_history",
         "select",
-        [{"query_text": f"Question {i}", "created_at": "2026-01-01T00:00:00"} for i in range(12)],
+        [{"query_text": f"Question {i}", "created_at": "2026-01-01T00:00:00"} for i in range(12)] * 2,
     )
     resp = client.get("/stats/trending-questions")
     assert resp.status_code == 200
@@ -75,7 +96,7 @@ def test_trending_questions_limit_upper_bound_accepted(client, fake_supabase):
     fake_supabase.set_response(
         "query_history",
         "select",
-        [{"query_text": f"Question {i}", "created_at": "2026-01-01T00:00:00"} for i in range(12)],
+        [{"query_text": f"Question {i}", "created_at": "2026-01-01T00:00:00"} for i in range(12)] * 2,
     )
     resp = client.get("/stats/trending-questions?limit=10")
     assert resp.status_code == 200
@@ -93,6 +114,7 @@ def test_trending_questions_long_old_rows_are_shortened(client, fake_supabase):
             {"query_text": long_question, "created_at": "2026-01-02T00:00:00"},
             {"query_text": long_question, "created_at": "2026-01-01T00:00:00"},
             {"query_text": short_question, "created_at": "2026-01-01T00:00:00"},
+            {"query_text": short_question, "created_at": "2026-01-01T00:00:00"},
         ],
     )
     resp = client.get("/stats/trending-questions")
@@ -102,4 +124,4 @@ def test_trending_questions_long_old_rows_are_shortened(client, fake_supabase):
     assert first["question"].endswith("…")
     assert first["question"].startswith("Which phone has the better battery life")
     assert first["count"] == 2
-    assert second == {"question": short_question, "count": 1}
+    assert second == {"question": short_question, "count": 2}

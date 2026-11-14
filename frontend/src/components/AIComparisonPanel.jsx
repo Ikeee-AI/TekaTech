@@ -8,6 +8,8 @@ import { suggestFollowUps } from '../utils/followUps'
 import AiAnswerResult, { AnswerOptions } from './AiAnswerResult'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
+import AiUsageBadge from './AiUsageBadge'
+import { useAuth } from '../hooks/useAuth'
 
 const DEFAULT_QUESTION = 'Compare these gadgets and highlight the key trade-offs someone should know before buying.'
 const SUGGESTED_QUESTIONS = ['Which offers better value for the price?', 'Compare battery life', 'Compare camera quality']
@@ -23,6 +25,8 @@ export default function AIComparisonPanel({
   // follow-up topics (camera for phones, ports for laptops…); without it they are generic.
   category,
 }) {
+  const { user } = useAuth() ?? {}
+  const isAdmin = Boolean(user?.app_metadata?.is_admin)
   const [question, setQuestion] = useState(defaultQuestion)
   // The question behind the answer on screen; the box can be edited without changing it.
   const [askedQuestion, setAskedQuestion] = useState('')
@@ -118,6 +122,7 @@ export default function AIComparisonPanel({
         <Sparkles size={18} className="text-sage-700" aria-hidden="true" />
         <h2 id="ai-compare-title" className="text-lg font-bold text-slate-900">{title}</h2>
       </div>
+      <AiUsageBadge className="mb-2" />
       <p className="text-sm text-slate-600 mb-4">
         {allowGeneralKnowledge ? (
           <>
@@ -135,8 +140,9 @@ export default function AIComparisonPanel({
       {!checkingSpecs && missingSpecs.length > 0 && (
         <Alert tone="warning" className="mb-4">
           <strong className="font-semibold">{missingSpecs.join(', ')}</strong> {missingSpecs.length === 1 ? 'has' : 'have'} no
-          indexed specs yet — the AI won&apos;t be able to say anything grounded about {missingSpecs.length === 1 ? 'it' : 'them'}.
-          Add specs and index them on the gadget page.
+          {isAdmin
+            ? <>indexed specs yet — the AI won&apos;t be able to say anything grounded about {missingSpecs.length === 1 ? 'it' : 'them'}. Add specs and index them on the gadget page.</>
+            : <>sourced specs ready for AI answers yet, so the AI can&apos;t compare {missingSpecs.length === 1 ? 'it' : 'them'} from official sources.</>}
         </Alert>
       )}
 

@@ -12,6 +12,8 @@ The API runs on Railway since 12 Nov 2026 and doesn't sleep (first request after
 python scripts/demo_malformed_requests.py --api-base https://tekatech-api-production-549b48c9.up.railway.app
 ```
 
+**Since 14 Nov 2026** asking the AI, comparing, share links and trending questions need a signed-in user, so with no login those routes are a 401 before their body is read. The script now also shows those refusals ("Ask the AI with no login", "Compare gadgets with no login", "Open a share link with no login", "Trending questions with no login", "Today's AI question count with no login", and "Ask the AI with a fake token"). Its malformed-input cases for `/query`, `/comparisons` and trending, and the unknown share link, need a session: set `TEKATECH_DEMO_TOKEN` to an ordinary test account's access token in the terminal first (`$env:TEKATECH_DEMO_TOKEN = '<token>'`; never paste it into a file or chat) and they run, otherwise they are listed as skipped. They are refused before the route body runs, so they use none of the account's 20 daily AI questions. The table below is the 30/31 Oct run, before that change.
+
 It sends 16 requests and prints the status and the message a user would see. All 16 are refused before they can write data or call OpenAI. Expected output (run on 30 Oct against a local backend on the dev database, and again on 31 Oct 09:30 UTC against production, `https://tekatech-api.onrender.com`: 16 of 16 refused with the same statuses and messages, no stack trace, key or file path, and a request id on each):
 
 | Group | What is sent | Result |

@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { authErrorMessage, classifyAuthLink, isEmailNotConfirmed, readAuthLinkError } from './authErrors'
+import {
+  authErrorMessage,
+  classifyAuthLink,
+  isEmailNotConfirmed,
+  readAuthLinkError,
+  readLegacyLinkTokens,
+} from './authErrors'
 
 const authError = (fields) => Object.assign(new Error(fields.message ?? ''), fields)
 
@@ -17,6 +23,13 @@ describe('authErrorMessage', () => {
     ['the email send rate limit', { code: 'over_email_send_rate_limit' }, /Too many requests/],
     ['the request rate limit', { code: 'over_request_rate_limit' }, /Too many requests/],
     ['reusing the old password', { code: 'same_password' }, /different from your current one/],
+    [
+      'a weak password',
+      { code: 'weak_password', reasons: ['characters'] },
+      /^That password is too weak\. Use at least 8 characters, with an uppercase and a lowercase letter, a number and a symbol\.$/,
+    ],
+    ['a weak password by name', { name: 'AuthWeakPasswordError', reasons: ['length'] }, /^That password is too weak/],
+    ['a leaked password', { code: 'weak_password', reasons: ['pwned'] }, /appeared in a data breach/],
     ['a missing reset session', { name: 'AuthSessionMissingError' }, /reset session has expired/],
     ['an expired session', { code: 'session_expired' }, /reset session has expired/],
     ['a session not found', { code: 'session_not_found' }, /reset session has expired/],
@@ -90,10 +103,35 @@ describe('classifyAuthLink (#196)', () => {
     expect(classifyAuthLink('', '?error=access_denied')).toEqual({ kind: 'error', code: 'access_denied' })
   })
 
+  it('recognises a PKCE confirmation link (?code=…), and still prefers an error', () => {
+    expect(classifyAuthLink('', '?code=7f3a9c&sb_flow_id=f1')).toEqual({ kind: 'confirmed' })
+    expect(
+      classifyAuthLink('', '?error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid'),
+    ).toEqual({ kind: 'error', code: 'otp_expired' })
+    expect(classifyAuthLink('', '?code=7f3a9c&error=server_error')).toEqual({ kind: 'error', code: 'server_error' })
+  })
+
   it('ignores reset links, other sessions and plain URLs', () => {
     expect(classifyAuthLink('#access_token=abc&type=recovery')).toBeNull()
     expect(classifyAuthLink('#type=signup')).toBeNull()
     expect(classifyAuthLink('', '?ask=battery')).toBeNull()
     expect(classifyAuthLink()).toBeNull()
+  })
+})
+
+describe('readLegacyLinkTokens (links sent before the PKCE switch)', () => {
+  it('reads the session tokens and link type from an implicit-flow hash', () => {
+    expect(readLegacyLinkTokens('#access_token=a1&refresh_token=r1&expires_in=3600&token_type=bearer&type=recovery')).toEqual({
+      access_token: 'a1',
+      refresh_token: 'r1',
+      type: 'recovery',
+    })
+  })
+
+  it('returns null without both tokens, for errors and for plain hashes', () => {
+    expect(readLegacyLinkTokens('#access_token=a1')).toBeNull()
+    expect(readLegacyLinkTokens('#error=access_denied&error_code=otp_expired')).toBeNull()
+    expect(readLegacyLinkTokens('#main-content')).toBeNull()
+    expect(readLegacyLinkTokens()).toBeNull()
   })
 })

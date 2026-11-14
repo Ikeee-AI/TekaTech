@@ -1,19 +1,30 @@
 import logging
+import re
 import secrets
 import string
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
 
+from auth import get_current_user
 from rate_limit import limiter
 from supabase_client import supabase
 
+# Both routes need a signed-in user (owner decision, 14 Nov 2026): anonymous visitors may browse
+# the catalog, but comparing gadgets and opening a shared comparison link need a session. The
+# dependency runs before the body or slug is looked at, so an anonymous caller gets 401 and
+# nothing is read or written. The rate limits stay.
 router = APIRouter(prefix="/comparisons", tags=["comparisons"])
 logger = logging.getLogger(__name__)
 
 ALPHABET = string.ascii_lowercase + string.digits
+SLUG_LENGTH = 7
+# Exactly what _generate_slug produces (every link since Sprint 1), so a malformed slug is
+# refused before it reaches the database. Answered with 404 like any unknown link, because the
+# share page (frontend ShortLinkRedirect) treats 404 as "link not found"; a 422 would show a retry error.
+SLUG_RE = re.compile(f"^[a-z0-9]{{{SLUG_LENGTH}}}$")
 MAX_COMPARISON_GADGETS = 5  # matches the UI's "select 2-3 gadgets" framing, with headroom
 MIN_COMPARISON_GADGETS = 2
 
@@ -36,13 +47,13 @@ class ComparisonCreate(BaseModel):
         return unique
 
 
-def _generate_slug(length: int = 7) -> str:
+def _generate_slug(length: int = SLUG_LENGTH) -> str:
     return "".join(secrets.choice(ALPHABET) for _ in range(length))
 
 
 @router.post("", status_code=201)
 @limiter.limit("20/hour")
-def create_comparison_link(request: Request, payload: ComparisonCreate):
+def create_comparison_link(request: Request, payload: ComparisonCreate, user=Depends(get_current_user)):
     ids = [str(i) for i in payload.gadget_ids]
 
     # One query: every id must be a gadget that exists, or the link would open
@@ -74,7 +85,14 @@ def create_comparison_link(request: Request, payload: ComparisonCreate):
 
 
 @router.get("/{slug}")
-def resolve_comparison_link(slug: str):
+@limiter.limit("60/minute")
+def resolve_comparison_link(
+    request: Request,
+    slug: str,
+    user=Depends(get_current_user),
+):
+    if not SLUG_RE.fullmatch(slug):
+        raise HTTPException(status_code=404, detail="Link not found")
     result = supabase.table("comparison_links").select("*").eq("slug", slug).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Link not found")

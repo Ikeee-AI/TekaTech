@@ -7,7 +7,7 @@ import BackLink from '../components/ui/BackLink'
 import { EMPTY_GADGET } from '../utils/gadgetValidation'
 
 export default function AddGadget() {
-  useDocumentTitle('Add Gadget')
+  useDocumentTitle('Add Phone')
   const navigate = useNavigate()
 
   async function handleSubmit(payload) {
@@ -20,7 +20,7 @@ export default function AddGadget() {
     <div className="max-w-3xl mx-auto">
       <BackLink to="/">Back to Catalog</BackLink>
       <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs">
-        <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900">Add Gadget</h1>
+        <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900">Add Phone</h1>
         <p className="text-sm text-slate-600 mt-1 mb-6">
           Create the catalog entry first. You can add spec sheets on the next screen.
         </p>

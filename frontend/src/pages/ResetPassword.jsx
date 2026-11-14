@@ -8,7 +8,9 @@ import { TextField } from '../components/ui/FormField'
 import Alert from '../components/ui/Alert'
 import Button from '../components/ui/Button'
 import BackLink from '../components/ui/BackLink'
-import { authErrorMessage, MIN_PASSWORD_LENGTH, readAuthLinkError } from '../utils/authErrors'
+import { authErrorMessage, readAuthLinkError } from '../utils/authErrors'
+import { PASSWORD_HINT, passwordError } from '../utils/passwordStrength'
+import PasswordStrength from '../components/PasswordStrength'
 
 function Card({ title, children }) {
   return (
@@ -27,16 +29,27 @@ function Card({ title, children }) {
 /**
  * Landing page for the password-reset email link.
  *
- * supabase-js parses the link's tokens from the URL while the client initialises and
- * stores a recovery session before AuthProvider's getSession() resolves, so once
- * `loading` is false a valid link shows up here as a signed-in `user`. That is more
- * reliable than catching the PASSWORD_RECOVERY event, which fires on a timer and can
- * run before this page mounts. An expired or reused link instead leaves
- * `#error_code=otp_expired` (or similar) in the URL and creates no session.
+ * Since 14 Nov 2026 the link is `/reset-password?token_hash=…&type=recovery` and works in any
+ * browser: supabaseClient.js verifies it (verifyOtp) and AuthProvider marks the tab's fresh
+ * recovery session (`recoveryActive`). The form appears ONLY then: a leftover or already ended
+ * sign-in in this browser must not open it (it showed the form and then failed with "Session
+ * not found", 14 Nov 2026). Signed-in users change their password on the Account page.
+ *
+ * Links sent before that (still accepted while they last):
+ * The link opens /reset-password?code=… (PKCE). supabase-js exchanges the code while the
+ * client initialises and stores a recovery session before AuthProvider's getSession()
+ * resolves, so once `loading` is false a valid link shows up here as a signed-in `user`
+ * (a link sent before the PKCE switch, #access_token=…, is stored the same way; see
+ * utils/authLink.js). That is more reliable than catching the PASSWORD_RECOVERY event,
+ * which can fire before this page mounts; AuthProvider uses that event only to bring a
+ * recovery session that landed elsewhere to this page. An expired or reused link instead
+ * leaves `?error_code=otp_expired` (or similar) in the URL and creates no session, and so
+ * does a link opened in a different browser from the one that requested it (no PKCE code
+ * verifier there).
  */
 export default function ResetPassword() {
   useDocumentTitle('Set a New Password')
-  const { user, loading, updatePassword } = useAuth()
+  const { user, loading, recoveryActive, emailLink, updatePassword } = useAuth()
   const navigate = useNavigate()
 
   const [linkError] = useState(readAuthLinkError)
@@ -56,11 +69,22 @@ export default function ResetPassword() {
     )
   }
 
-  if (linkError || !user) {
+  const linkFailed = emailLink?.type === 'recovery' && !emailLink.ok
+  if (linkError || linkFailed || !user || !recoveryActive) {
     return (
       <Card title="Reset Link Not Valid">
         <Alert tone="error" title="This reset link is invalid or has expired." className="mt-3">
-          Reset links work once and expire after a while. Request a new link and use the most recent email.
+          Reset links work once and expire after a while. Request a new link and open the most recent email.
+          {user && !linkError && !linkFailed && (
+            <>
+              {' '}
+              Already signed in? Change your password on the{' '}
+              <Link to="/account" className="font-semibold underline">
+                Account
+              </Link>{' '}
+              page instead.
+            </>
+          )}
         </Alert>
         <Button as={Link} to="/forgot-password" variant="primary" size="lg" icon={Mail} className="w-full mt-4">
           Request a New Link
@@ -71,9 +95,8 @@ export default function ResetPassword() {
 
   function validate() {
     const next = {}
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      next.password = `Use at least ${MIN_PASSWORD_LENGTH} characters.`
-    }
+    const weak = passwordError(password)
+    if (weak) next.password = weak
     if (confirm !== password) next.confirm = "The passwords don't match."
     return next
   }
@@ -106,21 +129,24 @@ export default function ResetPassword() {
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Hidden username field lets password managers attach the new password to the right account. */}
         <input type="email" name="username" autoComplete="username" value={user.email ?? ''} readOnly hidden />
-        <TextField
-          id="new-password"
-          label="New Password"
-          type="password"
-          required
-          autoComplete="new-password"
-          hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}
-          error={fieldErrors.password}
-          value={password}
-          onChange={(v) => {
-            setPassword(v)
-            setFieldErrors((prev) => ({ ...prev, password: undefined }))
-            setError(null)
-          }}
-        />
+        <div>
+          <TextField
+            id="new-password"
+            label="New Password"
+            type="password"
+            required
+            autoComplete="new-password"
+            hint={PASSWORD_HINT}
+            error={fieldErrors.password}
+            value={password}
+            onChange={(v) => {
+              setPassword(v)
+              setFieldErrors((prev) => ({ ...prev, password: undefined }))
+              setError(null)
+            }}
+          />
+          <PasswordStrength password={password} id="new-password-strength" />
+        </div>
         <TextField
           id="confirm-password"
           label="Confirm New Password"

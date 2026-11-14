@@ -102,6 +102,32 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
         />
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <TextField
+          {...fieldProps('price_source_url')}
+          optional
+          type="url"
+          inputMode="url"
+          placeholder="https://www.samsung.com/ph/…"
+          hint="The brand's official PH page you read the price from."
+        />
+        <TextField
+          {...fieldProps('price_checked_at')}
+          optional
+          type="date"
+          hint="The day you read that price."
+        />
+      </div>
+
+      <TextField
+        {...fieldProps('store_url')}
+        optional
+        type="url"
+        inputMode="url"
+        placeholder="https://…"
+        hint="The brand's official store page. Shown as an “Official store” button on the phone page."
+      />
+
       <TextField
         {...fieldProps('image_url')}
         optional

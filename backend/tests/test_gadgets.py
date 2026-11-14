@@ -187,6 +187,15 @@ def test_list_category_filter_uses_same_spelling(client, fake_supabase):
     assert ("gadgets", "category", "Smartphone") in fake_supabase.filters
 
 
+@pytest.mark.parametrize("param, cap", [("category", 60), ("brand", 80)])
+def test_list_filters_are_capped_at_the_saved_field_length(client, fake_supabase, param, cap):
+    fake_supabase.set_response("gadgets", "select", [])
+    assert client.get("/gadgets", params={param: "x" * cap}).status_code == 200
+    resp = client.get("/gadgets", params={param: "x" * (cap + 1)})
+    assert resp.status_code == 422
+    assert len(fake_supabase.filters) == 1  # only the in-range request reached the database
+
+
 # --- Server-side input validation (mirrors frontend/src/utils/gadgetValidation.js) ---
 
 VALID = {"name": "Galaxy S24", "brand": "Samsung", "category": "Smartphone"}

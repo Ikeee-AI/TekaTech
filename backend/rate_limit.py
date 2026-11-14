@@ -20,6 +20,7 @@ settings.trust_proxy_headers is on, and then only the proxy-appended
 """
 
 import ipaddress
+from urllib.parse import urlsplit
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -42,7 +43,7 @@ def client_ip_key(request: Request) -> str:
     """Rate-limit bucket for the caller.
 
     Default (trust_proxy_headers off): the socket peer, exactly what slowapi's
-    get_remote_address returns. Behind Render's proxy that peer is the proxy,
+    get_remote_address returns. Behind the host's proxy (Railway) that peer is the proxy,
     so every visitor would share one bucket.
 
     With trust_proxy_headers on: the X-Forwarded-For entry appended by the
@@ -74,20 +75,36 @@ def client_ip_key(request: Request) -> str:
 limiter = Limiter(key_func=client_ip_key, storage_uri=settings.rate_limit_storage_uri)
 
 
+def describe_storage_uri(uri: str) -> str:
+    """scheme://host[:port] of a storage URI, for logs and errors.
+
+    A redis URI can carry a password (redis://:secret@host:6379/0), so the user info,
+    path and query are never shown. Anything unparseable is reported only by scheme.
+    """
+    try:
+        parts = urlsplit(uri)
+        host = parts.hostname or ""
+        port = f":{parts.port}" if parts.port else ""
+    except ValueError:
+        return f"{uri.split(':', 1)[0]}://<unparseable>"
+    return f"{parts.scheme}://{host}{port}"
+
+
 def verify_storage_reachable() -> None:
     """Fail fast at startup if the configured limiter storage isn't usable.
 
     Without this, a typo'd or unreachable storage URI surfaces later as a
     per-request error (or worse, goes unnoticed) rather than at boot.
+    The message names the store by scheme and host only, and the underlying error by type:
+    driver error text can echo the connection string.
     """
+    where = describe_storage_uri(settings.rate_limit_storage_uri)
     try:
         healthy = limiter.limiter.storage.check()
     except Exception as exc:  # noqa: BLE001 - surfaced with context below
         raise RuntimeError(
-            f"Rate limiter storage {settings.rate_limit_storage_uri!r} could not be reached: {exc}"
-        ) from exc
+            f"Rate limiter storage {where} could not be reached ({type(exc).__name__})"
+        ) from None
 
     if not healthy:
-        raise RuntimeError(
-            f"Rate limiter storage {settings.rate_limit_storage_uri!r} reported itself unhealthy."
-        )
+        raise RuntimeError(f"Rate limiter storage {where} reported itself unhealthy.")

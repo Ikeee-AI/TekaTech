@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Annotated, Optional
 from urllib.parse import urlsplit
 from uuid import UUID
@@ -93,6 +93,19 @@ def check_release_date(value: Optional[date]) -> Optional[date]:
     return value
 
 
+def check_price_checked_at(value: Optional[date]) -> Optional[date]:
+    """The day a price was read from its source: a real, past (or today's) date. One day of
+    slack covers an admin in Manila saving just after midnight while the server is on UTC."""
+    if value is None:
+        return None
+    if value.year < MIN_RELEASE_YEAR or value > date.today() + timedelta(days=1):
+        raise PydanticCustomError(
+            "price_checked_at_out_of_range",
+            "Enter the day you checked the price (not a future date).",
+        )
+    return value
+
+
 class GadgetBase(BaseModel):
     """Response shape. Deliberately lenient: rows saved before the input limits
     existed must still be readable, so the limits live on the input models only."""
@@ -103,6 +116,11 @@ class GadgetBase(BaseModel):
     release_date: Optional[date] = None
     price_php: Optional[float] = None
     image_url: Optional[str] = None
+    # Sourced prices (14 Nov 2026, sql/gadget_price_source.sql): where the price was read and when,
+    # plus the brand's official store page. Lenient here; validated on the input models.
+    price_source_url: Optional[str] = None
+    price_checked_at: Optional[date] = None
+    store_url: Optional[str] = None
 
     # Runs on create and on every response, so rows saved before #78
     # ("smartphone") are shown as "Smartphone" too.
@@ -116,18 +134,23 @@ class GadgetCreate(BaseModel):
     release_date: Optional[date] = None
     price_php: Optional[PricePhp] = None
     image_url: Optional[str] = None
+    price_source_url: Optional[str] = None
+    price_checked_at: Optional[date] = None
+    store_url: Optional[str] = None
 
     # Declaration order matters: the length check runs before category normalization.
     _clean_text = field_validator("name", "brand", "category")(_clean_required_text)
     _normalize_category = field_validator("category")(normalize_category)
     _check_release_date = field_validator("release_date")(check_release_date)
-    _clean_image_url = field_validator("image_url")(clean_http_url)
+    _clean_image_url = field_validator("image_url", "price_source_url", "store_url")(clean_http_url)
+    _check_price_checked_at = field_validator("price_checked_at")(check_price_checked_at)
 
 
 class GadgetUpdate(BaseModel):
     """PATCH body. Only the fields the client sends are written (the router dumps
     with exclude_unset): an omitted field stays as it is, and an explicit null
-    clears release_date, price_php or image_url. name, brand and category are
+    clears release_date, price_php, image_url, price_source_url,
+    price_checked_at or store_url. name, brand and category are
     required columns, so null is refused for them."""
 
     name: Optional[str] = None
@@ -136,6 +159,9 @@ class GadgetUpdate(BaseModel):
     release_date: Optional[date] = None
     price_php: Optional[PricePhp] = None
     image_url: Optional[str] = None
+    price_source_url: Optional[str] = None
+    price_checked_at: Optional[date] = None
+    store_url: Optional[str] = None
 
     @field_validator("name", "brand", "category", mode="before")
     @classmethod
@@ -148,7 +174,8 @@ class GadgetUpdate(BaseModel):
     _clean_text = field_validator("name", "brand", "category")(_clean_required_text)
     _normalize_category = field_validator("category")(normalize_category)
     _check_release_date = field_validator("release_date")(check_release_date)
-    _clean_image_url = field_validator("image_url")(clean_http_url)
+    _clean_image_url = field_validator("image_url", "price_source_url", "store_url")(clean_http_url)
+    _check_price_checked_at = field_validator("price_checked_at")(check_price_checked_at)
 
 
 class GadgetResponse(GadgetBase):

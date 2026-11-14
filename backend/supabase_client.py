@@ -52,6 +52,6 @@ def build_http_client() -> httpx.Client:
 
 supabase: Client = create_client(
     settings.supabase_url,
-    settings.supabase_key,
+    settings.supabase_key.get_secret_value(),
     options=ClientOptions(httpx_client=build_http_client()),
 )

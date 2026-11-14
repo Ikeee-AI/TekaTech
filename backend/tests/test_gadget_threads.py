@@ -1,13 +1,16 @@
 """Per-gadget AI conversation (user_questions.sql): saving turns in POST /query and the
 /me/gadgets/{id}/questions read/clear routes.
 
-/query stays public. A turn is saved only for a signed-in caller asking about exactly one
-gadget, and saving can never fail the answer. Route access is covered by
+/query needs a signed-in user since 14 Nov 2026. A turn is saved for every question about exactly
+one gadget (comparison and catalog-wide questions are not saved), and saving can never fail the answer. Route access is covered by
 test_authorization_matrix.py.
 """
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
+
+from conftest import real_session_lookup, signed_in_as
 from routers.my_gadgets import THREAD_TURNS_SHOWN
 
 GADGET = "22222222-2222-2222-2222-222222222222"
@@ -28,7 +31,7 @@ def _ask(client, fake_supabase, *, gadget_ids, headers=None, user=SESSION_USER, 
         "_rpc", None, [{"gadget_id": GADGET, "content": "Chip: X1", "source_url": None, "similarity": 0.8}]
     )
     fake_supabase.set_response("gadgets", "select", [{"id": GADGET, "name": "Phone X", "brand": "Brand"}])
-    with patch("routers.query.client") as mock_client, patch("routers.query.get_optional_user", return_value=user):
+    with patch("routers.query.client") as mock_client, signed_in_as(user):
         mock_client.embeddings.create.return_value = _fake_embedding_response()
         mock_client.chat.completions.create.return_value = _fake_completion_response()
         body = {"question": "What chip does it use?"}
@@ -57,16 +60,19 @@ def test_signed_in_single_gadget_question_is_saved_with_the_full_answer(client, 
     assert row["response"]["sources"] == resp.json()["sources"]
 
 
-def test_anonymous_question_is_not_saved(client, fake_supabase):
+def test_anonymous_question_is_refused_and_not_saved(client, fake_supabase):
     resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers={}, user=None)
-    assert resp.status_code == 200
-    assert _saved(fake_supabase) == []
+    assert resp.status_code == 401
+    assert resp.json() == {"detail": "Login required"}
+    assert fake_supabase.writes == []
 
 
-def test_invalid_session_is_not_saved_and_still_answered(client, fake_supabase):
-    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH, user=None)
-    assert resp.status_code == 200
-    assert _saved(fake_supabase) == []
+def test_invalid_session_is_refused_and_not_saved(client, fake_supabase):
+    with real_session_lookup(None):  # Supabase Auth finds no user for the token
+        resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH, user=None)
+    assert resp.status_code == 401
+    assert resp.json() == {"detail": "Invalid or expired session"}
+    assert fake_supabase.writes == []
 
 
 def test_comparison_and_catalog_questions_are_not_saved(client, fake_supabase):
@@ -120,7 +126,9 @@ def test_thread_read_failure_is_a_plain_503(client, fake_supabase, monkeypatch):
     assert "connection reset" not in resp.text
 
 
-def test_regenerate_replaces_the_newest_saved_turn_for_that_question(client, fake_supabase):
+def test_regenerate_replaces_the_newest_saved_turn_for_that_question(client, fake_supabase, monkeypatch):
+    # The fake answers every user_questions select alike, so the trim (tested below) is off here.
+    monkeypatch.setattr("routers.query._trim_thread", lambda *a: None)
     fake_supabase.set_response("user_questions", "select", [{"id": "old-turn"}])
     resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH, extra={"regenerate": True})
     assert resp.status_code == 200
@@ -143,3 +151,87 @@ def test_regenerate_with_nothing_saved_just_saves(client, fake_supabase):
 def test_a_normal_ask_never_deletes_earlier_turns(client, fake_supabase):
     _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
     assert ("user_questions", "delete", None) not in fake_supabase.writes
+
+
+# --- Privacy: a saved (private) turn never puts its text into the public query_history ---
+
+def _history_rows(fake_supabase):
+    return [payload for table, op, payload in fake_supabase.writes if table == "query_history" and op == "insert"]
+
+
+def test_saved_turn_is_recorded_in_query_history_as_a_placeholder_with_tokens(client, fake_supabase):
+    from routers.query import PRIVATE_ANSWER_PLACEHOLDER, PRIVATE_QUESTION_PLACEHOLDER
+
+    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
+    assert resp.status_code == 200
+    assert len(_saved(fake_supabase)) == 1
+    rows = _history_rows(fake_supabase)
+    assert rows, "token accounting row must still be written"
+    for row in rows:
+        assert row["query_text"] == PRIVATE_QUESTION_PLACEHOLDER
+        assert row["answer_text"] == PRIVATE_ANSWER_PLACEHOLDER
+        assert "What chip" not in str(row)
+    assert "prompt_tokens" in rows[0]
+
+
+def test_cached_saved_turn_is_also_private_in_query_history(client, fake_supabase):
+    from routers.query import PRIVATE_QUESTION_PLACEHOLDER
+
+    other_user = SimpleNamespace(id="00000000-0000-0000-0000-0000000000bb", app_metadata={})
+    assert _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH, user=other_user).status_code == 200
+    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)  # same scope: served from cache
+    assert resp.json()["cached"] is True
+    assert _history_rows(fake_supabase)[-1]["query_text"] == PRIVATE_QUESTION_PLACEHOLDER
+
+
+@pytest.mark.parametrize(
+    "gadget_ids, headers, user",
+    [([GADGET, OTHER], AUTH, SESSION_USER), (None, AUTH, SESSION_USER)],
+)
+def test_unsaved_questions_keep_their_text_in_query_history(client, fake_supabase, gadget_ids, headers, user):
+    resp = _ask(client, fake_supabase, gadget_ids=gadget_ids, headers=headers, user=user)
+    assert resp.status_code == 200
+    assert _history_rows(fake_supabase)[0]["query_text"] == "What chip does it use?"
+
+
+# --- Growth cap: only the newest MAX_THREAD_TURNS turns per (user, gadget) are kept ---
+
+def test_saving_a_turn_trims_older_turns_beyond_the_cap(client, fake_supabase):
+    from routers.query import MAX_THREAD_TURNS, THREAD_TRIM_BATCH
+
+    fake_supabase.set_response("user_questions", "select", [{"id": "turn-101"}, {"id": "turn-102"}])
+    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
+    assert resp.status_code == 200
+    ops = [op for t, op, _ in fake_supabase.writes if t == "user_questions"]
+    assert ops == ["insert", "delete"]
+    # Rows past the newest MAX_THREAD_TURNS (0-based offset), newest first, of this user and gadget.
+    assert ("user_questions", MAX_THREAD_TURNS, MAX_THREAD_TURNS + THREAD_TRIM_BATCH - 1) in fake_supabase.ranges
+    assert ("user_questions", "created_at", {"desc": True}) in fake_supabase.orders
+    assert ("user_questions", "id", ["turn-101", "turn-102"]) in fake_supabase.in_filters
+    assert fake_supabase.filters.count(("user_questions", "user_id", SESSION_USER.id)) >= 2
+    assert fake_supabase.filters.count(("user_questions", "gadget_id", GADGET)) >= 2
+
+
+def test_nothing_is_deleted_while_under_the_cap(client, fake_supabase):
+    fake_supabase.set_response("user_questions", "select", [])
+    _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
+    assert [op for t, op, _ in fake_supabase.writes if t == "user_questions"] == ["insert"]
+    assert fake_supabase.ranges  # the trim did look
+
+
+def test_a_failed_trim_never_fails_the_answer_or_the_save(client, fake_supabase, monkeypatch):
+    from conftest import FakeQuery
+
+    def broken_range(self, *a, **k):
+        raise RuntimeError("database down")
+
+    monkeypatch.setattr(FakeQuery, "range", broken_range)
+    resp = _ask(client, fake_supabase, gadget_ids=[GADGET], headers=AUTH)
+    assert resp.status_code == 200
+    assert len(_saved(fake_supabase)) == 1
+
+
+def test_anonymous_and_unsaved_questions_do_not_trim(client, fake_supabase):
+    assert _ask(client, fake_supabase, gadget_ids=[GADGET], headers={}, user=None).status_code == 401
+    _ask(client, fake_supabase, gadget_ids=[GADGET, OTHER], headers=AUTH)
+    assert fake_supabase.ranges == []

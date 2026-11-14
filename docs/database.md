@@ -55,8 +55,9 @@ Run these in Supabase SQL Editor as the project postgres owner:
 6. `backend/sql/increment_comparison_view_count.sql`
 7. `backend/sql/user_gadgets.sql` (My Gadgets, 3 Nov 2026: one table, private to the backend)
 8. `backend/sql/user_questions.sql` (per-gadget AI conversation, 3 Nov 2026: one table, private to the backend)
-9. `backend/sql/api_access.sql` (last, to restrict RPC/table grants)
-10. `backend/sql/lock_browser_roles.sql` (always last: removes every browser-role right in `public`, including tables no file names, and stops Supabase's defaults from granting new objects to the browser; 14 Nov 2026)
+9. `backend/sql/gadget_price_source.sql` (sourced prices, 14 Nov 2026: three nullable columns on `gadgets`)
+10. `backend/sql/api_access.sql` (restricts RPC/table grants)
+11. `backend/sql/lock_browser_roles.sql` (always last: removes every browser-role right in `public`, including tables no file names, and stops Supabase's defaults from granting new objects to the browser; 14 Nov 2026)
 
 ### Browser-role lock (14 Nov 2026)
 
@@ -78,6 +79,16 @@ Projects set up before 3 November 2026 need only step 8, and it must run **befor
 ```sql
 select relrowsecurity from pg_class where oid = 'public.user_questions'::regclass;  -- true
 select has_table_privilege('authenticated', 'public.user_questions', 'SELECT');    -- false
+```
+
+### Adding sourced prices to an existing project
+
+Existing projects need only step 9, and it must run **before** the backend that writes these columns is deployed (an admin save that sends a price source would otherwise fail). Paste `backend/sql/gadget_price_source.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It adds `price_source_url text`, `price_checked_at date` and `store_url text` to `gadgets` (`add column if not exists`), two http/https check constraints (dropped and re-added, safe to re-run), and reloads the PostgREST schema cache. Existing rows keep NULLs; no data changes. Reviewed price values for the catalog are a separate, hand-applied file: `docs/catalog-data/prices-2026-11-14.sql`. Check it with:
+
+```sql
+select column_name, data_type from information_schema.columns
+where table_schema = 'public' and table_name = 'gadgets'
+  and column_name in ('price_source_url', 'price_checked_at', 'store_url');  -- 3 rows
 ```
 
 ### Adding the keyword fallback to an existing project

@@ -2,8 +2,11 @@
 // Only sentences written here, or Supabase's own short `message` string, reach the
 // screen, so a stack trace or raw response body is never displayed.
 
-/** Supabase's default minimum password length; signup (Login.jsx) and reset use the same rule. */
-export const MIN_PASSWORD_LENGTH = 6
+import { PASSWORD_HINT } from './passwordStrength'
+
+// The password rules (and MIN_PASSWORD_LENGTH, kept here for existing imports) live in
+// passwordStrength.js since 14 Nov 2026.
+export { MIN_PASSWORD_LENGTH } from './passwordStrength'
 
 /** Turns a Supabase AuthError (or a network failure) into a sentence for the user. */
 export function authErrorMessage(err, fallback = 'Something went wrong. Please try again.') {
@@ -13,6 +16,13 @@ export function authErrorMessage(err, fallback = 'Something went wrong. Please t
   }
   if (err.status === 429 || err.code === 'over_email_send_rate_limit' || err.code === 'over_request_rate_limit') {
     return 'Too many requests. Wait a minute, then try again.'
+  }
+  if (err.code === 'weak_password' || err.name === 'AuthWeakPasswordError') {
+    // Supabase lists why: 'length', 'characters' and/or 'pwned' (leaked-password check, if enabled).
+    if (err.reasons?.includes('pwned')) {
+      return 'This password has appeared in a data breach. Choose a different one.'
+    }
+    return `That password is too weak. Use ${PASSWORD_HINT.charAt(0).toLowerCase()}${PASSWORD_HINT.slice(1)}`
   }
   if (err.code === 'same_password') return 'Choose a password that is different from your current one.'
   if (err.name === 'AuthSessionMissingError' || err.code === 'session_not_found' || err.code === 'session_expired') {
@@ -31,10 +41,14 @@ export function isEmailNotConfirmed(err) {
 
 /**
  * What an email link left in the URL it opened (#196):
- * - `{ kind: 'error', code }` for an expired or used link (`#error_code=otp_expired`, or the
- *   same in the query string);
- * - `{ kind: 'confirmed' }` for a working sign-up confirmation link (`#access_token=…&type=signup`);
- * - `null` for anything else, including a password-reset link (`type=recovery`).
+ * - `{ kind: 'error', code }` for an expired or used link (`?error_code=otp_expired`, or the
+ *   same in the hash);
+ * - `{ kind: 'confirmed' }` for a working sign-up confirmation link: `?code=…` since the
+ *   switch to the PKCE flow (Supabase only issues the code after confirming the address),
+ *   or `#access_token=…&type=signup` from a link sent before it;
+ * - `null` for anything else, including an old password-reset link (`type=recovery`).
+ * A reset link's `?code=…` also returns `confirmed`; callers skip /reset-password and
+ * password-recovery sessions (AuthLinkNotice).
  */
 export function classifyAuthLink(hash = '', search = '') {
   const fromHash = new URLSearchParams(hash.replace(/^#/, ''))
@@ -43,8 +57,42 @@ export function classifyAuthLink(hash = '', search = '') {
     const code = params.get('error_code') || params.get('error')
     if (code) return { kind: 'error', code }
   }
+  // Any-browser email links (14 Nov 2026): ?token_hash=…&type=… is checked by the app itself
+  // (verifyOtp, supabaseClient.js); the outcome is only known after that request.
+  const otpType = fromQuery.get('token_hash') ? fromQuery.get('type') : null
+  if (otpType) return { kind: 'otp', type: otpType }
+  if (fromQuery.get('code')) return { kind: 'confirmed' }
   if (fromHash.get('access_token') && fromHash.get('type') === 'signup') return { kind: 'confirmed' }
   return null
+}
+
+/** Email-link types verifyOtp accepts for a token_hash link. */
+const OTP_TYPES = new Set(['email', 'signup', 'recovery', 'invite', 'email_change', 'magiclink'])
+
+/**
+ * A token-hash email link (`?token_hash=…&type=recovery`), or null. These links work in any
+ * browser: the app sends the one-time token hash to Supabase (verifyOtp), so nothing depends
+ * on a code verifier stored by the browser that asked for the email (as PKCE `?code=` does).
+ * The Supabase email templates build them (docs/deploy-runbook.md, "Email link templates").
+ */
+export function readEmailLinkOtp(search = '') {
+  const params = new URLSearchParams(search)
+  const tokenHash = params.get('token_hash')
+  const type = params.get('type')
+  if (!tokenHash || !OTP_TYPES.has(type)) return null
+  return { token_hash: tokenHash, type }
+}
+
+/**
+ * The session tokens of an implicit-flow email link (`#access_token=…&refresh_token=…&type=…`),
+ * or null. Links sent before the PKCE switch still have this shape; see utils/authLink.js.
+ */
+export function readLegacyLinkTokens(hash = '') {
+  const params = new URLSearchParams(hash.replace(/^#/, ''))
+  const accessToken = params.get('access_token')
+  const refreshToken = params.get('refresh_token')
+  if (!accessToken || !refreshToken) return null
+  return { access_token: accessToken, refresh_token: refreshToken, type: params.get('type') }
 }
 
 /**

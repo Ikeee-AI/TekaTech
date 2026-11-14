@@ -3,13 +3,14 @@ from typing import Literal, Optional
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from openai import APITimeoutError, OpenAI, OpenAIError, RateLimitError
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
 
+import ai_quota
 import answer_cache
-from auth import get_optional_user
+from auth import get_current_user
 from citations import strip_invalid_citations
 from config import settings
 from keyword_search import build_keyword_query
@@ -28,7 +29,7 @@ router = APIRouter(prefix="/query", tags=["query"])
 PROVIDER_TIMEOUT_SECONDS = 45
 PROVIDER_MAX_RETRIES = 1
 client = OpenAI(
-    api_key=settings.openai_api_key,
+    api_key=settings.openai_api_key.get_secret_value(),
     timeout=PROVIDER_TIMEOUT_SECONDS,
     max_retries=PROVIDER_MAX_RETRIES,
 )
@@ -54,7 +55,7 @@ SIMULATION_HEADER = "x-simulate-failure"
 SIMULATION_MODES = ("timeout", "quota", "bad_output", "empty")
 
 # Admin-only evaluation aid: skip the answer-cache READ for this request (the fresh answer is still
-# stored). Ignored for anonymous and non-admin callers, like the failure drill header.
+# stored). Ignored for non-admin callers, like the failure drill header.
 CACHE_BYPASS_HEADER = "x-bypass-answer-cache"
 CACHE_BYPASS_VALUES = ("1", "true", "yes")
 
@@ -77,7 +78,7 @@ ANSWER_MODEL = "gpt-5-mini"
 MODEL_USED = f"openai:{ANSWER_MODEL}"
 
 # gpt-5-mini bills hidden reasoning tokens as output ($2.00 per 1M against $0.25 per 1M for input),
-# and /query is public with a shared prepaid balance, so a question's cost is set by how long the
+# and /query is open to every signed-in user with a shared prepaid balance, so a question's cost is set by how long the
 # model thinks and writes. Measured on #77: about 87% of an uncapped answer's output was reasoning.
 # The cap is a ceiling, not a target: it sits well above a normal grounded answer, and reasoning
 # counts toward it, so lowering it much further risks cutting answers off before they start.
@@ -97,7 +98,7 @@ class QueryRequest(BaseModel):
     question: str
     # Scope to specific gadgets (comparison mode). Omit it, or send null, to search all
     # gadgets. Capped like a saved comparison: every id is named in the prompt's
-    # "Gadgets in this comparison" note, so an uncapped list on this public route would be
+    # "Gadgets in this comparison" note, so an uncapped list on this open route would be
     # an uncapped prompt. The cap applies to the list as sent, before duplicates are removed.
     gadget_ids: Optional[list[UUID]] = Field(default=None, max_length=MAX_COMPARISON_GADGETS)
     plain_language: bool = False
@@ -106,7 +107,7 @@ class QueryRequest(BaseModel):
     allow_general_knowledge: bool = False
     # The gadget chat's Regenerate (user_questions.sql): the new answer replaces the caller's
     # newest saved turn for this same question and gadget instead of adding a second one.
-    # Ignored when nothing is saved (anonymous, or not exactly one gadget).
+    # Ignored when nothing is saved (not exactly one gadget).
     regenerate: bool = False
 
     @field_validator("question")
@@ -202,18 +203,21 @@ def _lookup_failure(step: str, exc: Exception) -> HTTPException:
     return HTTPException(status_code=503, detail=DETAIL_LOOKUP_FAILED)
 
 
-def _requested_simulation(request: Request) -> str | None:
+_is_admin = ai_quota.is_admin
+
+
+def _requested_simulation(request: Request, user) -> str | None:
     """The failure mode an admin asked for, or None for every normal request.
 
-    Inert unless the setting is on AND the header is present; only then is the caller checked
-    (so logged-in users pay no extra Supabase lookup on ordinary requests). A non-admin or
-    anonymous caller is ignored silently, so the feature is invisible to them.
+    Inert unless the setting is on AND the header is present; only then is the caller's
+    app_metadata.is_admin checked. The session user comes from the route's get_current_user
+    dependency (since 14 Nov 2026 /query needs a signed-in user), so no extra Supabase lookup
+    happens here. A non-admin caller is ignored silently, so the feature is invisible to them.
     """
     mode = request.headers.get(SIMULATION_HEADER)
     if not mode or not settings.failure_simulation_enabled:
         return None
-    user = get_optional_user(request.headers.get("authorization"))
-    if not user or not (user.app_metadata or {}).get("is_admin"):
+    if not _is_admin(user):
         return None
     mode = mode.strip().lower()
     if mode not in SIMULATION_MODES:
@@ -238,18 +242,17 @@ def _simulated_failure(mode: str) -> "QueryResponse":
     raise error
 
 
-def _admin_bypasses_cache(request: Request) -> bool:
+def _admin_bypasses_cache(request: Request, user) -> bool:
     """True only when an admin sends X-Bypass-Answer-Cache: 1, so an evaluation run measures fresh answers.
 
-    Same gating as the failure drill: the caller is looked up only when the header is present, and a
-    non-admin or anonymous caller is ignored silently. Unlike the drill it needs no setting, because
+    Same gating as the failure drill: the caller's admin flag is checked only when the header is
+    present, and a non-admin caller is ignored silently. Unlike the drill it needs no setting, because
     it changes no response contract: the request runs the full pipeline it would run on a cache miss.
     """
     value = request.headers.get(CACHE_BYPASS_HEADER)
     if not value or value.strip().lower() not in CACHE_BYPASS_VALUES:
         return False
-    user = get_optional_user(request.headers.get("authorization"))
-    if not user or not (user.app_metadata or {}).get("is_admin"):
+    if not _is_admin(user):
         return False
     logger.info("Answer-cache read bypassed by admin %s", getattr(user, "id", "?"))
     return True
@@ -294,8 +297,23 @@ def _keyword_matches(question: str, query_embedding, gadget_ids) -> list[dict]:
         return []
 
 
-def _record_query(*, question, answer, cited_gadget_ids, embedding_tokens, prompt_tokens, completion_tokens) -> None:
+# query_history.query_text feeds the /stats/trending-questions list (shown to every signed-in
+# user). A signed-in user's single-gadget question is saved privately in user_questions instead, so its row here keeps
+# only these placeholders: the token columns are still the only per-query cost record (no other
+# table holds embedding/prompt/completion counts), so skipping the row would lose cost accounting,
+# while the placeholder keeps the question and its answer out of anything public. The trending
+# list also ignores the placeholder (routers/stats.py).
+PRIVATE_QUESTION_PLACEHOLDER = "[private question]"
+PRIVATE_ANSWER_PLACEHOLDER = "[private answer]"
+
+
+def _record_query(
+    *, question, answer, cited_gadget_ids, embedding_tokens, prompt_tokens, completion_tokens, private=False
+) -> None:
     """Best-effort write to query_history.
+
+    private=True (a signed-in user's saved single-gadget question) stores the placeholders above
+    instead of the question and answer text, keeping the token accounting.
 
     Deliberately swallows failures: by the time this runs the OpenAI calls for
     this answer have already been billed, so losing the analytics row is
@@ -309,8 +327,8 @@ def _record_query(*, question, answer, cited_gadget_ids, embedding_tokens, promp
     mismatch falls back to writing the row without them.
     """
     base_row = {
-        "query_text": question,
-        "answer_text": answer,
+        "query_text": PRIVATE_QUESTION_PLACEHOLDER if private else question,
+        "answer_text": PRIVATE_ANSWER_PLACEHOLDER if private else answer,
         "gadget_ids_ref": cited_gadget_ids,
         "model_used": MODEL_USED,
     }
@@ -336,7 +354,9 @@ def _record_query(*, question, answer, cited_gadget_ids, embedding_tokens, promp
         logger.exception("query_history insert failed; continuing without logging this query")
 
 
-def _serve_cached(question: str, cached: answer_cache.CachedAnswer, match: str, *, embedding_tokens) -> QueryResponse:
+def _serve_cached(
+    question: str, cached: answer_cache.CachedAnswer, match: str, *, embedding_tokens, private=False
+) -> QueryResponse:
     """Return a cached answer as this request's answer, and record it like a fresh one.
 
     The "no relevant specs" answer is not recorded, the same as when it is generated.
@@ -350,6 +370,7 @@ def _serve_cached(question: str, cached: answer_cache.CachedAnswer, match: str, 
             embedding_tokens=embedding_tokens,
             prompt_tokens=0,
             completion_tokens=0,
+            private=private,
         )
     return response
 
@@ -404,7 +425,7 @@ def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
     No snippets are sent, only the question (and, in comparison mode, the names of the gadgets
     asked about, so "which is better?" still says which). The prompt forbids citations; any [n]
     marker that appears anyway has no snippet to point at, so it is removed and counted.
-    Nothing is written to query_history: that table feeds the public trending list, and an
+    Nothing is written to query_history: that table feeds the shared trending list, and an
     unverified or off-topic question must not show up there.
     """
     gadget_note = ""
@@ -442,47 +463,105 @@ def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
 
 @router.post("", response_model=QueryResponse)
 @limiter.limit("10/minute")
-def ask_question(request: Request, payload: QueryRequest):
-    simulated = _requested_simulation(request)
+def ask_question(request: Request, response: Response, payload: QueryRequest, user=Depends(get_current_user)):
+    # Signed-in users only (owner decision, 14 Nov 2026): anonymous visitors may browse the
+    # catalog but every AI mode (single gadget, comparison, catalog-wide, general knowledge)
+    # needs a session. get_current_user answers 401 "Login required" / "Invalid or expired
+    # session" (or 503 if Supabase Auth is down) before any OpenAI call. The rate limit stays.
+    #
+    # Then the per-user daily limit (ai_quota.py; admins exempt): counted here, after sign-in and
+    # validation, so a 401/422 costs nothing; a cached answer still counts. Over the limit is a
+    # 429 with a plain sentence. The X-AI-Questions-* headers let the UI show what is left.
+    response.headers.update(ai_quota.consume(user))
+    simulated = _requested_simulation(request, user)
     if simulated:
         # Returns or raises before the cache is read or written, so a drill always shows the
         # failure it asked for and never leaves a cached answer behind (or a saved thread turn).
         return _simulated_failure(simulated)
-    response = _answer_question(request, payload)
-    _save_thread_turn(request, payload, response)
-    return response
+    # Resolved before answering, so the query_history row already knows the question is private.
+    thread_user = _thread_user(user, payload)
+    answer = _answer_question(request, payload, user, private=thread_user is not None)
+    _save_thread_turn(thread_user, payload, answer)
+    return answer
 
 
+def _thread_user(user, payload: "QueryRequest"):
+    """The signed-in caller whose turn will be saved to user_questions, or None.
 
-def _save_thread_turn(request: Request, payload: "QueryRequest", response: QueryResponse) -> None:
+    Only a question about exactly one gadget is saved; comparison and catalog-wide questions
+    are not part of a gadget thread (and keep their text in query_history for trending).
+    """
+    if not payload.gadget_ids or len(payload.gadget_ids) != 1:
+        return None
+    return user
+
+
+def _save_thread_turn(user, payload: "QueryRequest", response: QueryResponse) -> None:
     """Per-gadget conversation (user_questions.sql): a signed-in user's question about exactly
     one gadget is saved with its full answer, so the gadget page can show the thread later.
 
     Only answers that reached this point are saved (errors and cut-off answers raised above).
-    The route stays public: no session means nothing is saved. Like _record_query, this can
+    user is None for comparison/catalog questions, which are not saved. Like _record_query, this can
     never fail the request: the OpenAI calls are already billed by the time it runs.
     """
-    if not payload.gadget_ids or len(payload.gadget_ids) != 1:
+    if user is None:
         return
-    authorization = request.headers.get("authorization")
-    if not authorization:
-        return
+    user_id, gadget_id = str(user.id), str(payload.gadget_ids[0])
     try:
-        user = get_optional_user(authorization)
-        if user is None:
-            return
         if payload.regenerate:
-            _drop_regenerated_turn(str(user.id), str(payload.gadget_ids[0]), payload.question)
+            _drop_regenerated_turn(user_id, gadget_id, payload.question)
         supabase.table("user_questions").insert(
             {
-                "user_id": str(user.id),
-                "gadget_id": str(payload.gadget_ids[0]),
+                "user_id": user_id,
+                "gadget_id": gadget_id,
                 "question": payload.question,
                 "response": response.model_dump(mode="json"),
             }
         ).execute()
     except Exception:
         logger.exception("user_questions insert failed; the answer is returned without saving the turn")
+        return
+    _trim_thread(user_id, gadget_id)
+
+
+# Each saved turn holds a full answer and its sources, and a /query loop with a valid
+# session could otherwise grow one user's thread without bound. The gadget page shows the
+# latest 20 (routers/my_gadgets.py); older turns beyond this many are deleted.
+MAX_THREAD_TURNS = 100
+# Rows deleted per trim. One insert adds one row, so a single pass normally removes 0 or 1;
+# the margin also cleans up after a run of failed trims.
+THREAD_TRIM_BATCH = 50
+
+
+def _trim_thread(user_id: str, gadget_id: str) -> None:
+    """Keep only the newest MAX_THREAD_TURNS saved turns for this user and gadget.
+
+    Best-effort like the insert: a failed trim is logged and retried by the next save.
+    Both statements are filtered by the session user, so only the caller's own rows can go.
+    """
+    try:
+        stale = (
+            supabase.table("user_questions")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("gadget_id", gadget_id)
+            .order("created_at", desc=True)
+            .range(MAX_THREAD_TURNS, MAX_THREAD_TURNS + THREAD_TRIM_BATCH - 1)
+            .execute()
+            .data
+        )
+        if not stale:
+            return
+        (
+            supabase.table("user_questions")
+            .delete()
+            .in_("id", [row["id"] for row in stale])
+            .eq("user_id", user_id)
+            .eq("gadget_id", gadget_id)
+            .execute()
+        )
+    except Exception:
+        logger.warning("user_questions trim failed; it is retried on the next saved turn", exc_info=True)
 
 
 def _drop_regenerated_turn(user_id: str, gadget_id: str, question: str) -> None:
@@ -503,12 +582,12 @@ def _drop_regenerated_turn(user_id: str, gadget_id: str, question: str) -> None:
         supabase.table("user_questions").delete().eq("id", rows[0]["id"]).eq("user_id", user_id).execute()
 
 
-def _answer_question(request: Request, payload: "QueryRequest") -> QueryResponse:
+def _answer_question(request: Request, payload: "QueryRequest", user, *, private: bool = False) -> QueryResponse:
     # 0. The same question in the same scope (gadgets, plain-language flag, prompt version,
     #    models) is answered from answer_cache without any OpenAI call. The generation is
     #    read first, so an answer built from specs that change mid-request is not stored.
     #    An admin's X-Bypass-Answer-Cache skips both lookups; the fresh answer is still stored.
-    bypass_cache = _admin_bypasses_cache(request)
+    bypass_cache = _admin_bypasses_cache(request, user)
     #    The general-knowledge flag is part of the scope (as a second prompt version), so a
     #    general-knowledge answer is never served to a request without the flag, or the reverse.
     prompt_scope = f"{PROMPT_VERSION}+{GK_PROMPT_VERSION}" if payload.allow_general_knowledge else PROMPT_VERSION
@@ -518,7 +597,7 @@ def _answer_question(request: Request, payload: "QueryRequest") -> QueryResponse
     cache_generation = answer_cache.current_generation()
     cached = None if bypass_cache else answer_cache.lookup_exact(cache_scope, payload.question)
     if cached:
-        return _serve_cached(payload.question, cached, "exact", embedding_tokens=0)
+        return _serve_cached(payload.question, cached, "exact", embedding_tokens=0, private=private)
 
     # 1. Embed the question the same way spec chunks were embedded
     try:
@@ -542,6 +621,7 @@ def _answer_question(request: Request, payload: "QueryRequest") -> QueryResponse
         return _serve_cached(
             payload.question, cached, "similar",
             embedding_tokens=_token_count(embedding_response, "total_tokens"),
+            private=private,
         )
 
     # 2. Retrieve the most relevant spec chunks via the SQL function in schema.sql
@@ -663,6 +743,7 @@ def _answer_question(request: Request, payload: "QueryRequest") -> QueryResponse
         embedding_tokens=_token_count(embedding_response, "total_tokens"),
         prompt_tokens=_token_count(completion, "prompt_tokens"),
         completion_tokens=_token_count(completion, "completion_tokens"),
+        private=private,
     )
 
     sources = [

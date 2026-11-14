@@ -1,5 +1,5 @@
 // The catalog is curated by admins (scope change, 3 Nov 2026): POST /gadgets is
-// admin-only, so the navbar's Add Gadget button must only appear for an admin.
+// admin-only, so the navbar's Add Phone button must only appear for an admin.
 // user_metadata is client-writable, so claiming is_admin there must not count.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
@@ -23,11 +23,11 @@ function renderAs(user) {
   )
 }
 
-const addGadget = () => screen.queryByRole('link', { name: /add gadget/i })
+const addGadget = () => screen.queryByRole('link', { name: /add phone/i })
 
 afterEach(cleanup)
 
-describe('Navbar Add Gadget button', () => {
+describe('Navbar Add Phone button', () => {
   it('is hidden when nobody is signed in', () => {
     renderAs(null)
     expect(addGadget()).toBeNull()
