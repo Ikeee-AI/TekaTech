@@ -166,8 +166,8 @@
     {
       "id": "5.1",
       "part": 5,
-      "say": "Part five, tests and evaluation. Every pull request and every merge runs the C I pipeline. Here is the latest run on main: about one thousand backend tests with pytest, more than six hundred frontend tests with Vitest, a production build, database migration checks, and browser checks that simulate A I failures.",
-      "do": "Actions → latest CI run on main; expand jobs."
+      "say": "Part five, tests and evaluation. Every pull request and every merge runs the C I pipeline. On the latest run on main: one thousand and nine backend tests with pytest, six hundred and thirty four frontend tests with Vitest, eight browser tests with Playwright that simulate A I failures, and the database migrations applied twice to a scratch database. About sixteen hundred and fifty automated tests, all passing.",
+      "do": "Actions → CI run 43654056969 on main → expand Backend tests (1009 passed), Frontend lint and build (634 passed), Browser checks (8 passed), Database migrations."
     },
     {
       "id": "5.2",
@@ -178,14 +178,20 @@
     {
       "id": "5.3",
       "part": 5,
-      "say": "The A I is evaluated with test cases: each has an input question, the expected facts, the supporting source, and whether the model should abstain. The general knowledge set includes regression cases from our own production testing. The evaluator scores facts supported, valid citations and correct abstentions, and its offline version runs in C I.",
-      "do": "prompts/eval/cases.json, gk_cases.json (GK-08, GK-09), an eval report in docs/evidence."
+      "say": "The A I has its own evaluation sets: twenty four grounded questions and nine general knowledge cases. Each case has the question, the expected facts, the supporting source, and whether the model should decline. They include trick questions that try to override the rules, and regression cases from our own production testing.",
+      "do": "prompts/eval/cases.json, then gk_cases.json scrolled to GK-08 and GK-09."
     },
     {
       "id": "5.4",
       "part": 5,
-      "say": "Tests mock OpenAI and Supabase, so they are free and repeatable, and production is smoke tested right after every deploy.",
-      "do": "Stay on CI run."
+      "say": "Now the scorer, live. It checks that facts are supported, that every citation points to a real source, that the model declines when it should, and that it resists override attempts. These are our hand written reference answers, so this proves the scorer itself works, at no A I cost. The same offline check runs in C I on every prompt change.",
+      "do": "Terminal: python scripts/eval_runner.py --answers prompts/eval/reference_answers.json, then --mode gk --answers prompts/eval/gk_reference_answers.json → Targets met, 9 of 9."
+    },
+    {
+      "id": "5.5",
+      "part": 5,
+      "say": "Real model results are scored separately. On November fifth, G P T five mini on our dev database scored fourteen of twenty four under the official rules, and nineteen of twenty four under the improved Sprint five scorer, for about two cents. Ninety two percent of citations were valid; the rest pointed to one stray test record, and the model never cited a source it was not given. The misses are documented, mainly declining a phone variant we have no specs for. Tests mock OpenAI and Supabase, so they are free and repeatable, and production is smoke tested after every deploy.",
+      "do": "docs/evidence/eval-s5-2026-11-05.md → results table and rescorings table."
     },
     {
       "id": "6.1",

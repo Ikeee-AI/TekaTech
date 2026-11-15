@@ -101,22 +101,28 @@ Use a **realistic example**: a shopper choosing between two phones, then an admi
    Then show the **failure-drill** CI job (Part 5).
    > "OpenAI timeouts, quota errors, empty or unusable output become a friendly 503 with a request id, tested in CI."
 
-### Part 5 — Tests and evaluations (8:30–10:00) · *Ikeee-AI*
+### Part 5 — Tests and evaluations (8:30–10:50) · *Ikeee-AI*
 
-1. **CI test results.** Actions → the latest **CI** run on main → expand:
-   - **Backend tests:** `pytest`, about 1,009 passed;
-   - **Frontend lint and build:** Vitest, about 634 passed;
-   - **Database migrations:** SQL applied twice + acceptance checks;
-   - **Browser checks (failure drill):** Playwright.
+Narration lines 5.1–5.5 (2 min 23 s). Numbers checked 15 Nov on `main` and on the updated worklog branch.
+
+1. **CI test results.** Actions → CI run [43654056969](https://github.com/Ikeee-AI/TekaTech/actions/runs/43654056969) on main → expand:
+   - **Backend tests:** pytest, **1,009 passed**;
+   - **Frontend lint and build:** Vitest, **634 passed** (60 files);
+   - **Browser checks (failure drill):** Playwright, **8 passed**;
+   - **Database migrations:** SQL applied twice to a scratch database, then acceptance checks.
 2. **A failing test is caught.** Run [43503398807](https://github.com/Ikeee-AI/TekaTech/actions/runs/43503398807) failed in the frontend unit tests (an unhandled `scrollIntoView` error) and was fixed before merge. Show it red, then the green run after.
-3. **AI evaluation.** Show:
-   - `prompts/eval/cases.json`: input, expected facts, supporting snippet, abstention flags;
-   - `prompts/eval/gk_cases.json` with **GK-08** (DeX → GK) and **GK-09** (battery comparison must stay grounded);
-   - a report in `docs/evidence/` (e.g. `eval-s4-2026-10-31-*.md`) with pass/fail per case and metrics with denominators.
-   > "`scripts/eval_runner.py` scores answers on facts supported, valid citations and correct abstentions."
-
-   CI runs **Offline prompt evaluation** (`prompt-eval.yml`) on every relevant PR.
-4. > "Tests mock OpenAI and Supabase, so CI is free and repeatable. Real-model checks are run separately and capped. We know the system works because every merge runs these checks, and production is smoke-tested right after each deploy."
+3. **AI evaluation sets.** `prompts/eval/cases.json` (24 grounded cases: question, expected facts, supporting snippet, abstain flag, override tricks), then `prompts/eval/gk_cases.json` (9 cases), scrolled to **GK-08** and **GK-09** (regressions from the 15 Nov production testing).
+4. **The scorer, live, in a terminal** (free, no AI call):
+   ```
+   python scripts/eval_runner.py --answers prompts/eval/reference_answers.json
+   python scripts/eval_runner.py --mode gk --answers prompts/eval/gk_reference_answers.json
+   ```
+   Both end with **"Targets met"** (GK: 9 of 9). **Say clearly** that these are the hand-written reference answers, so they prove the scorer works, not the model.
+5. **Real model scores.** `docs/evidence/eval-s5-2026-11-05.md`: gpt-5-mini on the dev database, 5 Nov, about $0.02.
+   - **14 / 24** under the official s3 rules; **19 / 24** under the Sprint 5 scorer.
+   - Valid citations **59 / 64 (92%)**. All 5 invalid ones are `[0]`, a stray dev record; the model cited no number it was not given.
+   - Main weakness: declining a variant that has no specs on file.
+   Close: tests mock OpenAI and Supabase (free, repeatable); production is smoke-tested after every deploy.
 
 ### Part 6 — DevOps configuration and rules (10:00–11:30) · *Ikeee-AI (DevOps Engineer)*
 
