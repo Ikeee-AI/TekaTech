@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, LogIn, LogOut, Menu, X, Search, Sparkles, CornerDownLeft, User, Inbox, Moon, Sun, Cpu } from 'lucide-react'
+import { Plus, LogIn, LogOut, Menu, X, Search, Sparkles, CornerDownLeft, User, Inbox, Moon, Sun } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { useCorrectionBadges } from '../hooks/useCorrectionBadges'
 import { useTheme } from '../hooks/useTheme'
 import ConfirmDialog from './ui/ConfirmDialog'
+import LogoMark from './ui/LogoMark'
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600'
 
@@ -303,10 +304,10 @@ function Navbar() {
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-[1320px] mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-2.5">
         <Link to="/" aria-label="TekaTech home" className={`shrink-0 flex items-center gap-2 rounded-lg ${focusRing}`}>
-          <span className="w-9 h-9 rounded-[10px] bg-sage-700 text-white flex items-center justify-center" aria-hidden="true">
-            <Cpu size={19} strokeWidth={2.4} />
+          <LogoMark className="w-9 h-9 text-sage-700" />
+          <span className="text-xl font-extrabold tracking-[-0.03em] text-slate-900" aria-hidden="true">
+            Teka<span className="text-sage-700">Tech</span>
           </span>
-          <span className="text-xl font-extrabold tracking-[-0.03em] text-slate-900">TekaTech</span>
         </Link>
 
         <div className="order-last w-full md:order-none md:w-auto md:flex-1 md:max-w-md">
