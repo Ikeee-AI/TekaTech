@@ -220,8 +220,8 @@
     {
       "id": "6.5",
       "part": 6,
-      "say": "We track pipeline metrics each week: about one minute for pull request runs, about three minutes on main, ninety five percent success, and about three minutes from merge to live. Optimizations include caching, parallel jobs, cancelling outdated runs and pinned actions.",
-      "do": "docs/devops/metrics.md latest row."
+      "say": "We track pipeline metrics each week. Over Sprint five: about one point two minutes per pull request run, about three and a quarter minutes on main, ninety nine percent success over one hundred and fourteen runs, fifty three production deploys, and under three minutes from merge to live. Since then one deploy failed, from an invalid token, and the next good deploy came eleven minutes later. Optimizations include caching, parallel jobs, cancelling outdated runs and pinned actions.",
+      "do": "docs/devops/metrics.md → rows 'Sprint 5 final' and 'Post-Sprint 5'."
     },
     {
       "id": "6.6",
