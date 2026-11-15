@@ -37,19 +37,18 @@ Use a **realistic example**: a shopper choosing between two phones, then an admi
 
 1. **Browse and read (Read).** Home → scroll the catalog → filter by brand/price → open **Galaxy S24**.
    > "Each phone shows sourced key specs, a price with its source and checked date, and a release date."
-2. **Sign-in gate + validation.** Signed out, click **Ask AI**.
+2. **Sign-in gate + validation.** **Start Part 2 signed out.** Click **Ask AI**.
    > "AI needs an account, so visitors can only browse."
 
-   On **Sign Up**, type a weak password to show the live **password checklist** turning red/green. Don't submit.
+   On **Sign Up**, type a weak password to show the live **password checklist** turning red/green. Don't submit. Then **log in as the admin account** (the owner types the password; it's masked). Admins have no daily limit, so the "X of 20" line isn't shown; narration line 2.5 says so.
 3. **AI with citations (loading state).** Sign in → Galaxy S24 → ask *"What is the battery capacity?"*
    > "You see the loading state, then the answer: 4000mAh, citation [1]. Clicking [1] scrolls to the exact spec and its source."
 
-   Point at **"X of 20 AI questions left today"**.
 4. **Compare.** Add **iPhone 15** to compare → **Face-off / Table** → ask *"Which has the bigger battery?"*
    > "The S24's 4000mAh is cited, and the iPhone 15's capacity is honestly marked not stated. Apple doesn't publish it."
-5. **My Gadgets (Create/Delete on the user side).** Save the S24 to **My Gadgets** → open My Gadgets → remove it.
+5. **My Gadgets (Create/Delete on the user side).** On the **catalog card** of Galaxy S24, press **"add to My Gadgets"** (it's on the card, not the phone page) → open **My Gadgets** (1 gadget) → **Remove** → "Your Dashboard Is Empty".
 6. **Admin CRUD on real records** (switch to the admin account):
-   - **Create:** **Add Phone** → leave Name empty and submit → show the **validation errors** → fill `Name: TekaTech Demo Phone`, `Brand: Demo`, `Category: Smartphone`, `Price: 12345` → Save.
+   - **Create:** **+ Add Phone** in the top bar (page `/add`) → **Save Gadget** with everything empty → show the **validation errors** → fill `Name: TekaTech Demo Phone`, `Brand: Demo`, `Category: Smartphone`, `Price: 12345` → Save.
    - **Read:** it appears in the catalog.
    - **Update:** **Edit** → change the price to `12999` → **Save Changes** → the price updates. Optionally **Upload Photo**: "uploads go to Supabase Storage".
    - **Add a spec:** **Add Specs** → `Battery: 5000 mAh` with a source URL → **Index for AI** → "Ready for AI".
@@ -88,9 +87,7 @@ Use a **realistic example**: a shopper choosing between two phones, then an admi
 
 1. **What and why.**
    > "Phone spec sheets are long and inconsistent. The AI answers a shopper's question **only from the saved, sourced specs** and cites them, so every claim is checkable. It uses OpenAI: text-embedding-3-small to find the right spec chunks in pgvector, and gpt-5-mini to write the answer."
-2. **A real request.** On the iPhone 15 page ask *"Which chip does it use?"*
-
-   Open DevTools → Network → the `query` request → show the **Response**: `answer`, `sources`, `answer_basis: "specs"`, `invalid_citations_removed`.
+2. **A real request.** **The owner presses F12** (DevTools → **Network**). The browser automation can't open DevTools itself. On the iPhone 15 page ask *"Which chip does it use?"* → click the `query` request → show the **Response**: `answer`, `sources`, `answer_basis: "specs"`, `invalid_citations_removed`.
 3. **How the backend validates the output** (show `backend/citations.py` and `backend/routers/query.py` briefly in GitHub):
    > "The backend checks every [n] citation against the snippets that were actually sent and strips any that point nowhere. It counts them. An answer cut off by the token limit is refused with a 503, never shown half-finished. Retrieved spec text is treated as untrusted data in the prompt."
 4. **General-knowledge mode** (opt-in, labelled). Tick **Allow General Knowledge** → *"Does the Galaxy S24 support Samsung DeX?"* → the answer starts **"General knowledge: not from saved specs, unverified"** and has no citations.
@@ -123,7 +120,7 @@ Use a **realistic example**: a shopper choosing between two phones, then an admi
 
 ### Part 6 — DevOps configuration and rules (10:00–11:30) · *Ikeee-AI (DevOps Engineer)*
 
-1. **Repository rules.** GitHub → **Settings → Branches**: show the message *"Upgrade to GitHub Pro or make this repository public"*.
+1. **Repository rules.** GitHub → **Settings → Branches** → **Add classic branch protection rule** (don't save). GitHub shows: *"Your rules won't be enforced on this private repository until you move to a GitHub Team or Enterprise organization account."*
    > "Our repo is private on GitHub Free, so GitHub's branch protection isn't available. We enforce the rules in the pipeline instead."
 
    Open `PIPELINE.md` → **"Status 15 Nov 2026"** table.
@@ -205,6 +202,21 @@ gh pr create --base main --head tekatech/video-e2e-demo \
 **After recording (optional):** keep the test file (it's harmless) or remove it later in a normal reviewed PR.
 
 ---
+
+## Rehearsal notes (15 Nov, 08:50)
+
+- **Checked and working on production:**
+  - brand shortcut Samsung (4 phones);
+  - Galaxy S24 page; the AI answer in about 8 s with a loading state; citation [1] opens the source card (Battery 4000mAh);
+  - Add Phone empty submit → "Please fix these 3 fields" (nothing saved);
+  - My Gadgets add/remove from the catalog card.
+- **Dashboards load, logged in:**
+  - Supabase **PRODUCTION** Table Editor (gadgets, spec_documents, spec_corrections, user_gadgets, user_questions, query_history), Schema Visualizer (press **Auto layout** and zoom in), Logs Explorer;
+  - Railway `tekatech-api` **Online** with ACTIVE deploy + **View logs**;
+  - Render `tekatech-web` **Live** with the deploy list and Deploy Hook trigger.
+- **Terminal:** the malformed-request demo runs in a **visible** PowerShell window, ending with "Every request was refused safely". Cases needing a member token show "skipped" (fine).
+- **Avoid on camera:** the Railway **Variables** tab and the Render **Environment** page (they show secret values).
+- **Before the real take:** clear the admin account's saved chats on Galaxy S24 and iPhone 15 (**New Chat → Delete**). Rehearsal questions were saved there.
 
 ## Part C — Pre-flight checklist (1 hour before recording)
 
