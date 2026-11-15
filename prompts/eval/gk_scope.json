@@ -1,0 +1,16 @@
+{
+  "note": "Case -> gadgets for the general-knowledge set, for scripts/eval_adapter.py --mode gk --scope. Names must match the target catalog (case-insensitive, exact). GK-08 checks that a scoped question the saved specs don't cover reaches the general-knowledge answer through the NOT_IN_SPECS fallback (gkf-v1). GK-09 checks that a comparison the specs answer for one gadget stays grounded (gkf-v2). Cases not listed are asked unscoped.",
+  "gadgets": {
+    "iphone-15": "iPhone 15",
+    "galaxy-s24-ph": "Galaxy S24"
+  },
+  "cases": {
+    "GK-08": [
+      "galaxy-s24-ph"
+    ],
+    "GK-09": [
+      "iphone-15",
+      "galaxy-s24-ph"
+    ]
+  }
+}

@@ -1,19 +1,26 @@
 // #196: one-time feedback after a sign-up confirmation link, good or expired.
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { AuthContext } from '../context/authContextValue'
+import { saveReturnPath } from '../utils/returnPath'
 import AuthLinkNotice from './AuthLinkNotice'
+
+function CurrentPage() {
+  const location = useLocation()
+  return <output data-testid="page">{location.pathname + location.search}</output>
+}
 
 const USER = { id: 'u-1', email: 'new.user@example.com', app_metadata: {}, user_metadata: {} }
 const CONFIRMED = { kind: 'confirmed' }
 const EXPIRED = { kind: 'error', code: 'otp_expired' }
 
-function renderNotice({ link, pathname = '/', user = null, loading = false, emailLink = null }) {
+function renderNotice({ link, pathname = '/', user = null, loading = false, emailLink = null, showPage = false }) {
   return render(
     <MemoryRouter>
       <AuthContext.Provider value={{ user, loading, emailLink }}>
         <AuthLinkNotice link={link} pathname={pathname} />
+        {showPage && <CurrentPage />}
       </AuthContext.Provider>
     </MemoryRouter>,
   )
@@ -21,7 +28,55 @@ function renderNotice({ link, pathname = '/', user = null, loading = false, emai
 
 afterEach(() => {
   cleanup()
+  window.localStorage.clear()
   window.history.replaceState(null, '', '/')
+})
+
+describe('AuthLinkNotice: back to the starting page (#196 item 4)', () => {
+  it('takes a confirmed user back to the page they signed up from, with the notice on top', () => {
+    saveReturnPath('/compare?ids=a,b')
+    renderNotice({ link: CONFIRMED, user: USER, showPage: true })
+    expect(screen.getByTestId('page').textContent).toBe('/compare?ids=a,b')
+    expect(screen.getByText('Email Confirmed')).toBeTruthy()
+  })
+
+  it('stays on the page the link opened when no starting page was saved', () => {
+    renderNotice({ link: CONFIRMED, user: USER, showPage: true })
+    expect(screen.getByTestId('page').textContent).toBe('/')
+  })
+
+  it('does not move before the session exists, and keeps the saved page for then', () => {
+    saveReturnPath('/my-gadgets')
+    renderNotice({ link: CONFIRMED, user: null, loading: true, showPage: true })
+    expect(screen.getByTestId('page').textContent).toBe('/')
+    expect(window.localStorage.length).toBe(1)
+  })
+
+  it('works with an any-browser link (token_hash) once Supabase has accepted it', () => {
+    saveReturnPath('/my-gadgets')
+    renderNotice({ link: { kind: 'otp', type: 'email' }, user: USER, emailLink: { type: 'email', ok: true }, showPage: true })
+    expect(screen.getByTestId('page').textContent).toBe('/my-gadgets')
+  })
+
+  it('does not move while the any-browser link is still being checked', () => {
+    saveReturnPath('/my-gadgets')
+    renderNotice({ link: { kind: 'otp', type: 'email' }, user: null, loading: true, emailLink: null, showPage: true })
+    expect(screen.getByTestId('page').textContent).toBe('/')
+    expect(window.localStorage.length).toBe(1)
+  })
+
+  it('does not move when the link confirmed the email but signed nobody in (another browser)', () => {
+    saveReturnPath('/my-gadgets')
+    renderNotice({ link: CONFIRMED, user: null, showPage: true })
+    expect(screen.getByTestId('page').textContent).toBe('/')
+    expect(window.localStorage.length).toBe(1)
+  })
+
+  it('does not move for an expired link', () => {
+    saveReturnPath('/my-gadgets')
+    renderNotice({ link: EXPIRED, showPage: true })
+    expect(screen.getByTestId('page').textContent).toBe('/')
+  })
 })
 
 describe('AuthLinkNotice', () => {

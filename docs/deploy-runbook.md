@@ -65,9 +65,9 @@ Re-check after a host or proxy change: repeat steps 1–3 (no AI calls; `/health
 
 ## Security headers (frontend)
 
-`render.yaml` lists the frontend's response headers for `/*`: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Strict-Transport-Security`, `Permissions-Policy` and a `Content-Security-Policy-Report-Only`. No Blueprint was provisioned (see First-time setup, step 5), so these take effect only once they are entered on `tekatech-web` in the Render dashboard (Settings → Headers, path `/*`, one row per header, values copied from `render.yaml`). Headers apply without a rebuild.
+`render.yaml` lists the frontend's response headers for `/*`: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Strict-Transport-Security`, `Permissions-Policy` and a `Content-Security-Policy` (enforced; it was `Content-Security-Policy-Report-Only` until the clean walk of 14 Nov 2026). No Blueprint was provisioned (see First-time setup, step 5), so these take effect only once they are entered on `tekatech-web` in the Render dashboard (Settings → Headers, path `/*`, one row per header, values copied from `render.yaml`). Headers apply without a rebuild.
 
-The CSP starts in **report-only** mode: the browser reports what it *would* block but blocks nothing. To enforce it:
+The CSP started in **report-only** mode (the browser reports what it *would* block but blocks nothing) and is enforced once a walk is clean. The steps, also for re-checking after a change:
 
 1. Open the live frontend with DevTools → Console, cache disabled. Walk the main journeys: catalog, gadget detail with an AI answer and source links, compare, log in / log out, a sign-up confirmation or password-reset email link, light and dark theme.
 2. Look for `[Report Only] Refused to …` messages. Each one names the directive and the blocked URL. Expected: none. If the API URL or Supabase project changes, update `connect-src` first.

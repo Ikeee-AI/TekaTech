@@ -56,7 +56,13 @@ Run these in Supabase SQL Editor as the project postgres owner:
 7. `backend/sql/user_gadgets.sql` (My Gadgets, 3 Nov 2026: one table, private to the backend)
 8. `backend/sql/user_questions.sql` (per-gadget AI conversation, 3 Nov 2026: one table, private to the backend)
 9. `backend/sql/gadget_price_source.sql` (sourced prices, 14 Nov 2026: three nullable columns on `gadgets`)
-10. `backend/sql/api_access.sql` (last, to restrict RPC/table grants)
+10. `backend/sql/gadget_price_launch.sql` (launch prices, 15 Nov 2026: one boolean column on `gadgets`, default false)
+11. `backend/sql/api_access.sql` (restricts RPC/table grants)
+12. `backend/sql/lock_browser_roles.sql` (always last: removes every browser-role right in `public`, including tables no file names, and stops Supabase's defaults from granting new objects to the browser; 14 Nov 2026)
+
+### Browser-role lock (14 Nov 2026)
+
+A read-only check of production on 14 Nov 2026 found RLS on all ten tables, but three untracked leftover tables (`profiles`, `image_lookups`, `ingestion_queue`, unused by the app) with full `anon`/`authenticated` rights including TRUNCATE (not covered by RLS); default privileges that grant every new table and function to the browser roles; five old policies with no effect; and `set_updated_at()` without a fixed `search_path`. `lock_browser_roles.sql` fixes all of these and is replay-safe. It does not drop the leftover tables (that is a separate decision). To apply on an existing project: paste the file into the SQL Editor of the right project (check the project ref in the URL), run it, then re-run the check query from the PR. Expected: no `browser_grants`, no `policies`, and `anon`/`auth` false for every function except Supabase's `rls_auto_enable()`. The backend uses `service_role`, which keeps full rights, so the app is unaffected.
 
 ### Adding My Gadgets to an existing project
 
@@ -86,6 +92,16 @@ where table_schema = 'public' and table_name = 'gadgets'
   and column_name in ('price_source_url', 'price_checked_at', 'store_url');  -- 3 rows
 ```
 
+### Adding the launch-price flag to an existing project
+
+Projects set up before 15 November 2026 need only step 10, and it must run **before** the frontend that sends `price_is_launch` is deployed (an admin save that ticks "Launch price" would otherwise fail). Paste `backend/sql/gadget_price_launch.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It adds `price_is_launch boolean not null default false` to `gadgets` (`add column if not exists`, safe to re-run) and reloads the PostgREST schema cache. Existing rows get `false`; no other data changes. Check it with:
+
+```sql
+select column_name, data_type, is_nullable, column_default from information_schema.columns
+where table_schema = 'public' and table_name = 'gadgets' and column_name = 'price_is_launch';
+-- 1 row: boolean, NO, false
+```
+
 ### Adding the keyword fallback to an existing project
 
 Projects set up before 27 October 2026 need only step 5. Paste `backend/sql/keyword_match_spec_documents.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It creates one function (`create or replace`, safe to re-run), revokes it from `public`/`anon`/`authenticated`, grants it to `service_role`, and reloads the PostgREST schema cache. It changes no table, index or data. Check it with:
@@ -96,6 +112,23 @@ select has_function_privilege('anon', 'public.keyword_match_spec_documents(vecto
 ```
 
 The backend works before this step. Until the function exists, a question with no vector match logs one warning ("Keyword fallback unavailable") and returns the usual "no relevant specs" answer. Applying it needs no deploy or restart.
+
+### Adding gadget photo uploads (Supabase Storage bucket)
+
+Admins can upload a gadget photo (`POST /gadgets/{gadget_id}/image`, 15 Nov 2026, issue #202). The API stores it in a **public** Supabase Storage bucket named `gadget-images` and sets the gadget's `image_url` to the object's public URL. The bucket must exist in each Supabase project; it is not part of the numbered list above, because the `storage` schema exists only in Supabase and CI's plain Postgres would fail on it. That is why the file lives in `backend/sql/manual/` and is **not** registered in `assemble_sql.py`.
+
+Paste `backend/sql/manual/gadget_images_bucket.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It inserts the bucket (`on conflict (id) do update`, safe to re-run) with `public = true`, a 2 MB `file_size_limit` (2097152 bytes) and `allowed_mime_types` JPEG, PNG, WebP and AVIF, then selects the row so you can see it. It changes no table or data in `public`. Until it runs, every upload answers 503 "Couldn't store the photo right now" and the gadget is left unchanged; pasting an image link keeps working. Applying it needs no deploy or restart.
+
+Do **not** add a storage policy for this bucket. The backend uploads with the service-role key, which bypasses RLS, and only after `get_current_admin_user`; a public bucket serves reads through its public URL without any policy. An `insert`/`update`/`delete` (or `select`) policy on `storage.objects` would let browser sessions write or list photos directly, around the API's size and magic-byte checks. Check it with:
+
+```sql
+select id, public, file_size_limit, allowed_mime_types from storage.buckets where id = 'gadget-images';
+-- 1 row: true, 2097152, {image/jpeg,image/png,image/webp,image/avif}
+select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects'
+  and (qual ilike '%gadget-images%' or with_check ilike '%gadget-images%');  -- expect 0
+```
+
+The frontend CSP already allows the photos (`img-src 'self' https: data:` in `render.yaml`); the upload itself goes to the API, which `connect-src` lists.
 
 Generate a single pasteable setup file in PowerShell from the repository root:
 

@@ -11,7 +11,10 @@ export const AI_USAGE_EVENT = 'tekatech:ai-usage-changed'
 
 async function request(path, options = {}) {
   const { data: { session } } = await supabase.auth.getSession()
-  const headers = { "Content-Type": "application/json", ...options.headers }
+  // A FormData body (photo upload) must not get the JSON type: the browser sets
+  // multipart/form-data with its boundary itself.
+  const isForm = typeof FormData !== "undefined" && options.body instanceof FormData
+  const headers = { ...(isForm ? {} : { "Content-Type": "application/json" }), ...options.headers }
   if (session?.access_token) {
     headers["Authorization"] = `Bearer ${session.access_token}`
   }
@@ -48,6 +51,12 @@ export const api = {
   createGadget: (data) => request("/gadgets", { method: "POST", body: JSON.stringify(data) }),
   updateGadget: (id, data) => request(`/gadgets/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteGadget: (id) => request(`/gadgets/${id}`, { method: "DELETE" }),
+  // Admin-only (#202): stores the photo and sets the gadget's image_url; returns the updated gadget.
+  uploadGadgetImage: (id, file) => {
+    const body = new FormData()
+    body.append("file", file)
+    return request(`/gadgets/${id}/image`, { method: "POST", body })
+  },
   getSpecs: (gadgetId) => request(`/gadgets/${gadgetId}/specs`),
   ingestSpecs: (gadgetId, data) => request(`/gadgets/${gadgetId}/specs`, { method: "POST", body: JSON.stringify(data) }),
   // Admin-only (#127); used by DeleteSpecButton.
@@ -59,6 +68,8 @@ export const api = {
   getMyCorrections: () => request(`/corrections/mine`),
   getPendingCorrectionCount: () => request(`/corrections/pending-count`),
   resolveCorrection: (id, action) => request(`/corrections/${id}`, { method: "PATCH", body: JSON.stringify({ action }) }),
+  // Admin-only, read-only (#206).
+  getAdminOverview: () => request(`/admin/overview`),
   createComparisonLink: (gadgetIds) => request(`/comparisons`, { method: "POST", body: JSON.stringify({ gadget_ids: gadgetIds }) }),
   getComparisonBySlug: (slug) => request(`/comparisons/${slug}`),
   askQuestion: async (data) => {
@@ -79,4 +90,6 @@ export const api = {
   // The signed-in user's saved questions about one gadget (POST /query saves them), oldest first.
   getGadgetQuestions: (gadgetId) => request(`/me/gadgets/${gadgetId}/questions`),
   clearGadgetQuestions: (gadgetId) => request(`/me/gadgets/${gadgetId}/questions`, { method: "DELETE" }),
+  // Deletes the session user's own account and data (#213): 204 → null; 409 for an admin account.
+  deleteMyAccount: () => request(`/me/account`, { method: "DELETE" }),
 }

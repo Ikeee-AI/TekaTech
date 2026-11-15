@@ -59,6 +59,10 @@ class FakeQuery:
         self._client.in_filters.append((self._table, *a))
         return self
 
+    def gte(self, *a, **k):
+        self._client.filters.append((self._table, "gte", *a))
+        return self
+
     def order(self, *a, **k):
         self._client.orders.append((self._table, *a, k))
         return self
@@ -87,6 +91,32 @@ class FakeSupabase:
         self.ranges = []
         self.in_filters = []
         self.rpc_calls = []
+        # supabase.auth.admin.delete_user (routers/my_account.py): records the ids it was asked to delete
+        self.deleted_users = []
+        self.delete_user_error = None
+        self.auth = SimpleNamespace(admin=SimpleNamespace(delete_user=self._delete_user))
+        # supabase.storage.from_(bucket).upload/get_public_url (gadget photo upload):
+        # uploads are recorded as (bucket, path, data, file_options); set storage_error to make upload raise.
+        self.uploads = []
+        self.storage_error = None
+        self.storage = SimpleNamespace(from_=self._bucket)
+
+    def _bucket(self, bucket_id):
+        def upload(path, file, file_options=None):
+            if self.storage_error:
+                raise self.storage_error
+            self.uploads.append((bucket_id, path, file, file_options or {}))
+            return SimpleNamespace(path=path, full_path=f"{bucket_id}/{path}")
+
+        def get_public_url(path, options=None):
+            return f"https://example.supabase.co/storage/v1/object/public/{bucket_id}/{path}?"
+
+        return SimpleNamespace(upload=upload, get_public_url=get_public_url)
+
+    def _delete_user(self, user_id, *a, **k):
+        if self.delete_user_error:
+            raise self.delete_user_error
+        self.deleted_users.append(user_id)
 
     def set_response(self, table, operation, data):
         """Configure what .execute() should return for a given table + operation.
@@ -141,6 +171,8 @@ def fake_supabase(monkeypatch):
     import routers.query as query_module
     import routers.stats as stats_module
     import routers.my_gadgets as my_gadgets_module
+    import routers.my_account as my_account_module
+    import routers.admin as admin_module
 
     monkeypatch.setattr(gadgets_module, "supabase", fake)
     monkeypatch.setattr(specs_module, "supabase", fake)
@@ -149,6 +181,8 @@ def fake_supabase(monkeypatch):
     monkeypatch.setattr(query_module, "supabase", fake)
     monkeypatch.setattr(stats_module, "supabase", fake)
     monkeypatch.setattr(my_gadgets_module, "supabase", fake)
+    monkeypatch.setattr(my_account_module, "supabase", fake)
+    monkeypatch.setattr(admin_module, "supabase", fake)
     return fake
 
 

@@ -79,8 +79,11 @@ export function AuthProvider({ children }) {
     return data?.user ?? null
   }
 
-  async function signOut() {
-    await supabase.auth.signOut()
+  // `options` goes straight to supabase.auth.signOut. Callers normally pass nothing (global sign-out).
+  // Delete My Account (#213) passes { scope: 'local' }: the account is already gone, and a local
+  // sign-out removes this browser's session before any network call, so it can't fail half-way.
+  async function signOut(options) {
+    await supabase.auth.signOut(options)
   }
 
   // Supabase answers the same way whether or not the address has an account, so the

@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Literal, Optional
 from uuid import UUID
 
@@ -11,10 +12,17 @@ from pydantic_core import PydanticCustomError
 import ai_quota
 import answer_cache
 from auth import get_current_user
-from citations import strip_invalid_citations
+from citations import normalize_paren_citations, strip_invalid_citations
 from config import settings
 from keyword_search import build_keyword_query
-from prompts import GK_PROMPT_VERSION, PROMPT_VERSION, build_general_knowledge_prompt, build_system_prompt
+from prompts import (
+    GK_FALLBACK_VERSION,
+    GK_PROMPT_VERSION,
+    NOT_IN_SPECS_SENTINEL,
+    PROMPT_VERSION,
+    build_general_knowledge_prompt,
+    build_system_prompt,
+)
 from rate_limit import limiter
 from routers.comparisons import MAX_COMPARISON_GADGETS
 from supabase_client import supabase
@@ -102,8 +110,10 @@ class QueryRequest(BaseModel):
     # an uncapped prompt. The cap applies to the list as sent, before duplicates are removed.
     gadget_ids: Optional[list[UUID]] = Field(default=None, max_length=MAX_COMPARISON_GADGETS)
     plain_language: bool = False
-    # Optional general-knowledge answer (#172). Only used when retrieval finds no spec chunks;
-    # a question that matches specs always gets the grounded, cited answer.
+    # Optional general-knowledge answer (#172). Used when retrieval finds no spec chunks, or when
+    # the grounded model call replies NOT_IN_SPECS because the retrieved snippets hold none of the
+    # answer (scoped questions always retrieve chunks). A question the snippets answer fully or in
+    # part always gets the grounded, cited answer.
     allow_general_knowledge: bool = False
     # The gadget chat's Regenerate (user_questions.sql): the new answer replaces the caller's
     # newest saved turn for this same question and gadget instead of adding a second one.
@@ -419,8 +429,60 @@ def _generate_answer(system_prompt: str, user_content: str):
     return answer, completion
 
 
+# The grounded prompt's "not in the specs" reply when general knowledge is allowed (prompts.py,
+# GK_FALLBACK_VERSION). The token is matched case-insensitively with whatever a model may wrap
+# a one-word reply in: straight or curly quotes, backticks, bold asterisks and trailing
+# punctuation. The wrapper marks directly around the token (with spaces inside them, as in
+# `" NOT_IN_SPECS "`) are part of the match, so removing it leaves no orphan quote or `**`.
+_SENTINEL_QUOTES = "\"'`*“”‘’"
+_SENTINEL_TOKEN = re.compile(
+    rf"(?P<open>[{_SENTINEL_QUOTES}]*)(?P<inner>[ \t]*)\b{re.escape(NOT_IN_SPECS_SENTINEL)}\b"
+    rf"(?P<punct>[.:!?]*)(?P<space>[ \t]*)(?P<close>[{_SENTINEL_QUOTES}]*)",
+    re.IGNORECASE,
+)
+
+
+def _drop_sentinel(match: re.Match) -> str:
+    """Replacement for one sentinel token: a space, plus whatever after it is not its wrapper."""
+    opened, closed = match["open"], match["close"]
+    # Without an opening mark, a mark after a space opens the next quoted phrase: keep it.
+    kept_close = closed if (closed and not opened and match["space"]) else ""
+    # Punctuation inside a quoted sentinel ("NOT_IN_SPECS.") goes with it. Otherwise it ends the
+    # surrounding sentence, so it stays unless nothing (or a sentence end) precedes the token.
+    before = match.string[: match.start()].rstrip(" \t")
+    ends_sentence = before and before[-1] not in ".:!?\n"
+    punct = "" if (opened and closed) else (match["punct"] if ends_sentence else "")
+    # Spaces either side; _without_sentinel collapses the doubles afterwards.
+    return " " + punct + " " + kept_close
+
+
+def _is_not_in_specs(answer: str) -> bool:
+    """True when the answer is only the NOT_IN_SPECS sentinel: once the token is removed, no
+    letter or digit is left (so "NOT_IN_SPECS.", '"not_in_specs"' and **NOT_IN_SPECS** count)."""
+    cleaned, count = _SENTINEL_TOKEN.subn("", answer)
+    return bool(count) and not re.search(r"\w", cleaned)
+
+
+def _without_sentinel(answer: str) -> tuple[str, int]:
+    """Remove sentinel tokens a longer answer carries anyway; returns (text, how many removed).
+
+    The wrapper marks go with the token, then the spacing it leaves behind is tidied: doubled
+    spaces, a space before punctuation, and punctuation doubled by the removal (":." to ":").
+    """
+    cleaned, count = _SENTINEL_TOKEN.subn(_drop_sentinel, answer)
+    if not count:
+        return answer, 0
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r"[ \t]+([.,;:!?])", r"\1", cleaned)
+    cleaned = re.sub(r"([,;:!?])\.", r"\1", cleaned)
+    cleaned = re.sub(r"[ \t]+\n", "\n", cleaned)
+    cleaned = re.sub(r"(?m)^ (?=\S)", "", cleaned)
+    return cleaned.strip(), count
+
+
 def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
-    """The optional answer from the model's own knowledge, for a question with no matching specs (#172).
+    """The optional answer from the model's own knowledge, for a question the saved specs don't cover (#172):
+    retrieval found nothing, or the grounded call replied NOT_IN_SPECS.
 
     No snippets are sent, only the question (and, in comparison mode, the names of the gadgets
     asked about, so "which is better?" still says which). The prompt forbids citations; any [n]
@@ -448,6 +510,12 @@ def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
         "General-knowledge answer: prompt_tokens=%s completion_tokens=%s",
         _token_count(completion, "prompt_tokens"), _token_count(completion, "completion_tokens"),
     )
+    # The GK prompt never mentions the sentinel, but it must not be shown from this path either.
+    answer, sentinel_tokens = _without_sentinel(answer)
+    if sentinel_tokens:
+        logger.warning("Removed %d %s marker(s) from a general-knowledge answer", sentinel_tokens, NOT_IN_SPECS_SENTINEL)
+        if not re.search(r"\w", answer):
+            raise _unusable_output(f"general-knowledge answer was only {NOT_IN_SPECS_SENTINEL}")
     answer, invalid_citations_removed = strip_invalid_citations(answer, 0)
     if invalid_citations_removed:
         logger.warning("Removed %d citation marker(s) from a general-knowledge answer", invalid_citations_removed)
@@ -590,7 +658,13 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     bypass_cache = _admin_bypasses_cache(request, user)
     #    The general-knowledge flag is part of the scope (as a second prompt version), so a
     #    general-knowledge answer is never served to a request without the flag, or the reverse.
-    prompt_scope = f"{PROMPT_VERSION}+{GK_PROMPT_VERSION}" if payload.allow_general_knowledge else PROMPT_VERSION
+    #    With the flag the grounded prompt also carries the fallback rule (GK_FALLBACK_VERSION), so
+    #    that label is in the scope too and answers cached before the rule existed are not served.
+    prompt_scope = (
+        f"{PROMPT_VERSION}+{GK_FALLBACK_VERSION}+{GK_PROMPT_VERSION}"
+        if payload.allow_general_knowledge
+        else PROMPT_VERSION
+    )
     cache_scope = answer_cache.scope_key(
         payload.gadget_ids, payload.plain_language, prompt_scope, EMBEDDING_MODEL, ANSWER_MODEL
     )
@@ -718,17 +792,48 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
             )
 
     # The prompt text and its version live in prompts.py; its formatting rules are coupled to
-    # AnswerText.jsx (see the note there).
-    system_prompt = build_system_prompt(payload.plain_language)
+    # AnswerText.jsx (see the note there). With the general-knowledge flag the prompt adds the
+    # fallback rule: reply NOT_IN_SPECS when the snippets hold none of the answer.
+    system_prompt = build_system_prompt(payload.plain_language, payload.allow_general_knowledge)
 
     # 5. Generate the answer, grounded in only what was retrieved
     answer, completion = _generate_answer(
         system_prompt, f"Spec snippets:\n{context}{scope_note}\n\nQuestion: {payload.question}"
     )
 
+    # 5a. The sentinel is never shown. A scoped question (gadget/compare page) always retrieves
+    #     chunks, so this reply is how "the specs don't cover it" reaches the general-knowledge
+    #     answer there; it costs one more chat call, only in that case. Without the flag the
+    #     prompt never asks for the sentinel, and if the model sends it anyway the user gets the
+    #     no-evidence reply. Like the no-match branches above, neither reply is written to
+    #     query_history (the first call's tokens are logged instead), and both are cached as not
+    #     grounded under this request's scope.
+    if _is_not_in_specs(answer):
+        logger.info(
+            "Grounded answer was %s (allow_general_knowledge=%s): prompt_tokens=%s completion_tokens=%s",
+            NOT_IN_SPECS_SENTINEL, payload.allow_general_knowledge,
+            _token_count(completion, "prompt_tokens"), _token_count(completion, "completion_tokens"),
+        )
+        if payload.allow_general_knowledge:
+            response = _general_knowledge_answer(payload)
+        else:
+            response = QueryResponse(answer=NO_MATCHES_ANSWER, sources=[], model_used=MODEL_USED, retrieval="none")
+        answer_cache.store(
+            cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
+        )
+        return response
+    # The prompt forbids the token inside a real answer; if it appears there anyway, drop it.
+    answer, sentinel_tokens = _without_sentinel(answer)
+    if sentinel_tokens:
+        logger.warning("Removed %d %s marker(s) from a longer /query answer", sentinel_tokens, NOT_IN_SPECS_SENTINEL)
+
     # The model can cite a snippet number it was never given, which the UI would render as a
     # dead citation. Drop those markers (matches are numbered 1..len(matches)) and report how
     # many, so an evaluation can count them instead of seeing only the cleaned text.
+    # An answer cited only as "(1)" would show its citations as plain text; make them [n] first.
+    answer, paren_citations = normalize_paren_citations(answer, len(matches))
+    if paren_citations:
+        logger.warning("Rewrote %d '(n)' citation marker(s) to [n] in a /query answer", paren_citations)
     answer, invalid_citations_removed = strip_invalid_citations(answer, len(matches))
     if invalid_citations_removed:
         logger.warning("Removed %d out-of-range citation marker(s) from a /query answer", invalid_citations_removed)

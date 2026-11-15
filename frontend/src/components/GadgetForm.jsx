@@ -4,6 +4,7 @@ import Button from './ui/Button'
 import Alert from './ui/Alert'
 import { TextField, ErrorSummary } from './ui/FormField'
 import ImageLinkPreview from './ImageLinkPreview'
+import ImageUploadField from './ImageUploadField'
 import { GADGET_FIELD_LABELS, isHttpUrl, validateGadget, toGadgetPayload } from '../utils/gadgetValidation'
 import { friendlyError } from '../utils/requestErrors'
 
@@ -13,9 +14,15 @@ import { friendlyError } from '../utils/requestErrors'
  * A failed submit moves focus to the error summary so keyboard and screen
  * reader users land on the list of problems. Server errors show inline above
  * the buttons and keep everything the user typed.
+ *
+ * `uploadImage(file)` (edit only) shows the photo upload (#202): an upload needs the gadget's id,
+ * so the edit page passes a function bound to it.
  */
-export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCancel, isEdit = false }) {
+export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCancel, isEdit = false, uploadImage = null }) {
   const [form, setForm] = useState(initialValues)
+  // What the server holds now. An upload saves image_url at once, so it becomes the baseline:
+  // clearing the field afterwards must still send null to remove the uploaded photo.
+  const [savedValues, setSavedValues] = useState(initialValues)
   const [touched, setTouched] = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [, setSubmitCount] = useState(0)
@@ -58,7 +65,7 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
     setServerError(null)
     try {
       // On edit, emptied optional fields go out as null so the saved value is cleared.
-      await onSubmit(toGadgetPayload(form, isEdit ? initialValues : null))
+      await onSubmit(toGadgetPayload(form, isEdit ? savedValues : null))
     } catch (err) {
       setServerError(friendlyError(err))
       setSubmitting(false)
@@ -109,7 +116,7 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
           type="url"
           inputMode="url"
           placeholder="https://www.samsung.com/ph/…"
-          hint="The brand's official PH page you read the price from."
+          hint="Where you read the price: the brand's official PH page first; if the brand published none, a named PH tech news site."
         />
         <TextField
           {...fieldProps('price_checked_at')}
@@ -117,6 +124,27 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
           type="date"
           hint="The day you read that price."
         />
+      </div>
+
+      <div className="flex items-start gap-3">
+        <input
+          id="price_is_launch"
+          type="checkbox"
+          checked={Boolean(form.price_is_launch)}
+          onChange={(e) => update('price_is_launch')(e.target.checked)}
+          aria-describedby="price_is_launch-hint"
+          className="mt-1 h-4 w-4 shrink-0 accent-current"
+        />
+        <div>
+          <label htmlFor="price_is_launch" className="flex items-baseline gap-1.5 text-sm font-semibold text-slate-800">
+            {GADGET_FIELD_LABELS.price_is_launch}
+            <span className="text-xs font-medium text-slate-500">(Optional)</span>
+          </label>
+          <p id="price_is_launch-hint" className="text-xs text-slate-500 mt-0.5">
+            Tick when the phone is no longer sold and the price is its launch price (base model, regular, not promo).
+            The phone page then shows it as “launch price”.
+          </p>
+        </div>
       </div>
 
       <TextField
@@ -138,6 +166,15 @@ export default function GadgetForm({ initialValues, onSubmit, submitLabel, onCan
       />
       {isHttpUrl(imageUrl) && (
         <ImageLinkPreview url={imageUrl} status={imageStatus} onResult={(url, status) => setImageCheck({ url, status })} />
+      )}
+      {isEdit && uploadImage && (
+        <ImageUploadField
+          uploadImage={uploadImage}
+          onUploaded={(url) => {
+            update('image_url')(url)
+            setSavedValues((v) => ({ ...v, image_url: url }))
+          }}
+        />
       )}
 
       {serverError && (

@@ -8,7 +8,9 @@ MIGRATIONS = (
     "add_query_history_token_columns.sql", "match_spec_documents.sql",
     "keyword_match_spec_documents.sql",
     "increment_comparison_view_count.sql", "user_gadgets.sql", "user_questions.sql",
-    "gadget_price_source.sql", "api_access.sql",
+    "gadget_price_source.sql", "gadget_price_launch.sql", "api_access.sql",
+    # Last: the safety net that locks browser roles out of everything in public.
+    "lock_browser_roles.sql",
 )
 
 

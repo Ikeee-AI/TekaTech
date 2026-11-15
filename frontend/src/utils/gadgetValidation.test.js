@@ -163,3 +163,18 @@ describe('sourced prices (14 Nov 2026)', () => {
     expect(cleared.store_url).toBeNull()
   })
 })
+
+describe('launch price flag (15 Nov 2026)', () => {
+  it('is left out of a new gadget unless ticked', () => {
+    expect(toGadgetPayload(form({})).price_is_launch).toBeUndefined()
+    expect(toGadgetPayload(form({ price_is_launch: true })).price_is_launch).toBe(true)
+  })
+
+  it('on edit, is sent only when it changed', () => {
+    const before = form({ price_is_launch: false })
+    expect(toGadgetPayload(form({ price_is_launch: false }), before).price_is_launch).toBeUndefined()
+    expect(toGadgetPayload(form({ price_is_launch: true }), before).price_is_launch).toBe(true)
+    const wasLaunch = form({ price_is_launch: true })
+    expect(toGadgetPayload(form({ price_is_launch: false }), wasLaunch).price_is_launch).toBe(false)
+  })
+})
