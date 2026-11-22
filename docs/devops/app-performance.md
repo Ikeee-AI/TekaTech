@@ -100,3 +100,17 @@ Read side by side: "before" answered "Can it run Genshin Impact smoothly?" with 
 | after (v2 + earlier turn) | 6.39 s | 12.28 s | 0 | $0.00157 |
 
 "Is the difference worth the price?" after "Compare battery life": before drifted to chip and build; after compared the battery difference and said no price is in the specs. "Which one charges the fastest?" kept the right winner (V50, 90W) and the battery follow-up was right in both runs (V50 and Reno14 tie at 6000 mAh). Raw results: `.local/conversation-compare-2026-11-23.*`.
+
+### Streaming benchmark (23 Nov 2026)
+
+Measured before building it (`scripts/benchmark_streaming.py`): the same 12 real-catalog questions (9 one-phone, 3 comparisons), app settings, each asked whole and streamed in alternating order, 2 runs, 48 calls, about US$0.04 (plus one earlier run lost to a script error, about US$0.04).
+
+| Way | Questions | First words (median) | First words (p90) | Finished (median) | Cut off | Needed citation clean-up |
+| --- | --- | --- | --- | --- | --- | --- |
+| whole (until now) | one phone | 1.26 s | 1.65 s | 1.26 s | 0 | 0 |
+| streamed | one phone | **0.83 s** | 0.90 s | 1.19 s | 0 | 0 |
+| whole (until now) | comparison | 10.84 s | 17.44 s | 10.84 s | 1 | 0 |
+| streamed | comparison | **3.54 s** | 6.88 s | 9.31 s | 0 | 0 |
+
+Same cost per answer. No answer needed the citation clean-up, so a bad `[n]` flashing during streaming is rare (it is replaced by the cleaned `done` answer). One comparison hit the 1500-token cap: with streaming its text is replaced by the 503. **Decision (owner, 23 Nov):** build it. `POST /query/stream` + `api.askQuestion` handlers; `/query` unchanged. Raw results: `.local/streaming-bench-2026-11-23.*`.
+

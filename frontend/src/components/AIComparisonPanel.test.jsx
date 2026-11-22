@@ -91,4 +91,21 @@ describe('AIComparisonPanel chat memory', () => {
     await screen.findByText(/charges fastest/)
     expect(api.askQuestion.mock.calls.at(-1)[0]).not.toHaveProperty('history')
   })
+
+  it('shows the answer as it streams, then the finished answer replaces it', async () => {
+    let finish
+    api.askQuestion.mockImplementation(({ onSources, onDelta }) => {
+      onSources([{ gadget_name: 'V50 5G', content: 'Charging: 90W' }])
+      onDelta('The V50 ')
+      onDelta('charges first')
+      return new Promise((resolve) => { finish = resolve })
+    })
+    renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: 'Compare battery life' }))
+    expect(await screen.findByText(/The V50 charges first/)).toBeTruthy()
+    expect(screen.getByText('Writing your answer…')).toBeTruthy()
+    finish(answer('Final: the V50 charges fastest at 90W [1].'))
+    expect(await screen.findByText(/Final: the V50 charges fastest/)).toBeTruthy()
+    expect(screen.queryByText(/The V50 charges first/)).toBeNull()
+  })
 })

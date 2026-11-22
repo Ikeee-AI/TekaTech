@@ -105,10 +105,22 @@ export async function useFakeApi(page, queryReplies) {
 
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS })
 
-    if (request.method() === 'POST' && pathname === '/query') {
+    if (request.method() === 'POST' && (pathname === '/query' || pathname === '/query/stream')) {
       queries.push(request.postDataJSON())
       const reply = queue.length > 1 ? queue.shift() : queue[0]
-      return json(reply.status, reply.body)
+      if (pathname === '/query') return json(reply.status, reply.body)
+      // /query/stream, as the backend sends it: a refusal (401/422/429) is plain JSON before
+      // streaming; a 5xx happens while answering, so it is an `error` event in a 200 stream.
+      if (reply.status < 500 && reply.status !== 200) return json(reply.status, reply.body)
+      const ev = (kind, data) => `event: ${kind}
+data: ${JSON.stringify(data)}
+
+`
+      const body =
+        reply.status === 200
+          ? ev('sources', reply.body.sources ?? []) + ev('delta', reply.body.answer ?? '') + ev('done', reply.body)
+          : ev('error', { status: reply.status, detail: reply.body.detail })
+      return route.fulfill({ status: 200, headers: { ...CORS, 'Content-Type': 'text/event-stream' }, body })
     }
 
     const specsMatch = pathname.match(/^\/gadgets\/([^/]+)\/specs$/)

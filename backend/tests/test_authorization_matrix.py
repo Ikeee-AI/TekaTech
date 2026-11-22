@@ -47,6 +47,7 @@ EXPECTED = {
     ("POST", "/comparisons"): USER,
     ("GET", "/comparisons/{slug}"): USER,
     ("POST", "/query"): USER,
+    ("POST", "/query/stream"): USER,
     ("GET", "/stats/spec-coverage"): PUBLIC,
     ("GET", "/stats/trending-questions"): USER,
     ("GET", "/techspecs/search"): ADMIN,

@@ -60,6 +60,9 @@ export default function AIComparisonPanel({
     handleCiteClick,
     handleCopy,
     resetAnswer,
+    startStream,
+    streamText,
+    streamSources,
   } = useAiAnswer()
 
   useEffect(() => {
@@ -101,6 +104,7 @@ export default function AIComparisonPanel({
         gadget_ids: gadgetIds,
         ...requestOptions,
         ...(history.length ? { history } : {}),
+        ...startStream(),
       })
       // A reply without answer text or a valid source list is a failure, never an answer.
       const answer = validateAnswerResponse(data)
@@ -221,6 +225,8 @@ export default function AIComparisonPanel({
       )}
 
       <AiAnswerResult
+        streamText={streamText}
+        streamSources={streamSources}
         variant="compare"
         loading={loading}
         error={error}

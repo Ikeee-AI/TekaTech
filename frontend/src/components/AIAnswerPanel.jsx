@@ -40,6 +40,9 @@ export default function AIAnswerPanel({ question, onClose }) {
     sourceRefs,
     handleCiteClick,
     handleCopy,
+    startStream,
+    streamText,
+    streamSources,
   } = useAiAnswer()
 
   async function ask(q) {
@@ -56,7 +59,7 @@ export default function AIAnswerPanel({ question, onClose }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.askQuestion({ question: q, ...requestOptions })
+      const data = await api.askQuestion({ question: q, ...requestOptions, ...startStream() })
       if (requestId !== latestRequest.current) return
       // A reply without answer text or a valid source list is a failure, never an answer.
       setResult(validateAnswerResponse(data))
@@ -119,6 +122,8 @@ export default function AIAnswerPanel({ question, onClose }) {
       </div>
 
       <AiAnswerResult
+        streamText={streamText}
+        streamSources={streamSources}
         loading={loading}
         error={error}
         onRetry={() => ask(askedQuestion)}
