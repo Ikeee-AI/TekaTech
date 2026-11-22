@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChevronDown, FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save, Loader2, AlertCircle, Search } from 'lucide-react'
+import { FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save, Loader2, AlertCircle, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
@@ -11,7 +11,7 @@ import Alert from './ui/Alert'
 import { TextField, TextAreaField } from './ui/FormField'
 import { friendlyError } from '../utils/requestErrors'
 import { notifyCorrectionsChanged } from '../utils/correctionNotices'
-import { groupSpecsBySource, mergedSheet, specSections } from '../utils/specLayout'
+import { groupSpecsBySource, mergedSheet } from '../utils/specLayout'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 
 const MAX_SPEC_CHARS = 20_000 // mirrors MAX_RAW_TEXT_LENGTH in backend/routers/specs.py
@@ -207,13 +207,17 @@ function slug(text) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
+const PARTS_TITLE = 'Saved parts'
+
 /**
  * The phone's specs as ONE sheet (22 Nov 2026, owner's pick "C"): every saved part merged,
  * each heading once, a section list beside the rows (a scrolling chip row on phones) and a
  * search box. The rows scroll inside the card, so the page never grows with the spec count.
  * Suggest fix on a row opens the correction form for the part that row came from.
+ * Admins see the same sheet plus a "Saved parts" section (index for AI, delete), so both
+ * accounts get one design and only the controls differ.
  */
-function SpecSheet({ specs, user }) {
+function SpecSheet({ specs, user, isAdmin, gadgetId, indexingId, indexErrors, onIndex, onDeleted }) {
   const baseId = useId()
   const reducedMotion = usePrefersReducedMotion()
   const { sections, notes } = useMemo(() => mergedSheet(specs), [specs])
@@ -229,7 +233,12 @@ function SpecSheet({ specs, user }) {
     .filter((section) => section.items.length)
   const shownNotes = notes.filter((n) => !q || n.text.toLowerCase().includes(q))
   const total = sections.reduce((n, s) => n + s.items.length, 0)
-  const current = active && shown.some((s) => s.title === active) ? active : shown[0]?.title
+  const showParts = isAdmin && !q
+  const rail = [
+    ...shown.map((s) => ({ title: s.title, count: s.items.length })),
+    ...(showParts ? [{ title: PARTS_TITLE, count: specs.length }] : []),
+  ]
+  const current = active && rail.some((s) => s.title === active) ? active : rail[0]?.title
 
   function jumpTo(title) {
     const box = scrollRef.current
@@ -245,14 +254,16 @@ function SpecSheet({ specs, user }) {
     const box = scrollRef.current
     if (!box) return
     const atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 4
-    let next = shown[0]?.title
-    for (const section of shown) {
-      const heading = headingRefs.current[section.title]
-      if (heading && heading.offsetTop - 24 <= box.scrollTop) next = section.title
+    let next = rail[0]?.title
+    for (const entry of rail) {
+      const heading = headingRefs.current[entry.title]
+      if (heading && heading.offsetTop - 24 <= box.scrollTop) next = entry.title
     }
-    if (atEnd && shown.length) next = shown[shown.length - 1].title
+    if (atEnd && rail.length) next = rail[rail.length - 1].title
     if (next !== active) setActive(next)
   }
+
+  const headingClass = 'pt-3 pb-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-sage-700'
 
   const suggestButton = (key, label) =>
     user && (
@@ -262,10 +273,10 @@ function SpecSheet({ specs, user }) {
         aria-expanded={correcting === key}
         aria-label={`Suggest Correction for ${label}`}
         title="Suggest Correction"
-        className="shrink-0 inline-flex items-center gap-1 min-h-8 px-2 rounded-full text-xs font-semibold text-slate-500 hover:text-sage-700 hover:bg-slate-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+        // Icon only, so it barely takes width from the value; brighter on row hover.
+        className="shrink-0 inline-flex items-center justify-center size-7 rounded-full text-slate-400 sm:text-slate-500/40 group-hover:text-slate-500 hover:!text-sage-700 hover:bg-slate-100 aria-expanded:!text-sage-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
       >
         <Flag size={13} aria-hidden="true" />
-        <span className="hidden sm:inline">Suggest fix</span>
       </button>
     )
 
@@ -275,7 +286,7 @@ function SpecSheet({ specs, user }) {
         <label htmlFor={`${baseId}-find`} className="sr-only">
           Find a spec
         </label>
-        <div className="flex items-center gap-2 min-h-10 px-3.5 rounded-full bg-slate-100 border border-slate-200 focus-within:border-sage-600 focus-within:ring-2 focus-within:ring-sage-200">
+        <div className="flex items-center gap-2 min-h-9 px-3.5 rounded-full bg-slate-100 border border-slate-200 focus-within:border-sage-600 focus-within:ring-2 focus-within:ring-sage-200">
           <Search size={15} aria-hidden="true" className="text-slate-500 shrink-0" />
           <input
             id={`${baseId}-find`}
@@ -283,29 +294,36 @@ function SpecSheet({ specs, user }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Find one of ${total} specs, e.g. battery`}
-            className="flex-1 min-w-0 bg-transparent text-sm text-slate-900 placeholder:text-slate-500 outline-none py-2"
+            className="flex-1 min-w-0 bg-transparent text-sm text-slate-900 placeholder:text-slate-500 outline-none py-1.5"
           />
         </div>
       </div>
-      <div className="flex-1 min-h-0 flex flex-col sm:grid sm:grid-cols-[12.5rem_minmax(0,1fr)] border-t border-slate-200">
+      <div className="flex-1 min-h-0 flex flex-col sm:grid sm:grid-cols-[11.5rem_minmax(0,1fr)] border-t border-slate-200">
         <nav
           aria-label="Spec sections"
-          className="shrink-0 flex sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible sm:overflow-y-auto px-4 sm:px-3 py-2 sm:py-3 border-b sm:border-b-0 sm:border-r border-slate-200 [scrollbar-width:none]"
+          className="shrink-0 flex sm:flex-col gap-0.5 overflow-x-auto sm:overflow-x-visible sm:overflow-y-auto px-4 sm:px-2.5 py-2 border-b sm:border-b-0 sm:border-r border-slate-200 [scrollbar-width:none]"
         >
-          {shown.map((section) => (
-            <button
-              key={section.title}
-              type="button"
-              onClick={() => jumpTo(section.title)}
-              aria-current={current === section.title ? 'true' : undefined}
-              className={`shrink-0 flex items-center justify-between gap-2 min-h-9 px-3 rounded-xl text-sm font-semibold text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 ${
-                current === section.title ? 'bg-inverse text-inverse-ink' : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <span className="whitespace-nowrap">{section.title}</span>
-              <span className="font-mono text-[11px] opacity-70">{section.items.length}</span>
-            </button>
-          ))}
+          {rail.map((entry) => {
+            const on = current === entry.title
+            return (
+              <button
+                key={entry.title}
+                type="button"
+                onClick={() => jumpTo(entry.title)}
+                aria-current={on ? 'true' : undefined}
+                className={`shrink-0 flex items-center justify-between gap-2 min-h-8 px-2.5 rounded-lg text-[13px] font-semibold text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 ${
+                  on ? 'bg-sage-700 text-white' : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <span className="whitespace-nowrap">{entry.title}</span>
+                <span
+                  className={`font-mono text-[10px] leading-none rounded-full px-1.5 py-1 ${on ? 'bg-black/15' : 'bg-slate-100 text-slate-500'}`}
+                >
+                  {entry.count}
+                </span>
+              </button>
+            )
+          })}
         </nav>
         <div className="relative flex-1 min-h-0">
           <div
@@ -321,13 +339,9 @@ function SpecSheet({ specs, user }) {
             )}
             {shown.map((section) => (
               <div key={section.title}>
-                <h3
-                  id={`${baseId}-${slug(section.title)}`}
-                  ref={(el) => {
+                <h3 id={`${baseId}-${slug(section.title)}`} ref={(el) => {
                     headingRefs.current[section.title] = el
-                  }}
-                  className="pt-4 pb-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-sage-700"
-                >
+                  }} className={headingClass}>
                   {section.title}
                 </h3>
                 <dl>
@@ -336,7 +350,7 @@ function SpecSheet({ specs, user }) {
                     return (
                       <div
                         key={key}
-                        className="group grid grid-cols-1 sm:grid-cols-[minmax(7rem,28%)_minmax(0,1fr)] gap-x-4 py-2.5 border-t border-slate-200 first:border-t-0"
+                        className="group grid grid-cols-1 sm:grid-cols-[minmax(7rem,28%)_minmax(0,1fr)] gap-x-4 py-2 border-t border-slate-200 first:border-t-0"
                       >
                         <dt className="text-sm font-medium text-slate-500 sm:pt-px">{item.label}</dt>
                         <dd className="min-w-0">
@@ -354,11 +368,11 @@ function SpecSheet({ specs, user }) {
             ))}
             {shownNotes.length > 0 && (
               <div>
-                <h3 className="pt-4 pb-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-sage-700">Notes</h3>
+                <h3 className={headingClass}>Notes</h3>
                 {shownNotes.map((note, i) => {
                   const key = `note-${i}`
                   return (
-                    <div key={key} className="group py-2.5 border-t border-slate-200 first:border-t-0">
+                    <div key={key} className="group py-2 border-t border-slate-200 first:border-t-0">
                       <div className="flex items-start gap-2">
                         <p className="flex-1 min-w-0 text-[15px] text-slate-800 break-words">{note.text}</p>
                         {suggestButton(key, 'this note')}
@@ -369,11 +383,97 @@ function SpecSheet({ specs, user }) {
                 })}
               </div>
             )}
+            {/* Admin only: one row per saved part, in the same row style as the sheet. */}
+            {showParts && (
+              <div>
+                <h3 ref={(el) => {
+                    headingRefs.current[PARTS_TITLE] = el
+                  }} className={headingClass}>
+                  {PARTS_TITLE}
+                </h3>
+                <ul>
+                  {specs.map((spec) => (
+                    <PartRow
+                      key={spec.id}
+                      spec={spec}
+                      gadgetId={gadgetId}
+                      indexingId={indexingId}
+                      indexError={indexErrors[spec.id]}
+                      onIndex={onIndex}
+                      onDeleted={onDeleted}
+                    />
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
           {/* Fade at the bottom edge: more rows below. Decorative. */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent" />
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Admin row for one saved part: where it came from, its first line, AI status, index and delete. */
+function PartRow({ spec, gadgetId, indexingId, indexError, onIndex, onDeleted }) {
+  const indexed = spec.indexing_status === 'indexed'
+  const isIndexing = indexingId === spec.id
+  const state = indexed ? 'indexed' : isIndexing ? 'indexing' : indexError ? 'failed' : 'pending'
+  const firstLine = spec.content.split('\n').find((l) => l.trim()) ?? ''
+  return (
+    <li aria-label={`Spec #${spec.chunk_index}`} className="py-2 border-t border-slate-200 first:border-t-0">
+      <div className="grid grid-cols-1 sm:grid-cols-[minmax(7rem,28%)_minmax(0,1fr)] gap-x-4 gap-y-1">
+        <p className="text-sm font-medium text-slate-500 sm:pt-1">
+          Part {spec.chunk_index + 1} · {spec.source_url ? sourceLabel(spec.source_url) : 'no source link'}
+        </p>
+        <div className="min-w-0 flex flex-wrap items-center gap-2">
+          <span className="flex-1 min-w-[8rem] text-sm text-slate-700 truncate" title={firstLine}>
+            {firstLine}
+          </span>
+          <IndexBadge state={state} />
+          {!indexed && (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={Sparkles}
+              loading={isIndexing}
+              disabled={indexingId !== null}
+              onClick={() => onIndex(gadgetId, spec.id)}
+            >
+              {isIndexing ? 'Indexing…' : indexError ? 'Retry Indexing' : 'Index for AI'}
+            </Button>
+          )}
+          <DeleteSpecButton gadgetId={gadgetId} spec={spec} onDeleted={onDeleted} />
+        </div>
+      </div>
+      {state === 'failed' && (
+        <Alert tone="error" title="Indexing Failed — Your Spec Is Saved" className="mt-2">
+          {indexError}
+        </Alert>
+      )}
+    </li>
+  )
+}
+
+/** Admin only, one line in the card header: how much the AI can use, and Index All Pending. */
+function AdminBar({ specs, bulk, indexingId, onIndexAll }) {
+  const ready = specs.filter((s) => s.indexing_status === 'indexed').length
+  const pending = specs.length - ready
+  return (
+    <div className="mx-4 sm:mx-5 mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-slate-100 border border-slate-200 px-3.5 py-2">
+      <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${pending ? 'text-amber-800' : 'text-emerald-800'}`}>
+        {pending ? <Clock size={15} aria-hidden="true" /> : <CheckCircle2 size={15} aria-hidden="true" />}
+        {ready} of {specs.length} ready for AI
+      </span>
+      {pending > 0 && (
+        <>
+          <span className="text-xs text-slate-600">Indexing is limited to 20 per hour.</span>
+          <Button variant="primary" size="sm" icon={Sparkles} loading={bulk !== null} disabled={indexingId !== null} onClick={onIndexAll} className="ml-auto">
+            {bulk ? `Indexing ${bulk.done + 1} of ${bulk.total}…` : `Index All Pending (${pending})`}
+          </Button>
+        </>
+      )}
     </div>
   )
 }
@@ -451,218 +551,12 @@ function IndexBadge({ state }) {
   )
 }
 
-/** How much of this gadget's evidence the AI can actually use right now. */
-function AiReadiness({ specs }) {
-  const ready = specs.filter((s) => s.indexing_status === 'indexed').length
-  const total = specs.length
-  if (ready === total) {
-    return (
-      <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-800 mb-3">
-        <CheckCircle2 size={16} aria-hidden="true" /> All {total} spec{total === 1 ? ' is' : 's are'} ready for AI answers.
-      </p>
-    )
-  }
-  if (ready === 0) {
-    return (
-      <Alert tone="warning" title="The AI Has No Evidence for This Phone Yet" className="mb-3">
-        None of its specs are indexed, so AI answers can&apos;t cite anything about it. Index the specs below to fix this.
-      </Alert>
-    )
-  }
-  return (
-    <Alert tone="info" title={`${ready} of ${total} Specs Ready for AI`} className="mb-3">
-      AI answers can only use the ready specs. Index the pending ones to give it the full picture.
-    </Alert>
-  )
-}
-
 function sourceLabel(url) {
   try {
     return new URL(url).hostname.replace(/^www\./, '')
   } catch {
     return url
   }
-}
-
-function FactList({ items }) {
-  return (
-    <dl className="grid grid-cols-1 sm:grid-cols-[minmax(7rem,auto)_1fr] gap-x-4 gap-y-1 text-[15px]">
-      {items.map((item, j) => (
-        <div key={j} className="contents">
-          <dt className="font-medium text-slate-500 sm:pt-px">{item.label}</dt>
-          <dd className="text-slate-900 break-words mb-1 sm:mb-0">{item.value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
-
-/** One chunk as a spec sheet: "Label: value" facts under section headings (Display,
- * Performance, ...), then any unlabelled lines as they were written. */
-function SpecContent({ content }) {
-  const { sections, text } = specSections(content)
-  return (
-    <div className="space-y-3">
-      {sections.map((section) => (
-        <div key={section.title}>
-          <h3 className="text-xs font-bold uppercase tracking-wide text-sage-700 mb-1">{section.title}</h3>
-          <FactList items={section.items} />
-        </div>
-      ))}
-      {text.map((line, i) => (
-        <p key={i} className="text-[15px] text-slate-800 break-words">
-          {line}
-        </p>
-      ))}
-    </div>
-  )
-}
-
-/** One saved chunk inside its source card: the text, plus row-level status and actions. */
-function SpecRow({ spec, user, isAdmin, gadgetId, indexingId, indexError, onIndex, onDeleted }) {
-  const [correcting, setCorrecting] = useState(false)
-  const suggestButtonRef = useFocusOnClose(correcting)
-  const indexed = spec.indexing_status === 'indexed'
-  const isIndexing = indexingId === spec.id
-  const indexState = indexed ? 'indexed' : isIndexing ? 'indexing' : indexError ? 'failed' : 'pending'
-
-  return (
-    <li className="px-4 sm:px-5 py-3.5" aria-label={`Spec #${spec.chunk_index}`}>
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <SpecContent content={spec.content} />
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {user && !correcting && (
-            <Button
-              ref={suggestButtonRef}
-              variant="ghost"
-              size="sm"
-              icon={Flag}
-              onClick={() => setCorrecting(true)}
-              aria-label={`Suggest Correction for spec #${spec.chunk_index}`}
-              title="Suggest Correction"
-              className="!px-2.5"
-            />
-          )}
-          <DeleteSpecButton gadgetId={gadgetId} spec={spec} onDeleted={onDeleted} />
-        </div>
-      </div>
-
-      {/* Indexing is an admin task: shoppers never see AI-readiness wording (14 Nov 2026). */}
-      {isAdmin && indexState !== 'indexed' && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <IndexBadge state={indexState} />
-          {indexState === 'pending' && <span className="text-sm text-amber-900">The AI can&apos;t use this part yet.</span>}
-          <Button
-              variant="outline"
-              size="sm"
-              icon={Sparkles}
-              loading={isIndexing}
-              disabled={indexingId !== null}
-              onClick={() => onIndex(gadgetId, spec.id)}
-            >
-            {isIndexing ? 'Indexing…' : indexError ? 'Retry Indexing' : 'Index for AI'}
-          </Button>
-        </div>
-      )}
-      {isAdmin && indexState === 'failed' && (
-        <Alert tone="error" title="Indexing Failed — Your Spec Is Saved" className="mt-2.5">
-          {indexError}
-        </Alert>
-      )}
-
-      {correcting && <CorrectionForm spec={spec} onDone={() => setCorrecting(false)} />}
-    </li>
-  )
-}
-
-/** One card per source: link and date once in the header, its chunks as rows below. */
-function SpecSourceGroup({ group, defaultOpen, user, isAdmin, gadgetId, indexingId, indexErrors, onIndex, onDeleted }) {
-  const [now] = useState(() => Date.now())
-  const [expanded, setExpanded] = useState(defaultOpen)
-  const rowsId = useId()
-  const { sourceUrl, specs } = group
-  // A part that is indexing or failed to index keeps its card open, so the progress or the
-  // error is never hidden behind a closed card.
-  const mustShow = specs.some((s) => indexingId === s.id || indexErrors[s.id])
-  const open = expanded || mustShow
-  const ready = specs.filter((s) => s.indexing_status === 'indexed').length
-  // The oldest save date in the group decides "May Be Outdated".
-  const oldest = specs.reduce((a, s) => (new Date(s.verified_at) < new Date(a) ? s.verified_at : a), specs[0].verified_at)
-  const outdated = now - new Date(oldest).getTime() > SIX_MONTHS_MS
-
-  return (
-    <li className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-      <div
-        className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 sm:px-5 py-3 bg-slate-50 ${open ? 'border-b border-slate-200' : ''}`}
-      >
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
-          {/* Only http(s) becomes a link: a stored javascript:/data: URL must never be clickable. */}
-          {isHttpUrl(sourceUrl) ? (
-            <a
-              href={sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 min-h-10 sm:min-h-0 text-sm font-semibold text-sage-700 hover:underline rounded break-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
-            >
-              <ExternalLink size={14} aria-hidden="true" className="shrink-0" /> {sourceLabel(sourceUrl)}
-              <span className="sr-only">(source, opens in a new tab)</span>
-            </a>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600">
-              <FileText size={14} aria-hidden="true" /> No source link
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1 text-sm text-slate-600" title={formatDate(oldest)}>
-            <Calendar size={13} aria-hidden="true" /> Added {timeAgo(oldest)}
-          </span>
-          {outdated && <span className="text-sm text-amber-800 font-semibold">May Be Outdated</span>}
-        </div>
-        <div className="flex items-center gap-2">
-          {isAdmin &&
-            (ready === specs.length ? (
-              <IndexBadge state="indexed" />
-            ) : (
-              <span className="text-xs font-semibold text-amber-800">
-                {ready} of {specs.length} ready for AI
-              </span>
-            ))}
-          <button
-            type="button"
-            onClick={() => setExpanded(!open)}
-            disabled={mustShow}
-            aria-expanded={open}
-            aria-controls={rowsId}
-            aria-label={
-              isAdmin
-                ? `${open ? 'Hide' : 'Show'} ${specs.length} spec part${specs.length === 1 ? '' : 's'} from ${sourceUrl ? sourceLabel(sourceUrl) : 'no source link'}`
-                : `${open ? 'Hide' : 'Show'} specs from ${sourceUrl ? sourceLabel(sourceUrl) : 'no source link'}`
-            }
-            className="inline-flex items-center gap-1 min-h-11 sm:min-h-8 px-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-200/70 disabled:opacity-60 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
-          >
-            {isAdmin ? `${specs.length} part${specs.length === 1 ? '' : 's'}` : open ? 'Hide' : 'Show'}
-            <ChevronDown size={16} aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`} />
-          </button>
-        </div>
-      </div>
-      <ul id={rowsId} hidden={!open} className="divide-y divide-slate-100">
-        {specs.map((spec) => (
-          <SpecRow
-            key={spec.id}
-            spec={spec}
-            user={user}
-            isAdmin={isAdmin}
-            gadgetId={gadgetId}
-            indexingId={indexingId}
-            indexError={indexErrors[spec.id]}
-            onIndex={onIndex}
-            onDeleted={onDeleted}
-          />
-        ))}
-      </ul>
-    </li>
-  )
 }
 
 export default function SpecManager({ gadgetId, onSpecsChange }) {
@@ -675,8 +569,6 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   const [indexingId, setIndexingId] = useState(null)
   const [indexErrors, setIndexErrors] = useState({})
   const [bulk, setBulk] = useState(null) // Index All Pending progress: { done, total } while running
-  // Admins: 'sheet' (what shoppers see) or 'manage' (per-part indexing and delete).
-  const [view, setView] = useState('sheet')
 
   // `background` refreshes without the loading skeleton, so the list (and any
   // open correction form) stays on screen; a failed background refresh keeps it.
@@ -717,7 +609,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
         return null
       })
       .catch((err) => {
-        // Kept on the card (not just a toast) so the failure stays visible until retried.
+        // Kept on the part's row (not just a toast) so the failure stays visible until retried.
         setIndexErrors((prev) => withEntry(prev, specId, indexFailureMessage(err)))
         return err
       })
@@ -736,7 +628,6 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   async function handleIndexAll() {
     const pending = state.specs.filter((sp) => sp.indexing_status !== 'indexed').map((sp) => sp.id)
     if (pending.length === 0) return
-    setView('manage') // progress and any failure show on the part cards
     let ok = 0
     let failed = 0
     let stopped = null
@@ -757,23 +648,22 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
     const left = pending.length - ok
     if (stopped === 429) toast.error(`Indexed ${ok}. Stopped at the hourly indexing limit; ${left} still pending.`)
     else if (stopped === 401) toast.error(`Indexed ${ok}. Log in again to index the remaining ${left}.`)
-    else if (failed > 0) toast.error(`Indexed ${ok} of ${pending.length}. ${failed} failed; see the cards below.`)
+    else if (failed > 0) toast.error(`Indexed ${ok} of ${pending.length}. ${failed} failed; see Saved parts.`)
     else toast.success(`All ${ok} spec${ok === 1 ? '' : 's'} ready for AI questions`)
   }
 
   const { status, specs } = state
   const hasSpecs = status === 'ready' && specs.length > 0
-  const showManage = isAdmin && view === 'manage'
 
   return (
     // A card with a fixed height on wide screens (the page sets it): the rows scroll inside,
     // so the page never grows with the number of specs (22 Nov 2026, owner's pick "C").
+    // Shoppers and admins get the same sheet; admins only get extra controls.
     <section aria-labelledby="specs-title" className="min-w-0 bg-white border border-slate-200 rounded-[28px] flex flex-col overflow-hidden xl:h-full">
       <header className="px-4 sm:px-5 pt-5 pb-3 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <h2 id="specs-title" className="text-xl font-extrabold tracking-[-0.02em] text-slate-900 flex items-center gap-2">
             <FileText size={20} className="text-sage-700" aria-hidden="true" /> Specifications
-            {isAdmin && status === 'ready' && <span className="text-sm font-medium text-slate-500">({specs.length})</span>}
           </h2>
           {hasSpecs && <SheetSources specs={specs} />}
         </div>
@@ -794,27 +684,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
         )}
       </header>
 
-      {isAdmin && hasSpecs && (
-        <div role="tablist" aria-label="Spec view" className="mx-4 sm:mx-5 mb-3 flex gap-1 p-1 rounded-full bg-slate-100 w-fit">
-          {[
-            ['sheet', 'Sheet'],
-            ['manage', 'Manage parts'],
-          ].map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={view === id}
-              onClick={() => setView(id)}
-              className={`px-4 min-h-9 rounded-full text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 ${
-                view === id ? 'bg-inverse text-inverse-ink' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
+      {isAdmin && hasSpecs && <AdminBar specs={specs} bulk={bulk} indexingId={indexingId} onIndexAll={handleIndexAll} />}
 
       <div className="px-4 sm:px-5 empty:hidden">
         {showForm && (
@@ -860,58 +730,26 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
             </p>
           </div>
         )}
-
-        {isAdmin && hasSpecs && <AiReadiness specs={specs} />}
-
-        {isAdmin && status === 'ready' && specs.some((sp) => sp.indexing_status !== 'indexed') && (
-          <div className="flex flex-wrap items-center gap-3 mb-3">
-            <Button
-              variant="primary"
-              size="sm"
-              icon={Sparkles}
-              loading={bulk !== null}
-              disabled={indexingId !== null}
-              onClick={handleIndexAll}
-            >
-              {bulk
-                ? `Indexing ${bulk.done + 1} of ${bulk.total}…`
-                : `Index All Pending (${specs.filter((sp) => sp.indexing_status !== 'indexed').length})`}
-            </Button>
-            <span className="text-xs text-slate-600">One at a time; indexing is limited to 20 per hour.</span>
-          </div>
-        )}
       </div>
 
-      {hasSpecs && !showManage && <SpecSheet specs={specs} user={user} />}
-
-      {hasSpecs && showManage && (
-        <div className="flex-1 min-h-0 max-h-[28rem] xl:max-h-none overflow-y-auto overscroll-contain px-4 sm:px-5 pb-5">
-          <p className="text-sm text-slate-600 mb-3">
-            Specs are saved immediately. Use Index for AI when credit is available; pending specs remain readable here.
-          </p>
-          <ul className="space-y-4">
-            {groupSpecsBySource(specs).map((group, i) => (
-              <SpecSourceGroup
-                key={group.key || 'no-source'}
-                defaultOpen={i === 0}
-                group={group}
-                user={user}
-                isAdmin={isAdmin}
-                gadgetId={gadgetId}
-                indexingId={indexingId}
-                indexErrors={indexErrors}
-                onIndex={handleIndex}
-                onDeleted={loadSpecs}
-              />
-            ))}
-          </ul>
-        </div>
+      {hasSpecs && (
+        <SpecSheet
+          specs={specs}
+          user={user}
+          isAdmin={isAdmin}
+          gadgetId={gadgetId}
+          indexingId={indexingId}
+          indexErrors={indexErrors}
+          onIndex={handleIndex}
+          onDeleted={loadSpecs}
+        />
       )}
 
-      {hasSpecs && !isAdmin && (
+      {hasSpecs && (
         <p className="px-4 sm:px-5 py-2.5 border-t border-slate-200 text-xs text-slate-500">
-          Specs are added by the TekaTech team.{' '}
-          {user ? 'Spot a mistake? Use Suggest fix on the row and an admin will review it.' : 'Log in to suggest a correction.'}
+          {isAdmin
+            ? 'Specs are saved immediately. Pending parts stay readable; index them under Saved parts when credit is available.'
+            : `Specs are added by the TekaTech team. ${user ? 'Spot a mistake? Tap the flag on its row and an admin will review your fix.' : 'Log in to suggest a correction.'}`}
         </p>
       )}
     </section>

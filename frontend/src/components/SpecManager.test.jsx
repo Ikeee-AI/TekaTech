@@ -1,5 +1,5 @@
 // Specifications section: every saved part merged into one sheet (each heading once, a
-// section list, a search box); admins switch to "Manage parts" for per-part indexing.
+// section list, a search box); admins get the same sheet plus a Saved parts section.
 // Index All Pending (#200) has its own tests in SpecManager.indexAll.test.jsx.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
@@ -158,24 +158,30 @@ describe('SpecManager', () => {
     expect(screen.getByText(/No spec matches/)).toBeTruthy()
   })
 
-  it('hides indexing wording from shoppers; admins get it under Manage parts', async () => {
+  it('hides indexing wording from shoppers; admins get the same sheet plus Saved parts', async () => {
     renderSpecs({ id: 'u1', app_metadata: {} })
     await screen.findByRole('link', { name: /gsmarena\.com/ })
     expect(screen.queryByText(/ready for AI/i)).toBeNull()
     expect(screen.queryByText(/Pending AI Indexing/)).toBeNull()
-    expect(screen.queryByText(/\d+ parts?$/)).toBeNull()
-    expect(screen.queryByRole('tab', { name: 'Manage parts' })).toBeNull()
+    expect(screen.queryByText('Saved parts')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Index/ })).toBeNull()
     cleanup()
     renderSpecs({ id: 'admin', app_metadata: { is_admin: true } })
     await screen.findByRole('link', { name: /gsmarena\.com/ })
-    expect(screen.queryByRole('button', { name: 'Index for AI' })).toBeNull()
-    fireEvent.click(screen.getByRole('tab', { name: 'Manage parts' }))
-    expect(screen.getByText('1 of 3 ready for AI')).toBeTruthy()
-    expect(screen.getByText('3 parts')).toBeTruthy()
+    // Same sheet and section list as a shopper, with Saved parts added at the end.
+    const nav = screen.getByRole('navigation', { name: 'Spec sections' })
+    expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'Display1',
+      'Performance1',
+      'Battery & charging1',
+      'Build & durability1',
+      'Saved parts4',
+    ])
+    expect(screen.getByText('2 of 4 ready for AI')).toBeTruthy()
+    expect(screen.getAllByRole('listitem', { name: /^Spec #/ })).toHaveLength(4)
     expect(screen.getAllByRole('button', { name: 'Index for AI' })).toHaveLength(2)
-    const first = screen.getByRole('button', { name: 'Hide 3 spec parts from gsmarena.com' })
-    expect(first.getAttribute('aria-expanded')).toBe('true')
-    expect(screen.getByRole('button', { name: 'Show 1 spec part from no source link' }).getAttribute('aria-expanded')).toBe('false')
+    expect(screen.getByRole('button', { name: /index all pending \(2\)/i })).toBeTruthy()
+    expect(screen.queryByRole('tab')).toBeNull()
   })
 
   it('a signed-in user can suggest a fix on every row, sent for the part that row came from', async () => {

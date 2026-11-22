@@ -95,15 +95,16 @@ export default function GadgetDetail() {
 
       {/* One top card (22 Nov 2026, owner's pick "A" in the current colours): photo, the
           phone's details with highlights from its sources, and the key-spec panel. */}
-      <article className="bg-white border border-slate-200 rounded-[28px] p-5 sm:p-6 grid grid-cols-1 md:grid-cols-[10rem_minmax(0,1fr)] xl:grid-cols-[11rem_minmax(0,1fr)_minmax(0,32rem)] gap-5 sm:gap-6">
+      <article className="bg-white border border-slate-200 rounded-[28px] p-5 sm:p-6 grid grid-cols-1 md:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_minmax(0,31rem)] md:grid-rows-[auto_1fr] gap-x-6 gap-y-4">
         <ProductImage
           src={gadget.image_url}
           alt={gadget.name}
-          className="w-32 md:w-full self-center md:self-start justify-self-center aspect-[3/4]"
+          className="w-40 md:w-full justify-self-center aspect-square md:col-start-1 md:row-start-1"
           glyphClassName="w-1/2 h-3/4"
+          padding="p-4"
         />
 
-        <div className="min-w-0 flex flex-col">
+        <div className="min-w-0 flex flex-col md:col-start-2 md:row-start-1 md:row-span-2">
           <div className="flex flex-wrap items-center gap-2">
             {specs && (
               <span className="font-mono text-[11px] font-semibold rounded-full px-2.5 py-1 bg-sage-700 text-white">
@@ -189,29 +190,31 @@ export default function GadgetDetail() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2 mt-auto pt-5">
-            <Button as={Link} to={`/compare?ids=${id}`} variant="primary">
-              Compare
+        </div>
+
+        {/* Actions under the photo on wider screens, after the details on phones. */}
+        <div className="flex flex-wrap md:flex-col gap-2 md:col-start-1 md:row-start-2 md:self-start md:[&>*]:w-full">
+          <Button as={Link} to={`/compare?ids=${id}`} variant="primary">
+            Compare
+          </Button>
+          {isHttpUrl(gadget.store_url ?? '') && (
+            <Button as="a" href={gadget.store_url} target="_blank" rel="noopener noreferrer" variant="outline" icon={ExternalLink}>
+              Official store
+              <span className="sr-only"> (opens in a new tab)</span>
             </Button>
-            {isHttpUrl(gadget.store_url ?? '') && (
-              <Button as="a" href={gadget.store_url} target="_blank" rel="noopener noreferrer" variant="outline" icon={ExternalLink}>
-                Official store
-                <span className="sr-only"> (opens in a new tab)</span>
-              </Button>
-            )}
-            {/* Admin-curated catalog: PATCH /gadgets/{id} is admin-only. */}
-            {user?.app_metadata?.is_admin && (
-              <Button as={Link} to={`/gadgets/${id}/edit`} variant="outline" icon={Pencil}>
-                Edit
-              </Button>
-            )}
-            <DeleteGadgetButton gadget={gadget} onDeleted={() => navigate('/', { replace: true })} />
-          </div>
+          )}
+          {/* Admin-curated catalog: PATCH /gadgets/{id} is admin-only. */}
+          {user?.app_metadata?.is_admin && (
+            <Button as={Link} to={`/gadgets/${id}/edit`} variant="outline" icon={Pencil}>
+              Edit
+            </Button>
+          )}
+          <DeleteGadgetButton gadget={gadget} onDeleted={() => navigate('/', { replace: true })} />
         </div>
 
         {/* specs: null while loading, undefined if the specs couldn't load (SpecManager shows that error). */}
         {specs !== undefined && (
-          <div className="flex flex-col gap-2.5 min-w-0 md:col-span-2 xl:col-span-1">
+          <div className="flex flex-col gap-2.5 min-w-0 md:col-span-2 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:row-span-2">
             <KeySpecTiles keySpecs={keySpecs} size="sm" loading={specs === null} />
             <MoreKeySpecs moreSpecs={moreSpecs} loading={specs === null} bare />
             <VariantsList variants={extractVariants(specList)} bare />
