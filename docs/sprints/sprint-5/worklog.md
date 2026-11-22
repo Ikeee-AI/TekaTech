@@ -1162,7 +1162,7 @@ Short session, ~09:45–10:12 Manila.
 
 | What conflicts | Impact | Resolution / owner / status |
 | --- | --- | --- |
-| `docs/admin-catalog-guide.md:41`, `docs/quick-start.md:65,83`, `docs/feature-maintenance.md:35` still describe per-source spec cards, the "parts" toggle and Index All Pending "above the spec cards" | Admin docs no longer match the phone page after #285 | Logged as D-S5-1 in `docs/sprints/sprint-5/discrepancies.md`; docs update — Ikeee-AI — open |
+| `docs/admin-catalog-guide.md:41`, `docs/quick-start.md:65,83`, `docs/feature-maintenance.md:35` still describe per-source spec cards, the "parts" toggle and Index All Pending "above the spec cards" | Admin docs no longer match the phone page after #285 | Logged as D-S5-1 in `docs/sprints/sprint-5/discrepancies.md`; the 3 docs updated on `tekatech/s5-ik-worklog-22nov` the same day. Fixed (lands with the next PR) |
 | Earlier in the session the owner thought #280 was not approved; GitHub showed `s2100932` APPROVED on head `b89e0ea` (19 Nov) | None once checked | Shown to the owner; merged with that approval. Resolved |
 | PR #280 was squash-merged without re-running its PR checks on top of `bd20177` | Combined code was only tested by the main run | Main run 45014181235 passed (lint, build, tests, browser checks) before deploy. Accepted |
 
@@ -1179,4 +1179,4 @@ Short session, ~09:45–10:12 Manila.
 
 **Next**
 - Click through the live phone page, compare and home hero signed in (desktop + phone) — Ikeee-AI — 23 Nov.
-- Update the 3 admin docs for the merged spec sheet (D-S5-1) — Ikeee-AI — next docs batch.
+- Branch `tekatech/s5-ik-worklog-22nov` (this entry + D-S5-1 docs fix) pushed without a PR; include it in the next PR — Ikeee-AI.
