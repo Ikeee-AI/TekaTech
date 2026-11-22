@@ -118,13 +118,17 @@ const HIGHLIGHT_RULES = [
   // short list doesn't leave the top card half empty. Still details the tiles don't show.
   ['Brightness', /brightness/],
   ['Rear cameras', /^rear cameras?$/],
-  ['Build', /back cover|back panel|cover glass|frame material/],
+  ['Build', /back cover|back panel|cover glass|frame material|display protection/],
   ['Fingerprint', /fingerprint/],
   ['Colours', /^colou?rs?( options)?$/],
   ['Wireless charging', /^wireless charging$/],
   ['Resolution', /^(display |screen )?resolution$/],
   ['Dimensions', /^dimensions$/],
   ['NFC', /^nfc$/],
+  // 23 Nov 2026: the wording POCO X7 Pro and ROG Phone 9 Pro use (both had 6 highlights).
+  ['Ultra-wide camera', /^ultra-?wide( camera)?$/],
+  ['Graphics', /^gpu$/],
+  ['Audio', /^audio$/],
 ]
 
 /** Up to `max` (7) { title, label, value, sourceUrl } facts for the phone page's Highlights list. */
