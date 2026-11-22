@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { barWidths, groupRows, plainRow, showsBars, specRows } from './compareRows'
+import { barWidths, groupRows, plainRow, specRows } from './compareRows'
 import { extractKeySpecs, extractMoreSpecs } from './keySpecs'
 
 const parsed = (content, source_url = null) => {
@@ -72,15 +72,6 @@ describe('compare spec rows', () => {
   it('shows loading and failed phones as gaps', () => {
     const rows = specRows([undefined, null])
     expect(row(rows, 'Battery').cells.map((c) => c.text)).toEqual(['…', 'Not stated by source'])
-  })
-
-  it('draws bars only where every phone gives a number to compare', () => {
-    const rows = specRows([vivo, samsung])
-    expect(showsBars(row(rows, 'Battery'))).toBe(true)
-    // A gap on one side, or "stated only" rows: value alone, no bars.
-    expect(showsBars(row(rows, 'Charging'))).toBe(false)
-    expect(showsBars(row(rows, 'Chip'))).toBe(false)
-    expect(showsBars(plainRow('Brand', [{ brand: 'vivo' }, { brand: 'Samsung' }], (g) => g.brand))).toBe(false)
   })
 
   it('groups rows into sections in a fixed order, keeping every row', () => {

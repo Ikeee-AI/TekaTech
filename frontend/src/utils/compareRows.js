@@ -77,13 +77,6 @@ export function specRows(keySpecsList) {
   ]
 }
 
-/** True when a row's bars mean something: every phone states a number and longer = more.
- * Rows that only say "stated" (chip, weight, water resistance) and catalog rows (price,
- * date, brand) show the value alone; a full bar on every side compared nothing. */
-export function showsBars(row) {
-  return row.bars === 'proportional' && row.cells.every((c) => c.n != null && c.n > 0)
-}
-
 /** Spec sections on the Compare page, in order. A row whose label is in none of them
  * goes to the last section, so a new row is never dropped. */
 export const SPEC_GROUPS = [

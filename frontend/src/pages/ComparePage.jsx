@@ -15,7 +15,7 @@ import PriceTag from '../components/PriceTag'
 import { friendlyError } from '../utils/requestErrors'
 import { formatPeso } from '../utils/formatPeso'
 import { extractKeySpecs, extractMoreSpecs } from '../utils/keySpecs'
-import { barWidths, groupRows, plainRow, showsBars, specRows } from '../utils/compareRows'
+import { barWidths, groupRows, plainRow, specRows } from '../utils/compareRows'
 import { withoutDoubledBrand } from '../utils/gadgetName'
 
 // Matches the backend's MAX_COMPARISON_GADGETS (routers/comparisons.py).
@@ -138,9 +138,10 @@ function GroupTitle({ children }) {
   )
 }
 
-/** One phone's side of a face-off row: value, then bar and source on one line
- * (a bar only where the numbers compare), or the source alone. */
-function FaceOffCell({ name, cell, width, barClass, bars, align }) {
+/** One phone's side of a face-off row: the value, then its green/blue bar with the source
+ * beside it (stacked under the bar on phones). Every row has a bar, as before: proportional
+ * where the numbers compare, full when the value is only "stated", an empty track for a gap. */
+function FaceOffCell({ name, cell, width, barClass, align }) {
   const right = align === 'right'
   return (
     <div className={`min-w-0 ${right ? 'text-right' : ''}`}>
@@ -149,25 +150,16 @@ function FaceOffCell({ name, cell, width, barClass, bars, align }) {
         {cell.text}
         {cell.higher && <HigherTag />}
       </p>
-      {bars ? (
-        // Phones: bar on its own line, source under it. Wider: bar and source share one line.
-        <div className={`mt-1.5 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2 ${right ? 'items-end sm:flex-row-reverse' : 'items-start'}`}>
-          <div className={`w-full sm:flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden flex ${right ? 'justify-end' : ''}`}>
-            <div className={`h-full rounded-full ${barClass}`} style={{ width: `${width}%` }} />
-          </div>
-          {cell.source && (
-            <span title={cell.source} className="max-w-full sm:max-w-[60%] font-mono text-[10px] text-slate-500 truncate">
-              {cell.source}
-            </span>
-          )}
+      <div className={`mt-1.5 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2 ${right ? 'items-end sm:flex-row-reverse' : 'items-start'}`}>
+        <div className={`w-full sm:flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden flex ${right ? 'justify-end' : ''}`}>
+          <div className={`h-full rounded-full ${barClass}`} style={{ width: `${width}%` }} />
         </div>
-      ) : (
-        cell.source && (
-          <p title={cell.source} className="mt-0.5 font-mono text-[10px] text-slate-500 truncate">
-            {cell.source}
-          </p>
-        )
-      )}
+        {/* Fixed width from sm up, so every bar in the list starts and ends at the same place;
+            a gap shows "—" so its bar keeps the same length. */}
+        <span title={cell.source ?? undefined} className="max-w-full sm:w-32 sm:shrink-0 font-mono text-[10px] text-slate-500 truncate">
+          {cell.source ?? '—'}
+        </span>
+      </div>
     </div>
   )
 }
@@ -183,15 +175,14 @@ function FaceOff({ gadgets, rows }) {
             {group.rows.map((row) => {
               const [wa, wb] = barWidths(row)
               const [ca, cb] = row.cells
-              const bars = showsBars(row)
               return (
                 <div
                   key={row.label}
                   className="grid grid-cols-[minmax(0,1fr)_76px_minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_120px_minmax(0,1fr)] items-center gap-3 py-2.5 border-b border-slate-200 last:border-b-0"
                 >
-                  <FaceOffCell name={a.name} cell={ca} width={wa} barClass={SLOT_STYLES[0].bar} bars={bars} />
+                  <FaceOffCell name={a.name} cell={ca} width={wa} barClass={SLOT_STYLES[0].bar} />
                   <p className="text-center text-xs font-semibold text-slate-500 leading-tight">{row.label}</p>
-                  <FaceOffCell name={b.name} cell={cb} width={wb} barClass={SLOT_STYLES[1].bar} bars={bars} align="right" />
+                  <FaceOffCell name={b.name} cell={cb} width={wb} barClass={SLOT_STYLES[1].bar} align="right" />
                 </div>
               )
             })}
@@ -522,7 +513,7 @@ export default function ComparePage() {
             {showFaceOff ? <FaceOff gadgets={gadgets} rows={rows} /> : <SpecTable gadgets={gadgets} rows={rows} cheapestPrice={cheapestPrice} />}
             <p className="px-4 sm:px-5 py-3 text-xs text-slate-500 border-t border-slate-200">
               Every spec is read from each phone&apos;s saved sources; gaps are shown, never filled in.
-              {showFaceOff ? ' Bars appear only where both sources give a number to compare.' : ''}
+              {showFaceOff ? ' Bars compare numbers only where both sources state them; chip, weight, water resistance, price, date and brand bars only show the value is stated.' : ''}
               {' '}&ldquo;Higher&rdquo; marks the bigger battery or charging figure when every source states one.
             </p>
           </section>
