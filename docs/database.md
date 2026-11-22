@@ -55,10 +55,11 @@ Run these in Supabase SQL Editor as the project postgres owner:
 6. `backend/sql/increment_comparison_view_count.sql`
 7. `backend/sql/user_gadgets.sql` (My Gadgets, 3 Nov 2026: one table, private to the backend)
 8. `backend/sql/user_questions.sql` (per-gadget AI conversation, 3 Nov 2026: one table, private to the backend)
-9. `backend/sql/gadget_price_source.sql` (sourced prices, 14 Nov 2026: three nullable columns on `gadgets`)
-10. `backend/sql/gadget_price_launch.sql` (launch prices, 15 Nov 2026: one boolean column on `gadgets`, default false)
-11. `backend/sql/api_access.sql` (restricts RPC/table grants)
-12. `backend/sql/lock_browser_roles.sql` (always last: removes every browser-role right in `public`, including tables no file names, and stops Supabase's defaults from granting new objects to the browser; 14 Nov 2026)
+9. `backend/sql/user_comparison_questions.sql` (per-comparison AI conversation, 23 Nov 2026: one table plus a gadget-delete trigger, private to the backend)
+10. `backend/sql/gadget_price_source.sql` (sourced prices, 14 Nov 2026: three nullable columns on `gadgets`)
+11. `backend/sql/gadget_price_launch.sql` (launch prices, 15 Nov 2026: one boolean column on `gadgets`, default false)
+12. `backend/sql/api_access.sql` (restricts RPC/table grants)
+13. `backend/sql/lock_browser_roles.sql` (always last: removes every browser-role right in `public`, including tables no file names, and stops Supabase's defaults from granting new objects to the browser; 14 Nov 2026)
 
 ### Browser-role lock (14 Nov 2026)
 
@@ -82,9 +83,19 @@ select relrowsecurity from pg_class where oid = 'public.user_questions'::regclas
 select has_table_privilege('authenticated', 'public.user_questions', 'SELECT');    -- false
 ```
 
+### Adding the per-comparison AI conversation to an existing project
+
+Projects set up before 23 November 2026 need only step 9. Run it **before** deploying the backend that writes it, on DEV first and then on the live project. Until it is applied, every signed-in comparison question logs a failed save (the answer still works) and the compare page shows "Couldn't load your earlier questions". Paste `backend/sql/user_comparison_questions.sql` into the SQL Editor and run it once as the project owner. It creates the `user_comparison_questions` table (`create table if not exists`, safe to re-run): one row per saved comparison question, keyed by the user and `comparison_key` (the sorted, comma-joined gadget ids, so the same phones in any order are one conversation), with the full validated answer as `jsonb`. `gadget_ids uuid[]` must hold at least two ids. Because an array can't carry a foreign key, an `after delete` trigger on `gadgets` (`gadgets_delete_comparison_questions`) removes saved turns that include a deleted gadget. It also adds a GIN index for that trigger and an index on `(user_id, comparison_key, created_at desc)`. RLS is on, there is no browser access and `service_role` keeps access; the trigger function is revoked from the browser roles. It then reloads the PostgREST schema cache. It changes no existing table or data. Check it with:
+
+```sql
+select relrowsecurity from pg_class where oid = 'public.user_comparison_questions'::regclass;  -- true
+select has_table_privilege('authenticated', 'public.user_comparison_questions', 'SELECT');    -- false
+select tgname from pg_trigger where tgname = 'gadgets_delete_comparison_questions';           -- one row
+```
+
 ### Adding sourced prices to an existing project
 
-Existing projects need only step 9, and it must run **before** the backend that writes these columns is deployed (an admin save that sends a price source would otherwise fail). Paste `backend/sql/gadget_price_source.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It adds `price_source_url text`, `price_checked_at date` and `store_url text` to `gadgets` (`add column if not exists`), two http/https check constraints (dropped and re-added, safe to re-run), and reloads the PostgREST schema cache. Existing rows keep NULLs; no data changes. Reviewed price values for the catalog are a separate, hand-applied file: `docs/catalog-data/prices-2026-11-14.sql`. Check it with:
+Existing projects need only step 10, and it must run **before** the backend that writes these columns is deployed (an admin save that sends a price source would otherwise fail). Paste `backend/sql/gadget_price_source.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It adds `price_source_url text`, `price_checked_at date` and `store_url text` to `gadgets` (`add column if not exists`), two http/https check constraints (dropped and re-added, safe to re-run), and reloads the PostgREST schema cache. Existing rows keep NULLs; no data changes. Reviewed price values for the catalog are a separate, hand-applied file: `docs/catalog-data/prices-2026-11-14.sql`. Check it with:
 
 ```sql
 select column_name, data_type from information_schema.columns
@@ -94,7 +105,7 @@ where table_schema = 'public' and table_name = 'gadgets'
 
 ### Adding the launch-price flag to an existing project
 
-Projects set up before 15 November 2026 need only step 10, and it must run **before** the frontend that sends `price_is_launch` is deployed (an admin save that ticks "Launch price" would otherwise fail). Paste `backend/sql/gadget_price_launch.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It adds `price_is_launch boolean not null default false` to `gadgets` (`add column if not exists`, safe to re-run) and reloads the PostgREST schema cache. Existing rows get `false`; no other data changes. Check it with:
+Projects set up before 15 November 2026 need only step 11, and it must run **before** the frontend that sends `price_is_launch` is deployed (an admin save that ticks "Launch price" would otherwise fail). Paste `backend/sql/gadget_price_launch.sql` into the SQL Editor and run it once as the project owner, on DEV first and then on the live project. It adds `price_is_launch boolean not null default false` to `gadgets` (`add column if not exists`, safe to re-run) and reloads the PostgREST schema cache. Existing rows get `false`; no other data changes. Check it with:
 
 ```sql
 select column_name, data_type, is_nullable, column_default from information_schema.columns

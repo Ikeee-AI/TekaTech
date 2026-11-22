@@ -36,6 +36,7 @@ from prompts import (
 )
 from rate_limit import limiter
 from routers.comparisons import MAX_COMPARISON_GADGETS
+from routers.my_comparisons import comparison_key
 from supabase_client import supabase
 from tokens import count_chat_tokens
 
@@ -716,6 +717,9 @@ def _run_query(request: Request, payload: "QueryRequest", user) -> tuple["QueryR
     if thread_user is not None:
         with _timed(request, "save"):
             _save_thread_turn(thread_user, payload, answer)
+    elif payload.gadget_ids and len(payload.gadget_ids) >= 2:
+        with _timed(request, "save"):
+            _save_comparison_turn(user, payload, answer)
     timing = _server_timing(request, (time.perf_counter() - started) * 1000)
     timing_logger.info(
         "query_timings %s cached=%s gadgets=%d history=%d",
@@ -810,6 +814,49 @@ def _save_thread_turn(user, payload: "QueryRequest", response: QueryResponse) ->
         logger.exception("user_questions insert failed; the answer is returned without saving the turn")
         return
     _trim_thread(user_id, gadget_id)
+
+
+def _save_comparison_turn(user, payload: "QueryRequest", response: QueryResponse) -> None:
+    """Per-comparison conversation (user_comparison_questions.sql, 23 Nov 2026): a signed-in
+    user's question about two or more gadgets is saved with its full answer, keyed by the sorted
+    gadget ids, so the compare page can show the thread later. Best-effort like
+    _save_thread_turn: never fails the request (until the SQL is applied, the insert fails and is
+    logged). The question still also feeds query_history/trending, as before."""
+    user_id, key = str(user.id), comparison_key(payload.gadget_ids)
+    try:
+        supabase.table("user_comparison_questions").insert(
+            {
+                "user_id": user_id,
+                "comparison_key": key,
+                "gadget_ids": key.split(","),
+                "question": payload.question,
+                "response": response.model_dump(mode="json"),
+            }
+        ).execute()
+    except Exception:
+        logger.warning("user_comparison_questions insert failed; the answer is returned without saving", exc_info=True)
+        return
+    try:
+        stale = (
+            supabase.table("user_comparison_questions")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("comparison_key", key)
+            .order("created_at", desc=True)
+            .range(MAX_THREAD_TURNS, MAX_THREAD_TURNS + THREAD_TRIM_BATCH - 1)
+            .execute()
+            .data
+        )
+        if stale:
+            (
+                supabase.table("user_comparison_questions")
+                .delete()
+                .in_("id", [row["id"] for row in stale])
+                .eq("user_id", user_id)
+                .execute()
+            )
+    except Exception:
+        logger.warning("user_comparison_questions trim failed; retried on the next saved turn", exc_info=True)
 
 
 # Each saved turn holds a full answer and its sources, and a /query loop with a valid

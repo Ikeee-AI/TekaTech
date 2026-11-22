@@ -109,6 +109,23 @@ begin
   if not (select relrowsecurity from pg_class where oid = 'public.user_questions'::regclass) then
     raise exception 'user_questions must enable RLS';
   end if;
+  -- Per-comparison AI threads: private to the backend, removed when one of the gadgets goes.
+  insert into user_comparison_questions(user_id, comparison_key, gadget_ids, question, response)
+    values ('00000000-0000-0000-0000-0000000000a1', least(gadget_a, gadget_b)::text || ',' || greatest(gadget_a, gadget_b)::text,
+            array[gadget_a, gadget_b], 'Which is faster?', '{"answer": "A [1]", "sources": []}'::jsonb);
+  if has_table_privilege('anon', 'public.user_comparison_questions', 'SELECT') or
+     has_table_privilege('authenticated', 'public.user_comparison_questions', 'INSERT') then
+    raise exception 'Browser roles must not access user_comparison_questions directly';
+  end if;
+  if not (select relrowsecurity from pg_class where oid = 'public.user_comparison_questions'::regclass) then
+    raise exception 'user_comparison_questions must enable RLS';
+  end if;
+  begin
+    insert into user_comparison_questions(user_id, comparison_key, gadget_ids, question, response)
+      values ('00000000-0000-0000-0000-0000000000a1', gadget_a::text, array[gadget_a], 'One?', '{}'::jsonb);
+    raise exception 'A saved comparison needs at least two gadgets';
+  exception when check_violation then null;
+  end;
   -- Sourced prices: http(s) links and a checked date are stored; other schemes are refused.
   update gadgets set price_php = 49990, price_source_url = 'https://www.samsung.com/ph/',
     price_checked_at = date '2026-11-14', store_url = 'https://www.samsung.com/ph/' where id = gadget_b;
@@ -129,6 +146,9 @@ begin
   if exists (select 1 from user_questions where gadget_id = gadget_a) then
     raise exception 'Deleting a gadget must delete its saved questions';
   end if;
+  if exists (select 1 from user_comparison_questions where gadget_a = any(gadget_ids)) then
+    raise exception 'Deleting a gadget must delete the saved comparison questions that include it';
+  end if;
   if exists (select 1 from user_gadgets where gadget_id = gadget_a) then
     raise exception 'Deleting a gadget must remove it from every user''s list';
   end if;
@@ -143,6 +163,7 @@ set local role service_role;
 select id from public.gadgets limit 1;
 select user_id from public.user_gadgets limit 1;
 select user_id from public.user_questions limit 1;
+select user_id from public.user_comparison_questions limit 1;
 select * from public.match_spec_documents(
   ('[' || '1,' || repeat('0,', 1534) || '0]')::vector, 0, 0.5
 );

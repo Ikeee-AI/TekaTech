@@ -6,7 +6,7 @@ import { api } from '../api/client'
 import AIComparisonPanel from './AIComparisonPanel'
 
 vi.mock('../api/client', () => ({
-  api: { askQuestion: vi.fn(), getSpecs: vi.fn() },
+  api: { askQuestion: vi.fn(), getSpecs: vi.fn(), getComparisonQuestions: vi.fn(), clearComparisonQuestions: vi.fn() },
 }))
 
 const answer = (text) => ({
@@ -22,6 +22,8 @@ beforeAll(() => {
 beforeEach(() => {
   api.getSpecs.mockResolvedValue([{ indexing_status: 'indexed' }])
   api.askQuestion.mockResolvedValue(answer('The V50 charges fastest at 90W [1].'))
+  api.getComparisonQuestions.mockResolvedValue([])
+  api.clearComparisonQuestions.mockResolvedValue(null)
 })
 
 afterEach(() => {
@@ -53,7 +55,7 @@ describe('AIComparisonPanel chat memory', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Which offers better value for the price?' }))
     await screen.findByText(/charges fastest/)
     expect(api.askQuestion.mock.calls[0][0]).not.toHaveProperty('history')
-    expect(screen.getByText('Follow-ups remember your last 1 question.')).toBeTruthy()
+    expect(screen.getByText('Saved to your account. Follow-ups remember your last 1 question.')).toBeTruthy()
 
     await askAnother('Which one is lighter?')
     await screen.findByText(/charges fastest/)
@@ -81,7 +83,9 @@ describe('AIComparisonPanel chat memory', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Compare battery life' }))
     await screen.findByText(/charges fastest/)
     fireEvent.click(screen.getByRole('button', { name: 'New Chat' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Compare camera quality' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Compare camera quality' }))
+    expect(api.clearComparisonQuestions).toHaveBeenCalledWith(['g1', 'g2'])
     await screen.findByText(/charges fastest/)
     expect(api.askQuestion.mock.calls[1][0]).not.toHaveProperty('history')
 
@@ -107,5 +111,21 @@ describe('AIComparisonPanel chat memory', () => {
     finish(answer('Final: the V50 charges fastest at 90W [1].'))
     expect(await screen.findByText(/Final: the V50 charges fastest/)).toBeTruthy()
     expect(screen.queryByText(/The V50 charges first/)).toBeNull()
+  })
+
+  it('shows the saved conversation for these phones and sends it as history', async () => {
+    api.getComparisonQuestions.mockResolvedValue([
+      { id: 's1', question: 'Compare battery life', asked_at: '2026-11-22T10:00:00Z', response: answer('Both have 6000 mAh [1].') },
+    ])
+    renderPanel(['g2', 'g1'])
+    expect(await screen.findByText(/Both have 6000 mAh/)).toBeTruthy()
+    expect(api.getComparisonQuestions).toHaveBeenCalledWith(['g1', 'g2'])
+    fireEvent.click(screen.getByRole('button', { name: 'Compare camera quality' }))
+    await screen.findByText(/charges fastest/)
+    expect(api.askQuestion).toHaveBeenLastCalledWith(
+      expect.objectContaining({ history: [{ question: 'Compare battery life', answer: 'Both have 6000 mAh [1].' }] }),
+    )
+    // The saved turn stays above the new answer.
+    expect(screen.getByRole('list', { name: 'Earlier questions about these phones' }).textContent).toContain('Compare battery life')
   })
 })

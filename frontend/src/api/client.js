@@ -147,6 +147,11 @@ export const api = {
   getMyGadgets: () => request(`/me/gadgets`),
   addMyGadget: (gadgetId) => request(`/me/gadgets/${gadgetId}`, { method: "PUT" }),
   removeMyGadget: (gadgetId) => request(`/me/gadgets/${gadgetId}`, { method: "DELETE" }),
+  // The signed-in user's saved questions about one set of phones (compare page; POST /query saves
+  // them, user_comparison_questions.sql), oldest first. ids: the gadget ids, any order.
+  getComparisonQuestions: (ids) => request(`/me/comparisons/questions?ids=${ids.map(encodeURIComponent).join(",")}`),
+  clearComparisonQuestions: (ids) =>
+    request(`/me/comparisons/questions?ids=${ids.map(encodeURIComponent).join(",")}`, { method: "DELETE" }),
   // The signed-in user's saved questions about one gadget (POST /query saves them), oldest first.
   getGadgetQuestions: (gadgetId) => request(`/me/gadgets/${gadgetId}/questions`),
   clearGadgetQuestions: (gadgetId) => request(`/me/gadgets/${gadgetId}/questions`, { method: "DELETE" }),

@@ -233,5 +233,6 @@ def test_a_failed_trim_never_fails_the_answer_or_the_save(client, fake_supabase,
 
 def test_anonymous_and_unsaved_questions_do_not_trim(client, fake_supabase):
     assert _ask(client, fake_supabase, gadget_ids=[GADGET], headers={}, user=None).status_code == 401
+    # Since 23 Nov a comparison is saved too, but in its own table (test_comparison_threads.py).
     _ask(client, fake_supabase, gadget_ids=[GADGET, OTHER], headers=AUTH)
-    assert fake_supabase.ranges == []
+    assert [r for r in fake_supabase.ranges if r[0] == "user_questions"] == []
