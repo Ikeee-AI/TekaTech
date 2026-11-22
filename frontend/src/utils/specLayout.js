@@ -109,13 +109,15 @@ export function mergedSheet(specs) {
 const HIGHLIGHT_RULES = [
   ['Display', /^(display|display type|screen|main display)$/],
   ['Battery life', /playback|battery life|screen-on/],
+  ['Fast charging', /fast charg|wired charging|charging speed/],
   ['Front camera', /front camera|selfie/],
+  ['Zoom', /zoom/],
   ['Video', /^video( recording)?$/],
   ['Software', /operating system|^os$|software|android/],
 ]
 
-/** Up to `max` { title, label, value, source } facts for the phone page's Highlights list. */
-export function specHighlights(specs, max = 4) {
+/** Up to `max` (6) { title, label, value, sourceUrl } facts for the phone page's Highlights list. */
+export function specHighlights(specs, max = 6) {
   const facts = []
   for (const spec of specs ?? []) {
     for (const block of specBlocks(spec.content ?? '')) {

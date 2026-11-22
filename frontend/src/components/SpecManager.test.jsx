@@ -118,7 +118,9 @@ describe('spec layout helpers', () => {
       ['Battery life', 'up to 22 hours'],
       ['Front camera', 'TrueDepth, 12MP, f/1.9'],
       ['Video', '4K Dolby Vision'],
+      ['Software', 'iOS 18'],
     ])
+    expect(specHighlights([spec('a', 0, 'Display: OLED\nZoom: 5x optical')], 1).map((h) => h.title)).toEqual(['Display'])
     expect(specHighlights([spec('c', 0, 'Weight: 198 g')])).toEqual([])
   })
 })
