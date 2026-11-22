@@ -105,6 +105,39 @@ describe('GadgetChatPanel', () => {
     expect(screen.getAllByText(/It lasts about a day/)).toHaveLength(1)
   })
 
+  it('sends the earlier turns with a follow-up, including the answer still on screen', async () => {
+    renderPanel()
+    await screen.findByText('What chip does it use?')
+    fireEvent.change(composer(), { target: { value: 'Can it run Genshin Impact?' } })
+    fireEvent.keyDown(composer(), { key: 'Enter' })
+    expect(api.askQuestion).toHaveBeenLastCalledWith(
+      expect.objectContaining({ history: [{ question: 'What chip does it use?', answer: 'Tensor G4 [1].' }] }),
+    )
+    await screen.findByText(/It lasts about a day/)
+    fireEvent.change(composer(), { target: { value: 'Can it run smoothly?' } })
+    fireEvent.keyDown(composer(), { key: 'Enter' })
+    expect(api.askQuestion).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        question: 'Can it run smoothly?',
+        history: [
+          { question: 'What chip does it use?', answer: 'Tensor G4 [1].' },
+          { question: 'Can it run Genshin Impact?', answer: 'It lasts about a day [1].' },
+        ],
+      }),
+    )
+    await screen.findAllByText(/It lasts about a day/)
+  })
+
+  it('a fresh chat sends no history', async () => {
+    api.getGadgetQuestions.mockResolvedValue([])
+    renderPanel()
+    await waitFor(() => expect(api.getGadgetQuestions).toHaveBeenCalled())
+    fireEvent.change(composer(), { target: { value: 'What chip does it use?' } })
+    fireEvent.keyDown(composer(), { key: 'Enter' })
+    expect(api.askQuestion.mock.calls.at(-1)[0]).not.toHaveProperty('history')
+    await screen.findByText(/It lasts about a day/)
+  })
+
   it('Regenerate re-asks with regenerate: true and keeps a single copy of the turn', async () => {
     renderPanel()
     await screen.findByText('What chip does it use?')

@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import re
 import time
@@ -23,7 +24,9 @@ from prompts import (
     NOT_IN_SPECS_SENTINEL,
     PROMPT_VERSION,
     build_general_knowledge_prompt,
+    build_general_knowledge_user_message,
     build_system_prompt,
+    build_user_message,
 )
 from rate_limit import limiter
 from routers.comparisons import MAX_COMPARISON_GADGETS
@@ -118,6 +121,30 @@ def answer_settings(gadget_count: int) -> dict:
 MAX_QUESTION_CHARS = 150
 MAX_QUESTION_TOKENS = 160
 
+# Conversation memory for the gadget chat (22 Nov 2026): the last few turns come with the new
+# question so a follow-up ("can it run smoothly?") keeps its subject. Capped so a client cannot
+# grow the prompt: at most 3 turns, each question within the question limit, each answer cut to
+# MAX_HISTORY_ANSWER_CHARS. Citation markers are removed from earlier answers, because their
+# numbers pointed at that turn's snippets, not this one's.
+MAX_HISTORY_TURNS = 3
+MAX_HISTORY_ANSWER_CHARS = 1200
+_CITATION_MARKER = re.compile(r"\s*\[\d+\]")
+
+
+class HistoryTurn(BaseModel):
+    question: str = Field(max_length=MAX_QUESTION_CHARS)
+    answer: str = Field(max_length=20000)
+
+    @field_validator("question")
+    @classmethod
+    def question_text(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("answer")
+    @classmethod
+    def answer_text(cls, value: str) -> str:
+        return _CITATION_MARKER.sub("", value).strip()[:MAX_HISTORY_ANSWER_CHARS]
+
 
 class QueryRequest(BaseModel):
     question: str
@@ -136,6 +163,8 @@ class QueryRequest(BaseModel):
     # newest saved turn for this same question and gadget instead of adding a second one.
     # Ignored when nothing is saved (not exactly one gadget).
     regenerate: bool = False
+    # Earlier turns of the gadget chat, oldest first (see HistoryTurn). Empty = a fresh question.
+    history: list[HistoryTurn] = Field(default_factory=list, max_length=MAX_HISTORY_TURNS)
 
     @field_validator("question")
     @classmethod
@@ -288,6 +317,19 @@ def _admin_bypasses_cache(request: Request, user) -> bool:
 # Logged once per process: until sql/keyword_match_spec_documents.sql is applied, every
 # no-match question would otherwise repeat the same warning.
 _keyword_rpc_failure_logged = False
+
+
+def retrieval_text(question: str, history) -> str:
+    """What gets embedded for retrieval: the previous question plus this one, so a follow-up
+    ("can it run smoothly?") still finds the chunks its subject needs (chip, RAM, display)."""
+    if not history:
+        return question
+    return f"{history[-1].question}\n{question}"
+
+
+def _history_digest(history) -> str:
+    text = "\n".join(f"{t.question}\n{t.answer}" for t in history)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
 # Step timings for one /query request (22 Nov 2026). Kept on request.state, so the route can
@@ -549,7 +591,8 @@ def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
         if names:
             gadget_note = "\n\nGadgets being asked about: " + ", ".join(names) + "."
     answer, completion = _generate_answer(
-        build_general_knowledge_prompt(payload.plain_language), f"Question: {payload.question}{gadget_note}"
+        build_general_knowledge_prompt(payload.plain_language),
+        build_general_knowledge_user_message(payload.question, gadget_note, payload.history),
     )
     # Not written to query_history, so the cost stays visible in the log instead.
     logger.info(
@@ -715,6 +758,10 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
         if payload.allow_general_knowledge
         else PROMPT_VERSION
     )
+    #    A follow-up means something different in each conversation ("can it run smoothly?"), so
+    #    the earlier turns are part of the scope: only the same question after the same turns hits.
+    if payload.history:
+        prompt_scope += "+h:" + _history_digest(payload.history)
     settings_label = "+".join(str(v) for v in answer_settings(len(payload.gadget_ids or [])).values())
     cache_scope = answer_cache.scope_key(
         payload.gadget_ids, payload.plain_language, prompt_scope, EMBEDDING_MODEL, f"{ANSWER_MODEL}:{settings_label}"
@@ -728,7 +775,7 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     try:
         with _timed(request, "embed"):
             embedding_response = client.embeddings.create(
-                model=EMBEDDING_MODEL, input=[payload.question]
+                model=EMBEDDING_MODEL, input=[retrieval_text(payload.question, payload.history)]
             )
     except OpenAIError as exc:
         raise _provider_failure(exc) from None
@@ -856,7 +903,7 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     with _timed(request, "generate"):
         answer, completion = _generate_answer(
             system_prompt,
-            f"Spec snippets:\n{context}{scope_note}\n\nQuestion: {payload.question}",
+            build_user_message(context, scope_note, payload.question, payload.history),
             answer_settings(len(payload.gadget_ids or [])),
         )
 

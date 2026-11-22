@@ -8,6 +8,7 @@ import { useGadgetThread } from '../hooks/useGadgetThread'
 import { validateAnswerResponse } from '../utils/aiAnswerState'
 import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { suggestFollowUps } from '../utils/followUps'
+import { historyForRequest } from '../utils/chatHistory'
 import { friendlyError } from '../utils/requestErrors'
 import AiAnswerResult, { AnswerOptions } from './AiAnswerResult'
 import ThreadTurn, { AssistantMessage, UserBubble } from './ThreadTurn'
@@ -27,7 +28,8 @@ function prefersReducedMotion() {
  * conversation scrolls inside a fixed-height area, the message box stays at the bottom,
  * Enter sends and Shift+Enter adds a line. A signed-in user's turns are saved by POST /query
  * and reloaded here (user_questions.sql); signed out, the chat lasts for this page view.
- * Each answer is still generated on its own: earlier turns are not sent to the model.
+ * The last few turns (utils/chatHistory.js) go with each question (POST /query `history`), so a follow-up
+ * such as "can it run smoothly?" keeps its subject; facts still come from that question's specs.
  * Comparisons keep AIComparisonPanel.
  */
 export default function GadgetChatPanel({ gadgetId, gadgetName, category, suggestions = [] }) {
@@ -126,6 +128,10 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
     // Retrying after an error does not: a failed answer was never saved, so the newest saved
     // turn with this question is a different, earlier one that must stay.
     const regenerate = !archive && Boolean(result) && !error
+    // The turns before this question: the saved/earlier ones plus, when a new question is sent,
+    // the answer on screen (appendTurn below only lands in state after this render).
+    const earlier = archive && result && !error ? [...thread.turns, { question: askedQuestion, result }] : thread.turns
+    const history = historyForRequest(earlier)
     // The answer on screen joins the conversation above; the server saved it already.
     if (archive && result && !error) thread.appendTurn(askedQuestion, result)
     const requestId = ++latestRequest.current
@@ -137,6 +143,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
         question,
         gadget_ids: [gadgetId],
         ...requestOptions,
+        ...(history.length ? { history } : {}),
         ...(regenerate ? { regenerate: true } : {}),
       })
       if (requestId !== latestRequest.current) return

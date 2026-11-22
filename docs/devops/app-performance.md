@@ -76,3 +76,19 @@ Citation validity was 100% for every setting. Differences of 1-3 cases are withi
 
 **Decision (owner, 22 Nov):** one-phone questions use `minimal` + `verbosity=low` (`answer_settings()` in `routers/query.py`); comparisons and catalog-wide questions keep `low`. Confirmation run with the app's rule: one-phone median 2.70 s -> 1.34 s (slowest 4.31 s -> 2.07 s); comparisons unchanged in setting and correct. Raw results stay in the owner's `.local/` (not committed): `answer-settings-2026-11-22.*`, `catalog-bench-2026-11-22.*`, `catalog-bench-app-2026-11-22.*`.
 
+### Chat memory and prompt v2 benchmark (22 Nov 2026)
+
+Owner report: the gadget chat "cannot remember" — asked whether a phone runs Genshin Impact smoothly, then "can it run smoothly?", it answered about the display. Causes: each question reached the model alone, and prompt v1 refused judgements the specs do not state. Fix: the chat sends its last 3 turns (`history`), and prompt v2 adds a SUITABILITY and a CONVERSATION rule. Benchmarked before switching:
+
+**1. Evaluation set, v1 vs v2** (same 24 cases, app settings, 2 runs, 96 calls, about US$0.04): v1 passed 21 and 20, v2 passed **22 and 22** (fixes TC-10 and TC-21, no new failures; TC-07 and TC-24 fail on both). Citation validity 100% for both; median 1.49 s vs 1.60 s.
+
+**2. Follow-up conversations** (`scripts/benchmark_conversation.py`): 5 two-turn conversations on real phones (V50 5G x2, iPhone 16, Reno14 5G, Galaxy S25), 2 runs, 60 calls, about US$0.04.
+
+| Variant | Median | Slowest | Unsupported values | Cost / answer |
+| --- | --- | --- | --- | --- |
+| before (v1, follow-up sent alone) | 1.96 s | 4.78 s | 0 | $0.00043 |
+| **after (v2 + earlier turn, fast settings)** | 2.42 s | 3.59 s | 0 | $0.00049 |
+| after with `low` reasoning | 5.37 s | 9.12 s | 0 | $0.00121 |
+
+Read side by side: "before" answered "Can it run Genshin Impact smoothly?" with "I can't answer that definitively"; "after" said Genshin is not in the specs, then gave a hedged judgement from the cited chip, RAM, 120 Hz display and battery. "Is that enough for a full day of gaming?" after a battery question and "How far can it zoom?" after a telephoto question kept their subject. `low` reasoning was twice as slow and no better, so the fast one-phone settings stay. **Decision (owner asked for both fixes, 22 Nov):** prompt v2 is live in code (`PROMPT_VERSION = "v2"`), history on. Raw results: `.local/prompt-v2-eval-2026-11-22.*`, `.local/conversation-bench-2026-11-22.*`.
+

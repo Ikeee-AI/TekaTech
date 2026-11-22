@@ -10,7 +10,9 @@ cleaned like /query (paren citations, out-of-range markers), its markers are map
 ids, and scripts/eval_runner.py scores it. Retrieval and embedding are left out on purpose: they
 are the same for every setting, so only the chat call is timed.
 
-Settings compared (--configs to choose; default all four):
+Settings compared (--configs to choose; default all four). A name may end in @<prompt version>
+(e.g. app@v1,app@v2) to compare prompt versions; "app" uses routers.query.answer_settings for the
+case's scope (one scoped gadget -> the fast settings, otherwise "low"), as /query does:
     low            reasoning_effort="low"     (current production setting)
     low-terse      reasoning_effort="low",     verbosity="low"
     minimal        reasoning_effort="minimal"
@@ -114,7 +116,6 @@ def summarize(name, rows, report):
     m = report["metrics"]
     return {
         "config": name,
-        "settings": CONFIGS[name],
         "calls": len(rows),
         "median_s": round(statistics.median(secs), 2),
         "p90_s": round(percentile(secs, 0.9), 2),
@@ -167,7 +168,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     names = [n.strip() for n in args.configs.split(",") if n.strip()]
-    unknown = [n for n in names if n not in CONFIGS]
+    unknown = [n for n in names if n.split("@")[0] not in CONFIGS and n.split("@")[0] != "app"]
     if unknown:
         parser.error(f"unknown config(s): {', '.join(unknown)}")
     cases = json.loads((EVAL_DIR / "cases.json").read_text(encoding="utf-8"))
@@ -184,11 +185,18 @@ def main(argv=None):
     from openai import OpenAI
     from config import settings
     from prompts import PROMPT_VERSION, build_system_prompt
-    from routers.query import ANSWER_MAX_COMPLETION_TOKENS, ANSWER_MODEL
+    from routers.query import ANSWER_MAX_COMPLETION_TOKENS, ANSWER_MODEL, answer_settings
     import eval_runner
 
     client = OpenAI(api_key=settings.openai_api_key.get_secret_value(), timeout=60, max_retries=1)
-    system_prompt = build_system_prompt(False, False)
+    def prompt_for(name):
+        return build_system_prompt(False, False, name.split("@")[1] if "@" in name else None)
+
+    def settings_for(name, case):
+        base = name.split("@")[0]
+        if base == "app":
+            return answer_settings(len(scope.get("cases", {}).get(case["id"]) or []))
+        return CONFIGS[base]
     rows = {n: [] for n in names}
     answers = {n: [{} for _ in range(args.repeats)] for n in names}
     removed = {n: [{} for _ in range(args.repeats)] for n in names}
@@ -201,7 +209,8 @@ def main(argv=None):
             for name in order:
                 try:
                     result, normalize, strip = ask(
-                        client, ANSWER_MODEL, ANSWER_MAX_COMPLETION_TOKENS, system_prompt, content, CONFIGS[name]
+                        client, ANSWER_MODEL, ANSWER_MAX_COMPLETION_TOKENS, prompt_for(name), content,
+                        settings_for(name, case),
                     )
                 except Exception as exc:  # recorded, never fatal: one failed call should not lose the run
                     print(f"  {case['id']} {name}: failed ({type(exc).__name__})")
