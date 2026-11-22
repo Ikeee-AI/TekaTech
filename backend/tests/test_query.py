@@ -710,3 +710,66 @@ def test_gadget_lookup_failure_returns_safe_503(client, fake_supabase):
     assert resp.status_code == 503
     assert resp.json() == {"detail": DETAIL_LOOKUP_FAILED}
     mock_client.chat.completions.create.assert_not_called()
+
+
+def test_query_reports_step_timings_in_server_timing_header(client, fake_supabase):
+    # Embed, retrieve and generate are timed separately so a slow answer shows which step was
+    # slow (22 Nov 2026). The header is for DevTools and benchmark scripts; the JSON is unchanged.
+    _set_matching_spec(fake_supabase)
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response()
+        resp = client.post("/query", json={"question": "How many cores does it have?"})
+    assert resp.status_code == 200
+    steps = dict(part.split(";dur=") for part in resp.headers["server-timing"].split(", "))
+    assert list(steps) == ["embed", "retrieve", "generate", "total"]
+    assert all(float(ms) >= 0 for ms in steps.values())
+    assert "timings" not in resp.json()
+
+
+def test_cached_query_reports_only_total_time(client, fake_supabase):
+    _set_matching_spec(fake_supabase)
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response()
+        client.post("/query", json={"question": "Which chip is it?"})
+        resp = client.post("/query", json={"question": "Which chip is it?"})
+    assert resp.json()["cached"] is True
+    assert resp.headers["server-timing"].startswith("total;dur=")
+
+
+def test_one_gadget_question_uses_the_fast_settings(client, fake_supabase):
+    # Benchmarked 22 Nov 2026: a single-phone answer with minimal reasoning and a short reply was
+    # about twice as fast and still correct; comparisons were not (see answer_settings()).
+    gadget_id = "22222222-2222-2222-2222-222222222222"
+    _set_matching_spec(fake_supabase, gadget_id)
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response()
+        resp = client.post("/query", json={"question": "What chip does it use?", "gadget_ids": [gadget_id]})
+    assert resp.status_code == 200
+    kwargs = mock_client.chat.completions.create.call_args.kwargs
+    assert kwargs["reasoning_effort"] == "minimal"
+    assert kwargs["verbosity"] == "low"
+    assert kwargs["max_completion_tokens"] == ANSWER_MAX_COMPLETION_TOKENS
+
+
+def test_comparison_keeps_low_reasoning_and_default_verbosity(client, fake_supabase):
+    ids = ["22222222-2222-2222-2222-222222222222", "33333333-3333-3333-3333-333333333333"]
+    _set_matching_spec(fake_supabase, ids[0])
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response()
+        resp = client.post("/query", json={"question": "Which charges fastest?", "gadget_ids": ids})
+    assert resp.status_code == 200
+    kwargs = mock_client.chat.completions.create.call_args.kwargs
+    assert kwargs["reasoning_effort"] == ANSWER_REASONING_EFFORT == "low"
+    assert "verbosity" not in kwargs
+
+
+def test_answer_settings_by_gadget_count():
+    from routers.query import answer_settings
+
+    assert answer_settings(1) == {"reasoning_effort": "minimal", "verbosity": "low"}
+    for count in (0, 2, 4):
+        assert answer_settings(count) == {"reasoning_effort": "low"}

@@ -51,3 +51,28 @@ Not baselined with a sample yet: each request is a paid OpenAI call and writes a
 | 23 Oct 14:30 | Narrow iPhone 15 question | 200, no match (#88) | 6.4 s |
 
 A small, budget-capped sample (for example 10 questions, about 5 US cents) can be added once #77 caps the answer length. Timings before and after #77 would then be comparable.
+
+### Answer settings benchmark (22 Nov 2026)
+
+Benchmarked before changing anything, run locally against OpenAI; only the chat call is timed (embedding and retrieval are the same for every setting). Every `/query` answer now also carries a `Server-Timing` header (`embed`, `retrieve`, `generate`, `total`, in ms) and one log line, so live timings can be read per step.
+
+**1. Evaluation set** (`scripts/benchmark_answer_settings.py`): 24 cases x 4 settings x 2 runs = 192 calls, about US$0.09, scored by `scripts/eval_runner.py` (rules s5).
+
+| Setting | Median | p90 | Slowest | Cost / answer | Cases passed (run 1 / run 2) |
+| --- | --- | --- | --- | --- | --- |
+| `low` (production until now) | 3.02 s | 5.12 s | 8.24 s | $0.00063 | 21 / 23 |
+| `low` + `verbosity=low` | 3.25 s | 4.61 s | 7.08 s | $0.00066 | 22 / 20 |
+| `minimal` | 1.31 s | 1.80 s | 3.83 s | $0.00025 | 21 / 20 |
+| `minimal` + `verbosity=low` | 1.26 s | 2.03 s | 2.89 s | $0.00024 | 22 / 21 |
+
+Citation validity was 100% for every setting. Differences of 1-3 cases are within run-to-run noise (`low` itself moved by 2). TC-07 fails on every setting (prompt, not settings).
+
+**2. Real catalog** (`scripts/benchmark_answer_settings_catalog.py`): 12 shopper questions on real phones (the phone page's 3 suggestion chips on iPhone 16, V50 5G, Reno14 5G, plus 3 comparisons), real spec chunks read from the public API, top 6 by the app's embedding model, the exact `/query` prompt; 2 runs each, about US$0.03 per run.
+
+| Question type | `low` | `minimal` + `verbosity=low` |
+| --- | --- | --- |
+| One phone (18 answers) | 2.7 s median, 5.6 s slowest | 1.4 s median, 2.3 s slowest; all correct and cited |
+| Comparison (6 answers) | 6.8 s median | 3.1 s median, but **wrong winner** on "Which one charges the fastest?" (said Reno14 80W over V50 90W) in both runs |
+
+**Decision (owner, 22 Nov):** one-phone questions use `minimal` + `verbosity=low` (`answer_settings()` in `routers/query.py`); comparisons and catalog-wide questions keep `low`. Confirmation run with the app's rule: one-phone median 2.70 s -> 1.34 s (slowest 4.31 s -> 2.07 s); comparisons unchanged in setting and correct. Raw results stay in the owner's `.local/` (not committed): `answer-settings-2026-11-22.*`, `catalog-bench-2026-11-22.*`, `catalog-bench-app-2026-11-22.*`.
+
