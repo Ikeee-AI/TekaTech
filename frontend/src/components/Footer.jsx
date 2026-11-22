@@ -12,8 +12,8 @@ const LINKS = [
 /** Site footer: the content pages and the project line. Theme-aware through the shared tokens. */
 export default function Footer() {
   return (
-    <footer className="border-t border-slate-200 mt-10">
-      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 py-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <footer className="border-t border-slate-200 mt-2">
+      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <nav aria-label="Footer">
           <ul className="flex flex-wrap gap-x-1 gap-y-1">
             {LINKS.map(([to, label]) => (
