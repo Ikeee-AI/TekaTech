@@ -712,6 +712,17 @@ def test_gadget_lookup_failure_returns_safe_503(client, fake_supabase):
     mock_client.chat.completions.create.assert_not_called()
 
 
+def test_timings_are_logged_where_railway_shows_them(client, fake_supabase, caplog):
+    # routers.query's own logger has no INFO handler in production; the request logger does.
+    _set_matching_spec(fake_supabase)
+    with patch("routers.query.client") as mock_client, caplog.at_level("INFO", logger="tekatech.request"):
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response()
+        client.post("/query", json={"question": "How many cores does it have?"})
+    lines = [r.getMessage() for r in caplog.records if r.name == "tekatech.request" and "query_timings" in r.getMessage()]
+    assert len(lines) == 1 and "generate;dur=" in lines[0] and "cached=False gadgets=0 history=0" in lines[0]
+
+
 def test_query_reports_step_timings_in_server_timing_header(client, fake_supabase):
     # Embed, retrieve and generate are timed separately so a slow answer shows which step was
     # slow (22 Nov 2026). The header is for DevTools and benchmark scripts; the JSON is unchanged.
@@ -722,7 +733,8 @@ def test_query_reports_step_timings_in_server_timing_header(client, fake_supabas
         resp = client.post("/query", json={"question": "How many cores does it have?"})
     assert resp.status_code == 200
     steps = dict(part.split(";dur=") for part in resp.headers["server-timing"].split(", "))
-    assert list(steps) == ["embed", "retrieve", "generate", "total"]
+    # "save" = the query_history write (and the chat thread, for a one-gadget question).
+    assert list(steps) == ["embed", "retrieve", "generate", "save", "total"]
     assert all(float(ms) >= 0 for ms in steps.values())
     assert "timings" not in resp.json()
 

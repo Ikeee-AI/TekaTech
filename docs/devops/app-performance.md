@@ -114,3 +114,7 @@ Measured before building it (`scripts/benchmark_streaming.py`): the same 12 real
 
 Same cost per answer. No answer needed the citation clean-up, so a bad `[n]` flashing during streaming is rare (it is replaced by the cleaned `done` answer). One comparison hit the 1500-token cap: with streaming its text is replaced by the 503. **Decision (owner, 23 Nov):** build it. `POST /query/stream` + `api.askQuestion` handlers; `/query` unchanged. Raw results: `.local/streaming-bench-2026-11-23.*`.
 
+### Live timings (23 Nov 2026)
+
+Railway's request log (`railway logs -s tekatech-api`) on deployment `a549e3e` had only the two owner-run test answers (V50 5G chat, one phone, with history): **6.7 s and 4.6 s** end to end, while the chat step alone benchmarks at about 1.3 s. So most of a one-phone answer is outside the model call (embedding, Supabase search and lookups, saving, sign-in check). The per-step line meant to show this never reached Railway: `routers.query`'s logger has no INFO handler there. Fixed: the line (`query_timings embed;dur=… retrieve;dur=… generate;dur=… save;dur=… total;dur=… cached=… gadgets=… history=…`) now goes through the request logger, and the history and chat-thread writes are timed as `save`. Read it after the next deploy with `railway logs -s tekatech-api -n 2000 | grep query_timings`.
+

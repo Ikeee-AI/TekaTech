@@ -342,7 +342,10 @@ def _history_digest(history) -> str:
 # send them as a Server-Timing header (shown in browser DevTools, read by benchmark scripts) and
 # log one line per question. Milliseconds; a step that runs twice (the second chat call of the
 # general-knowledge fallback) adds up. Never part of the JSON response contract.
-TIMED_STEPS = ("embed", "retrieve", "generate")
+TIMED_STEPS = ("embed", "retrieve", "generate", "save")
+# The timing line goes through the request logger (request_id.py), which has its own INFO handler;
+# this module's logger has none, so Railway only ever showed its warnings (found 23 Nov 2026).
+timing_logger = logging.getLogger("tekatech.request")
 
 
 @contextmanager
@@ -710,9 +713,14 @@ def _run_query(request: Request, payload: "QueryRequest", user) -> tuple["QueryR
     thread_user = _thread_user(user, payload)
     started = time.perf_counter()
     answer = _answer_question(request, payload, user, private=thread_user is not None)
+    if thread_user is not None:
+        with _timed(request, "save"):
+            _save_thread_turn(thread_user, payload, answer)
     timing = _server_timing(request, (time.perf_counter() - started) * 1000)
-    logger.info("/query timings (ms): %s cached=%s", timing, answer.cached)
-    _save_thread_turn(thread_user, payload, answer)
+    timing_logger.info(
+        "query_timings %s cached=%s gadgets=%d history=%d",
+        timing, answer.cached, len(payload.gadget_ids or []), len(payload.history),
+    )
     return answer, timing
 
 
@@ -1081,15 +1089,16 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     # 6. Log it — powers query_history / trending questions, plus token telemetry so the
     #    cost of a query is answerable after the fact rather than only via the OpenAI bill.
     cited_gadget_ids = list({m["gadget_id"] for m in matches})
-    _record_query(
-        question=payload.question,
-        answer=answer,
-        cited_gadget_ids=cited_gadget_ids,
-        embedding_tokens=_token_count(embedding_response, "total_tokens"),
-        prompt_tokens=_token_count(completion, "prompt_tokens"),
-        completion_tokens=_token_count(completion, "completion_tokens"),
-        private=private,
-    )
+    with _timed(request, "save"):
+        _record_query(
+            question=payload.question,
+            answer=answer,
+            cited_gadget_ids=cited_gadget_ids,
+            embedding_tokens=_token_count(embedding_response, "total_tokens"),
+            prompt_tokens=_token_count(completion, "prompt_tokens"),
+            completion_tokens=_token_count(completion, "completion_tokens"),
+            private=private,
+        )
 
     response = QueryResponse(
         answer=answer,
