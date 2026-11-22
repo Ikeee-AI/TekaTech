@@ -1180,3 +1180,47 @@ Short session, ~09:45–10:12 Manila.
 **Next**
 - Click through the live phone page, compare and home hero signed in (desktop + phone) — Ikeee-AI — 23 Nov.
 - Branch `tekatech/s5-ik-worklog-22nov` (this entry + D-S5-1 docs fix) pushed without a PR; include it in the next PR — Ikeee-AI.
+
+## 2026-11-22 23:52 Asia/Manila — Faster AI answers, chat memory and prompt v2 (#287) merged and live
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S5-IK (post-release; AI area held by Ikeee-AI since the S5-AD takeover) · **Branch:** `tekatech/s5-ik-ai-speed` → squash `a549e3e`
+
+**Done**
+- Compare page AI panel is as tall as the specs card and scrolls inside; more phone highlight fill-ins (20 of 23 phones show 7) — evidence: commits `81aca80`, `41fc80d` (in #287)
+- Per-step timing on every `/query` answer (`Server-Timing`: embed / retrieve / generate / total ms, plus one log line) — evidence: `6da0368`, `backend/routers/query.py`
+- Answer settings benchmarked **before** any switch, as the owner asked: eval set 192 calls (~US$0.09) and real catalog 48 calls (~US$0.03); `minimal` + `verbosity=low` halved one-phone time but picked the wrong winner on a charging comparison, so only one-gadget questions switched (`answer_settings()`). Confirmation run: one-phone median 2.70 s → 1.34 s, slowest 4.31 s → 2.07 s (~US$0.04) — evidence: `docs/devops/app-performance.md`, scripts `benchmark_answer_settings*.py`
+- Owner report "the chat can't remember" (Genshin follow-up answered about the display): the chat now sends its last 3 turns as `history`, retrieval embeds the previous question too, cache scope includes the turns — evidence: `19053ab`, `backend/tests/test_query_history.py`, `frontend/src/utils/chatHistory.js`
+- Prompt v2 (v1 + SUITABILITY and CONVERSATION rules) benchmarked vs v1: eval set v2 22/24 in both runs, v1 21 and 20 (96 calls, ~US$0.04); 5 follow-up conversations x 3 variants (60 calls, ~US$0.04), `low` reasoning twice as slow and no better — evidence: `docs/devops/app-performance.md`, `scripts/benchmark_conversation.py`
+- Local checks before push: backend 1025 passed, frontend 650 passed, lint clean, build OK, secret guard passed (local)
+- PR #287 approved by Manuel (`s2302827-byte`) on head `19053ab`, squash-merged as `a549e3e`; main CI + Main guard + deploy passed — evidence: https://github.com/Ikeee-AI/TekaTech/pull/287, https://github.com/Ikeee-AI/TekaTech/actions/runs/45040063579
+- Production verified: API `/version` = `a549e3e`, frontend 200; live V50 5G chat (signed in as the owner): "Can it run Genshin Impact?" → hedged, cited judgement; follow-up "Can it run smoothly?" kept the gaming subject — evidence: browser check 23:49 Manila
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `No linked issue::Reference the issue (Refs #23) or task ID (S2-JO / TTK-01)` (PR policy) | Title used `S5-AI`, not one of the accepted task IDs (AD/MI/MA/JO/IK) | Title changed to `S5-IK` (no new commit, approval kept). Fixed |
+| PR policy still failed after `gh run rerun --failed` | A rerun replays the original event (old title) and cancelled the newer `edited` run (same concurrency group) | Edited the title again to fire a fresh `edited` run; passed. Fixed |
+| `test_gk_fallback_rule_is_added_only_with_the_flag` failed after switching to v2 | Test assumed the base prompt is v1 | Test builds from the active version's base. Fixed |
+| Dev Supabase DNS failure (`getaddrinfo failed`) | Dev project likely paused | Benchmarks read the public prod catalog read-only instead. Open (dev only) |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| CLAUDE.md/AGENTS.md said every chat call uses `"low"` reasoning and that each chat answer is generated on its own | Docs wrong after #287 | Both files updated together in #287. Resolved |
+| Evaluation cases TC-07 and TC-24 fail on every setting and both prompt versions | Eval targets not fully met | Prompt wording, not settings; not changed in this PR. Open — Ikeee-AI (prompt owner) |
+
+**Decisions**
+- Benchmark before changing AI settings or prompts — owner.
+- Fast settings for one-gadget questions only; comparisons keep `low` — owner ("yes go ahead") after the real-catalog benchmark.
+- Both chat fixes (memory + v2) and the speed change in one PR — owner.
+- Prompt v2 switched on after it beat v1 on the eval set — Ikeee-AI in session, reviewed by Manuel in #287.
+
+**Blockers / risks**
+- Comparison pages still answer each question on its own (no history) — Ikeee-AI — on request.
+- Live one-phone timings not yet read from `Server-Timing` on production — Ikeee-AI — next session.
+- Raw benchmark files stay in the owner's ignored `.local/` folder, not in the repo — accepted.
+
+**Plan alignment** — No sprint task row (Sprint 5 ended 7 Nov); post-release work. Meets the Definition of Done: reviewed (Manuel), checks passed, merged, deployed, verified on production.
+
+**Next**
+- Read live `Server-Timing` for a few phone-page questions and add them to `docs/devops/app-performance.md` — Ikeee-AI — 23 Nov.
+- This log entry rides on `tekatech/s5-ik-worklog-ai-22nov` (pushed, no PR) until the next batch PR — Ikeee-AI.
