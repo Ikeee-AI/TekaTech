@@ -122,6 +122,16 @@ describe('spec layout helpers', () => {
     ])
     expect(specHighlights([spec('a', 0, 'Display: OLED\nZoom: 5x optical')], 1).map((h) => h.title)).toEqual(['Display'])
     expect(specHighlights([spec('c', 0, 'Weight: 198 g')])).toEqual([])
+    // 'Rear video' counts as Video; resolution and dimensions are later fill-ins.
+    expect(
+      specHighlights([spec('r', 0, 'Rear video: 4K at 30fps\nResolution: 2712 x 1220\nDimensions: 161 x 75 x 8 mm')]).map(
+        (h) => [h.title, h.value],
+      ),
+    ).toEqual([
+      ['Video', '4K at 30fps'],
+      ['Resolution', '2712 x 1220'],
+      ['Dimensions', '161 x 75 x 8 mm'],
+    ])
     // A short list is filled from the fill-in rules, up to seven rows.
     const filled = specHighlights([
       spec(

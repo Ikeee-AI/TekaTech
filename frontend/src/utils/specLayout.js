@@ -112,7 +112,7 @@ const HIGHLIGHT_RULES = [
   ['Fast charging', /fast charg|wired charging|charging speed/],
   ['Front camera', /front camera|selfie/],
   ['Zoom', /zoom/],
-  ['Video', /^video( recording)?$/],
+  ['Video', /^(rear )?video( recording)?$/],
   ['Software', /operating system|^os$|software|android/],
   // Fill-ins (22 Nov 2026): only reached when a phone states fewer of the rules above, so a
   // short list doesn't leave the top card half empty. Still details the tiles don't show.
@@ -121,6 +121,10 @@ const HIGHLIGHT_RULES = [
   ['Build', /back cover|back panel|cover glass|frame material/],
   ['Fingerprint', /fingerprint/],
   ['Colours', /^colou?rs?( options)?$/],
+  ['Wireless charging', /^wireless charging$/],
+  ['Resolution', /^(display |screen )?resolution$/],
+  ['Dimensions', /^dimensions$/],
+  ['NFC', /^nfc$/],
 ]
 
 /** Up to `max` (7) { title, label, value, sourceUrl } facts for the phone page's Highlights list. */

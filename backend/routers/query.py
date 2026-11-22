@@ -1,5 +1,8 @@
+import hashlib
 import logging
 import re
+import time
+from contextlib import contextmanager
 from typing import Literal, Optional
 from uuid import UUID
 
@@ -21,7 +24,9 @@ from prompts import (
     NOT_IN_SPECS_SENTINEL,
     PROMPT_VERSION,
     build_general_knowledge_prompt,
+    build_general_knowledge_user_message,
     build_system_prompt,
+    build_user_message,
 )
 from rate_limit import limiter
 from routers.comparisons import MAX_COMPARISON_GADGETS
@@ -92,6 +97,21 @@ MODEL_USED = f"openai:{ANSWER_MODEL}"
 # counts toward it, so lowering it much further risks cutting answers off before they start.
 ANSWER_MAX_COMPLETION_TOKENS = 1500
 ANSWER_REASONING_EFFORT = "low"
+# A question about exactly ONE gadget (the phone page) is answered with almost no hidden
+# reasoning and a short reply (22 Nov 2026, benchmarked first): on 18 real phone-page answers it was
+# about twice as fast (median 2.7 s -> 1.4 s for the chat call) at about half the cost, with every
+# answer correct and cited. Comparisons and catalog-wide questions keep ANSWER_REASONING_EFFORT:
+# without reasoning the model picked the wrong "fastest charging" phone in a 3-phone comparison,
+# in both runs. Evidence: scripts/benchmark_answer_settings*.py, docs/devops/app-performance.md.
+SINGLE_GADGET_REASONING_EFFORT = "minimal"
+SINGLE_GADGET_VERBOSITY = "low"
+
+
+def answer_settings(gadget_count: int) -> dict:
+    """Chat settings for a grounded answer about `gadget_count` scoped gadgets (0 = catalog-wide)."""
+    if gadget_count == 1:
+        return {"reasoning_effort": SINGLE_GADGET_REASONING_EFFORT, "verbosity": SINGLE_GADGET_VERBOSITY}
+    return {"reasoning_effort": ANSWER_REASONING_EFFORT}
 
 # Two caps, checked in this order. Characters are the product limit users see (the frontend
 # counts to the same number) and a cheap O(1) check. Tokens are what actually get billed and
@@ -100,6 +120,30 @@ ANSWER_REASONING_EFFORT = "low"
 # as the second guard.
 MAX_QUESTION_CHARS = 150
 MAX_QUESTION_TOKENS = 160
+
+# Conversation memory for the gadget chat (22 Nov 2026): the last few turns come with the new
+# question so a follow-up ("can it run smoothly?") keeps its subject. Capped so a client cannot
+# grow the prompt: at most 3 turns, each question within the question limit, each answer cut to
+# MAX_HISTORY_ANSWER_CHARS. Citation markers are removed from earlier answers, because their
+# numbers pointed at that turn's snippets, not this one's.
+MAX_HISTORY_TURNS = 3
+MAX_HISTORY_ANSWER_CHARS = 1200
+_CITATION_MARKER = re.compile(r"\s*\[\d+\]")
+
+
+class HistoryTurn(BaseModel):
+    question: str = Field(max_length=MAX_QUESTION_CHARS)
+    answer: str = Field(max_length=20000)
+
+    @field_validator("question")
+    @classmethod
+    def question_text(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("answer")
+    @classmethod
+    def answer_text(cls, value: str) -> str:
+        return _CITATION_MARKER.sub("", value).strip()[:MAX_HISTORY_ANSWER_CHARS]
 
 
 class QueryRequest(BaseModel):
@@ -119,6 +163,8 @@ class QueryRequest(BaseModel):
     # newest saved turn for this same question and gadget instead of adding a second one.
     # Ignored when nothing is saved (not exactly one gadget).
     regenerate: bool = False
+    # Earlier turns of the gadget chat, oldest first (see HistoryTurn). Empty = a fresh question.
+    history: list[HistoryTurn] = Field(default_factory=list, max_length=MAX_HISTORY_TURNS)
 
     @field_validator("question")
     @classmethod
@@ -273,6 +319,46 @@ def _admin_bypasses_cache(request: Request, user) -> bool:
 _keyword_rpc_failure_logged = False
 
 
+def retrieval_text(question: str, history) -> str:
+    """What gets embedded for retrieval: the previous question plus this one, so a follow-up
+    ("can it run smoothly?") still finds the chunks its subject needs (chip, RAM, display)."""
+    if not history:
+        return question
+    return f"{history[-1].question}\n{question}"
+
+
+def _history_digest(history) -> str:
+    text = "\n".join(f"{t.question}\n{t.answer}" for t in history)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+# Step timings for one /query request (22 Nov 2026). Kept on request.state, so the route can
+# send them as a Server-Timing header (shown in browser DevTools, read by benchmark scripts) and
+# log one line per question. Milliseconds; a step that runs twice (the second chat call of the
+# general-knowledge fallback) adds up. Never part of the JSON response contract.
+TIMED_STEPS = ("embed", "retrieve", "generate")
+
+
+@contextmanager
+def _timed(request: Request, step: str):
+    start = time.perf_counter()
+    try:
+        yield
+    finally:
+        timings = getattr(request.state, "query_timings", None)
+        if timings is None:
+            timings = {}
+            request.state.query_timings = timings
+        timings[step] = timings.get(step, 0.0) + (time.perf_counter() - start) * 1000
+
+
+def _server_timing(request: Request, total_ms: float) -> str:
+    timings = getattr(request.state, "query_timings", None) or {}
+    parts = [f"{step};dur={timings[step]:.0f}" for step in TIMED_STEPS if step in timings]
+    parts.append(f"total;dur={total_ms:.0f}")
+    return ", ".join(parts)
+
+
 def _keyword_matches(question: str, query_embedding, gadget_ids) -> list[dict]:
     """The keyword fallback's chunks, or [] when it finds nothing or cannot run.
 
@@ -392,12 +478,14 @@ def _cacheable(response: QueryResponse, *, grounded: bool) -> answer_cache.Cache
     )
 
 
-def _generate_answer(system_prompt: str, user_content: str):
+def _generate_answer(system_prompt: str, user_content: str, answer_options: dict | None = None):
     """One capped chat call; returns (answer text, completion). Every failure is a safe 503.
 
-    Shared by the grounded answer and the general-knowledge answer, so both get the same cap,
-    reasoning effort and handling of cut-off or empty output.
+    Shared by the grounded answer and the general-knowledge answer, so both get the same cap
+    and handling of cut-off or empty output. `answer_options` (reasoning effort, verbosity) defaults to
+    ANSWER_REASONING_EFFORT; the grounded answer passes answer_settings() for its scope.
     """
+    chat_settings = answer_options or {"reasoning_effort": ANSWER_REASONING_EFFORT}
     try:
         completion = client.chat.completions.create(
             model=ANSWER_MODEL,
@@ -406,7 +494,7 @@ def _generate_answer(system_prompt: str, user_content: str):
                 {"role": "user", "content": user_content},
             ],
             max_completion_tokens=ANSWER_MAX_COMPLETION_TOKENS,
-            reasoning_effort=ANSWER_REASONING_EFFORT,
+            **chat_settings,
         )
     except OpenAIError as exc:
         raise _provider_failure(exc) from None
@@ -503,7 +591,8 @@ def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
         if names:
             gadget_note = "\n\nGadgets being asked about: " + ", ".join(names) + "."
     answer, completion = _generate_answer(
-        build_general_knowledge_prompt(payload.plain_language), f"Question: {payload.question}{gadget_note}"
+        build_general_knowledge_prompt(payload.plain_language),
+        build_general_knowledge_user_message(payload.question, gadget_note, payload.history),
     )
     # Not written to query_history, so the cost stays visible in the log instead.
     logger.info(
@@ -548,7 +637,11 @@ def ask_question(request: Request, response: Response, payload: QueryRequest, us
         return _simulated_failure(simulated)
     # Resolved before answering, so the query_history row already knows the question is private.
     thread_user = _thread_user(user, payload)
+    started = time.perf_counter()
     answer = _answer_question(request, payload, user, private=thread_user is not None)
+    timing = _server_timing(request, (time.perf_counter() - started) * 1000)
+    response.headers["Server-Timing"] = timing
+    logger.info("/query timings (ms): %s cached=%s", timing, answer.cached)
     _save_thread_turn(thread_user, payload, answer)
     return answer
 
@@ -665,8 +758,13 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
         if payload.allow_general_knowledge
         else PROMPT_VERSION
     )
+    #    A follow-up means something different in each conversation ("can it run smoothly?"), so
+    #    the earlier turns are part of the scope: only the same question after the same turns hits.
+    if payload.history:
+        prompt_scope += "+h:" + _history_digest(payload.history)
+    settings_label = "+".join(str(v) for v in answer_settings(len(payload.gadget_ids or [])).values())
     cache_scope = answer_cache.scope_key(
-        payload.gadget_ids, payload.plain_language, prompt_scope, EMBEDDING_MODEL, ANSWER_MODEL
+        payload.gadget_ids, payload.plain_language, prompt_scope, EMBEDDING_MODEL, f"{ANSWER_MODEL}:{settings_label}"
     )
     cache_generation = answer_cache.current_generation()
     cached = None if bypass_cache else answer_cache.lookup_exact(cache_scope, payload.question)
@@ -675,9 +773,10 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
 
     # 1. Embed the question the same way spec chunks were embedded
     try:
-        embedding_response = client.embeddings.create(
-            model=EMBEDDING_MODEL, input=[payload.question]
-        )
+        with _timed(request, "embed"):
+            embedding_response = client.embeddings.create(
+                model=EMBEDDING_MODEL, input=[retrieval_text(payload.question, payload.history)]
+            )
     except OpenAIError as exc:
         raise _provider_failure(exc) from None
     except ValueError as exc:
@@ -713,7 +812,8 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
         rpc_params["match_gadget_ids"] = [str(i) for i in payload.gadget_ids]
 
     try:
-        matches = supabase.rpc("match_spec_documents", rpc_params).execute().data
+        with _timed(request, "retrieve"):
+            matches = supabase.rpc("match_spec_documents", rpc_params).execute().data
     except Exception as exc:
         raise _lookup_failure("match_spec_documents", exc) from None
 
@@ -721,14 +821,16 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     #     chunks are numbered and cited exactly like vector chunks. It never fails the request.
     retrieval = "vector"
     if not matches:
-        matches = _keyword_matches(payload.question, query_embedding, payload.gadget_ids)
+        with _timed(request, "retrieve"):
+            matches = _keyword_matches(payload.question, query_embedding, payload.gadget_ids)
         retrieval = "keyword" if matches else "none"
 
     if not matches and payload.allow_general_knowledge:
         # Only reached when retrieval found nothing in this scope. Cached under the flag's own
         # scope; not "grounded", so a similar question re-runs the free retrieval instead of
         # reusing it, and a cache hit is not written to query_history.
-        response = _general_knowledge_answer(payload)
+        with _timed(request, "generate"):
+            response = _general_knowledge_answer(payload)
         answer_cache.store(
             cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
         )
@@ -749,13 +851,14 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     requested_ids = [str(i) for i in payload.gadget_ids] if payload.gadget_ids else []
     gadget_ids_in_matches = list({m["gadget_id"] for m in matches})
     try:
-        gadgets = (
-            supabase.table("gadgets")
-            .select("id, name, brand")
-            .in_("id", list({*gadget_ids_in_matches, *requested_ids}))
-            .execute()
-            .data
-        )
+        with _timed(request, "retrieve"):
+            gadgets = (
+                supabase.table("gadgets")
+                .select("id, name, brand")
+                .in_("id", list({*gadget_ids_in_matches, *requested_ids}))
+                .execute()
+                .data
+            )
         gadget_lookup = {g["id"]: g for g in gadgets}
     except Exception as exc:
         raise _lookup_failure("gadget name lookup", exc) from None
@@ -797,9 +900,12 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     system_prompt = build_system_prompt(payload.plain_language, payload.allow_general_knowledge)
 
     # 5. Generate the answer, grounded in only what was retrieved
-    answer, completion = _generate_answer(
-        system_prompt, f"Spec snippets:\n{context}{scope_note}\n\nQuestion: {payload.question}"
-    )
+    with _timed(request, "generate"):
+        answer, completion = _generate_answer(
+            system_prompt,
+            build_user_message(context, scope_note, payload.question, payload.history),
+            answer_settings(len(payload.gadget_ids or [])),
+        )
 
     # 5a. The sentinel is never shown. A scoped question (gadget/compare page) always retrieves
     #     chunks, so this reply is how "the specs don't cover it" reaches the general-knowledge
@@ -815,7 +921,8 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
             _token_count(completion, "prompt_tokens"), _token_count(completion, "completion_tokens"),
         )
         if payload.allow_general_knowledge:
-            response = _general_knowledge_answer(payload)
+            with _timed(request, "generate"):
+                response = _general_knowledge_answer(payload)
         else:
             response = QueryResponse(answer=NO_MATCHES_ANSWER, sources=[], model_used=MODEL_USED, retrieval="none")
         answer_cache.store(
