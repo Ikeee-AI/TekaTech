@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { MessageSquarePlus, Sparkles } from 'lucide-react'
+import { MessageSquarePlus, Sparkles, SquarePen } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
 import { validateAnswerResponse } from '../utils/aiAnswerState'
 import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { suggestFollowUps } from '../utils/followUps'
+import { historyForRequest } from '../utils/chatHistory'
 import AiAnswerResult, { AnswerOptions } from './AiAnswerResult'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
@@ -33,6 +34,11 @@ export default function AIComparisonPanel({
   const [askedQuestion, setAskedQuestion] = useState('')
   const [missingSpecs, setMissingSpecs] = useState([])
   const [checkingSpecs, setCheckingSpecs] = useState(true)
+  // Chat memory (22 Nov 2026): the answered questions of this comparison, oldest first. The last
+  // few go with each new question (POST /query `history`), so "which one is lighter?" after a
+  // battery question keeps the same phones and topic. Kept for this page view only; cleared by
+  // New Chat or when the phones change.
+  const [turns, setTurns] = useState([])
   const questionRef = useRef(null)
   const {
     plainLanguage,
@@ -62,6 +68,7 @@ export default function AIComparisonPanel({
     // ordinary data fetch (loading toggled around a real async call).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCheckingSpecs(true)
+    setTurns([]) // a different set of phones is a different conversation
     Promise.all(
       gadgetIds.map((id, i) =>
         api
@@ -88,10 +95,18 @@ export default function AIComparisonPanel({
     setLoading(true)
     setError(null)
     try {
-      const data = await api.askQuestion({ question: q, gadget_ids: gadgetIds, ...requestOptions })
+      const history = historyForRequest(turns)
+      const data = await api.askQuestion({
+        question: q,
+        gadget_ids: gadgetIds,
+        ...requestOptions,
+        ...(history.length ? { history } : {}),
+      })
       // A reply without answer text or a valid source list is a failure, never an answer.
-      setResult(validateAnswerResponse(data))
+      const answer = validateAnswerResponse(data)
+      setResult(answer)
       setSourcesOpen(false)
+      setTurns((t) => [...t, { question: q, result: answer }])
     } catch (err) {
       setError(err)
     } finally {
@@ -102,6 +117,14 @@ export default function AIComparisonPanel({
   // Back to the question box, keeping the last question there to edit.
   function handleAskAnother() {
     resetAnswer()
+    requestAnimationFrame(() => questionRef.current?.focus())
+  }
+
+  // Forget the conversation: the next question is asked on its own.
+  function handleNewChat() {
+    setTurns([])
+    resetAnswer()
+    setQuestion(defaultQuestion)
     requestAnimationFrame(() => questionRef.current?.focus())
   }
 
@@ -220,11 +243,23 @@ export default function AIComparisonPanel({
         specTargets={specTargets}
       />
 
-      {result && !loading && (
-        <div className="mt-4 flex justify-end">
-          <Button variant="outline" size="sm" icon={MessageSquarePlus} onClick={handleAskAnother}>
-            Ask Another Question
-          </Button>
+      {(turns.length > 0 || result) && !loading && (
+        <div className="mt-4 flex items-center justify-end flex-wrap gap-2">
+          {turns.length > 0 && (
+            <>
+              <p className="mr-auto text-xs text-slate-500">
+                Follow-ups remember your last {Math.min(turns.length, 3)} question{Math.min(turns.length, 3) === 1 ? '' : 's'}.
+              </p>
+              <Button variant="ghost" size="sm" icon={SquarePen} onClick={handleNewChat}>
+                New Chat
+              </Button>
+            </>
+          )}
+          {result && (
+            <Button variant="outline" size="sm" icon={MessageSquarePlus} onClick={handleAskAnother}>
+              Ask Another Question
+            </Button>
+          )}
         </div>
       )}
     </section>

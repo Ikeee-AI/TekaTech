@@ -92,3 +92,11 @@ Owner report: the gadget chat "cannot remember" — asked whether a phone runs G
 
 Read side by side: "before" answered "Can it run Genshin Impact smoothly?" with "I can't answer that definitively"; "after" said Genshin is not in the specs, then gave a hedged judgement from the cited chip, RAM, 120 Hz display and battery. "Is that enough for a full day of gaming?" after a battery question and "How far can it zoom?" after a telephoto question kept their subject. `low` reasoning was twice as slow and no better, so the fast one-phone settings stay. **Decision (owner asked for both fixes, 22 Nov):** prompt v2 is live in code (`PROMPT_VERSION = "v2"`), history on. Raw results: `.local/prompt-v2-eval-2026-11-22.*`, `.local/conversation-bench-2026-11-22.*`.
 
+**3. Compare page follow-ups (23 Nov 2026, `--set compare`)**: the compare panel now remembers its answered questions too (page view only; New Chat or a different set of phones forgets them). 3 two-turn comparisons (V50 / Reno14 / 13 Pro+, iPhone 16 / Galaxy S25, V50 / Reno14), `low` reasoning, 2 runs, 24 calls, about US$0.04.
+
+| Variant | Median | Slowest | Unsupported values | Cost / answer |
+| --- | --- | --- | --- | --- |
+| before (v1, follow-up alone) | 6.64 s | 12.78 s | 0 | $0.00163 |
+| after (v2 + earlier turn) | 6.39 s | 12.28 s | 0 | $0.00157 |
+
+"Is the difference worth the price?" after "Compare battery life": before drifted to chip and build; after compared the battery difference and said no price is in the specs. "Which one charges the fastest?" kept the right winner (V50, 90W) and the battery follow-up was right in both runs (V50 and Reno14 tie at 6000 mAh). Raw results: `.local/conversation-compare-2026-11-23.*`.

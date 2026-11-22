@@ -1,0 +1,94 @@
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { AuthContext } from '../context/authContextValue'
+import { api } from '../api/client'
+import AIComparisonPanel from './AIComparisonPanel'
+
+vi.mock('../api/client', () => ({
+  api: { askQuestion: vi.fn(), getSpecs: vi.fn() },
+}))
+
+const answer = (text) => ({
+  answer: text,
+  sources: [{ gadget_name: 'V50 5G', content: 'Charging: 90W' }],
+  answer_basis: 'specs',
+})
+
+beforeAll(() => {
+  Element.prototype.scrollIntoView = function scrollIntoView() {}
+})
+
+beforeEach(() => {
+  api.getSpecs.mockResolvedValue([{ indexing_status: 'indexed' }])
+  api.askQuestion.mockResolvedValue(answer('The V50 charges fastest at 90W [1].'))
+})
+
+afterEach(() => {
+  cleanup()
+  vi.clearAllMocks()
+})
+
+function renderPanel(ids = ['g1', 'g2']) {
+  const ui = (gadgetIds) => (
+    <MemoryRouter>
+      <AuthContext.Provider value={{ user: { id: 'u1' } }}>
+        <AIComparisonPanel gadgetIds={gadgetIds} gadgetNames={gadgetIds.map((g) => `Phone ${g}`)} />
+      </AuthContext.Provider>
+    </MemoryRouter>
+  )
+  const view = render(ui(ids))
+  return { rerender: (next) => view.rerender(ui(next)) }
+}
+
+async function askAnother(question) {
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Another Question' }))
+  fireEvent.change(screen.getByLabelText('Question to Ask'), { target: { value: question } })
+  fireEvent.click(screen.getByRole('button', { name: 'Generate Comparison' }))
+}
+
+describe('AIComparisonPanel chat memory', () => {
+  it('sends no history first, then the earlier turn with a follow-up', async () => {
+    renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: 'Which offers better value for the price?' }))
+    await screen.findByText(/charges fastest/)
+    expect(api.askQuestion.mock.calls[0][0]).not.toHaveProperty('history')
+    expect(screen.getByText('Follow-ups remember your last 1 question.')).toBeTruthy()
+
+    await askAnother('Which one is lighter?')
+    await screen.findByText(/charges fastest/)
+    expect(api.askQuestion).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        question: 'Which one is lighter?',
+        gadget_ids: ['g1', 'g2'],
+        history: [{ question: 'Which offers better value for the price?', answer: 'The V50 charges fastest at 90W [1].' }],
+      }),
+    )
+  })
+
+  it('a failed answer is not remembered', async () => {
+    api.askQuestion.mockRejectedValueOnce(new Error('boom'))
+    renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: 'Compare battery life' }))
+    await screen.findByRole('button', { name: /try again/i })
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }))
+    await screen.findByText(/charges fastest/)
+    expect(api.askQuestion.mock.calls[1][0]).not.toHaveProperty('history')
+  })
+
+  it('New Chat and a different set of phones forget the conversation', async () => {
+    const { rerender } = renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: 'Compare battery life' }))
+    await screen.findByText(/charges fastest/)
+    fireEvent.click(screen.getByRole('button', { name: 'New Chat' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Compare camera quality' }))
+    await screen.findByText(/charges fastest/)
+    expect(api.askQuestion.mock.calls[1][0]).not.toHaveProperty('history')
+
+    rerender(['g1', 'g3'])
+    await screen.findByText(/charges fastest/)
+    await askAnother('Which one is lighter?')
+    await screen.findByText(/charges fastest/)
+    expect(api.askQuestion.mock.calls.at(-1)[0]).not.toHaveProperty('history')
+  })
+})

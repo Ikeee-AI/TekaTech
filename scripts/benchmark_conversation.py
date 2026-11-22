@@ -42,6 +42,12 @@ CONVERSATIONS = [
     ("Reno14 5G", ["What chip does it use?", "Is it good for video editing?"]),
     ("Galaxy S25", ["Does it have a telephoto camera?", "How far can it zoom?"]),
 ]
+# --set compare: two-turn conversations on the compare page (several phones, "low" reasoning).
+COMPARE_CONVERSATIONS = [
+    (("V50 5G", "Reno14 5G", "13 Pro+ 5G"), ["Which one charges the fastest?", "And which one has the biggest battery?"]),
+    (("iPhone 16", "Galaxy S25"), ["Compare camera quality", "Which one is better for gaming?"]),
+    (("V50 5G", "Reno14 5G"), ["Compare battery life", "Is the difference worth the price?"]),
+]
 VARIANTS = {
     "before": {"prompt": "v1", "history": False, "settings": None},
     "after": {"prompt": "v2", "history": True, "settings": None},
@@ -54,6 +60,7 @@ def main(argv=None):
     parser.add_argument("--api-base", default=DEFAULT_API)
     parser.add_argument("--variants", default=",".join(VARIANTS))
     parser.add_argument("--repeats", type=int, default=2)
+    parser.add_argument("--set", choices=("phone", "compare"), default="phone")
     parser.add_argument("--out", type=Path, default=ROOT / ".local" / "conversation-bench.json")
     parser.add_argument("--markdown", type=Path)
     parser.add_argument("--yes", action="store_true")
@@ -61,8 +68,9 @@ def main(argv=None):
     variants = [v.strip() for v in args.variants.split(",") if v.strip()]
     if any(v not in VARIANTS for v in variants):
         parser.error(f"variants must be from: {', '.join(VARIANTS)}")
-    calls = len(CONVERSATIONS) * 2 * len(variants) * args.repeats
-    print(f"Plan: {len(CONVERSATIONS)} two-turn conversations x {len(variants)} variants x {args.repeats} repeat(s) = {calls} chat calls,")
+    convs = COMPARE_CONVERSATIONS if args.set == "compare" else CONVERSATIONS
+    calls = len(convs) * 2 * len(variants) * args.repeats
+    print(f"Plan: {len(convs)} two-turn conversations x {len(variants)} variants x {args.repeats} repeat(s) = {calls} chat calls,")
     print(f"about US${calls * 0.0006:.2f}-{calls * 0.002:.2f}.")
     if not args.yes:
         print("Nothing sent. Re-run with --yes.")
@@ -77,7 +85,10 @@ def main(argv=None):
 
     client = OpenAI(api_key=settings.openai_api_key.get_secret_value(), timeout=60, max_retries=1)
     catalog = {g["name"]: g for g in get_json(f"{args.api_base}/gadgets")}
-    phones = sorted({p for p, _ in CONVERSATIONS})
+    def names_of(p):
+        return list(p) if isinstance(p, tuple) else [p]
+
+    phones = sorted({n for p, _ in convs for n in names_of(p)})
     chunks = {}
     for p in phones:
         chunks[p] = [c for c in get_json(f"{args.api_base}/gadgets/{catalog[p]['id']}/specs") if c["indexing_status"] == "indexed"]
@@ -94,19 +105,21 @@ def main(argv=None):
     def answer(variant, phone, question, history):
         cfg = VARIANTS[variant]
         q_vec = embed(retrieval_text(question, history))
-        ranked = sorted(chunks[phone], key=lambda c: cosine(q_vec, vectors[c["id"]]), reverse=True)[:MATCH_COUNT]
+        names = names_of(phone)
+        pool = [dict(c, _name=n) for n in names for c in chunks[n]]
+        ranked = sorted(pool, key=lambda c: cosine(q_vec, vectors[c["id"]]), reverse=True)[:MATCH_COUNT]
         context = "\n\n".join(
-            f"[{i}] ({phone}{', verified ' + str(c['verified_at'])[:10] if c.get('verified_at') else ''}) {c['content']}"
+            f"[{i}] ({c['_name']}{', verified ' + str(c['verified_at'])[:10] if c.get('verified_at') else ''}) {c['content']}"
             for i, c in enumerate(ranked, start=1)
         )
-        content = build_user_message(context, f"\n\nGadgets in this comparison: {phone}.", question, history)
+        content = build_user_message(context, f"\n\nGadgets in this comparison: {', '.join(names)}.", question, history)
         started = time.perf_counter()
         completion = client.chat.completions.create(
             model=ANSWER_MODEL,
             messages=[{"role": "system", "content": build_system_prompt(False, False, cfg["prompt"])},
                       {"role": "user", "content": content}],
             max_completion_tokens=ANSWER_MAX_COMPLETION_TOKENS,
-            **(cfg["settings"] or answer_settings(1)),
+            **(cfg["settings"] or answer_settings(len(names))),
         )
         seconds = time.perf_counter() - started
         text, _ = normalize_paren_citations(completion.choices[0].message.content or "", len(ranked))
@@ -121,7 +134,7 @@ def main(argv=None):
 
     rows = []
     for rep in range(1, args.repeats + 1):
-        for ci, (phone, (q1, q2)) in enumerate(CONVERSATIONS, start=1):
+        for ci, (phone, (q1, q2)) in enumerate(convs, start=1):
             for variant in variants:
                 try:
                     first = answer(variant, phone, q1, [])
@@ -131,7 +144,7 @@ def main(argv=None):
                     print(f"  C{ci} {variant}: failed ({type(exc).__name__})")
                     continue
                 for turn, r in ((1, first), (2, second)):
-                    rows.append({"conversation": ci, "phone": phone, "turn": turn, "question": q1 if turn == 1 else q2,
+                    rows.append({"conversation": ci, "phone": " vs ".join(names_of(phone)), "turn": turn, "question": q1 if turn == 1 else q2,
                                  "variant": variant, "repeat": rep, **r})
                 print(f"  C{ci} {variant:<10} turn1 {first['seconds']:5.2f}s  turn2 {second['seconds']:5.2f}s")
 
@@ -147,7 +160,7 @@ def main(argv=None):
                         "answers_with_unsupported_values": sum(bool(x["unsupported_values"]) for x in r),
                         "est_cost_per_answer_usd": round(cost / len(r), 5)})
     meta = {"finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "model": ANSWER_MODEL,
-            "conversations": len(CONVERSATIONS), "repeats": args.repeats}
+            "set": args.set, "conversations": len(convs), "repeats": args.repeats}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps({"meta": meta, "summary": summary, "calls": rows}, indent=2, ensure_ascii=False),
                         encoding="utf-8")
@@ -160,8 +173,8 @@ def main(argv=None):
                   f"{s['cut_off']} | {s['citations_removed']} | {s['answers_with_unsupported_values']} | ${s['est_cost_per_answer_usd']} |")
     for rep in range(1, args.repeats + 1):
         md += ["", f"## Answers, run {rep}", ""]
-        for ci, (phone, (q1, q2)) in enumerate(CONVERSATIONS, start=1):
-            md.append(f"### C{ci}. {phone}: \"{q1}\" → \"{q2}\"")
+        for ci, (phone, (q1, q2)) in enumerate(convs, start=1):
+            md.append(f"### C{ci}. {' vs '.join(names_of(phone))}: \"{q1}\" → \"{q2}\"")
             for v in variants:
                 for x in rows:
                     if x["conversation"] == ci and x["variant"] == v and x["repeat"] == rep:
