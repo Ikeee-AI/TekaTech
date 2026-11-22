@@ -27,6 +27,7 @@ import Button from '../components/ui/Button'
 import DeleteGadgetButton from '../components/DeleteGadgetButton'
 import KeySpecTiles from '../components/KeySpecTiles'
 import ProductImage from '../components/ProductImage'
+import TileCarousel from '../components/TileCarousel'
 import PriceTag from '../components/PriceTag'
 import { CatalogSkeleton } from '../components/Skeleton'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
@@ -54,7 +55,6 @@ const PAGE_SIZE = 12
 // Fine for today's small, admin-curated catalog; past this many, cards skip the count
 // (a spec count on GET /gadgets would remove the extra requests — backend follow-up).
 const SPEC_FETCH_LIMIT = 24
-const BRAND_TILES = 6
 // Featured hero: one phone at a time, shuffled, a new one every 8 seconds. Only phones whose
 // specs fill at least 3 of the 4 key-spec tiles (heroCandidates), else any with saved specs.
 export const HERO_ROTATE_MS = 8000
@@ -466,18 +466,22 @@ export default function GadgetList() {
       )}
 
       <section aria-labelledby="brands-heading">
-        <h2 id="brands-heading" className="text-2xl font-extrabold tracking-[-0.035em] text-slate-900 mb-3">
-          Shop by brand
-        </h2>
-        {/* Phones: one scrolling row, so the phone cards come up sooner. */}
-        <div className="flex overflow-x-auto -mx-1 px-1 pb-1 sm:pb-0 gap-2.5 sm:gap-3 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] sm:overflow-visible">
+        {/* One sliding row at every width (owner, 22 Nov 2026): more brands never add a second row. */}
+        <TileCarousel
+          label="brands"
+          heading={
+            <h2 id="brands-heading" className="text-2xl font-extrabold tracking-[-0.035em] text-slate-900">
+              Shop by brand
+            </h2>
+          }
+        >
           <BrandTile
             label="All phones"
             count={gadgets.length}
             pressed={brands.size === 0}
             onClick={() => updateFilter(setBrands)(new Set())}
           />
-          {brandCounts.slice(0, BRAND_TILES).map(([brand, count]) => (
+          {brandCounts.map(([brand, count]) => (
             <BrandTile
               key={brand}
               label={brand}
@@ -486,7 +490,7 @@ export default function GadgetList() {
               onClick={() => updateFilter(setBrands)(toggleInSet(brands, brand))}
             />
           ))}
-        </div>
+        </TileCarousel>
       </section>
 
       <section aria-labelledby="catalog-heading" className="flex flex-col gap-4">
@@ -905,7 +909,7 @@ export function BrandTile({ label, count, pressed, onClick }) {
       type="button"
       onClick={onClick}
       aria-pressed={pressed}
-      className={`flex shrink-0 min-w-[9.5rem] sm:min-w-0 items-center justify-between gap-3 text-left px-4 sm:px-5 py-3 sm:py-4 min-h-11 rounded-3xl border transition active:scale-[0.98] ${focusRing} ${
+      className={`flex shrink-0 snap-start w-40 sm:w-52 items-center justify-between gap-3 text-left px-4 sm:px-5 py-3 sm:py-4 min-h-11 rounded-3xl border transition active:scale-[0.98] ${focusRing} ${
         pressed ? BRAND_TILE_SELECTED_STYLE : BRAND_TILE_STYLE
       }`}
     >

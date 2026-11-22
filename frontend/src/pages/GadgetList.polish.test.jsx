@@ -50,7 +50,8 @@ describe('brand tiles', () => {
   it('all share one neutral style; only the selected tile takes the accent', async () => {
     await renderCatalog()
     const section = screen.getByRole('heading', { name: 'Shop by brand' }).closest('section')
-    const tiles = within(section).getAllByRole('button')
+    // The tiles live in the sliding row; the section also holds its left/right arrows.
+    const tiles = within(within(section).getByRole('group', { name: 'brands' })).getAllByRole('button')
     expect(tiles.map((t) => t.textContent)).toEqual(['All phones3 phones', 'Alpha1 phone', 'Beta1 phone', 'Gamma1 phone'])
     // "All phones" starts selected; the brand tiles are identical.
     expect(tiles[0].className).toContain(BRAND_TILE_SELECTED_STYLE)
