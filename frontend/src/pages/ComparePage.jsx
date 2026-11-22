@@ -483,7 +483,7 @@ export default function ComparePage() {
       <VersusHeader gadgets={gadgets} onRemove={removeGadget} addSlot={addControl} />
 
       {comparing && (
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-3.5 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-3.5">
           <section aria-labelledby="specs-heading" className="min-w-0 bg-white border border-slate-200 rounded-[26px]">
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 pt-4 pb-2">
               <h2 id="specs-heading" className="text-xl font-extrabold tracking-[-0.03em] text-slate-900">
@@ -518,10 +518,12 @@ export default function ComparePage() {
             </p>
           </section>
 
-          {/* Wide screens: the AI panel stays in view while the longer spec list scrolls,
-              instead of ending early and leaving an empty column. */}
-          <div className="min-w-0 xl:sticky xl:top-20">
+          {/* Wide screens (owner, 22 Nov 2026): the AI panel is exactly as tall as the specs card
+              and scrolls inside, so a long answer never makes it taller than the table. It is
+              taken out of the row's height (absolute), with a floor for short comparisons. */}
+          <div className="min-w-0 xl:relative xl:min-h-[32rem]">
             <AIComparisonPanel
+              className="xl:absolute xl:inset-0 xl:overflow-y-auto overscroll-contain"
               gadgetIds={gadgets.map((g) => g.id)}
               gadgetNames={gadgets.map((g) => g.name)}
               category={gadgets.map((g) => g.category)}
