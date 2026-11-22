@@ -27,6 +27,7 @@ import Button from '../components/ui/Button'
 import DeleteGadgetButton from '../components/DeleteGadgetButton'
 import KeySpecTiles from '../components/KeySpecTiles'
 import ProductImage from '../components/ProductImage'
+import TileCarousel from '../components/TileCarousel'
 import PriceTag from '../components/PriceTag'
 import { CatalogSkeleton } from '../components/Skeleton'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
@@ -54,7 +55,6 @@ const PAGE_SIZE = 12
 // Fine for today's small, admin-curated catalog; past this many, cards skip the count
 // (a spec count on GET /gadgets would remove the extra requests — backend follow-up).
 const SPEC_FETCH_LIMIT = 24
-const BRAND_TILES = 6
 // Featured hero: one phone at a time, shuffled, a new one every 8 seconds. Only phones whose
 // specs fill at least 3 of the 4 key-spec tiles (heroCandidates), else any with saved specs.
 export const HERO_ROTATE_MS = 8000
@@ -466,18 +466,22 @@ export default function GadgetList() {
       )}
 
       <section aria-labelledby="brands-heading">
-        <h2 id="brands-heading" className="text-2xl font-extrabold tracking-[-0.035em] text-slate-900 mb-3">
-          Shop by brand
-        </h2>
-        {/* Phones: one scrolling row, so the phone cards come up sooner. */}
-        <div className="flex overflow-x-auto -mx-1 px-1 pb-1 sm:pb-0 gap-2.5 sm:gap-3 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] sm:overflow-visible">
+        {/* One sliding row at every width (owner, 22 Nov 2026): more brands never add a second row. */}
+        <TileCarousel
+          label="brands"
+          heading={
+            <h2 id="brands-heading" className="text-2xl font-extrabold tracking-[-0.035em] text-slate-900">
+              Shop by brand
+            </h2>
+          }
+        >
           <BrandTile
             label="All phones"
             count={gadgets.length}
             pressed={brands.size === 0}
             onClick={() => updateFilter(setBrands)(new Set())}
           />
-          {brandCounts.slice(0, BRAND_TILES).map(([brand, count]) => (
+          {brandCounts.map(([brand, count]) => (
             <BrandTile
               key={brand}
               label={brand}
@@ -486,7 +490,7 @@ export default function GadgetList() {
               onClick={() => updateFilter(setBrands)(toggleInSet(brands, brand))}
             />
           ))}
-        </div>
+        </TileCarousel>
       </section>
 
       <section aria-labelledby="catalog-heading" className="flex flex-col gap-4">
@@ -805,18 +809,12 @@ function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, o
         active ? 'opacity-100 visible' : 'opacity-0 invisible'
       }`}
     >
-      <article className="lg:col-span-2 relative overflow-hidden flex flex-col justify-end sm:min-h-[340px] lg:min-h-[384px] p-5 sm:p-8 rounded-[28px] bg-white border border-slate-200">
-        {/* The photo only from the sm breakpoint: on phones the hero stays compact. */}
-        <ProductImage
-          src={gadget.image_url}
-          className="max-sm:hidden absolute right-6 sm:right-10 top-6 sm:top-8 w-36 sm:w-44 aspect-[3/4]"
-          glyphClassName="w-2/3 h-2/3"
-        />
-        <div className="relative sm:max-w-[55%] lg:max-w-md">
+      <article className="lg:col-span-2 relative overflow-hidden flex items-center gap-6 sm:min-h-[340px] lg:min-h-[384px] p-5 sm:p-8 rounded-[28px] bg-white border border-slate-200">
+        <div className="relative min-w-0 flex-1">
           <span className="inline-block px-2.5 py-1 rounded-full bg-sage-700 text-white font-mono text-xs font-semibold">
             {specs.length} SOURCED SPEC{specs.length === 1 ? '' : 'S'}
           </span>
-          <h2 className="mt-3 text-3xl sm:text-6xl font-extrabold tracking-[-0.045em] sm:tracking-[-0.055em] leading-[0.95] text-slate-900 break-words">
+          <h2 className="mt-3 text-3xl sm:text-5xl 2xl:text-6xl font-extrabold tracking-[-0.045em] sm:tracking-[-0.055em] leading-[0.95] text-slate-900 break-words">
             {gated ? (
               <button type="button" onClick={onRequireSignIn} aria-haspopup="dialog" className={`text-left hover:underline rounded ${focusRing}`}>
                 {name}
@@ -860,16 +858,24 @@ function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, o
               onClick={onAsk}
               aria-haspopup={gated ? 'dialog' : undefined}
               aria-label={`Ask AI about ${gadget.name}`}
-              className="max-sm:hidden"
-            >
-              Ask AI
-            </Button>
+              title="Ask AI"
+              className="max-sm:hidden !px-3.5"
+            />
           </div>
         </div>
+        {/* Beside the text, never under it (22 Nov 2026), with no frame, like the phone page.
+            Only from the sm breakpoint: on phones the hero stays compact. */}
+        <ProductImage
+          src={gadget.image_url}
+          className="max-sm:hidden shrink-0 w-36 lg:w-40 xl:w-44 2xl:w-52 aspect-[4/5] !bg-transparent"
+          glyphClassName="w-2/3 h-2/3"
+          padding="p-0"
+        />
       </article>
       <HeroSpecStrip keySpecs={keySpecs} gadgetName={gadget.name} />
+      {/* The tiles stretch to the hero card's height, so both bottoms line up. */}
       <div className="hidden sm:block lg:col-span-2">
-        <KeySpecTiles keySpecs={keySpecs} gadgetName={gadget.name} size="lg" />
+        <KeySpecTiles keySpecs={keySpecs} gadgetName={gadget.name} size="lg" className="h-full auto-rows-fr" />
       </div>
     </div>
   )
@@ -905,7 +911,7 @@ export function BrandTile({ label, count, pressed, onClick }) {
       type="button"
       onClick={onClick}
       aria-pressed={pressed}
-      className={`flex shrink-0 min-w-[9.5rem] sm:min-w-0 items-center justify-between gap-3 text-left px-4 sm:px-5 py-3 sm:py-4 min-h-11 rounded-3xl border transition active:scale-[0.98] ${focusRing} ${
+      className={`flex shrink-0 snap-start w-40 sm:w-52 items-center justify-between gap-3 text-left px-4 sm:px-5 py-3 sm:py-4 min-h-11 rounded-3xl border transition active:scale-[0.98] ${focusRing} ${
         pressed ? BRAND_TILE_SELECTED_STYLE : BRAND_TILE_STYLE
       }`}
     >

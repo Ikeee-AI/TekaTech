@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { barWidths, specRows } from './compareRows'
+import { barWidths, groupRows, plainRow, specRows } from './compareRows'
 import { extractKeySpecs, extractMoreSpecs } from './keySpecs'
 
 const parsed = (content, source_url = null) => {
@@ -72,5 +72,15 @@ describe('compare spec rows', () => {
   it('shows loading and failed phones as gaps', () => {
     const rows = specRows([undefined, null])
     expect(row(rows, 'Battery').cells.map((c) => c.text)).toEqual(['…', 'Not stated by source'])
+  })
+
+  it('groups rows into sections in a fixed order, keeping every row', () => {
+    const rows = [...specRows([vivo, samsung]), plainRow('Price', [{}, {}], () => null), plainRow('Odd row', [{}, {}], () => 'x')]
+    const groups = groupRows(rows)
+    expect(groups.map((g) => g.title)).toEqual(['Key specs', 'Battery & charging', 'Design & hardware', 'Price & release'])
+    expect(groups[0].rows.map((r) => r.label)).toEqual(['RAM', 'Storage', 'Main camera', 'Display'])
+    // An unknown label lands in the last section rather than disappearing.
+    expect(groups.at(-1).rows.map((r) => r.label)).toEqual(['Price', 'Odd row'])
+    expect(groups.flatMap((g) => g.rows)).toHaveLength(rows.length)
   })
 })

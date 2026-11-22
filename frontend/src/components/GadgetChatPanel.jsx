@@ -188,7 +188,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
   return (
     <section
       aria-labelledby="gadget-chat-title"
-      className="bg-white border border-slate-200 rounded-[28px] flex flex-col overflow-hidden min-w-0"
+      className="bg-white border border-slate-200 rounded-[28px] flex flex-col overflow-hidden min-w-0 xl:h-full"
     >
       <header className="flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-3 border-b border-slate-200">
         <div className="min-w-0">
@@ -244,14 +244,16 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
         </Alert>
       )}
 
-      <div className="relative">
+      {/* Grows to fill the card when the page gives it a fixed height (wide screens), so the
+          question box stays at the bottom and only the messages scroll. */}
+      <div className="relative flex-1 min-h-0">
         <div
           ref={scrollRef}
           onScroll={handleScroll}
           role="region"
           aria-label={`Conversation about ${gadgetName}`}
           tabIndex={0}
-          className="relative max-h-[min(65vh,620px)] min-h-48 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sage-400"
+          className="relative max-h-[min(65vh,620px)] xl:max-h-none xl:h-full min-h-48 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sage-400"
         >
           {thread.loading && (
             <p role="status" className="text-sm text-slate-500 text-center py-6">

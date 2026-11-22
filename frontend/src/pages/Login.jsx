@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
-import { KeyRound, LogIn, Mail, UserPlus } from 'lucide-react'
+import { Bookmark, CheckCircle2, Flag, KeyRound, LogIn, Mail, MessageSquareText, UserPlus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
@@ -18,8 +18,8 @@ const LINK_MODES = ['signup', 'resend']
 
 const TITLES = { login: 'Log In', signup: 'Create an Account', resend: 'Resend Confirmation Email' }
 const INTROS = {
-  login: 'Log in to view specs, compare phones, ask the AI and save phones to My Gadgets.',
-  signup: 'A free account lets you view full specs, compare phones, ask the AI (20 questions a day) and save phones.',
+  login: 'Welcome back. Pick up where you left off.',
+  signup: 'Free, no payment. View full specs, compare phones, ask the AI (20 questions a day) and save phones.',
   resend: "Enter the email you signed up with and we'll send a new confirmation link.",
 }
 const FAILURE_TITLES = { login: 'Log In Failed', signup: 'Sign Up Failed', resend: 'Could Not Send the Email' }
@@ -147,14 +147,38 @@ export default function Login() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+    <div className="max-w-5xl mx-auto">
+      <BackLink to="/">Back to Catalog</BackLink>
+      {/* One card, two panes on wide screens: why sign in (left), the form (right). */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] bg-white border border-slate-200 rounded-[28px] overflow-hidden">
       <LoginPerks />
-      <div className="flex flex-col">
-      <div className="bg-white border border-slate-200 rounded-[28px] p-6 sm:p-8 flex-1">
-        <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-slate-900 mb-1">
+      <div className="p-6 sm:p-10">
+        {mode !== 'resend' && (
+          <div role="tablist" aria-label="Log in or sign up" className="flex gap-1 p-1 mb-7 rounded-full bg-slate-100 w-full sm:w-fit">
+            {[
+              ['login', 'Log in'],
+              ['signup', 'Create account'],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={mode === id}
+                onClick={() => mode !== id && switchMode(id)}
+                disabled={submitting || resending}
+                className={`flex-1 sm:flex-none px-5 min-h-10 rounded-full text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 disabled:cursor-not-allowed ${
+                  mode === id ? 'bg-inverse text-inverse-ink shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-[-0.045em] text-slate-900">
           {TITLES[mode]}
         </h1>
-        <p className="text-sm text-gray-500 mb-4">{INTROS[mode]}</p>
+        <p className="mt-1.5 mb-6 text-sm text-slate-600">{INTROS[mode]}</p>
         {/* key={mode} remounts the inputs so browser autofill state from the other mode can't leak in. */}
         <form key={mode} onSubmit={handleSubmit} className="space-y-4">
           <TextField
@@ -257,17 +281,21 @@ export default function Login() {
             </Alert>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => (mode === 'resend' ? switchMode('login', { keepEmail: true }) : switchMode(mode === 'login' ? 'signup' : 'login'))}
-          disabled={submitting || resending}
-          className={`w-full text-center mt-4 min-h-10 disabled:opacity-50 disabled:cursor-not-allowed ${LINK_CLASS}`}
-        >
-          {mode === 'login' ? "Don't have an account? Sign Up" : mode === 'signup' ? 'Already have an account? Log In' : 'Back to Log In'}
-        </button>
-      </div>
-      <div className="text-center mt-4">
-        <BackLink to="/">Back to Catalog</BackLink>
+        {mode === 'resend' && (
+          <button
+            type="button"
+            onClick={() => switchMode('login', { keepEmail: true })}
+            disabled={submitting || resending}
+            className={`w-full text-center mt-4 min-h-10 disabled:opacity-50 disabled:cursor-not-allowed ${LINK_CLASS}`}
+          >
+            Back to Log In
+          </button>
+        )}
+        <p className="mt-6 text-xs text-slate-500 text-center">
+          By continuing you agree to the{' '}
+          <Link to="/terms" className="underline hover:text-slate-700">Terms</Link> and{' '}
+          <Link to="/privacy" className="underline hover:text-slate-700">Privacy Policy</Link>.
+        </p>
       </div>
       </div>
     </div>
@@ -275,30 +303,45 @@ export default function Login() {
 }
 
 const PERKS = [
-  ['My Gadgets', 'Save the phones you’re considering', 'bg-sage-700 text-white'],
-  ['Saved questions', 'Answers kept for each phone', 'bg-inverse text-inverse-ink'],
-  ['Suggestions', 'Flag a spec that looks wrong', 'bg-pop text-pop-ink'],
-  ['Free', 'No payment, ever. 20 AI questions a day', 'bg-slate-100 text-slate-900'],
+  [Bookmark, 'My Gadgets', 'Save the phones you’re considering and compare them later.'],
+  [MessageSquareText, 'Saved questions', 'Your AI answers stay with each phone, with their sources.'],
+  [Flag, 'Suggestions', 'Spot a spec that looks wrong? Flag it for review.'],
 ]
 
-// Why sign in (rebrand canvas, 13 Nov 2026). Decorative summary; hidden on phones to keep the form first.
+// Why sign in (rebrand canvas, 13 Nov 2026; calmer layout 22 Nov 2026): one accent,
+// a short list instead of four colour blocks. Decorative summary; hidden on phones to keep the form first.
 function LoginPerks() {
   return (
-    <section aria-label="Why sign in" className="hidden lg:flex flex-col justify-between gap-6 p-8 rounded-[28px] bg-white border border-slate-200">
-      <div>
-        <p className="text-5xl font-extrabold tracking-[-0.055em] leading-[0.98] text-slate-900">Specs you can check.</p>
-        <p className="mt-3 text-base text-slate-600 max-w-sm">
-          Log in to save phones, keep your questions and suggest corrections.
+    <section
+      aria-label="Why sign in"
+      className="hidden lg:flex flex-col justify-between gap-10 p-10 bg-slate-100 border-r border-slate-200 relative overflow-hidden"
+    >
+      {/* Soft accent glow in the corner; purely decorative. */}
+      <div aria-hidden="true" className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-sage-700/20 blur-3xl" />
+      <div className="relative">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-sage-700">TekaTech account</p>
+        <p className="mt-3 text-5xl font-extrabold tracking-[-0.055em] leading-[0.98] text-slate-900">Specs you can check.</p>
+        <p className="mt-4 text-base text-slate-600 max-w-sm">
+          Answers are built from official spec sheets, with numbered sources you can check.
         </p>
       </div>
-      <ul className="grid grid-cols-2 gap-2.5">
-        {PERKS.map(([title, text, tone]) => (
-          <li key={title} className={`p-4 rounded-[20px] ${tone}`}>
-            <p className="text-[15px] font-extrabold">{title}</p>
-            <p className="mt-1 text-[13px] opacity-85">{text}</p>
+      <ul className="relative space-y-5">
+        {PERKS.map(([Icon, title, text]) => (
+          <li key={title} className="flex gap-3.5">
+            <span className="shrink-0 flex items-center justify-center w-10 h-10 rounded-2xl bg-sage-700 text-white">
+              <Icon size={18} aria-hidden="true" />
+            </span>
+            <span>
+              <span className="block text-[15px] font-bold text-slate-900">{title}</span>
+              <span className="block mt-0.5 text-sm text-slate-600">{text}</span>
+            </span>
           </li>
         ))}
       </ul>
+      <p className="relative flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <CheckCircle2 size={16} aria-hidden="true" className="text-sage-700" />
+        Free forever · 20 AI questions a day
+      </p>
     </section>
   )
 }

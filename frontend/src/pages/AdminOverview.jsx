@@ -54,7 +54,7 @@ const stickyHead = 'sticky top-0 z-10 bg-white whitespace-nowrap text-left text-
 
 function Section({ id, title, children }) {
   return (
-    <section aria-labelledby={id} className="mb-8">
+    <section aria-labelledby={id} className="mb-6">
       <h2 id={id} className="font-display text-lg font-medium text-gray-900 mb-3">
         {title}
       </h2>

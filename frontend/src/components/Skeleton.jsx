@@ -40,16 +40,26 @@ export function CatalogSkeleton({ count = 6 }) {
 }
 
 export function GadgetDetailSkeleton() {
+  // Same shape as the phone page's top card (details + key-spec panel), so nothing jumps on load.
   return (
-    <div className="max-w-3xl mx-auto" role="status" aria-label="Loading gadget">
-      <Skeleton className="h-4 w-32 mb-5" />
-      <div className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-[15rem_1fr] gap-6 sm:gap-8">
-        <Skeleton className="h-60 w-full rounded-lg" />
+    <div className="flex flex-col gap-4" role="status" aria-label="Loading gadget">
+      <Skeleton className="h-4 w-32" />
+      <div className="bg-white border border-slate-200 rounded-[28px] p-5 sm:p-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,31rem)] gap-6">
         <div>
-          <Skeleton className="h-6 w-24 rounded-full mb-4" />
-          <Skeleton className="h-8 w-2/3 mb-2" />
-          <Skeleton className="h-4 w-1/3 mb-6" />
-          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-6 w-28 rounded-full mb-4" />
+          <Skeleton className="h-10 w-2/3 mb-2" />
+          <Skeleton className="h-4 w-24 mb-6" />
+          <Skeleton className="h-7 w-40 mb-6" />
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-5 w-full" />
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-[104px] rounded-[22px]" />
+          ))}
         </div>
       </div>
     </div>

@@ -46,14 +46,14 @@ describe('Index All Pending', () => {
   it('is not shown to a regular user', async () => {
     api.getSpecs.mockResolvedValue([spec(1), spec(2)])
     renderAs(USER)
-    await screen.findByText('Spec text 1')
+    await screen.findAllByText('Spec text 1')
     expect(screen.queryByRole('button', { name: /index all pending/i })).toBeNull()
   })
 
   it('is not shown when every spec is already indexed', async () => {
     api.getSpecs.mockResolvedValue([spec(1, 'indexed')])
     renderAs(ADMIN)
-    await screen.findByText('Spec text 1')
+    await screen.findAllByText('Spec text 1')
     expect(screen.queryByRole('button', { name: /index all pending/i })).toBeNull()
   })
 
@@ -89,7 +89,7 @@ describe('Index All Pending', () => {
       .mockResolvedValueOnce({ indexing_status: 'indexed' })
     renderAs(ADMIN)
     fireEvent.click(await screen.findByRole('button', { name: /index all pending \(2\)/i }))
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Indexed 1 of 2. 1 failed; see the cards below.'))
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Indexed 1 of 2. 1 failed; see Saved parts.'))
     expect(api.indexSpec).toHaveBeenCalledTimes(2)
   })
 })

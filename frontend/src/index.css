@@ -185,6 +185,16 @@ body {
   font-weight: 450;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+  /* No blinking text cursor when a card, heading or other static text is clicked
+     (browser caret browsing, F7, draws one anywhere). caret-color inherits, so text
+     fields switch it back on below. */
+  caret-color: transparent;
+}
+
+input,
+textarea,
+[contenteditable]:not([contenteditable="false"]) {
+  caret-color: auto;
 }
 
 /* Compare: round cut-out around the centred VS badge (badge radius 44 px + 8 px gap;

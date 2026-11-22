@@ -76,3 +76,22 @@ export function specRows(keySpecsList) {
     keyRow('screen', 'Screen size', keySpecsList),
   ]
 }
+
+/** Spec sections on the Compare page, in order. A row whose label is in none of them
+ * goes to the last section, so a new row is never dropped. */
+export const SPEC_GROUPS = [
+  ['Key specs', ['RAM', 'Storage', 'Main camera', 'Display']],
+  ['Battery & charging', ['Battery', 'Charging']],
+  ['Design & hardware', ['Chip', 'Screen size', 'Weight', 'Water resistance']],
+  ['Price & release', ['Price', 'Released', 'Brand']],
+]
+
+/** [{ title, rows }] in SPEC_GROUPS order, empty sections left out. */
+export function groupRows(rows) {
+  const groups = SPEC_GROUPS.map(([title, labels]) => ({ title, labels, rows: [] }))
+  for (const row of rows) {
+    const group = groups.find((g) => g.labels.includes(row.label)) ?? groups[groups.length - 1]
+    group.rows.push(row)
+  }
+  return groups.filter((g) => g.rows.length).map(({ title, rows: groupRowsList }) => ({ title, rows: groupRowsList }))
+}

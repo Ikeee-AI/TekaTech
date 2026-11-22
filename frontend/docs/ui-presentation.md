@@ -48,7 +48,7 @@ Note: the backend's `PATCH /gadgets/{id}` drops empty fields, so an optional val
 | Specs list | Skeleton rows | "No Specs Yet" | Status badges (Ready for AI / Pending), saved toast | Inline `Alert` with Try Again |
 | Add/Edit gadget form | Edit: form skeleton | – | Toast, then redirect to the gadget | Field errors + summary; server error `Alert`; edit load failure `ErrorState` |
 | Add specs / correction | Spinner on submit button | – | Toast; list reloads | Field errors; server error `Alert` |
-| AI answer panel | "Searching the spec sheets…" + skeleton (`aria-live`) | "No Matching Specs Found" | Answer with numbered citations, sources, Copy, Regenerate | "Couldn't Get an Answer" with Try Again |
+| AI answer panel | rotating friendly steps ("Reading up on this phone…", comparison wording on Compare) + skeleton (`aria-live`, one steady status for screen readers) | "No Matching Specs Found" | Answer with numbered citations, sources, Copy, Regenerate | "Couldn't Get an Answer" with Try Again |
 | Delete dialog | "Deleting…" spinner, controls locked | – | Toast, card removed / redirect | Plain-language reason inside the dialog |
 | Review queue | Skeleton | "Nothing to Review" | Approve/Reject toast | `ErrorState` with Try Again (previously showed "queue is clear" on failure) |
 | Login | Spinner on submit | – | Toast, redirect | Inline `Alert` (replaces a disappearing toast) |
