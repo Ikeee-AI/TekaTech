@@ -114,10 +114,17 @@ const HIGHLIGHT_RULES = [
   ['Zoom', /zoom/],
   ['Video', /^video( recording)?$/],
   ['Software', /operating system|^os$|software|android/],
+  // Fill-ins (22 Nov 2026): only reached when a phone states fewer of the rules above, so a
+  // short list doesn't leave the top card half empty. Still details the tiles don't show.
+  ['Brightness', /brightness/],
+  ['Rear cameras', /^rear cameras?$/],
+  ['Build', /back cover|back panel|cover glass|frame material/],
+  ['Fingerprint', /fingerprint/],
+  ['Colours', /^colou?rs?( options)?$/],
 ]
 
-/** Up to `max` (6) { title, label, value, sourceUrl } facts for the phone page's Highlights list. */
-export function specHighlights(specs, max = 6) {
+/** Up to `max` (7) { title, label, value, sourceUrl } facts for the phone page's Highlights list. */
+export function specHighlights(specs, max = 7) {
   const facts = []
   for (const spec of specs ?? []) {
     for (const block of specBlocks(spec.content ?? '')) {

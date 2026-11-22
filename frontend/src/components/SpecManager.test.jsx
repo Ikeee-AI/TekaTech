@@ -122,6 +122,23 @@ describe('spec layout helpers', () => {
     ])
     expect(specHighlights([spec('a', 0, 'Display: OLED\nZoom: 5x optical')], 1).map((h) => h.title)).toEqual(['Display'])
     expect(specHighlights([spec('c', 0, 'Weight: 198 g')])).toEqual([])
+    // A short list is filled from the fill-in rules, up to seven rows.
+    const filled = specHighlights([
+      spec(
+        'v',
+        0,
+        'Display type: AMOLED\nLocal peak brightness: 4500 nits\nRear camera: 50 MP main, OIS\nRear camera: 50 MP wide\nBack cover: glass\nFingerprint sensor: in-display optical\nColours: Satin Black, Mist Purple\nOperating system: Funtouch OS 15',
+      ),
+    ])
+    expect(filled.map((h) => [h.title, h.value])).toEqual([
+      ['Display', 'AMOLED'],
+      ['Software', 'Funtouch OS 15'],
+      ['Brightness', '4500 nits'],
+      ['Rear cameras', '50 MP main, OIS'],
+      ['Build', 'glass'],
+      ['Fingerprint', 'in-display optical'],
+      ['Colours', 'Satin Black, Mist Purple'],
+    ])
   })
 })
 
