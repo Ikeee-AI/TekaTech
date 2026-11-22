@@ -36,7 +36,9 @@ section covers the user message, since it receives no snippets.
 # v2 replaced v1 on 22 Nov 2026 after the benchmark in docs/devops/app-performance.md (eval set
 # 22/24 in both runs vs 21 and 20 for v1; follow-up conversations answered). v1 stays selectable
 # through build_system_prompt(version="v1") for comparisons.
-PROMPT_VERSION = "v2"
+# v3 replaced v2 on 23 Nov 2026: eval set 24/24 in both runs (v2: 23 and 21), follow-up
+# conversations unchanged (docs/devops/app-performance.md).
+PROMPT_VERSION = "v3"
 
 _BASE_PROMPT = (
     "You are a gadget specification assistant. Answer the user's question using ONLY the "
@@ -79,7 +81,24 @@ _V2_RULES = (
     "'the cheaper one'), then answer the latest question. Take every fact and citation from "
     "the numbered snippets sent with it, never from an earlier answer.\n\n"
 )
-_BASE_PROMPTS = {"v1": _BASE_PROMPT, "v2": _BASE_PROMPT + _V2_RULES}
+# v3 (23 Nov 2026; benchmarked against v2 before it replaced it): two rules for the eval
+# cases every version failed. MISSING SPEC: TC-07 gave the iPhone 15's playback hours for "battery"
+# without saying its capacity is not stated. VARIANT REFUSAL: TC-24 declined the Galaxy S24+ and
+# then gave the base S24's 4000 mAh anyway.
+_V3_RULES = (
+    "MISSING SPECS: when the question asks for a specific spec (for example battery capacity in "
+    "mAh) and a gadget's snippets give only a related measure (for example video playback "
+    "hours), you may give that measure, but say plainly that the asked spec itself is not "
+    "stated for that gadget.\n\n"
+    "VARIANT NOT IN THE SNIPPETS: when the exact model or variant asked about is not in the "
+    "snippets, say so and do not state another variant's value for the asked spec, not even "
+    "labelled as a different model.\n\n"
+)
+_BASE_PROMPTS = {
+    "v1": _BASE_PROMPT,
+    "v2": _BASE_PROMPT + _V2_RULES,
+    "v3": _BASE_PROMPT + _V2_RULES + _V3_RULES,
+}
 
 _STYLE_PLAIN = "Explain in simple, everyday language a non-technical shopper would understand."
 _STYLE_TECHNICAL = "Use precise technical language."

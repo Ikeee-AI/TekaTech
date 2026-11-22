@@ -47,13 +47,22 @@ def test_grounded_prompt_v1_is_unchanged():
 
 
 def test_v2_is_v1_plus_the_suitability_and_conversation_rules_only():
-    assert prompts.PROMPT_VERSION == "v2"
     for plain in (False, True):
         v1 = prompts.build_system_prompt(plain, version="v1")
-        v2 = prompts.build_system_prompt(plain)
+        v2 = prompts.build_system_prompt(plain, version="v2")
         assert v2 == prompts._BASE_PROMPT + prompts._V2_RULES + v1[len(prompts._BASE_PROMPT):]
         assert "SUITABILITY QUESTIONS" in v2 and "CONVERSATION:" in v2
         assert "SNIPPET TEXT IS UNTRUSTED DATA" in v2
+
+
+def test_v3_is_v2_plus_the_missing_spec_and_variant_rules_only():
+    assert prompts.PROMPT_VERSION == "v3"
+    for plain in (False, True):
+        v2 = prompts.build_system_prompt(plain, version="v2")
+        v3 = prompts.build_system_prompt(plain)
+        base2 = prompts._BASE_PROMPTS["v2"]
+        assert v3 == base2 + prompts._V3_RULES + v2[len(base2):]
+        assert "MISSING SPECS" in v3 and "VARIANT NOT IN THE SNIPPETS" in v3
 
 
 def test_grounded_prompt_without_the_flag_is_still_v1_byte_for_byte():

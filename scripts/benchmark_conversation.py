@@ -52,6 +52,7 @@ VARIANTS = {
     "before": {"prompt": "v1", "history": False, "settings": None},
     "after": {"prompt": "v2", "history": True, "settings": None},
     "after-low": {"prompt": "v2", "history": True, "settings": {"reasoning_effort": "low"}},
+    "after-v3": {"prompt": "v3", "history": True, "settings": None},
 }
 
 
