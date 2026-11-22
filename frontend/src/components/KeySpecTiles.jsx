@@ -12,27 +12,28 @@ const TILE_STYLES = [
 /**
  * The four key-spec tiles (RAM, storage, main camera, display Hz).
  * keySpecs comes from extractKeySpecs(); a missing value says "Not stated by source".
- * size "lg" is the catalog hero, "md" the gadget page and compare.
+ * size "lg" is the catalog hero, "md" compare, "sm" the phone page's top card.
  */
 export default function KeySpecTiles({ keySpecs, gadgetName, size = 'md', loading = false, className = '' }) {
   const big = size === 'lg'
+  const small = size === 'sm'
   return (
     <ul
       aria-label={gadgetName ? `${gadgetName} key specs` : 'Key specs'}
-      className={`grid grid-cols-2 gap-3 ${className}`}
+      className={`grid grid-cols-2 ${small ? 'gap-2.5' : 'gap-3'} ${className}`}
     >
       {KEY_SPECS.map((spec, i) => {
         const found = keySpecs?.[spec.id]
         return (
           <li
             key={spec.id}
-            className={`flex flex-col justify-between gap-2 rounded-[26px] border ${big ? 'p-5 min-h-[168px]' : 'p-4 min-h-[124px]'} ${TILE_STYLES[i]}`}
+            className={`flex flex-col justify-between gap-2 rounded-[26px] border ${big ? 'p-5 min-h-[168px]' : small ? 'p-3.5 min-h-[104px] rounded-[22px]' : 'p-4 min-h-[124px]'} ${TILE_STYLES[i]}`}
           >
             <p className="text-sm font-bold">{gadgetName && big ? `${gadgetName} · ${spec.label}` : spec.label}</p>
             {loading ? (
               <p className="h-10 w-24 rounded-xl bg-current opacity-15 animate-pulse" aria-label="Loading" />
             ) : found ? (
-              <p className={`font-extrabold tracking-[-0.05em] leading-[0.9] ${big ? 'text-5xl' : 'text-4xl'}`}>
+              <p className={`font-extrabold tracking-[-0.05em] leading-[0.9] ${big ? 'text-5xl' : small ? 'text-3xl' : 'text-4xl'}`}>
                 {found.value}
                 {found.unit && <span className={`tracking-normal ${big ? 'text-xl' : 'text-lg'}`}> {found.unit}</span>}
               </p>

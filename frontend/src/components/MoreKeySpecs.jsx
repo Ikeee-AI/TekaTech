@@ -5,13 +5,17 @@ import { MORE_SPECS } from '../utils/keySpecs'
  * weight, water resistance, screen size. moreSpecs comes from extractMoreSpecs();
  * each value shows its source site, a missing one says "Not stated by source".
  */
-export default function MoreKeySpecs({ moreSpecs, loading = false }) {
+export default function MoreKeySpecs({ moreSpecs, loading = false, bare = false }) {
+  // bare: no card of its own (inside the phone page's top card).
   return (
-    <section aria-labelledby="more-key-specs-heading" className="bg-white border border-slate-200 rounded-[26px] p-4 sm:p-5">
+    <section
+      aria-labelledby="more-key-specs-heading"
+      className={bare ? 'rounded-[22px] bg-slate-100 border border-slate-200 p-4' : 'bg-white border border-slate-200 rounded-[26px] p-4 sm:p-5'}
+    >
       <h2 id="more-key-specs-heading" className="text-sm font-bold text-slate-900">
         More key specs
       </h2>
-      <dl className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
+      <dl className={`grid grid-cols-2 sm:grid-cols-3 gap-x-4 ${bare ? 'mt-2.5 gap-y-2.5' : 'mt-3 gap-y-3'}`}>
         {MORE_SPECS.map((spec) => {
           const found = moreSpecs?.[spec.id]
           return (

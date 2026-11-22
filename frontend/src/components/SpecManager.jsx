@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChevronDown, FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save, Loader2, AlertCircle } from 'lucide-react'
+import { ChevronDown, FileText, Plus, ExternalLink, Calendar, Flag, CheckCircle2, Clock, Sparkles, LogIn, RefreshCw, Send, Save, Loader2, AlertCircle, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
@@ -11,7 +11,8 @@ import Alert from './ui/Alert'
 import { TextField, TextAreaField } from './ui/FormField'
 import { friendlyError } from '../utils/requestErrors'
 import { notifyCorrectionsChanged } from '../utils/correctionNotices'
-import { groupSpecsBySource, specSections } from '../utils/specLayout'
+import { groupSpecsBySource, mergedSheet, specSections } from '../utils/specLayout'
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 
 const MAX_SPEC_CHARS = 20_000 // mirrors MAX_RAW_TEXT_LENGTH in backend/routers/specs.py
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
@@ -198,6 +199,216 @@ function CorrectionForm({ spec, onDone }) {
         </Button>
       </div>
     </form>
+  )
+}
+
+/** "Display" → "display", for element ids. */
+function slug(text) {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
+/**
+ * The phone's specs as ONE sheet (22 Nov 2026, owner's pick "C"): every saved part merged,
+ * each heading once, a section list beside the rows (a scrolling chip row on phones) and a
+ * search box. The rows scroll inside the card, so the page never grows with the spec count.
+ * Suggest fix on a row opens the correction form for the part that row came from.
+ */
+function SpecSheet({ specs, user }) {
+  const baseId = useId()
+  const reducedMotion = usePrefersReducedMotion()
+  const { sections, notes } = useMemo(() => mergedSheet(specs), [specs])
+  const [query, setQuery] = useState('')
+  const [active, setActive] = useState(null)
+  const [correcting, setCorrecting] = useState(null)
+  const scrollRef = useRef(null)
+  const headingRefs = useRef({})
+
+  const q = query.trim().toLowerCase()
+  const shown = sections
+    .map((section) => ({ ...section, items: section.items.filter((it) => !q || `${it.label} ${it.value}`.toLowerCase().includes(q)) }))
+    .filter((section) => section.items.length)
+  const shownNotes = notes.filter((n) => !q || n.text.toLowerCase().includes(q))
+  const total = sections.reduce((n, s) => n + s.items.length, 0)
+  const current = active && shown.some((s) => s.title === active) ? active : shown[0]?.title
+
+  function jumpTo(title) {
+    const box = scrollRef.current
+    const heading = headingRefs.current[title]
+    setActive(title)
+    if (box && heading && typeof box.scrollTo === 'function') {
+      box.scrollTo({ top: heading.offsetTop - 8, behavior: reducedMotion ? 'auto' : 'smooth' })
+    }
+  }
+
+  // The section list follows the scroll: the last heading at or above the top is current.
+  function handleScroll() {
+    const box = scrollRef.current
+    if (!box) return
+    const atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 4
+    let next = shown[0]?.title
+    for (const section of shown) {
+      const heading = headingRefs.current[section.title]
+      if (heading && heading.offsetTop - 24 <= box.scrollTop) next = section.title
+    }
+    if (atEnd && shown.length) next = shown[shown.length - 1].title
+    if (next !== active) setActive(next)
+  }
+
+  const suggestButton = (key, label) =>
+    user && (
+      <button
+        type="button"
+        onClick={() => setCorrecting(correcting === key ? null : key)}
+        aria-expanded={correcting === key}
+        aria-label={`Suggest Correction for ${label}`}
+        title="Suggest Correction"
+        className="shrink-0 inline-flex items-center gap-1 min-h-8 px-2 rounded-full text-xs font-semibold text-slate-500 hover:text-sage-700 hover:bg-slate-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+      >
+        <Flag size={13} aria-hidden="true" />
+        <span className="hidden sm:inline">Suggest fix</span>
+      </button>
+    )
+
+  return (
+    <div className="flex flex-col min-h-0 flex-1">
+      <div className="px-4 sm:px-5 pb-3">
+        <label htmlFor={`${baseId}-find`} className="sr-only">
+          Find a spec
+        </label>
+        <div className="flex items-center gap-2 min-h-10 px-3.5 rounded-full bg-slate-100 border border-slate-200 focus-within:border-sage-600 focus-within:ring-2 focus-within:ring-sage-200">
+          <Search size={15} aria-hidden="true" className="text-slate-500 shrink-0" />
+          <input
+            id={`${baseId}-find`}
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Find one of ${total} specs, e.g. battery`}
+            className="flex-1 min-w-0 bg-transparent text-sm text-slate-900 placeholder:text-slate-500 outline-none py-2"
+          />
+        </div>
+      </div>
+      <div className="flex-1 min-h-0 flex flex-col sm:grid sm:grid-cols-[12.5rem_minmax(0,1fr)] border-t border-slate-200">
+        <nav
+          aria-label="Spec sections"
+          className="shrink-0 flex sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible sm:overflow-y-auto px-4 sm:px-3 py-2 sm:py-3 border-b sm:border-b-0 sm:border-r border-slate-200 [scrollbar-width:none]"
+        >
+          {shown.map((section) => (
+            <button
+              key={section.title}
+              type="button"
+              onClick={() => jumpTo(section.title)}
+              aria-current={current === section.title ? 'true' : undefined}
+              className={`shrink-0 flex items-center justify-between gap-2 min-h-9 px-3 rounded-xl text-sm font-semibold text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 ${
+                current === section.title ? 'bg-inverse text-inverse-ink' : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span className="whitespace-nowrap">{section.title}</span>
+              <span className="font-mono text-[11px] opacity-70">{section.items.length}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="relative flex-1 min-h-0">
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            role="region"
+            aria-label="Spec list"
+            tabIndex={0}
+            className="relative h-full max-h-[28rem] xl:max-h-none overflow-y-auto overscroll-contain px-4 sm:px-5 pb-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sage-400"
+          >
+            {shown.length === 0 && shownNotes.length === 0 && (
+              <p className="py-8 text-center text-sm text-slate-600">No spec matches &ldquo;{query.trim()}&rdquo;.</p>
+            )}
+            {shown.map((section) => (
+              <div key={section.title}>
+                <h3
+                  id={`${baseId}-${slug(section.title)}`}
+                  ref={(el) => {
+                    headingRefs.current[section.title] = el
+                  }}
+                  className="pt-4 pb-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-sage-700"
+                >
+                  {section.title}
+                </h3>
+                <dl>
+                  {section.items.map((item, i) => {
+                    const key = `${section.title}-${i}`
+                    return (
+                      <div
+                        key={key}
+                        className="group grid grid-cols-1 sm:grid-cols-[minmax(7rem,28%)_minmax(0,1fr)] gap-x-4 py-2.5 border-t border-slate-200 first:border-t-0"
+                      >
+                        <dt className="text-sm font-medium text-slate-500 sm:pt-px">{item.label}</dt>
+                        <dd className="min-w-0">
+                          <div className="flex items-start gap-2">
+                            <span className="flex-1 min-w-0 text-[15px] leading-snug text-slate-900 break-words">{item.value}</span>
+                            {suggestButton(key, item.label)}
+                          </div>
+                          {correcting === key && <CorrectionForm spec={item.spec} onDone={() => setCorrecting(null)} />}
+                        </dd>
+                      </div>
+                    )
+                  })}
+                </dl>
+              </div>
+            ))}
+            {shownNotes.length > 0 && (
+              <div>
+                <h3 className="pt-4 pb-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-sage-700">Notes</h3>
+                {shownNotes.map((note, i) => {
+                  const key = `note-${i}`
+                  return (
+                    <div key={key} className="group py-2.5 border-t border-slate-200 first:border-t-0">
+                      <div className="flex items-start gap-2">
+                        <p className="flex-1 min-w-0 text-[15px] text-slate-800 break-words">{note.text}</p>
+                        {suggestButton(key, 'this note')}
+                      </div>
+                      {correcting === key && <CorrectionForm spec={note.spec} onDone={() => setCorrecting(null)} />}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          {/* Fade at the bottom edge: more rows below. Decorative. */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Source links and save date, once for the whole sheet. */
+function SheetSources({ specs }) {
+  const [now] = useState(() => Date.now())
+  const groups = groupSpecsBySource(specs)
+  const oldest = specs.reduce((a, s) => (new Date(s.verified_at) < new Date(a) ? s.verified_at : a), specs[0].verified_at)
+  const outdated = now - new Date(oldest).getTime() > SIX_MONTHS_MS
+  return (
+    <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-slate-600">
+      {groups.map((g) =>
+        isHttpUrl(g.sourceUrl) ? (
+          <a
+            key={g.key}
+            href={g.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 font-semibold text-sage-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600"
+          >
+            <ExternalLink size={13} aria-hidden="true" /> {sourceLabel(g.sourceUrl)}
+            <span className="sr-only">(source, opens in a new tab)</span>
+          </a>
+        ) : (
+          <span key={g.key || 'none'} className="inline-flex items-center gap-1 font-semibold text-slate-600">
+            <FileText size={13} aria-hidden="true" /> No source link
+          </span>
+        ),
+      )}
+      <span className="inline-flex items-center gap-1" title={formatDate(oldest)}>
+        <Calendar size={13} aria-hidden="true" /> Added {timeAgo(oldest)}
+      </span>
+      {outdated && <span className="text-amber-800 font-semibold">May Be Outdated</span>}
+    </p>
   )
 }
 
@@ -464,6 +675,8 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   const [indexingId, setIndexingId] = useState(null)
   const [indexErrors, setIndexErrors] = useState({})
   const [bulk, setBulk] = useState(null) // Index All Pending progress: { done, total } while running
+  // Admins: 'sheet' (what shoppers see) or 'manage' (per-part indexing and delete).
+  const [view, setView] = useState('sheet')
 
   // `background` refreshes without the loading skeleton, so the list (and any
   // open correction form) stays on screen; a failed background refresh keeps it.
@@ -523,6 +736,7 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   async function handleIndexAll() {
     const pending = state.specs.filter((sp) => sp.indexing_status !== 'indexed').map((sp) => sp.id)
     if (pending.length === 0) return
+    setView('manage') // progress and any failure show on the part cards
     let ok = 0
     let failed = 0
     let stopped = null
@@ -548,120 +762,157 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
   }
 
   const { status, specs } = state
+  const hasSpecs = status === 'ready' && specs.length > 0
+  const showManage = isAdmin && view === 'manage'
 
   return (
-    <section aria-labelledby="specs-title" className="min-w-0">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-        <h2 id="specs-title" className="text-xl font-bold text-slate-900 flex items-center gap-2">
-          <FileText size={20} className="text-sage-700" aria-hidden="true" /> Specifications
-          {isAdmin && status === 'ready' && <span className="text-sm font-medium text-slate-500">({specs.length})</span>}
-        </h2>
+    // A card with a fixed height on wide screens (the page sets it): the rows scroll inside,
+    // so the page never grows with the number of specs (22 Nov 2026, owner's pick "C").
+    <section aria-labelledby="specs-title" className="min-w-0 bg-white border border-slate-200 rounded-[28px] flex flex-col overflow-hidden xl:h-full">
+      <header className="px-4 sm:px-5 pt-5 pb-3 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <h2 id="specs-title" className="text-xl font-extrabold tracking-[-0.02em] text-slate-900 flex items-center gap-2">
+            <FileText size={20} className="text-sage-700" aria-hidden="true" /> Specifications
+            {isAdmin && status === 'ready' && <span className="text-sm font-medium text-slate-500">({specs.length})</span>}
+          </h2>
+          {hasSpecs && <SheetSources specs={specs} />}
+        </div>
         {/* Admin-curated catalog (scope change, 3 Nov 2026): only admins add specs.
             Everyone else contributes by suggesting corrections, which needs an account. */}
         {isAdmin ? (
           !showForm && (
-            <Button ref={addButtonRef} variant="outline" icon={Plus} onClick={() => setShowForm(true)}>
+            <Button ref={addButtonRef} variant="outline" size="sm" icon={Plus} onClick={() => setShowForm(true)}>
               Add Specs
             </Button>
           )
         ) : (
           !user && (
-            <Button as={Link} to="/login" state={{ from: location }} variant="outline" icon={LogIn}>
+            <Button as={Link} to="/login" state={{ from: location }} variant="outline" size="sm" icon={LogIn}>
               Log In to Suggest Corrections
             </Button>
           )
         )}
-      </div>
-      {isAdmin ? (
-        <p className="text-sm text-slate-600 mb-4">
-          Specs are saved immediately. Use Index for AI when credit is available; pending specs remain readable here.
-        </p>
-      ) : (
-        <p className="text-sm text-slate-600 mb-4">
-          Specs are added by the TekaTech team. Spot a mistake? Use Suggest Correction on the spec and an admin will review it.
-        </p>
-      )}
+      </header>
 
-      {showForm && (
-        <AddSpecForm
-          gadgetId={gadgetId}
-          onCancel={() => setShowForm(false)}
-          onSaved={() => {
-            setShowForm(false)
-            loadSpecs()
-          }}
-        />
-      )}
-
-      {status === 'loading' && (
-        <div className="space-y-3" role="status" aria-label="Loading specs">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-slate-100 rounded-xl animate-pulse" />
+      {isAdmin && hasSpecs && (
+        <div role="tablist" aria-label="Spec view" className="mx-4 sm:mx-5 mb-3 flex gap-1 p-1 rounded-full bg-slate-100 w-fit">
+          {[
+            ['sheet', 'Sheet'],
+            ['manage', 'Manage parts'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={view === id}
+              onClick={() => setView(id)}
+              className={`px-4 min-h-9 rounded-full text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-600 ${
+                view === id ? 'bg-inverse text-inverse-ink' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {label}
+            </button>
           ))}
         </div>
       )}
 
-      {status === 'error' && (
-        <Alert
-          tone="error"
-          title="Couldn't Load Specs"
-          action={
-            <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => loadSpecs()}>
-              Try Again
-            </Button>
-          }
-        >
-          {state.error}
-        </Alert>
-      )}
+      <div className="px-4 sm:px-5 empty:hidden">
+        {showForm && (
+          <AddSpecForm
+            gadgetId={gadgetId}
+            onCancel={() => setShowForm(false)}
+            onSaved={() => {
+              setShowForm(false)
+              loadSpecs()
+            }}
+          />
+        )}
 
-      {status === 'ready' && specs.length === 0 && (
-        <div className="text-center bg-white border border-slate-300 border-dashed rounded-xl px-6 py-10">
-          <FileText size={24} className="mx-auto text-slate-400" aria-hidden="true" />
-          <p className="font-semibold text-slate-800 mt-2">No Specs Yet</p>
-          <p className="text-sm text-slate-600 mt-1">
-            {isAdmin ? 'Add a spec sheet so the AI can answer questions about this phone.' : 'The TekaTech team hasn’t added specs for this phone yet.'}
-          </p>
-        </div>
-      )}
+        {status === 'loading' && (
+          <div className="space-y-3 pb-5" role="status" aria-label="Loading specs">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        )}
 
-      {isAdmin && status === 'ready' && specs.length > 0 && <AiReadiness specs={specs} />}
-
-      {isAdmin && status === 'ready' && specs.some((sp) => sp.indexing_status !== 'indexed') && (
-        <div className="flex flex-wrap items-center gap-3 mb-3">
-          <Button
-            variant="primary"
-            size="sm"
-            icon={Sparkles}
-            loading={bulk !== null}
-            disabled={indexingId !== null}
-            onClick={handleIndexAll}
+        {status === 'error' && (
+          <Alert
+            tone="error"
+            title="Couldn't Load Specs"
+            className="mb-5"
+            action={
+              <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => loadSpecs()}>
+                Try Again
+              </Button>
+            }
           >
-            {bulk
-              ? `Indexing ${bulk.done + 1} of ${bulk.total}…`
-              : `Index All Pending (${specs.filter((sp) => sp.indexing_status !== 'indexed').length})`}
-          </Button>
-          <span className="text-xs text-slate-600">One at a time; indexing is limited to 20 per hour.</span>
+            {state.error}
+          </Alert>
+        )}
+
+        {status === 'ready' && specs.length === 0 && (
+          <div className="mb-5 text-center border border-slate-300 border-dashed rounded-xl px-6 py-10">
+            <FileText size={24} className="mx-auto text-slate-400" aria-hidden="true" />
+            <p className="font-semibold text-slate-800 mt-2">No Specs Yet</p>
+            <p className="text-sm text-slate-600 mt-1">
+              {isAdmin ? 'Add a spec sheet so the AI can answer questions about this phone.' : 'The TekaTech team hasn’t added specs for this phone yet.'}
+            </p>
+          </div>
+        )}
+
+        {isAdmin && hasSpecs && <AiReadiness specs={specs} />}
+
+        {isAdmin && status === 'ready' && specs.some((sp) => sp.indexing_status !== 'indexed') && (
+          <div className="flex flex-wrap items-center gap-3 mb-3">
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Sparkles}
+              loading={bulk !== null}
+              disabled={indexingId !== null}
+              onClick={handleIndexAll}
+            >
+              {bulk
+                ? `Indexing ${bulk.done + 1} of ${bulk.total}…`
+                : `Index All Pending (${specs.filter((sp) => sp.indexing_status !== 'indexed').length})`}
+            </Button>
+            <span className="text-xs text-slate-600">One at a time; indexing is limited to 20 per hour.</span>
+          </div>
+        )}
+      </div>
+
+      {hasSpecs && !showManage && <SpecSheet specs={specs} user={user} />}
+
+      {hasSpecs && showManage && (
+        <div className="flex-1 min-h-0 max-h-[28rem] xl:max-h-none overflow-y-auto overscroll-contain px-4 sm:px-5 pb-5">
+          <p className="text-sm text-slate-600 mb-3">
+            Specs are saved immediately. Use Index for AI when credit is available; pending specs remain readable here.
+          </p>
+          <ul className="space-y-4">
+            {groupSpecsBySource(specs).map((group, i) => (
+              <SpecSourceGroup
+                key={group.key || 'no-source'}
+                defaultOpen={i === 0}
+                group={group}
+                user={user}
+                isAdmin={isAdmin}
+                gadgetId={gadgetId}
+                indexingId={indexingId}
+                indexErrors={indexErrors}
+                onIndex={handleIndex}
+                onDeleted={loadSpecs}
+              />
+            ))}
+          </ul>
         </div>
       )}
 
-      {status === 'ready' && specs.length > 0 && (
-        <ul className="space-y-4">
-          {groupSpecsBySource(specs).map((group, i) => (
-            <SpecSourceGroup
-              key={group.key || 'no-source'}
-              defaultOpen={i === 0}
-              group={group}
-              user={user}
-              isAdmin={isAdmin}
-              gadgetId={gadgetId}
-              indexingId={indexingId}
-              indexErrors={indexErrors}
-              onIndex={handleIndex}
-              onDeleted={loadSpecs}
-            />
-          ))}
-        </ul>
+      {hasSpecs && !isAdmin && (
+        <p className="px-4 sm:px-5 py-2.5 border-t border-slate-200 text-xs text-slate-500">
+          Specs are added by the TekaTech team.{' '}
+          {user ? 'Spot a mistake? Use Suggest fix on the row and an admin will review it.' : 'Log in to suggest a correction.'}
+        </p>
       )}
     </section>
   )

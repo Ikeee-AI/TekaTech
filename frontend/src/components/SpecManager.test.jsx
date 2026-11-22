@@ -1,5 +1,5 @@
-// Specifications section: chunks from one source share one card (link and date once,
-// chunks as rows, a parts toggle), and "Label: value" lines read as a fact list.
+// Specifications section: every saved part merged into one sheet (each heading once, a
+// section list, a search box); admins switch to "Manage parts" for per-part indexing.
 // Index All Pending (#200) has its own tests in SpecManager.indexAll.test.jsx.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
@@ -7,7 +7,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { AuthContext } from '../context/authContextValue'
 import { api } from '../api/client'
 import SpecManager from './SpecManager'
-import { groupSpecsBySource, specBlocks, specSection, specSections } from '../utils/specLayout'
+import { groupSpecsBySource, mergedSheet, specBlocks, specHighlights, specSection, specSections } from '../utils/specLayout'
 
 vi.mock('../api/client', () => ({ api: { getSpecs: vi.fn(), indexSpec: vi.fn() } }))
 
@@ -76,7 +76,12 @@ describe('spec layout helpers', () => {
     expect(specSection('IP rating')).toBe('Build & durability')
     expect(specSection('Bluetooth')).toBe('Connectivity')
     expect(specSection('NFC')).toBe('Connectivity')
-    expect(specSection('Sensors')).toBe('Other')
+    expect(specSection('Sensors')).toBe('General')
+    // Playback is battery life, not a camera spec; contrast is a display spec.
+    expect(specSection('Video playback')).toBe('Battery & charging')
+    expect(specSection('Audio playback')).toBe('Battery & charging')
+    expect(specSection('Contrast ratio')).toBe('Display')
+    expect(specSection('Video')).toBe('Camera')
   })
 
   it('groups a chunk by section in sheet order and keeps unlabelled lines as text', () => {
@@ -90,19 +95,50 @@ describe('spec layout helpers', () => {
     const line = 'According to the manufacturer and several independent reviews: it lasts a day.'
     expect(specBlocks(line)).toEqual([{ type: 'text', text: line }])
   })
+  it('merges every part into one sheet, each heading once, keeping the part of each row', () => {
+    const { sections, notes } = mergedSheet([
+      spec('a', 0, 'Display: 6.3-inch OLED\nBattery: 4700 mAh'),
+      spec('b', 1, 'Refresh rate: 120Hz\nShips with a case.'),
+    ])
+    expect(sections.map((s) => s.title)).toEqual(['Display', 'Battery & charging'])
+    expect(sections[0].items.map((i) => [i.label, i.spec.id])).toEqual([
+      ['Display', 'a'],
+      ['Refresh rate', 'b'],
+    ])
+    expect(notes).toEqual([{ text: 'Ships with a case.', spec: expect.objectContaining({ id: 'b' }) }])
+  })
+
+  it('picks highlights the tiles do not show, word for word', () => {
+    const picked = specHighlights([
+      spec('a', 0, 'Display: Super Retina XDR, 6.1-inch OLED\nVideo playback: up to 22 hours\nChip: A18'),
+      spec('b', 1, 'Front camera: TrueDepth, 12MP, f/1.9\nVideo: 4K Dolby Vision\nOperating system: iOS 18'),
+    ])
+    expect(picked.map((h) => [h.title, h.value])).toEqual([
+      ['Display', 'Super Retina XDR, 6.1-inch OLED'],
+      ['Battery life', 'up to 22 hours'],
+      ['Front camera', 'TrueDepth, 12MP, f/1.9'],
+      ['Video', '4K Dolby Vision'],
+    ])
+    expect(specHighlights([spec('c', 0, 'Weight: 198 g')])).toEqual([])
+  })
 })
 
 describe('SpecManager', () => {
-  it('shows one card per source with the link once and chunks as rows', async () => {
-    renderSpecs({ id: 'admin', app_metadata: { is_admin: true } })
-    const link = await screen.findByRole('link', { name: /gsmarena\.com/ })
+  it('shows one sheet: the source link once, each heading once, a section list with counts', async () => {
+    renderSpecs()
+    await screen.findByRole('link', { name: /gsmarena\.com/ })
     expect(screen.getAllByRole('link', { name: /gsmarena\.com/ })).toHaveLength(1)
-    const card = link.closest('li')
-    expect(within(card).getAllByRole('listitem', { name: /^Spec #/ })).toHaveLength(3)
-    expect(within(card).getByText('1 of 3 ready for AI')).toBeTruthy()
     expect(screen.getByText('No source link')).toBeTruthy()
-    expect(screen.getAllByText('Display').map((el) => el.tagName)).toEqual(['H3', 'DT'])
-    expect(screen.getByText('Battery & charging').tagName).toBe('H3')
+    expect(screen.getAllByText('Display').map((el) => el.tagName)).toEqual(['SPAN', 'H3', 'DT'])
+    expect(screen.getAllByText('Battery & charging').map((el) => el.tagName)).toEqual(['SPAN', 'H3'])
+    const nav = screen.getByRole('navigation', { name: 'Spec sections' })
+    expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'Display1',
+      'Performance1',
+      'Battery & charging1',
+      'Build & durability1',
+    ])
+    expect(screen.getByText('Colours include Obsidian and Porcelain.')).toBeTruthy()
   })
 
   it('shows the save date as "Added", not "Verified"', async () => {
@@ -112,44 +148,49 @@ describe('SpecManager', () => {
     expect(screen.queryByText(/Verified/)).toBeNull()
   })
 
-  it('hides indexing wording from shoppers and keeps it for admins', async () => {
+  it('finds a spec by label or value and says when nothing matches', async () => {
+    renderSpecs()
+    const find = await screen.findByLabelText('Find a spec')
+    fireEvent.change(find, { target: { value: 'tensor' } })
+    expect(screen.getByText('Tensor G4')).toBeTruthy()
+    expect(screen.queryByText('4700 mAh')).toBeNull()
+    fireEvent.change(find, { target: { value: 'zzz' } })
+    expect(screen.getByText(/No spec matches/)).toBeTruthy()
+  })
+
+  it('hides indexing wording from shoppers; admins get it under Manage parts', async () => {
     renderSpecs({ id: 'u1', app_metadata: {} })
     await screen.findByRole('link', { name: /gsmarena\.com/ })
     expect(screen.queryByText(/ready for AI/i)).toBeNull()
     expect(screen.queryByText(/Pending AI Indexing/)).toBeNull()
-    expect(screen.queryByText(/can.t use this part/)).toBeNull()
     expect(screen.queryByText(/\d+ parts?$/)).toBeNull()
-    expect(screen.queryByText('(4)')).toBeNull()
+    expect(screen.queryByRole('tab', { name: 'Manage parts' })).toBeNull()
     cleanup()
     renderSpecs({ id: 'admin', app_metadata: { is_admin: true } })
     await screen.findByRole('link', { name: /gsmarena\.com/ })
+    expect(screen.queryByRole('button', { name: 'Index for AI' })).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: 'Manage parts' }))
     expect(screen.getByText('1 of 3 ready for AI')).toBeTruthy()
     expect(screen.getByText('3 parts')).toBeTruthy()
     expect(screen.getAllByRole('button', { name: 'Index for AI' })).toHaveLength(2)
+    const first = screen.getByRole('button', { name: 'Hide 3 spec parts from gsmarena.com' })
+    expect(first.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByRole('button', { name: 'Show 1 spec part from no source link' }).getAttribute('aria-expanded')).toBe('false')
   })
 
-  it('a regular user sees no indexing buttons', async () => {
+  it('a signed-in user can suggest a fix on every row, sent for the part that row came from', async () => {
     renderSpecs({ id: 'u1', app_metadata: {} })
     await screen.findByRole('link', { name: /gsmarena\.com/ })
     expect(screen.queryByRole('button', { name: /Index/ })).toBeNull()
-    // The second source starts closed, so only the first card's three parts are shown.
-    expect(screen.getAllByRole('button', { name: /Suggest Correction/ })).toHaveLength(3)
+    // Four facts and one note.
+    expect(screen.getAllByRole('button', { name: /Suggest Correction/ })).toHaveLength(5)
+    fireEvent.click(screen.getByRole('button', { name: 'Suggest Correction for Chip' }))
+    expect(screen.getByLabelText(/Suggested Correction/).value).toBe('Chip: Tensor G4')
   })
 
-  it('the first source starts open, the others closed, and each one toggles', async () => {
+  it('a visitor sees no suggest buttons', async () => {
     renderSpecs()
-    const first = await screen.findByRole('button', { name: 'Hide specs from gsmarena.com' })
-    expect(first.getAttribute('aria-expanded')).toBe('true')
-    const second = screen.getByRole('button', { name: 'Show specs from no source link' })
-    expect(second.getAttribute('aria-expanded')).toBe('false')
-    const rowsOf = (button) => document.getElementById(button.getAttribute('aria-controls'))
-    expect(rowsOf(second).hidden).toBe(true)
-    fireEvent.click(second)
-    expect(rowsOf(second).hidden).toBe(false)
-    fireEvent.click(first)
-    expect(rowsOf(first).hidden).toBe(true)
-    expect(first.getAttribute('aria-expanded')).toBe('false')
-    // The header (source link) stays visible while closed.
-    expect(screen.getByRole('link', { name: /gsmarena\.com/ })).toBeTruthy()
+    await screen.findByRole('link', { name: /gsmarena\.com/ })
+    expect(screen.queryByRole('button', { name: /Suggest Correction/ })).toBeNull()
   })
 })

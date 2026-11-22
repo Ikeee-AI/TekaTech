@@ -5,13 +5,14 @@ import { formatGb } from '../utils/keySpecs'
  * standard (base) model only (owner, 13 Nov 2026); this is where shoppers see the rest.
  * variants comes from extractVariants(); render nothing when there is a single variant.
  */
-export default function VariantsList({ variants }) {
+export default function VariantsList({ variants, bare = false }) {
   if (!variants) return null
   const paired = variants.pairs.length > 0
+  // bare: no card of its own (inside the phone page's top card), smaller heading.
   return (
-    <section aria-labelledby="variants-title" className="bg-white border border-slate-200 rounded-[26px] p-4 sm:p-5">
+    <section aria-labelledby="variants-title" className={bare ? '' : 'bg-white border border-slate-200 rounded-[26px] p-4 sm:p-5'}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="variants-title" className="text-lg font-extrabold tracking-[-0.03em] text-slate-900">
+        <h2 id="variants-title" className={bare ? 'text-sm font-bold text-slate-900' : 'text-lg font-extrabold tracking-[-0.03em] text-slate-900'}>
           Variants
         </h2>
         {variants.source && <p className="font-mono text-xs text-slate-500">from {variants.source}</p>}
@@ -38,7 +39,7 @@ export default function VariantsList({ variants }) {
           {variants.storage.length > 0 && <OptionRow label="Storage" sizes={variants.storage} />}
         </dl>
       )}
-      <p className="mt-3 text-xs text-slate-500">
+      <p className={`text-xs text-slate-500 ${bare ? 'mt-2' : 'mt-3'}`}>
         The tiles above show the standard (base) model. Check the store for which variants it sells.
       </p>
     </section>
