@@ -34,6 +34,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useAuth } from '../hooks/useAuth'
 import AIAnswerPanel from '../components/AIAnswerPanel'
 import TrendingQuestions from '../components/TrendingQuestions'
+import QuestionChip from '../components/QuestionChip'
 import SignInPrompt from '../components/SignInPrompt'
 import HowItWorks from '../components/HowItWorks'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
@@ -448,17 +449,13 @@ export default function GadgetList() {
         <AIAnswerPanel question={activeQuestion} onClose={() => setAskedQuestion(null)} />
       ) : (
         signedIn && (
-        <div className="flex flex-col gap-2">
-          <TrendingQuestions onSelect={ask} />
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs font-semibold text-slate-500">Questions to ask</p>
+          {/* One row, one chip style: popular questions first, then the suggestions. */}
           <div className="flex overflow-x-auto sm:flex-wrap gap-1.5 -mx-1 px-1 pb-1 sm:pb-0">
+            <TrendingQuestions onSelect={ask} exclude={SUGGESTED_QUESTIONS} />
             {SUGGESTED_QUESTIONS.map((q) => (
-              <button
-                key={q}
-                onClick={() => ask(q)}
-                className={`flex shrink-0 items-center gap-1.5 text-sm font-semibold text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 rounded-full px-3.5 py-1.5 min-h-11 sm:min-h-9 whitespace-nowrap transition active:scale-95 ${focusRing}`}
-              >
-                <Sparkles size={13} className="text-sage-700" aria-hidden="true" /> {q}
-              </button>
+              <QuestionChip key={q} question={q} onSelect={ask} />
             ))}
           </div>
         </div>
@@ -809,7 +806,7 @@ function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, o
         active ? 'opacity-100 visible' : 'opacity-0 invisible'
       }`}
     >
-      <article className="lg:col-span-2 relative overflow-hidden flex items-center gap-6 sm:min-h-[340px] lg:min-h-[384px] p-5 sm:p-8 rounded-[28px] bg-white border border-slate-200">
+      <article className="lg:col-span-2 relative overflow-hidden grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] items-center content-center gap-x-6 sm:min-h-[340px] lg:min-h-[384px] p-5 sm:p-8 rounded-[28px] bg-white border border-slate-200">
         <div className="relative min-w-0 flex-1">
           <span className="inline-block px-2.5 py-1 rounded-full bg-sage-700 text-white font-mono text-xs font-semibold">
             {specs.length} SOURCED SPEC{specs.length === 1 ? '' : 'S'}
@@ -830,38 +827,6 @@ function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, o
           <p className={`mt-3 sm:mt-4 ${price ? 'text-2xl sm:text-3xl font-bold tabular-nums text-slate-900' : 'text-base text-slate-500'}`}>
             <PriceTag gadget={gadget} empty="No price yet" />
           </p>
-          <div className="mt-4 sm:mt-5 flex flex-wrap gap-2">
-            {gated ? (
-              <Button variant="primary" size="lg" onClick={onRequireSignIn} aria-haspopup="dialog" className="!px-5 sm:!px-6">
-                View specs
-              </Button>
-            ) : (
-              <Button as={Link} to={`/gadgets/${gadget.id}`} variant="primary" size="lg" className="!px-5 sm:!px-6">
-                View specs
-              </Button>
-            )}
-            <Button
-              size="lg"
-              onClick={onToggleCompare}
-              aria-pressed={gated ? undefined : selected}
-              aria-haspopup={gated ? 'dialog' : undefined}
-              icon={selected ? BadgeCheck : Scale}
-              className="!px-5 sm:!px-6"
-            >
-              {selected ? 'In Compare' : 'Compare'}
-            </Button>
-            {/* Two actions on phones; Ask AI is on the phone page and the card's "more" menu. */}
-            <Button
-              size="lg"
-              variant="ghost"
-              icon={Sparkles}
-              onClick={onAsk}
-              aria-haspopup={gated ? 'dialog' : undefined}
-              aria-label={`Ask AI about ${gadget.name}`}
-              title="Ask AI"
-              className="max-sm:hidden !px-3.5"
-            />
-          </div>
         </div>
         {/* Beside the text, never under it (22 Nov 2026), with no frame, like the phone page.
             Only from the sm breakpoint: on phones the hero stays compact. */}
@@ -871,6 +836,40 @@ function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, o
           glyphClassName="w-2/3 h-2/3"
           padding="p-0"
         />
+        {/* Under both the text and the photo, across the card: beside the photo the text column
+            is too narrow for three buttons at some widths, and Ask AI used to drop to its own line. */}
+        <div className="sm:col-span-2 mt-4 sm:mt-5 flex flex-wrap gap-2">
+          {gated ? (
+            <Button variant="primary" size="lg" onClick={onRequireSignIn} aria-haspopup="dialog" className="!px-5 sm:!px-6">
+              View specs
+            </Button>
+          ) : (
+            <Button as={Link} to={`/gadgets/${gadget.id}`} variant="primary" size="lg" className="!px-5 sm:!px-6">
+              View specs
+            </Button>
+          )}
+          <Button
+            size="lg"
+            onClick={onToggleCompare}
+            aria-pressed={gated ? undefined : selected}
+            aria-haspopup={gated ? 'dialog' : undefined}
+            icon={selected ? BadgeCheck : Scale}
+            className="!px-5 sm:!px-6"
+          >
+            {selected ? 'In Compare' : 'Compare'}
+          </Button>
+          {/* Two actions on phones; Ask AI is on the phone page and the card's "more" menu. */}
+          <Button
+            size="lg"
+            variant="ghost"
+            icon={Sparkles}
+            onClick={onAsk}
+            aria-haspopup={gated ? 'dialog' : undefined}
+            aria-label={`Ask AI about ${gadget.name}`}
+            title="Ask AI"
+            className="max-sm:hidden !px-3.5"
+          />
+        </div>
       </article>
       <HeroSpecStrip keySpecs={keySpecs} gadgetName={gadget.name} />
       {/* The tiles stretch to the hero card's height, so both bottoms line up. */}

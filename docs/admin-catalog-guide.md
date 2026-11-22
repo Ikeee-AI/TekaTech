@@ -38,9 +38,9 @@ Target for Sprint 5: **6–10 gadgets**, each with full specs, before any pilot 
 
 ## 3. Make it usable by the AI
 
-- New specs show **Pending AI Indexing**. Click **Index All Pending** above the spec cards (admins only), or **Index for AI** on each card.
-- Indexing is limited to **20 per hour**. A long spec sheet makes several cards, so a big batch may stop at the limit; continue after the hour. If indexing fails, the text stays saved; retry later.
-- Check: the green line "All N specs are ready for AI answers".
+- New specs show **Pending AI Indexing**. Click **Index All Pending** in the bar above the spec sheet (admins only), or **Index for AI** on a part in the **Saved parts** section at the end of the sheet.
+- Indexing is limited to **20 per hour**. A long spec sheet is saved as several parts, so a big batch may stop at the limit; continue after the hour. If indexing fails, the text stays saved; retry later.
+- Check: the bar above the sheet says "N of N ready for AI" with a green tick.
 
 ## 4. Check it like a user
 
