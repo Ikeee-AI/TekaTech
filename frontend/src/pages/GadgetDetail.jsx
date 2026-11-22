@@ -93,62 +93,67 @@ export default function GadgetDetail() {
     <div className="flex flex-col gap-4">
       <BackLink to="/">Back to Catalog</BackLink>
 
-      {/* One top card (22 Nov 2026, owner's pick "A" in the current colours): photo, the
-          phone's details with highlights from its sources, and the key-spec panel. */}
-      <article className="bg-white border border-slate-200 rounded-[28px] p-5 sm:p-6 grid grid-cols-1 md:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_minmax(0,31rem)] md:grid-rows-[auto_1fr] gap-x-6 gap-y-4">
-        <ProductImage
-          src={gadget.image_url}
-          alt={gadget.name}
-          className="w-40 md:w-full justify-self-center aspect-square md:col-start-1 md:row-start-1"
-          glyphClassName="w-1/2 h-3/4"
-          padding="p-4"
-        />
-
-        <div className="min-w-0 flex flex-col md:col-start-2 md:row-start-1 md:row-span-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {specs && (
-              <span className="font-mono text-[11px] font-semibold rounded-full px-2.5 py-1 bg-sage-700 text-white">
-                {specList.length} SOURCED SPEC{specList.length === 1 ? '' : 'S'}
-              </span>
-            )}
-            {oldestVerified && (
-              <span
-                className={`text-xs font-semibold rounded-full px-2.5 py-1 border ${
-                  hasOutdated ? 'text-amber-800 bg-amber-50 border-amber-200' : 'text-slate-700 bg-slate-100 border-slate-200'
-                }`}
-              >
-                {hasOutdated ? 'Some Specs May Be Outdated · ' : ''}Added {timeAgo(oldestVerified)}
-              </span>
-            )}
-          </div>
-
-          <h1 className="mt-3 text-4xl sm:text-5xl font-extrabold tracking-[-0.05em] leading-[0.95] text-slate-900 break-words">{withoutDoubledBrand(gadget.name)}</h1>
-          <p className="mt-1.5 text-slate-600">{gadget.brand}</p>
-
-          <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
-            <div>
-              <dt className="text-xs font-semibold text-slate-500">Price</dt>
-              {gadget.price_php != null ? (
-                <dd className="mt-0.5 text-2xl font-bold tabular-nums text-slate-900">
-                  <PriceTag gadget={gadget} />
-                </dd>
-              ) : (
-                <dd className="mt-1.5 text-base text-slate-500">Not listed</dd>
-              )}
-            </div>
-            <div>
-              <dt className="text-xs font-semibold text-slate-500">Released</dt>
-              <dd className="flex items-center gap-1.5 text-base font-medium text-slate-800 mt-1.5">
-                {gadget.release_date ? (
-                  <>
-                    <Calendar size={15} aria-hidden="true" className="text-slate-500" /> {formatRelease(gadget.release_date)}
-                  </>
-                ) : (
-                  <span className="text-slate-500">Not listed</span>
+      {/* One top card (22 Nov 2026, owner's pick "A" in the current colours): the phone's
+          details with the photo beside the name, like the catalog hero, highlights from its
+          sources, and the key-spec panel. */}
+      <article className="bg-white border border-slate-200 rounded-[28px] p-5 sm:p-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,31rem)] gap-6">
+        <div className="min-w-0 flex flex-col">
+          <div className="flex items-start gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                {specs && (
+                  <span className="font-mono text-[11px] font-semibold rounded-full px-2.5 py-1 bg-sage-700 text-white">
+                    {specList.length} SOURCED SPEC{specList.length === 1 ? '' : 'S'}
+                  </span>
                 )}
-              </dd>
+                {oldestVerified && (
+                  <span
+                    className={`text-xs font-semibold rounded-full px-2.5 py-1 border ${
+                      hasOutdated ? 'text-amber-800 bg-amber-50 border-amber-200' : 'text-slate-700 bg-slate-100 border-slate-200'
+                    }`}
+                  >
+                    {hasOutdated ? 'Some Specs May Be Outdated · ' : ''}Added {timeAgo(oldestVerified)}
+                  </span>
+                )}
+              </div>
+
+              <h1 className="mt-3 text-4xl sm:text-5xl font-extrabold tracking-[-0.05em] leading-[0.95] text-slate-900 break-words">{withoutDoubledBrand(gadget.name)}</h1>
+              <p className="mt-1.5 text-slate-600">{gadget.brand}</p>
+
+              <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
+                <div>
+                  <dt className="text-xs font-semibold text-slate-500">Price</dt>
+                  {gadget.price_php != null ? (
+                    <dd className="mt-0.5 text-2xl font-bold tabular-nums text-slate-900">
+                      <PriceTag gadget={gadget} />
+                    </dd>
+                  ) : (
+                    <dd className="mt-1.5 text-base text-slate-500">Not listed</dd>
+                  )}
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold text-slate-500">Released</dt>
+                  <dd className="flex items-center gap-1.5 text-base font-medium text-slate-800 mt-1.5">
+                    {gadget.release_date ? (
+                      <>
+                        <Calendar size={15} aria-hidden="true" className="text-slate-500" /> {formatRelease(gadget.release_date)}
+                      </>
+                    ) : (
+                      <span className="text-slate-500">Not listed</span>
+                    )}
+                  </dd>
+                </div>
+              </dl>
             </div>
-          </dl>
+            {/* No frame: the photo floats beside the name, as in the catalog hero. */}
+            <ProductImage
+              src={gadget.image_url}
+              alt={gadget.name}
+              className="w-28 sm:w-44 lg:w-52 aspect-[4/3] shrink-0 !bg-transparent"
+              glyphClassName="w-1/2 h-3/4"
+              padding="p-0"
+            />
+          </div>
 
           {/* Highlights: details the tiles don't show, word for word from the source. */}
           {highlights.length > 0 && (
@@ -190,31 +195,29 @@ export default function GadgetDetail() {
             </div>
           )}
 
-        </div>
-
-        {/* Actions under the photo on wider screens, after the details on phones. */}
-        <div className="flex flex-wrap md:flex-col gap-2 md:col-start-1 md:row-start-2 md:self-start md:[&>*]:w-full">
-          <Button as={Link} to={`/compare?ids=${id}`} variant="primary">
-            Compare
-          </Button>
-          {isHttpUrl(gadget.store_url ?? '') && (
-            <Button as="a" href={gadget.store_url} target="_blank" rel="noopener noreferrer" variant="outline" icon={ExternalLink}>
-              Official store
-              <span className="sr-only"> (opens in a new tab)</span>
+          <div className="flex flex-wrap gap-2 mt-auto pt-5">
+            <Button as={Link} to={`/compare?ids=${id}`} variant="primary">
+              Compare
             </Button>
-          )}
-          {/* Admin-curated catalog: PATCH /gadgets/{id} is admin-only. */}
-          {user?.app_metadata?.is_admin && (
-            <Button as={Link} to={`/gadgets/${id}/edit`} variant="outline" icon={Pencil}>
-              Edit
-            </Button>
-          )}
-          <DeleteGadgetButton gadget={gadget} onDeleted={() => navigate('/', { replace: true })} />
+            {isHttpUrl(gadget.store_url ?? '') && (
+              <Button as="a" href={gadget.store_url} target="_blank" rel="noopener noreferrer" variant="outline" icon={ExternalLink}>
+                Official store
+                <span className="sr-only"> (opens in a new tab)</span>
+              </Button>
+            )}
+            {/* Admin-curated catalog: PATCH /gadgets/{id} is admin-only. */}
+            {user?.app_metadata?.is_admin && (
+              <Button as={Link} to={`/gadgets/${id}/edit`} variant="outline" icon={Pencil}>
+                Edit
+              </Button>
+            )}
+            <DeleteGadgetButton gadget={gadget} onDeleted={() => navigate('/', { replace: true })} />
+          </div>
         </div>
 
         {/* specs: null while loading, undefined if the specs couldn't load (SpecManager shows that error). */}
         {specs !== undefined && (
-          <div className="flex flex-col gap-2.5 min-w-0 md:col-span-2 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:row-span-2">
+          <div className="flex flex-col gap-2.5 min-w-0">
             <KeySpecTiles keySpecs={keySpecs} size="sm" loading={specs === null} />
             <MoreKeySpecs moreSpecs={moreSpecs} loading={specs === null} bare />
             <VariantsList variants={extractVariants(specList)} bare />
