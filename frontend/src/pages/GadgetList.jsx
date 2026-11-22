@@ -809,18 +809,12 @@ function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, o
         active ? 'opacity-100 visible' : 'opacity-0 invisible'
       }`}
     >
-      <article className="lg:col-span-2 relative overflow-hidden flex flex-col justify-end sm:min-h-[340px] lg:min-h-[384px] p-5 sm:p-8 rounded-[28px] bg-white border border-slate-200">
-        {/* The photo only from the sm breakpoint: on phones the hero stays compact. */}
-        <ProductImage
-          src={gadget.image_url}
-          className="max-sm:hidden absolute right-6 sm:right-10 top-6 sm:top-8 w-36 sm:w-44 aspect-[3/4]"
-          glyphClassName="w-2/3 h-2/3"
-        />
-        <div className="relative sm:max-w-[55%] lg:max-w-md">
+      <article className="lg:col-span-2 relative overflow-hidden flex items-center gap-6 sm:min-h-[340px] lg:min-h-[384px] p-5 sm:p-8 rounded-[28px] bg-white border border-slate-200">
+        <div className="relative min-w-0 flex-1">
           <span className="inline-block px-2.5 py-1 rounded-full bg-sage-700 text-white font-mono text-xs font-semibold">
             {specs.length} SOURCED SPEC{specs.length === 1 ? '' : 'S'}
           </span>
-          <h2 className="mt-3 text-3xl sm:text-6xl font-extrabold tracking-[-0.045em] sm:tracking-[-0.055em] leading-[0.95] text-slate-900 break-words">
+          <h2 className="mt-3 text-3xl sm:text-5xl 2xl:text-6xl font-extrabold tracking-[-0.045em] sm:tracking-[-0.055em] leading-[0.95] text-slate-900 break-words">
             {gated ? (
               <button type="button" onClick={onRequireSignIn} aria-haspopup="dialog" className={`text-left hover:underline rounded ${focusRing}`}>
                 {name}
@@ -864,16 +858,24 @@ function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, o
               onClick={onAsk}
               aria-haspopup={gated ? 'dialog' : undefined}
               aria-label={`Ask AI about ${gadget.name}`}
-              className="max-sm:hidden"
-            >
-              Ask AI
-            </Button>
+              title="Ask AI"
+              className="max-sm:hidden !px-3.5"
+            />
           </div>
         </div>
+        {/* Beside the text, never under it (22 Nov 2026), with no frame, like the phone page.
+            Only from the sm breakpoint: on phones the hero stays compact. */}
+        <ProductImage
+          src={gadget.image_url}
+          className="max-sm:hidden shrink-0 w-36 lg:w-40 xl:w-44 2xl:w-52 aspect-[4/5] !bg-transparent"
+          glyphClassName="w-2/3 h-2/3"
+          padding="p-0"
+        />
       </article>
       <HeroSpecStrip keySpecs={keySpecs} gadgetName={gadget.name} />
+      {/* The tiles stretch to the hero card's height, so both bottoms line up. */}
       <div className="hidden sm:block lg:col-span-2">
-        <KeySpecTiles keySpecs={keySpecs} gadgetName={gadget.name} size="lg" />
+        <KeySpecTiles keySpecs={keySpecs} gadgetName={gadget.name} size="lg" className="h-full auto-rows-fr" />
       </div>
     </div>
   )

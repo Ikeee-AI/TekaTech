@@ -145,7 +145,7 @@ export default function GadgetDetail() {
                 </div>
               </dl>
             </div>
-            {/* No frame: the photo floats beside the name, as in the catalog hero. */}
+            {/* No frame: the photo sits beside the name, as in the catalog hero. */}
             <ProductImage
               src={gadget.image_url}
               alt={gadget.name}
