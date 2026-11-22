@@ -76,3 +76,29 @@ export function specRows(keySpecsList) {
     keyRow('screen', 'Screen size', keySpecsList),
   ]
 }
+
+/** True when a row's bars mean something: every phone states a number and longer = more.
+ * Rows that only say "stated" (chip, weight, water resistance) and catalog rows (price,
+ * date, brand) show the value alone; a full bar on every side compared nothing. */
+export function showsBars(row) {
+  return row.bars === 'proportional' && row.cells.every((c) => c.n != null && c.n > 0)
+}
+
+/** Spec sections on the Compare page, in order. A row whose label is in none of them
+ * goes to the last section, so a new row is never dropped. */
+export const SPEC_GROUPS = [
+  ['Key specs', ['RAM', 'Storage', 'Main camera', 'Display']],
+  ['Battery & charging', ['Battery', 'Charging']],
+  ['Design & hardware', ['Chip', 'Screen size', 'Weight', 'Water resistance']],
+  ['Price & release', ['Price', 'Released', 'Brand']],
+]
+
+/** [{ title, rows }] in SPEC_GROUPS order, empty sections left out. */
+export function groupRows(rows) {
+  const groups = SPEC_GROUPS.map(([title, labels]) => ({ title, labels, rows: [] }))
+  for (const row of rows) {
+    const group = groups.find((g) => g.labels.includes(row.label)) ?? groups[groups.length - 1]
+    group.rows.push(row)
+  }
+  return groups.filter((g) => g.rows.length).map(({ title, rows: groupRowsList }) => ({ title, rows: groupRowsList }))
+}

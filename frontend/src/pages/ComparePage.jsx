@@ -15,7 +15,7 @@ import PriceTag from '../components/PriceTag'
 import { friendlyError } from '../utils/requestErrors'
 import { formatPeso } from '../utils/formatPeso'
 import { extractKeySpecs, extractMoreSpecs } from '../utils/keySpecs'
-import { barWidths, plainRow, specRows } from '../utils/compareRows'
+import { barWidths, groupRows, plainRow, showsBars, specRows } from '../utils/compareRows'
 import { withoutDoubledBrand } from '../utils/gadgetName'
 
 // Matches the backend's MAX_COMPARISON_GADGETS (routers/comparisons.py).
@@ -129,48 +129,75 @@ function VersusHeader({ gadgets, onRemove, addSlot }) {
   )
 }
 
+/** Small uppercase section title inside the Specs card ("Key specs", "Battery & charging"…). */
+function GroupTitle({ children }) {
+  return (
+    <h3 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-sage-700">
+      {children}
+    </h3>
+  )
+}
+
+/** One phone's side of a face-off row: value, then bar and source on one line
+ * (a bar only where the numbers compare), or the source alone. */
+function FaceOffCell({ name, cell, width, barClass, bars, align }) {
+  const right = align === 'right'
+  return (
+    <div className={`min-w-0 ${right ? 'text-right' : ''}`}>
+      <p className={`text-[15px] leading-snug break-words ${cell.missing ? 'italic text-slate-500' : 'font-bold text-slate-900'}`}>
+        <span className="sr-only">{name}: </span>
+        {cell.text}
+        {cell.higher && <HigherTag />}
+      </p>
+      {bars ? (
+        // Phones: bar on its own line, source under it. Wider: bar and source share one line.
+        <div className={`mt-1.5 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2 ${right ? 'items-end sm:flex-row-reverse' : 'items-start'}`}>
+          <div className={`w-full sm:flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden flex ${right ? 'justify-end' : ''}`}>
+            <div className={`h-full rounded-full ${barClass}`} style={{ width: `${width}%` }} />
+          </div>
+          {cell.source && (
+            <span title={cell.source} className="max-w-full sm:max-w-[60%] font-mono text-[10px] text-slate-500 truncate">
+              {cell.source}
+            </span>
+          )}
+        </div>
+      ) : (
+        cell.source && (
+          <p title={cell.source} className="mt-0.5 font-mono text-[10px] text-slate-500 truncate">
+            {cell.source}
+          </p>
+        )
+      )}
+    </div>
+  )
+}
+
 function FaceOff({ gadgets, rows }) {
   const [a, b] = gadgets
   return (
     <div className="px-4 sm:px-5 pb-2">
-      {rows.map((row) => {
-        const [wa, wb] = barWidths(row)
-        const [ca, cb] = row.cells
-        return (
-          <div
-            key={row.label}
-            className={`grid grid-cols-[minmax(0,1fr)_88px_minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_132px_minmax(0,1fr)] items-center gap-3 py-3.5 border-t border-slate-200 ${
-              row.key ? 'bg-sage-50 -mx-4 sm:-mx-5 px-4 sm:px-5' : ''
-            }`}
-          >
-            <div className="min-w-0">
-              <p className={`text-[15px] ${ca.missing ? 'italic text-slate-500' : 'font-bold text-slate-900'}`}>
-                <span className="sr-only">{a.name}: </span>
-                {ca.text}
-                {ca.higher && <HigherTag />}
-              </p>
-              <div className="mt-1.5 h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                <div className={`h-full rounded-full ${SLOT_STYLES[0].bar}`} style={{ width: `${wa}%` }} />
-              </div>
-              <p className="mt-1 font-mono text-[11px] text-slate-500 truncate">{ca.source ?? '—'}</p>
-            </div>
-            <p className={`text-center font-mono text-[11px] font-semibold uppercase tracking-wider ${row.key ? 'text-sage-700' : 'text-slate-500'}`}>
-              {row.label}
-            </p>
-            <div className="min-w-0 text-right">
-              <p className={`text-[15px] ${cb.missing ? 'italic text-slate-500' : 'font-bold text-slate-900'}`}>
-                <span className="sr-only">{b.name}: </span>
-                {cb.text}
-                {cb.higher && <HigherTag />}
-              </p>
-              <div className="mt-1.5 h-1.5 rounded-full bg-slate-200 overflow-hidden flex justify-end">
-                <div className={`h-full rounded-full ${SLOT_STYLES[1].bar}`} style={{ width: `${wb}%` }} />
-              </div>
-              <p className="mt-1 font-mono text-[11px] text-slate-500 truncate">{cb.source ?? '—'}</p>
-            </div>
+      {groupRows(rows).map((group) => (
+        <section key={group.title} className="pt-4 first:pt-1">
+          <GroupTitle>{group.title}</GroupTitle>
+          <div className="mt-1">
+            {group.rows.map((row) => {
+              const [wa, wb] = barWidths(row)
+              const [ca, cb] = row.cells
+              const bars = showsBars(row)
+              return (
+                <div
+                  key={row.label}
+                  className="grid grid-cols-[minmax(0,1fr)_76px_minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_120px_minmax(0,1fr)] items-center gap-3 py-2.5 border-b border-slate-200 last:border-b-0"
+                >
+                  <FaceOffCell name={a.name} cell={ca} width={wa} barClass={SLOT_STYLES[0].bar} bars={bars} />
+                  <p className="text-center text-xs font-semibold text-slate-500 leading-tight">{row.label}</p>
+                  <FaceOffCell name={b.name} cell={cb} width={wb} barClass={SLOT_STYLES[1].bar} bars={bars} align="right" />
+                </div>
+              )
+            })}
           </div>
-        )
-      })}
+        </section>
+      ))}
     </div>
   )
 }
@@ -185,7 +212,7 @@ function HigherTag() {
 }
 
 function CellValue({ cell, lowest }) {
-  if (cell.missing) return <span className="italic text-slate-500">{cell.text}</span>
+  if (cell.missing) return <span className="italic font-normal text-slate-500">{cell.text}</span>
   if (cell.higher) {
     return (
       <>
@@ -208,36 +235,44 @@ function CellValue({ cell, lowest }) {
 
 function SpecTable({ gadgets, rows, cheapestPrice }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto pb-2">
       {/* table-fixed: gadget columns share the width equally instead of the longest name widening its column (#156). */}
       <table className="w-full table-fixed border-collapse min-w-[520px] text-[15px]">
         <caption className="sr-only">Spec comparison of {gadgets.map((g) => g.name).join(', ')}</caption>
         <thead>
-          <tr>
-            <th scope="col" className="w-36 text-left text-xs font-semibold text-slate-500 px-4 sm:px-5 py-3">
+          <tr className="border-b border-slate-200">
+            <th scope="col" className="w-32 sm:w-36 text-left text-xs font-semibold text-slate-500 px-4 sm:px-5 py-2.5">
               Spec
             </th>
-            {gadgets.map((g) => (
-              <th key={g.id} scope="col" className="text-left text-xs font-semibold text-slate-500 px-3 py-3 break-words">
+            {gadgets.map((g, i) => (
+              <th key={g.id} scope="col" className="text-left text-xs font-bold text-slate-900 px-3 py-2.5 break-words">
+                <span className={`inline-block w-2 h-2 rounded-full mr-1.5 align-middle ${SLOT_STYLES[i % SLOT_STYLES.length].bar}`} aria-hidden="true" />
                 {g.name}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.label} className={`border-t border-slate-200 ${row.key ? 'bg-sage-50' : ''}`}>
-              <th scope="row" className="text-left font-bold text-slate-900 px-4 sm:px-5 py-3">
-                {row.label}
+        {groupRows(rows).map((group) => (
+          <tbody key={group.title}>
+            <tr>
+              <th scope="colgroup" colSpan={gadgets.length + 1} className="text-left px-4 sm:px-5 pt-4 pb-1">
+                <GroupTitle>{group.title}</GroupTitle>
               </th>
-              {row.cells.map((cell, i) => (
-                <td key={gadgets[i].id} className="px-3 py-3 text-slate-900 break-words">
-                  <CellValue cell={cell} lowest={row.label === 'Price' && cheapestPrice != null && gadgets[i].price_php === cheapestPrice} />
-                </td>
-              ))}
             </tr>
-          ))}
-        </tbody>
+            {group.rows.map((row) => (
+              <tr key={row.label} className="border-b border-slate-200 last:border-b-0 hover:bg-slate-100/60">
+                <th scope="row" className="text-left text-sm font-semibold text-slate-600 px-4 sm:px-5 py-2.5 align-top">
+                  {row.label}
+                </th>
+                {row.cells.map((cell, i) => (
+                  <td key={gadgets[i].id} className="px-3 py-2.5 font-semibold text-slate-900 break-words align-top leading-snug">
+                    <CellValue cell={cell} lowest={row.label === 'Price' && cheapestPrice != null && gadgets[i].price_php === cheapestPrice} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        ))}
       </table>
     </div>
   )
@@ -486,17 +521,21 @@ export default function ComparePage() {
             </div>
             {showFaceOff ? <FaceOff gadgets={gadgets} rows={rows} /> : <SpecTable gadgets={gadgets} rows={rows} cheapestPrice={cheapestPrice} />}
             <p className="px-4 sm:px-5 py-3 text-xs text-slate-500 border-t border-slate-200">
-              Highlighted rows are the four key specs; every spec row is read from each phone&apos;s saved sources.
-              {showFaceOff ? ' Bars compare numbers only where both sources state them; weight, chip and water resistance bars only show the value is stated.' : ''}
+              Every spec is read from each phone&apos;s saved sources; gaps are shown, never filled in.
+              {showFaceOff ? ' Bars appear only where both sources give a number to compare.' : ''}
               {' '}&ldquo;Higher&rdquo; marks the bigger battery or charging figure when every source states one.
             </p>
           </section>
 
-          <AIComparisonPanel
-            gadgetIds={gadgets.map((g) => g.id)}
-            gadgetNames={gadgets.map((g) => g.name)}
-            category={gadgets.map((g) => g.category)}
-          />
+          {/* Wide screens: the AI panel stays in view while the longer spec list scrolls,
+              instead of ending early and leaving an empty column. */}
+          <div className="min-w-0 xl:sticky xl:top-20">
+            <AIComparisonPanel
+              gadgetIds={gadgets.map((g) => g.id)}
+              gadgetNames={gadgets.map((g) => g.name)}
+              category={gadgets.map((g) => g.category)}
+            />
+          </div>
         </div>
       )}
     </div>

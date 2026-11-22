@@ -197,6 +197,7 @@ export default function AIComparisonPanel({
       )}
 
       <AiAnswerResult
+        variant="compare"
         loading={loading}
         error={error}
         onRetry={() => handleAsk()}

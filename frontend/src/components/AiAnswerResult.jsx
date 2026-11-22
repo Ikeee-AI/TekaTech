@@ -37,23 +37,58 @@ export function AnswerSkeleton({ lines = 3 }) {
 }
 
 const SLOW_ANSWER_MS = 10_000
+const STEP_MS = 2_400
 
-/** Loading state. Mounted only while a request runs, so the "still working" note
- * resets on every new question. The backend allows 45 s per AI call
+/** Friendly progress lines, shown one after another while the answer is written. They
+ * describe what really happens (find the relevant specs, check them, write) in everyday
+ * words; the last one stays until the answer arrives. */
+const LOADING_STEPS = {
+  gadget: [
+    'Reading up on this phone…',
+    'Picking out the details that answer your question…',
+    'Double-checking them against the official specs…',
+    'Putting it into plain words…',
+  ],
+  compare: [
+    'Lining the phones up side by side…',
+    'Finding where they really differ…',
+    'Checking each detail against the official specs…',
+    'Writing up the comparison…',
+  ],
+}
+const SLOW_LOADING_TEXT = 'Almost there — thorough answers can take a minute…'
+
+/** Loading state. Mounted only while a request runs, so the steps and the "almost there"
+ * note restart on every new question. The backend allows 45 s per AI call
  * (PROVIDER_TIMEOUT_SECONDS, with one retry) and a cold start adds about 42–55 s,
- * so the note promises no fixed time. */
-function LoadingNotice({ skeletonLines }) {
+ * so the note promises no fixed time. The changing line is hidden from screen readers
+ * (the panel is a live region and would re-announce it every few seconds); they hear
+ * one steady status instead. */
+function LoadingNotice({ skeletonLines, variant }) {
+  const steps = LOADING_STEPS[variant] ?? LOADING_STEPS.gadget
+  const [step, setStep] = useState(0)
   const [slow, setSlow] = useState(false)
   useEffect(() => {
-    const timer = setTimeout(() => setSlow(true), SLOW_ANSWER_MS)
-    return () => clearTimeout(timer)
-  }, [])
+    const slowTimer = setTimeout(() => setSlow(true), SLOW_ANSWER_MS)
+    const stepTimer = setInterval(() => setStep((s) => Math.min(s + 1, steps.length - 1)), STEP_MS)
+    return () => {
+      clearTimeout(slowTimer)
+      clearInterval(stepTimer)
+    }
+  }, [steps.length])
+  const text = slow ? SLOW_LOADING_TEXT : steps[step]
   return (
     <div className="mt-3 space-y-3">
-      <p className="text-sm font-medium text-slate-600">
-        {slow
-          ? 'Still working — some answers take a minute or more…'
-          : 'Searching the spec sheets and writing an answer…'}
+      <p className="flex items-center gap-2.5 text-sm font-medium text-slate-600">
+        <span className="flex gap-1 shrink-0" aria-hidden="true">
+          {[0, 150, 300].map((delay) => (
+            <span key={delay} className="w-1.5 h-1.5 rounded-full bg-sage-600 animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+          ))}
+        </span>
+        <span key={text} className="animate-fade-in" aria-hidden="true">
+          {text}
+        </span>
+        <span className="sr-only">Working on your answer…</span>
       </p>
       <AnswerSkeleton lines={skeletonLines} />
     </div>
@@ -222,6 +257,8 @@ export default function AiAnswerResult({
   handleCopy,
   copied,
   skeletonLines = 3,
+  // 'gadget' (one phone, and the gadget chat) or 'compare': picks the loading wording.
+  variant = 'gadget',
   followUps = [],
   onFollowUp,
   specTargets,
@@ -241,7 +278,7 @@ export default function AiAnswerResult({
   const citedCount = result && !missingEvidence && !generalKnowledge ? citedSourceCount(result) : 0
   return (
     <div aria-live="polite" aria-busy={loading || undefined}>
-      {loading && <LoadingNotice skeletonLines={skeletonLines} />}
+      {loading && <LoadingNotice skeletonLines={skeletonLines} variant={variant} />}
 
       {error && !loading && <FailureNotice error={error} onRetry={onRetry} />}
 
