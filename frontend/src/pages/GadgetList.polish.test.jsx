@@ -182,4 +182,14 @@ describe('popular questions', () => {
     fireEvent.click(q)
     expect(onSelect).toHaveBeenCalledWith('What are the key specs of the Infinix Note 40?')
   })
+
+  it('skips a popular question that is already a suggestion', async () => {
+    api.getTrendingQuestions.mockResolvedValue([
+      { question: 'What chip does the iPhone 15 use?', count: 4 },
+      { question: 'Which phone has the best battery life?', count: 3 },
+    ])
+    render(<TrendingQuestions onSelect={vi.fn()} exclude={['Which phone has the best battery life?']} />)
+    await screen.findByRole('button', { name: 'What chip does the iPhone 15 use?' })
+    expect(screen.queryByRole('button', { name: /best battery life/ })).toBeNull()
+  })
 })

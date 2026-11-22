@@ -34,6 +34,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useAuth } from '../hooks/useAuth'
 import AIAnswerPanel from '../components/AIAnswerPanel'
 import TrendingQuestions from '../components/TrendingQuestions'
+import QuestionChip from '../components/QuestionChip'
 import SignInPrompt from '../components/SignInPrompt'
 import HowItWorks from '../components/HowItWorks'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
@@ -448,17 +449,13 @@ export default function GadgetList() {
         <AIAnswerPanel question={activeQuestion} onClose={() => setAskedQuestion(null)} />
       ) : (
         signedIn && (
-        <div className="flex flex-col gap-2">
-          <TrendingQuestions onSelect={ask} />
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs font-semibold text-slate-500">Questions to ask</p>
+          {/* One row, one chip style: popular questions first, then the suggestions. */}
           <div className="flex overflow-x-auto sm:flex-wrap gap-1.5 -mx-1 px-1 pb-1 sm:pb-0">
+            <TrendingQuestions onSelect={ask} exclude={SUGGESTED_QUESTIONS} />
             {SUGGESTED_QUESTIONS.map((q) => (
-              <button
-                key={q}
-                onClick={() => ask(q)}
-                className={`flex shrink-0 items-center gap-1.5 text-sm font-semibold text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 rounded-full px-3.5 py-1.5 min-h-11 sm:min-h-9 whitespace-nowrap transition active:scale-95 ${focusRing}`}
-              >
-                <Sparkles size={13} className="text-sage-700" aria-hidden="true" /> {q}
-              </button>
+              <QuestionChip key={q} question={q} onSelect={ask} />
             ))}
           </div>
         </div>
