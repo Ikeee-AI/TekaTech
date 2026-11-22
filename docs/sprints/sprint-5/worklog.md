@@ -1127,3 +1127,56 @@ Short session, ~09:45–10:12 Manila.
 - Batch this branch (`tekatech/s5-ik-worklog-13nov`: worklog, metrics, incident, runbook) into the next PR — Ikeee-AI.
 - Railway 7-day usage — Ikeee-AI — ~19 Nov.
 - If Jopher doesn't reply, decide on a #249 hand-over — Ikeee-AI.
+
+## 2026-11-22 18:56 Asia/Manila — UI polish (#285) and new logo (#280) merged and live
+**Who:** Ikeee-AI (AI-assisted: yes — Claude Code wrote the frontend changes, tests and mockups and ran the checks; Ikeee-AI chose every design and approved the push, PR and merges) · **Task:** S5-IK (post-Sprint 5 UI polish) · **Branch:** `tekatech/s5-ik-ui-polish` (merged)
+
+**Done**
+- UI polish requested by the owner, frontend only (no API, SQL or prompt change). PR [#285](https://github.com/Ikeee-AI/TekaTech/pull/285), 10 commits squashed to `bd20177`:
+  - No stray text cursor on click; footer stays at the bottom of short pages; friendlier AI loading steps.
+  - Compare: specs grouped in sections, green/blue bars on every row, sticky AI panel on wide screens.
+  - Catalog: "Shop by brand" one-row carousel; hero photo beside the text (no overlap), tiles match the hero's height, Ask AI as an icon.
+  - Login: one two-pane card with Log in / Create account tabs.
+  - Phone page: one top card (details, up to 6 verbatim highlights, "N of 10 key specs stated" meter, frameless photo beside the name, key-spec panel); Specifications as one merged sheet (section list with green selected tab, "Find a spec" search, fixed height) next to a fixed-height chat. Admins get the same sheet plus a readiness bar and a "Saved parts" section; the per-source cards and "Manage parts" view were removed. Section rules: playback → Battery & charging, contrast → Display, unmatched → General.
+  - Less empty space: footer gap, back links, empty states, admin overview sections; loading skeleton matches the new phone page.
+- Design options shown first as Design-canvas mockups (private artifact); the owner picked top "A" (current colours) and specs "C".
+- Checks (local): `npm run lint` clean, `npx vitest run` 645 passed (62 files), `npm run build`, `npx playwright test` 8 passed; `scripts/check_secrets.py` passed. Visual checks: Playwright screenshots of a build with mocked API data (dark/light, 390/1100/1440/1700 px, shopper and admin), not against the live API.
+- PR #285 opened 22 Nov with reviews requested from `meka-moka` and `s2100932`; approved by `meka-moka` on head `c5c29c0`; all PR checks passed. Squash-merged → `bd20177`.
+- PR [#280](https://github.com/Ikeee-AI/TekaTech/pull/280) (logo, approved by `s2100932` on head `b89e0ea` on 19 Nov) merged right after, no conflict and no branch update needed → `023421a`.
+- Main CI run [45014181235](https://github.com/Ikeee-AI/TekaTech/actions/runs/45014181235) on `023421a`: all jobs passed including Main guard and Deploy main (with smoke). The run for `bd20177` (45014136340) also passed.
+- Production verified (deployed files): API `/version` = `023421a…`; Render frontend 200, `GadgetDetail` chunk contains "Find a spec", "Saved parts", "key specs stated by the source"; live `favicon.svg` matches `main`. Not yet clicked through signed in on the live site.
+
+**Errors and fixes**
+
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `bash: -c: line …: unexpected EOF while looking for matching '` (twice) | Long inline Python heredocs with JSX quotes broke the shell wrapper | Wrote the patch scripts to scratchpad files and ran them. Fixed |
+| `warning: … CRLF will be replaced by LF` on 6 edited files | Python text-mode writes on Windows added CRLF | Converted back to LF with `sed -i 's/\r$//'`; later scripts write with `newline='\n'`. Fixed before commit |
+| `react-hooks/refs: Cannot access refs during render` in `SpecManager.jsx` | A ref-callback factory (`headingRef(title)`) was flagged by the React compiler lint | Inline ref callbacks. Fixed |
+| 5 failing `SpecManager.test.jsx` tests, then admin toggle names, `'1 of 4 ready for AI'`, "Found multiple elements with the text: Spec text 1" | Old tests expected per-source cards; my expectation counts were wrong | Tests rewritten for the merged sheet, Saved parts and search. 645 passing |
+| `page.goto: net::ERR_CONNECTION_REFUSED` (screenshots); background preview tasks reported exit 127 | Screenshot ran before the preview server was up; I stopped the server on port 4174 myself before Playwright | Waited for the server; the exit codes are from my own stop. Not a product issue |
+| Admin Overview screenshot showed "Something went wrong" | My mocked `/admin/overview` data didn't match the page's expected shape | Not a product bug; that page's margin change was not visually checked |
+| Light-theme photo looked faint / half drawn in one screenshot | Remote product image still loading at capture time | Re-shot with a longer wait; renders fine |
+
+**Conflicts and contradictions**
+
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| `docs/admin-catalog-guide.md:41`, `docs/quick-start.md:65,83`, `docs/feature-maintenance.md:35` still describe per-source spec cards, the "parts" toggle and Index All Pending "above the spec cards" | Admin docs no longer match the phone page after #285 | Logged as D-S5-1 in `docs/sprints/sprint-5/discrepancies.md`; docs update — Ikeee-AI — open |
+| Earlier in the session the owner thought #280 was not approved; GitHub showed `s2100932` APPROVED on head `b89e0ea` (19 Nov) | None once checked | Shown to the owner; merged with that approval. Resolved |
+| PR #280 was squash-merged without re-running its PR checks on top of `bd20177` | Combined code was only tested by the main run | Main run 45014181235 passed (lint, build, tests, browser checks) before deploy. Accepted |
+
+**Decisions**
+- Specs layout "C" (one merged sheet, fixed height, chat beside) and top card "A" in the current colours — owner's picks from the mockups.
+- Admins see the same sheet as shoppers, with admin controls added rather than a separate view — owner.
+- Product photos frameless beside the name on the phone page and the catalog hero (a white photo tile was tried and dropped as too heavy on dark) — owner asked to fix the frame; the frameless choice was made in session.
+- Merge order #285 then #280 — owner.
+
+**Blockers / risks**
+- The phone page and hero were checked only with mocked data; real catalog photos with white backgrounds show as white rectangles — Ikeee-AI — check on the live site.
+
+**Plan alignment** — No sprint task row (Sprint 5 ended 7 Nov); post-release work. Meets the Definition of Done: reviewed (Mika / Jopher), checks passed, merged, deployed, verified from deployed files.
+
+**Next**
+- Click through the live phone page, compare and home hero signed in (desktop + phone) — Ikeee-AI — 23 Nov.
+- Update the 3 admin docs for the merged spec sheet (D-S5-1) — Ikeee-AI — next docs batch.
