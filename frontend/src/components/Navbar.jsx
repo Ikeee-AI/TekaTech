@@ -166,7 +166,8 @@ function SearchBar() {
             ask()
           }
         }}
-        className="w-full bg-slate-100 text-slate-900 placeholder:text-slate-500 text-[15px] pl-10 pr-12 py-2.5 rounded-full border border-slate-200 focus:outline-none focus:border-sage-600 focus:ring-1 focus:ring-sage-600 transition-all"
+        // pr-28 while the Ask button shows (24 Nov 2026): with pr-12 long text ran under it.
+        className={`w-full bg-slate-100 text-slate-900 placeholder:text-slate-500 text-[15px] pl-10 ${query.trim() ? 'pr-28' : 'pr-12'} py-2.5 rounded-full border border-slate-200 focus:outline-none focus:border-sage-600 focus:ring-1 focus:ring-sage-600 transition-all`}
       />
       {query.trim() ? (
         <button

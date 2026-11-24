@@ -716,6 +716,18 @@ export function FeaturedHero({ items, selectedIds, onToggleCompare, onAsk, onReq
 
   const show = (i) => setIndex(((i % count) + count) % count)
 
+  // Keep the current dot visible in the sliding row. Scrolls only the row, never the page.
+  const dotsRef = useRef(null)
+  useEffect(() => {
+    const row = dotsRef.current
+    const dot = row?.querySelector(`[data-dot="${current}"]`)
+    if (!row || !dot) return
+    const left = dot.getBoundingClientRect().left - row.getBoundingClientRect().left + row.scrollLeft
+    if (left < row.scrollLeft || left + dot.offsetWidth > row.scrollLeft + row.clientWidth) {
+      row.scrollTo({ left: left - row.clientWidth / 2 + dot.offsetWidth / 2, behavior: reducedMotion ? 'auto' : 'smooth' })
+    }
+  }, [current, reducedMotion])
+
   return (
     <section
       aria-roledescription="carousel"
@@ -744,7 +756,7 @@ export function FeaturedHero({ items, selectedIds, onToggleCompare, onAsk, onReq
       </div>
 
       {count > 1 && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           {reducedMotion ? (
             <>
               <Button size="sm" variant="subtle" icon={ChevronLeft} onClick={() => show(current - 1)} aria-label="Previous featured phone">
@@ -765,15 +777,21 @@ export function FeaturedHero({ items, selectedIds, onToggleCompare, onAsk, onReq
               {paused ? 'Play' : 'Pause'}
             </Button>
           )}
-          <div className="flex flex-wrap items-center gap-1 ml-1">
+          {/* One sliding row (24 Nov 2026, owner): with 19+ phones the dots wrapped onto extra
+              lines on phones. The current dot is kept in view as the hero rotates. */}
+          <div
+            ref={dotsRef}
+            className="flex min-w-0 flex-1 flex-nowrap items-center gap-1 ml-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {items.map((item, i) => (
               <button
                 key={item.gadget.id}
+                data-dot={i}
                 type="button"
                 onClick={() => show(i)}
                 aria-label={`Show featured phone ${i + 1} of ${count}: ${item.gadget.name}`}
                 aria-current={i === current ? 'true' : undefined}
-                className={`flex items-center justify-center w-7 h-10 sm:h-8 rounded-full ${focusRing}`}
+                className={`flex shrink-0 items-center justify-center w-7 h-10 sm:h-8 rounded-full ${focusRing}`}
               >
                 <span
                   aria-hidden="true"
@@ -806,7 +824,7 @@ function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, o
         active ? 'opacity-100 visible' : 'opacity-0 invisible'
       }`}
     >
-      <article className="lg:col-span-2 relative overflow-hidden grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] items-center content-center gap-x-6 sm:min-h-[340px] lg:min-h-[384px] p-5 sm:p-8 rounded-[28px] bg-white border border-slate-200">
+      <article className="lg:col-span-2 relative overflow-hidden grid grid-cols-[minmax(0,1fr)_auto] items-center content-center gap-x-4 sm:gap-x-6 sm:min-h-[340px] lg:min-h-[384px] p-5 sm:p-8 rounded-[28px] bg-white border border-slate-200">
         <div className="relative min-w-0 flex-1">
           <span className="inline-block px-2.5 py-1 rounded-full bg-sage-700 text-white font-mono text-xs font-semibold">
             {specs.length} SOURCED SPEC{specs.length === 1 ? '' : 'S'}
@@ -829,16 +847,16 @@ function HeroSlide({ item, active, position, selected, onToggleCompare, onAsk, o
           </p>
         </div>
         {/* Beside the text, never under it (22 Nov 2026), with no frame, like the phone page.
-            Only from the sm breakpoint: on phones the hero stays compact. */}
+            On phones too since 24 Nov 2026 (owner): a smaller photo, still beside the text. */}
         <ProductImage
           src={gadget.image_url}
-          className="max-sm:hidden shrink-0 w-36 lg:w-40 xl:w-44 2xl:w-52 aspect-[4/5] !bg-transparent"
+          className="shrink-0 w-24 sm:w-36 lg:w-40 xl:w-44 2xl:w-52 aspect-[4/5] !bg-transparent"
           glyphClassName="w-2/3 h-2/3"
           padding="p-0"
         />
         {/* Under both the text and the photo, across the card: beside the photo the text column
             is too narrow for three buttons at some widths, and Ask AI used to drop to its own line. */}
-        <div className="sm:col-span-2 mt-4 sm:mt-5 flex flex-wrap gap-2">
+        <div className="col-span-2 mt-4 sm:mt-5 flex flex-wrap gap-2">
           {gated ? (
             <Button variant="primary" size="lg" onClick={onRequireSignIn} aria-haspopup="dialog" className="!px-5 sm:!px-6">
               View specs

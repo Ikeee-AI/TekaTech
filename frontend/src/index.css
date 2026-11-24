@@ -221,8 +221,12 @@ textarea,
    elements are script focus targets (the <main> landmark after a route change, headings,
    error summaries), not controls: this unlayered rule beats their Tailwind outline-none,
    which drew a lime outline round the whole page on /login (14 Nov 2026). Those that want
-   a ring set one with focus-visible:ring-*. */
-:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+   a ring set one with focus-visible:ring-*.
+   Text fields that opt out with outline-none (or focus:outline-none) draw their own focus on the
+   field or its wrapper (border, ring, focus-within); the fallback drew a second box inside the
+   chat composer and round the header search (24 Nov 2026), so they are left out here. */
+:where(a, button, select, summary, [tabindex]:not([tabindex="-1"]):not(input, textarea)):focus-visible,
+:where(input, textarea):not([class~="outline-none"], [class~="focus:outline-none"]):focus-visible {
   outline: 2px solid var(--color-sage-700);
   outline-offset: 2px;
 }
