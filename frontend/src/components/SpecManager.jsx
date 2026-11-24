@@ -559,7 +559,7 @@ function sourceLabel(url) {
   }
 }
 
-export default function SpecManager({ gadgetId, onSpecsChange }) {
+export default function SpecManager({ gadgetId, onSpecsChange, reloadKey = 0 }) {
   const { user } = useAuth()
   const location = useLocation()
   const isAdmin = Boolean(user?.app_metadata?.is_admin)
@@ -593,6 +593,12 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- app-wide fetch convention (see CLAUDE.md)
     loadSpecs()
   }, [loadSpecs])
+
+  // Specs saved elsewhere on the page (the admin's web drafts) bump reloadKey: refresh quietly.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- app-wide fetch convention (see CLAUDE.md)
+    if (reloadKey > 0) loadSpecs({ background: true })
+  }, [reloadKey, loadSpecs])
 
   // Indexes one chunk. Returns the error (or null), so a bulk run can stop on a rate limit.
   function indexOne(gid, specId) {

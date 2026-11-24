@@ -23,6 +23,7 @@ import ProductImage from '../components/ProductImage'
 import { withoutDoubledBrand } from '../utils/gadgetName'
 import VariantsList from '../components/VariantsList'
 import BenchmarksSection from '../components/BenchmarksSection'
+import WebDraftPanel from '../components/WebDraftPanel'
 
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
 
@@ -40,6 +41,9 @@ export default function GadgetDetail() {
   const [state, setState] = useState({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [specs, setSpecs] = useState(null)
+  // Bumped when the admin's web drafts save specs or benchmarks, so those panels reload.
+  const [specsReload, setSpecsReload] = useState(0)
+  const [benchmarksReload, setBenchmarksReload] = useState(0)
   const [now] = useState(() => Date.now())
 
   const gadget = state.gadget
@@ -229,7 +233,7 @@ export default function GadgetDetail() {
       {/* Specs and chat side by side at one fixed height on wide screens: both scroll
           inside, so the page doesn't grow with the spec count or the conversation. */}
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-3.5 xl:h-[44rem]">
-        <SpecManager gadgetId={id} onSpecsChange={setSpecs} />
+        <SpecManager gadgetId={id} onSpecsChange={setSpecs} reloadKey={specsReload} />
 
         <GadgetChatPanel
           gadgetId={id}
@@ -239,7 +243,15 @@ export default function GadgetDetail() {
         />
       </div>
 
-      <BenchmarksSection gadgetId={id} isAdmin={Boolean(user?.app_metadata?.is_admin)} />
+      <BenchmarksSection gadgetId={id} isAdmin={Boolean(user?.app_metadata?.is_admin)} reloadKey={benchmarksReload} />
+
+      {user?.app_metadata?.is_admin && (
+        <WebDraftPanel
+          gadgetId={id}
+          onSpecsSaved={() => setSpecsReload((n) => n + 1)}
+          onBenchmarksSaved={() => setBenchmarksReload((n) => n + 1)}
+        />
+      )}
     </div>
   )
 }

@@ -31,3 +31,13 @@ export function sharedBenchmarks(rowsByGadget, gadgetIds) {
     .filter((g) => Object.keys(g.values).length >= 2)
     .sort((a, b) => (a.kind === b.kind ? a.test.localeCompare(b.test) : a.kind === 'game' ? -1 : 1))
 }
+
+/** Admin web drafts: spec lines grouped by page, so each page is saved once with its own link. */
+export function groupSpecDrafts(drafts) {
+  const byUrl = new Map()
+  for (const d of drafts) {
+    if (!byUrl.has(d.source_url)) byUrl.set(d.source_url, [])
+    byUrl.get(d.source_url).push(d.text)
+  }
+  return [...byUrl.entries()].map(([source_url, lines]) => ({ source_url, raw_text: lines.join('\n') }))
+}

@@ -26,6 +26,8 @@ export default function AIAnswerPanel({ question, onClose }) {
     togglePlainLanguage,
     allowGeneralKnowledge,
     setAllowGeneralKnowledge,
+    allowWebSearch,
+    setAllowWebSearch,
     requestOptions,
     loading,
     setLoading,
@@ -137,6 +139,8 @@ export default function AIAnswerPanel({ question, onClose }) {
         togglePlainLanguage={togglePlainLanguage}
         allowGeneralKnowledge={allowGeneralKnowledge}
         setAllowGeneralKnowledge={setAllowGeneralKnowledge}
+        allowWebSearch={allowWebSearch}
+        setAllowWebSearch={setAllowWebSearch}
         handleCopy={handleCopy}
         copied={copied}
         followUps={followUps}

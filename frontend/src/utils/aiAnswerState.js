@@ -34,6 +34,11 @@ export function isGeneralKnowledge(result) {
   return result?.answer_basis === 'general_knowledge'
 }
 
+/** An opt-in web-search answer (24 Nov 2026): cited with the web pages it found, unverified. */
+export function isWebAnswer(result) {
+  return result?.answer_basis === 'web'
+}
+
 /**
  * A 200 reply with no sources means retrieval found nothing to ground an answer in,
  * unless it is a general-knowledge answer, which is shown (labelled) instead.

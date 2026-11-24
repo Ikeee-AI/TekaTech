@@ -123,6 +123,8 @@ export const api = {
   getBenchmarks: (gadgetId) => request(`/gadgets/${gadgetId}/benchmarks`),
   addBenchmark: (gadgetId, data) => request(`/gadgets/${gadgetId}/benchmarks`, { method: "POST", body: JSON.stringify(data) }),
   deleteBenchmark: (gadgetId, id) => request(`/gadgets/${gadgetId}/benchmarks/${id}`, { method: "DELETE" }),
+  // Admin-only web search drafts (kind "specs" | "benchmarks"); nothing is saved by this call.
+  draftFromWeb: (gadgetId, kind) => request(`/gadgets/${gadgetId}/web-drafts`, { method: "POST", body: JSON.stringify({ kind }) }),
   submitCorrection: (specId, data) => request(`/specs/${specId}/corrections`, { method: "POST", body: JSON.stringify(data) }),
   getCorrections: (status = "pending") => request(`/corrections?status=${status}`),
   // The caller's own suggestions; the backend scopes this to the session user.

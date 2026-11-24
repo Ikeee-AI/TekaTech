@@ -41,6 +41,8 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
     togglePlainLanguage,
     allowGeneralKnowledge,
     setAllowGeneralKnowledge,
+    allowWebSearch,
+    setAllowWebSearch,
     requestOptions,
     loading,
     setLoading,
@@ -401,6 +403,8 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
             togglePlainLanguage={togglePlainLanguage}
             allowGeneralKnowledge={allowGeneralKnowledge}
             setAllowGeneralKnowledge={setAllowGeneralKnowledge}
+            allowWebSearch={allowWebSearch}
+            setAllowWebSearch={setAllowWebSearch}
           />
           <p id="gadget-chat-hint" className="text-xs text-slate-500 tabular-nums">
             <span className="hidden sm:inline">Enter to send · Shift+Enter for a new line · </span>

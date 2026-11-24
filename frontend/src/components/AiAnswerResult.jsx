@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { AlertTriangle, ChevronDown, ChevronUp, ExternalLink, RefreshCw, Copy, Check, CheckCircle2, FileText, LogIn, Zap } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, ExternalLink, RefreshCw, Copy, Check, CheckCircle2, FileText, Globe, LogIn, Zap } from 'lucide-react'
 import AnswerText from './AnswerText'
 import FollowUpQuestions from './FollowUpQuestions'
 import { useAuth } from '../hooks/useAuth'
@@ -11,6 +11,7 @@ import {
   describeAiFailure,
   hasNoSupportingSource,
   isGeneralKnowledge,
+  isWebAnswer,
   isMissingEvidence,
   removedCitationCount,
 } from '../utils/aiAnswerState'
@@ -124,6 +125,16 @@ function NoSupportingSourceNotice({ removed }) {
 
 /** Marks an opt-in general-knowledge answer (#172). Text plus icon, never colour alone;
  * amber-900 on amber-50 is about 8.8:1, the icon (amber-700) about 4.9:1. */
+/** Marks an opt-in web-search answer (24 Nov 2026); same colours as the general-knowledge label. */
+function WebAnswerLabel() {
+  return (
+    <p className="flex items-start gap-1.5 text-sm font-semibold text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2">
+      <Globe size={16} aria-hidden="true" className="shrink-0 mt-0.5 text-amber-700" />
+      <span className="min-w-0">From the web: not from saved specs, unverified. Check the linked pages.</span>
+    </p>
+  )
+}
+
 function GeneralKnowledgeLabel() {
   return (
     <p className="flex items-start gap-1.5 text-sm font-semibold text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2">
@@ -140,8 +151,16 @@ const optionInputClass = 'w-4 h-4 rounded border-slate-300 accent-sage-700 focus
 /** The answer options shown next to each other wherever a question can be (re)asked:
  * Plain-Language Answer and the opt-in Allow General Knowledge (#172). Both are real,
  * labelled checkboxes; a change applies to the next question or Regenerate. */
-export function AnswerOptions({ plainLanguage, togglePlainLanguage, allowGeneralKnowledge, setAllowGeneralKnowledge }) {
+export function AnswerOptions({
+  plainLanguage,
+  togglePlainLanguage,
+  allowGeneralKnowledge,
+  setAllowGeneralKnowledge,
+  allowWebSearch = false,
+  setAllowWebSearch,
+}) {
   const hintId = useId()
+  const webHintId = useId()
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-1 min-w-0">
       <label className={optionLabelClass}>
@@ -167,6 +186,23 @@ export function AnswerOptions({ plainLanguage, togglePlainLanguage, allowGeneral
           </label>
           <p id={hintId} className="basis-full text-xs text-slate-600">
             If no saved spec matches, answer from general knowledge, labelled as unverified.
+          </p>
+        </>
+      )}
+      {setAllowWebSearch && (
+        <>
+          <label className={optionLabelClass}>
+            <input
+              type="checkbox"
+              checked={allowWebSearch}
+              onChange={(e) => setAllowWebSearch(e.target.checked)}
+              aria-describedby={webHintId}
+              className={optionInputClass}
+            />
+            Search the Web
+          </label>
+          <p id={webHintId} className="basis-full text-xs text-slate-600">
+            If the saved specs don&apos;t cover it, search the web and cite the pages found (unverified, a few a day).
           </p>
         </>
       )}
@@ -269,6 +305,8 @@ export default function AiAnswerResult({
   togglePlainLanguage,
   allowGeneralKnowledge = false,
   setAllowGeneralKnowledge,
+  allowWebSearch = false,
+  setAllowWebSearch,
   handleCopy,
   copied,
   skeletonLines = 3,
@@ -291,9 +329,10 @@ export default function AiAnswerResult({
   const missingEvidence = result ? isMissingEvidence(result) : false
   // A general-knowledge answer has no sources by design: amber label, no badge, no sources.
   const generalKnowledge = result ? isGeneralKnowledge(result) : false
+  const webAnswer = result ? isWebAnswer(result) : false
   // Only cited sources count as grounding: with none cited there is no green check, and the
   // "no supporting source cited" notice says so instead (#124).
-  const citedCount = result && !missingEvidence && !generalKnowledge ? citedSourceCount(result) : 0
+  const citedCount = result && !missingEvidence && !generalKnowledge && !webAnswer ? citedSourceCount(result) : 0
   return (
     <div aria-live="polite" aria-busy={loading || undefined}>
       {loading && !streamText && <LoadingNotice skeletonLines={skeletonLines} variant={variant} />}
@@ -308,6 +347,7 @@ export default function AiAnswerResult({
           ) : (
             <>
               {generalKnowledge && <GeneralKnowledgeLabel />}
+              {webAnswer && <WebAnswerLabel />}
               <div className="flex flex-wrap items-center gap-2">
                 {citedCount > 0 && (
                   <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
@@ -338,7 +378,9 @@ export default function AiAnswerResult({
                 className="inline-flex items-center gap-1 min-h-9 text-sm font-semibold text-slate-700 hover:text-sage-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-400 rounded"
               >
                 {sourcesOpen ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
-                {result.sources.length} Source{result.sources.length === 1 ? '' : 's'} Retrieved
+                {webAnswer
+                  ? `${result.sources.length} Web Page${result.sources.length === 1 ? '' : 's'} Cited`
+                  : `${result.sources.length} Source${result.sources.length === 1 ? '' : 's'} Retrieved`}
               </button>
               {sourcesOpen && (
                 <ol id={`${idPrefix}-sources`} className="mt-2 space-y-2 animate-fade-in">
@@ -405,6 +447,8 @@ export default function AiAnswerResult({
                 togglePlainLanguage={togglePlainLanguage}
                 allowGeneralKnowledge={allowGeneralKnowledge}
                 setAllowGeneralKnowledge={setAllowGeneralKnowledge}
+                allowWebSearch={allowWebSearch}
+                setAllowWebSearch={setAllowWebSearch}
               />
             )}
             <div className="flex gap-2">

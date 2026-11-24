@@ -140,3 +140,26 @@ describe('Allow General Knowledge checkbox', () => {
     expect(handlers.setAllowGeneralKnowledge).toHaveBeenCalledWith(true)
   })
 })
+
+describe('AiAnswerResult with a web-search answer', () => {
+  const WEB = {
+    answer: "From the web, not from TekaTech's saved specs. It uses the **Exynos 2400** [1].",
+    sources: [{ gadget_id: null, gadget_name: 'samsung.com', content: 'Galaxy S24 specs', source_url: 'https://www.samsung.com/ph/s24', similarity: 0, kind: 'web' }],
+    answer_basis: 'web',
+    retrieval: 'none',
+  }
+
+  it('shows the web label and the cited pages, not the saved-spec badge', () => {
+    renderResult(WEB)
+    expect(screen.getByText(/From the web: not from saved specs, unverified/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: /1 Web Page Cited/ })).toBeTruthy()
+    expect(screen.queryByText(/cited spec/)).toBeNull()
+  })
+
+  it('offers the Search the Web option where answer options show', () => {
+    const setAllowWebSearch = vi.fn()
+    renderResult(GROUNDED, { setAllowWebSearch })
+    fireEvent.click(screen.getByLabelText('Search the Web'))
+    expect(setAllowWebSearch).toHaveBeenCalledWith(true)
+  })
+})

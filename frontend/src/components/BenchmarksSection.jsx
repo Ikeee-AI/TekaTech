@@ -162,7 +162,7 @@ function AddBenchmarkForm({ gadgetId, onAdded }) {
  * number was published; TekaTech does not run benchmarks itself. Admins add and delete rows here.
  * The AI chat cites these rows for performance questions (backend routers/query.py).
  */
-export default function BenchmarksSection({ gadgetId, isAdmin }) {
+export default function BenchmarksSection({ gadgetId, isAdmin, reloadKey = 0 }) {
   const [rows, setRows] = useState(null)
   const [error, setError] = useState(null)
   const [deleting, setDeleting] = useState(null)
@@ -178,7 +178,7 @@ export default function BenchmarksSection({ gadgetId, isAdmin }) {
     return () => {
       live = false
     }
-  }, [gadgetId])
+  }, [gadgetId, reloadKey])
 
   async function confirmDelete() {
     setBusy(true)
