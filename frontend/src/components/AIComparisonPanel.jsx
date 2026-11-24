@@ -5,7 +5,7 @@ import { useAiAnswer } from '../hooks/useAiAnswer'
 import { validateAnswerResponse } from '../utils/aiAnswerState'
 import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { suggestFollowUps } from '../utils/followUps'
-import { historyForRequest } from '../utils/chatHistory'
+import { HISTORY_TURNS, historyForRequest } from '../utils/chatHistory'
 import { friendlyError } from '../utils/requestErrors'
 import { useComparisonThread } from '../hooks/useGadgetThread'
 import ThreadTurn, { AssistantMessage, UserBubble } from './ThreadTurn'
@@ -289,8 +289,9 @@ export default function AIComparisonPanel({
           {turns.length > 0 && (
             <>
               <p className="mr-auto text-xs text-slate-500">
-                {thread.enabled ? 'Saved to your account. ' : ''}Follow-ups remember your last {Math.min(turns.length, 3)}{' '}
-                question{Math.min(turns.length, 3) === 1 ? '' : 's'}.
+                {thread.enabled ? 'Saved to your account. ' : ''}{turns.length === 1
+                  ? 'Follow-ups remember this question.'
+                  : `Follow-ups remember your last ${Math.min(turns.length, HISTORY_TURNS)} questions.`}
               </p>
               {confirmClear ? (
                 <>

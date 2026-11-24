@@ -418,6 +418,18 @@ def test_s5_clean_abstention_that_quotes_cited_evidence_passes():
     assert not runner.score_case(CASE["TC-09"], answer, ALL_IDS, rules="s4")["passed"]
 
 
+def test_s5_accepts_non_breaking_hyphens_and_plural_units_24_nov():
+    # Prompt v4 eval: "6.1‑inch" (U+2011) and "6.1 inches" are the pack's own "6.1-inch".
+    tc15 = ("- Size: the iPhone 15 has a **6.1‑inch** display and the Galaxy S24 a **6.2‑inch** "
+            "display [1][6].\n- Refresh rate: the S24 is **120Hz**; the iPhone 15's is not stated [6][1].")
+    assert s5("TC-15", tc15)["passed"]
+    tc18 = ("The saved specs do not include the iPhone 15 Plus or its display size. "
+            "The provided iPhone 15 display is **6.1 inches** (diagonal) [1].")
+    assert s5("TC-18", tc18)["passed"]
+    # s3 is unchanged: it still reads the raw text.
+    assert not runner.score_case(CASE["TC-15"], tc15, ALL_IDS)["passed"]
+
+
 def test_s5_abstention_leaking_an_outside_value_fails_even_when_negated():
     leaked = s5("TC-08", "The snippets don't state a refresh rate [1], but the iPhone 15 runs at 60Hz.")
     assert leaked["problems"] == ["abstention answer states spec value(s) ['60hz'] not in a cited snippet"]

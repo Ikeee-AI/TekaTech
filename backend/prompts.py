@@ -38,7 +38,9 @@ section covers the user message, since it receives no snippets.
 # through build_system_prompt(version="v1") for comparisons.
 # v3 replaced v2 on 23 Nov 2026: eval set 24/24 in both runs (v2: 23 and 21), follow-up
 # conversations unchanged (docs/devops/app-performance.md).
-PROMPT_VERSION = "v3"
+# v4 replaced v3 on 24 Nov 2026: WORDING rule; eval set 24 and 23 of 24 (v3: 23 and 23, TC-24 the
+# known variant flake in both), answers saying "snippet" 3 of 48 vs 27 (docs/devops/app-performance.md).
+PROMPT_VERSION = "v4"
 
 _BASE_PROMPT = (
     "You are a gadget specification assistant. Answer the user's question using ONLY the "
@@ -94,10 +96,19 @@ _V3_RULES = (
     "snippets, say so and do not state another variant's value for the asked spec, not even "
     "labelled as a different model.\n\n"
 )
+# v4 (24 Nov 2026 Chrome prod test): answers told shoppers "the snippets state..." and copied raw
+# spec text such as "removable-battery=no". The reader never sees the snippets, so v4 adds one
+# WORDING rule; everything else is v3.
+_V4_RULES = (
+    "WORDING: the reader never sees the snippets, so in the answer call them the saved specs "
+    "or the specs, never snippets. Write spec values in plain words, not raw field text such "
+    "as 'removable-battery=no'.\n\n"
+)
 _BASE_PROMPTS = {
     "v1": _BASE_PROMPT,
     "v2": _BASE_PROMPT + _V2_RULES,
     "v3": _BASE_PROMPT + _V2_RULES + _V3_RULES,
+    "v4": _BASE_PROMPT + _V2_RULES + _V3_RULES + _V4_RULES,
 }
 
 _STYLE_PLAIN = "Explain in simple, everyday language a non-technical shopper would understand."

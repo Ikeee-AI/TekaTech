@@ -140,6 +140,16 @@ def spec_values(text):
     return {re.sub(r"[\s-]+", "", m.group(0)).lower() for m in SPEC_VALUE.finditer(text)}
 
 
+# s5 (24 Nov 2026 fix): "6.1 inches" quotes the same value as "6.1-inch", and "10 hours" the
+# same as "10 hrs"; plural or abbreviated units no longer count as a value outside the evidence.
+S5_UNITS = {"inches": "inch", "hours": "hour", "hrs": "hour", "hr": "hour"}
+S5_UNIT_TAIL = re.compile(r"(inches|hours|hrs|hr)$")
+
+
+def s5_spec_values(text):
+    return {S5_UNIT_TAIL.sub(lambda m: S5_UNITS[m.group(1)], v) for v in spec_values(text)}
+
+
 def asserted(answer, fact):
     """True if some sentence containing `fact` does not negate it (the s4 forbidden-fact rule)."""
     return any(has_fact(sentence, fact) and not NEGATION.search(sentence)
@@ -172,15 +182,15 @@ def s5_forbidden(case, text):
 def s5_abstention_leaks(case, text, cited, snippets):
     """Problems for a declining answer that still states something (s5 rule 2). `snippets` maps
     pack ids to snippet text; a value counts as quoted evidence only if a cited snippet holds it."""
-    query_values = spec_values(case.get("query", "").translate(S5_HYPHENS))
+    query_values = s5_spec_values(case.get("query", "").translate(S5_HYPHENS))
     evidence = set()
     for n in set(cited):
         if n in snippets:
-            evidence |= spec_values(snippets[n].translate(S5_HYPHENS))
+            evidence |= s5_spec_values(snippets[n].translate(S5_HYPHENS))
     asked, outside, problems = set(), set(), []
     for sentence in s5_sentences(text):
         negated = bool(S5_NEGATION.search(sentence))
-        for value in spec_values(sentence):
+        for value in s5_spec_values(sentence):
             if value in query_values:
                 if not negated:
                     asked.add(value)
@@ -233,7 +243,8 @@ def score_case(case, answer, valid_ids, rules="s3", snippets=None):
             if stated:
                 problems.append(f"abstention answer states spec value(s) {stated}")
     else:
-        missing = [fact for fact in case["expected_facts"] if not has_fact(answer, fact)]
+        # s5 matches facts on the hyphen-normalised text too ("6.1‑inch" is "6.1-inch").
+        missing = [fact for fact in case["expected_facts"] if not has_fact(text, fact)]
         if missing:
             problems.append(f"missing fact(s) {missing}")
         if not set(cited) & set(case["expected_sources"]):

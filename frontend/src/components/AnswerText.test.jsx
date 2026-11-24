@@ -132,10 +132,25 @@ describe('AnswerText bullets', () => {
     expect(container.querySelectorAll('li')).toHaveLength(2)
   })
 
-  it('falls back to paragraphs when a non-bullet line follows the bullets', () => {
+  it('keeps one closing line as a paragraph below the list', () => {
     const { container } = render(<AnswerText text={'- Battery\n- Screen\nSummary.'} />)
+    expect(container.querySelectorAll('li')).toHaveLength(2)
+    const paragraphs = [...container.querySelectorAll('p')]
+    expect(paragraphs.map((p) => p.textContent)).toEqual(['Summary.'])
+    expect(container.querySelector('ul').compareDocumentPosition(paragraphs[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('renders lead-in, bullets and a closing verdict as a list (24 Nov prod comparison)', () => {
+    const { container } = render(<AnswerText text={'Intro.\n\n- Battery\n\n- Screen\n\nConclusion: pick A.'} />)
+    expect(container.querySelectorAll('li')).toHaveLength(2)
+    expect([...container.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['Intro.', 'Conclusion: pick A.'])
+    expect(container.textContent).not.toContain('- Battery')
+  })
+
+  it('falls back to paragraphs when two non-bullet lines follow the bullets', () => {
+    const { container } = render(<AnswerText text={'- Battery\n- Screen\nSummary.\nMore.'} />)
     expect(container.querySelector('ul')).toBeNull()
-    expect([...container.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['- Battery', '- Screen', 'Summary.'])
+    expect(container.querySelectorAll('p')).toHaveLength(4)
   })
 
   it('treats a lead-in plus a single bullet as paragraphs', () => {
@@ -144,10 +159,10 @@ describe('AnswerText bullets', () => {
     expect(container.querySelectorAll('p')).toHaveLength(2)
   })
 
-  it('falls back to paragraphs when two or more lines are not bullets', () => {
-    const { container } = render(<AnswerText text={'Intro.\n- Battery\n- Screen\nSummary.'} />)
+  it('falls back to paragraphs when a non-bullet line sits between bullets', () => {
+    const { container } = render(<AnswerText text={'Intro.\n- Battery\nAside.\n- Screen\nSummary.'} />)
     expect(container.querySelector('ul')).toBeNull()
-    expect(container.querySelectorAll('p')).toHaveLength(4)
+    expect(container.querySelectorAll('p')).toHaveLength(5)
     expect(container.textContent).toContain('- Battery')
   })
 

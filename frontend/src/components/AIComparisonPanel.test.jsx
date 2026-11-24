@@ -55,7 +55,7 @@ describe('AIComparisonPanel chat memory', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Which offers better value for the price?' }))
     await screen.findByText(/charges fastest/)
     expect(api.askQuestion.mock.calls[0][0]).not.toHaveProperty('history')
-    expect(screen.getByText('Saved to your account. Follow-ups remember your last 1 question.')).toBeTruthy()
+    expect(screen.getByText('Saved to your account. Follow-ups remember this question.')).toBeTruthy()
 
     await askAnother('Which one is lighter?')
     await screen.findByText(/charges fastest/)
