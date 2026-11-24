@@ -212,6 +212,37 @@ def test_an_uncited_answer_that_is_not_a_decline_stays(client, fake_supabase):
     web_call.assert_not_called()
 
 
+def test_a_decline_citing_only_a_snippet_that_does_not_exist_goes_to_the_web(client, fake_supabase):
+    """Pre-review #294: "[9]" with one snippet is not a citation (it is stripped later)."""
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, _ = _ask(
+        client, {"question": "Does it support DeX?", "gadget_ids": [GADGET], "allow_web_search": True},
+        completion_text="The snippets do not state whether it supports Samsung DeX [9].",
+    )
+    assert resp.json()["answer_basis"] == "web"
+    web_call.assert_called_once()
+
+
+def test_a_cited_partial_answer_with_a_decline_phrase_stays_grounded(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, _ = _ask(
+        client, {"question": "Chip and charger?", "gadget_ids": [GADGET], "allow_web_search": True},
+        completion_text="It uses the Exynos 2400 [1]; the snippets do not mention a charger in the box.",
+    )
+    assert resp.json()["answer_basis"] == "specs"
+    web_call.assert_not_called()
+
+
+def test_cites_a_snippet_counts_only_markers_in_range():
+    from routers.query import _cites_a_snippet
+
+    assert _cites_a_snippet("Yes [1].", 1)
+    assert _cites_a_snippet("Yes (2).", 3)
+    assert not _cites_a_snippet("Yes [4].", 3)
+    assert not _cites_a_snippet("Yes [0].", 3)
+    assert not _cites_a_snippet("No markers at all.", 3)
+
+
 def test_tracking_code_variants_of_one_page_share_a_number():
     text = "A ([a](https://e.com/p?utm_source=x)) B ([b](https://e.com/p))."
     anns = [

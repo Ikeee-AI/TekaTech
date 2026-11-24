@@ -833,6 +833,20 @@ def _web_answer(payload: "QueryRequest", user) -> "QueryResponse":
 
 
 # A grounded reply saying the snippets lack the answer ("the snippets do not state whether…").
+_CITATION_NUMBER = re.compile(r"\[(\d+)\]|\((\d+)\)")
+
+
+def _cites_a_snippet(answer: str, snippet_count: int) -> bool:
+    """True when the answer cites at least one snippet that was actually sent ([n] or (n), 1..count).
+
+    A marker for a snippet that doesn't exist ("[9]" with three snippets) is removed later by
+    strip_invalid_citations, so it must not make an otherwise uncited decline count as grounded.
+    """
+    return any(
+        1 <= int(a or b) <= snippet_count for a, b in _CITATION_NUMBER.findall(answer)
+    )
+
+
 _DECLINE = re.compile(
     r"\b(?:not\s+(?:stated|listed|mentioned|included|specified|given|provided|covered|available)"
     r"|(?:do|does|did)\s+not\s+(?:state|list|mention|include|say|specify|give|provide|cover)"
@@ -1295,10 +1309,11 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     # With "search the web" on, a reply that cites none of the snippets ("the snippets do not
     # state whether…") has nothing grounded in it either, so it goes to the web too (DEV check,
     # 24 Nov 2026: the model declined in words instead of sending the sentinel). General
-    # knowledge alone keeps the sentinel-only rule (gkf-v2, evaluated).
+    # knowledge alone keeps the sentinel-only rule (gkf-v2, evaluated). Only markers for snippets
+    # that were sent count as citations: "[9]" with one snippet is dropped later, not grounding.
     uncited_decline = (
         payload.allow_web_search
-        and not re.search(r"\[\d+\]|\(\d+\)", answer)
+        and not _cites_a_snippet(answer, len(matches))
         and _DECLINE.search(answer) is not None
     )
     if _is_not_in_specs(answer) or uncited_decline:

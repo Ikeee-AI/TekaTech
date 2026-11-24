@@ -20,9 +20,11 @@ spec.loader.exec_module(runner)
 
 EVAL = ROOT / "prompts/eval"
 ALL_GK_CASES = json.loads((EVAL / "gk_cases.json").read_text(encoding="utf-8"))
-# The cases whose reply must be a general-knowledge answer. A stays_grounded case (GK-09) needs
-# stored specs and a grounded reply, so it is asked separately below.
-GK_CASES = {**ALL_GK_CASES, "cases": [c for c in ALL_GK_CASES["cases"] if c["type"] != "stays_grounded"]}
+# The cases whose reply must be a general-knowledge answer. A stays_grounded case (GK-09, GK-11)
+# needs stored specs and a grounded reply, so GK-09 is asked separately below; a reaches_web case
+# (GK-10) needs web search, covered in test_query_web.py and test_query_stream.py.
+GK_CASES = {**ALL_GK_CASES, "cases": [c for c in ALL_GK_CASES["cases"]
+                                      if c["type"] not in ("stays_grounded", "reaches_web")]}
 GK_REFERENCE = json.loads((EVAL / "gk_reference_answers.json").read_text(encoding="utf-8"))["answers"]
 GADGET_A = "11111111-1111-1111-1111-111111111111"
 

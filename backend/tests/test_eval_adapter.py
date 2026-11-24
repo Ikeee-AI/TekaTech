@@ -258,8 +258,9 @@ def test_gk_output_feeds_the_scorer_and_a_grounded_reply_fails_on_basis(tmp_path
     root = Path(__file__).resolve().parents[2] / "prompts/eval"
     cases = json.loads((root / "gk_cases.json").read_text(encoding="utf-8"))
     ref = json.loads((root / "gk_reference_answers.json").read_text(encoding="utf-8"))["answers"]
-    # A stays_grounded case (GK-09) expects a grounded reply and is not counted as a GK answer.
-    cases = {**cases, "cases": [c for c in cases["cases"] if c["type"] != "stays_grounded"]}
+    # A stays_grounded case (GK-09, GK-11) expects a grounded reply and a reaches_web case (GK-10)
+    # a web reply; neither is counted as a GK answer.
+    cases = {**cases, "cases": [c for c in cases["cases"] if c["type"] not in ("stays_grounded", "reaches_web")]}
     ids = [c["id"] for c in cases["cases"]]
     replies = [gk_reply(ref[i]) for i in ids]
     replies[0] = gk_reply(ref[ids[0]], basis="specs")  # the database held specs: grounded, not GK
@@ -390,3 +391,15 @@ def test_the_access_token_comes_from_the_environment_as_a_bearer_header(monkeypa
     monkeypatch.setattr(adapter, "urlopen", fake_urlopen)
     adapter.http_json("POST", "http://127.0.0.1:8000/query", {"question": "x"})
     assert sent[0].get_header("Authorization") == expected
+
+
+def test_gk_mode_sends_allow_web_search_only_for_cases_that_ask_for_it():
+    """GK-10/GK-11 (24 Nov 2026): the web-routing cases are asked with "Search the Web" on."""
+    cases = [{"id": "W-1", "query": "Does it support DeX?", "allow_web_search": True},
+             {"id": "W-2", "query": "What chip?"}]
+    api = FakeApi([], [gk_reply("x", basis="web"), gk_reply("y")])
+    basis = {}
+    adapter.collect("http://127.0.0.1:8000", cases, [], http=api, sleep=lambda _s: None, gk=True, basis=basis)
+    assert api.bodies[0]["allow_web_search"] is True
+    assert "allow_web_search" not in api.bodies[1]
+    assert basis == {"W-1": "web", "W-2": "general_knowledge"}
