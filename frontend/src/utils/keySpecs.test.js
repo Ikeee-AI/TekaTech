@@ -184,6 +184,10 @@ describe('extractMoreSpecs: chip', () => {
     expect(more('SoC: Qualcomm Snapdragon 6 Gen 1 Mobile Platform').chip.value).toBe('Qualcomm Snapdragon 6 Gen 1')
     expect(more('Processor: Dimensity 9300+').chip.value).toBe('Dimensity 9300+')
     expect(more('Processor: Exynos 2400').chip.value).toBe('Exynos 2400')
+    // Samsung's A56 sheet states the chip as a sentence (seen on prod, 24 Nov 2026).
+    expect(more('Processor: Galaxy A56 5G is powered by the Exynos 1580 chipset').chip.value).toBe('Exynos 1580')
+    expect(more('Processor: Galaxy A36 5G features the Snapdragon 6 Gen 3').chip.value).toBe('Snapdragon 6 Gen 3')
+    expect(more('Chipset: Snapdragon 8 Gen 3 chipset').chip.value).toBe('Snapdragon 8 Gen 3')
   })
 
   it('does not take CPU core lines or other chips', () => {
