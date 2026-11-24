@@ -22,6 +22,7 @@ import MoreKeySpecs from '../components/MoreKeySpecs'
 import ProductImage from '../components/ProductImage'
 import { withoutDoubledBrand } from '../utils/gadgetName'
 import VariantsList from '../components/VariantsList'
+import BenchmarksSection from '../components/BenchmarksSection'
 
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180
 
@@ -234,9 +235,11 @@ export default function GadgetDetail() {
           gadgetId={id}
           gadgetName={withoutDoubledBrand(gadget.name)}
           category={gadget.category}
-          suggestions={['What chip does it use?', 'How long does the battery last?', 'Is it water resistant?']}
+          suggestions={['What chip does it use?', 'Can it run Genshin Impact smoothly?', 'How long does the battery last?']}
         />
       </div>
+
+      <BenchmarksSection gadgetId={id} isAdmin={Boolean(user?.app_metadata?.is_admin)} />
     </div>
   )
 }

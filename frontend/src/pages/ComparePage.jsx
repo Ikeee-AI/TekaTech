@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import CompareBenchmarks from '../components/CompareBenchmarks'
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom'
 import { X, Sparkles, Trophy, Share2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -531,6 +532,8 @@ export default function ComparePage() {
           </div>
         </div>
       )}
+
+      {comparing && <CompareBenchmarks gadgets={gadgets} />}
     </div>
   )
 }

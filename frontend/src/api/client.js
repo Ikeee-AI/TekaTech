@@ -119,6 +119,10 @@ export const api = {
   // Admin-only (#127); used by DeleteSpecButton.
   deleteSpec: (gadgetId, specId) => request(`/gadgets/${gadgetId}/specs/${specId}`, { method: "DELETE" }),
   indexSpec: (gadgetId, specId) => request(`/gadgets/${gadgetId}/specs/${specId}/index`, { method: "POST" }),
+  // Published game and chip benchmarks (24 Nov 2026): public read, admin writes.
+  getBenchmarks: (gadgetId) => request(`/gadgets/${gadgetId}/benchmarks`),
+  addBenchmark: (gadgetId, data) => request(`/gadgets/${gadgetId}/benchmarks`, { method: "POST", body: JSON.stringify(data) }),
+  deleteBenchmark: (gadgetId, id) => request(`/gadgets/${gadgetId}/benchmarks/${id}`, { method: "DELETE" }),
   submitCorrection: (specId, data) => request(`/specs/${specId}/corrections`, { method: "POST", body: JSON.stringify(data) }),
   getCorrections: (status = "pending") => request(`/corrections?status=${status}`),
   // The caller's own suggestions; the backend scopes this to the session user.
