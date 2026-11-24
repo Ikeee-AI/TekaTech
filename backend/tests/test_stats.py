@@ -125,3 +125,12 @@ def test_trending_questions_long_old_rows_are_shortened(client, fake_supabase):
     assert first["question"].startswith("Which phone has the better battery life")
     assert first["count"] == 2
     assert second == {"question": short_question, "count": 2}
+
+
+def test_trending_questions_vary_on_authorization(client, fake_supabase):
+    """Chrome prod test, 24 Nov 2026: a browser must not reuse a signed-in copy after logout."""
+    fake_supabase.set_response("query_history", "select", [])
+    resp = client.get("/stats/trending-questions")
+    assert resp.status_code == 200
+    assert "authorization" in resp.headers["vary"].lower()
+    assert resp.headers["cache-control"].startswith("private")

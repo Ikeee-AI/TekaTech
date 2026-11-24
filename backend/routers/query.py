@@ -889,6 +889,22 @@ _DECLINE = re.compile(
     r"|no\s+(?:information|mention|details?|data))\b",
     re.IGNORECASE,
 )
+# Sentences, and the clauses a partial answer joins to its decline ("not stated, but it has X").
+_SENTENCE_BREAK = re.compile(r"(?<=[.!?])\s+|\n+|;|,?\s+\b(?:but|however|although|though)\b", re.IGNORECASE)
+
+
+def _only_declines(answer: str) -> bool:
+    """True when every sentence of the reply says the specs don't cover the question.
+
+    Chrome prod test, 24 Nov 2026: with web search on, "The snippets do not state Android OS update
+    promise for the Reno13 F 5G. [1][2]" cited the snippets it found nothing in, so it was not an
+    uncited decline and never reached the web. A reply with any sentence that is not a decline
+    ("not stated, but it charges at 45 W [1]") still answers something and stays grounded.
+    """
+    text = _CITATION_NUMBER.sub("", answer.replace("’", "'"))
+    sentences = [s.strip(" -*•\t") for s in _SENTENCE_BREAK.split(text)]
+    sentences = [s for s in sentences if any(ch.isalnum() for ch in s)]
+    return bool(sentences) and all(_DECLINE.search(s) for s in sentences)
 
 
 def _cacheable_fallback(payload: "QueryRequest", response: "QueryResponse") -> bool:
@@ -1346,10 +1362,13 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     # 24 Nov 2026: the model declined in words instead of sending the sentinel). General
     # knowledge alone keeps the sentinel-only rule (gkf-v2, evaluated). Only markers for snippets
     # that were sent count as citations: "[9]" with one snippet is dropped later, not grounding.
-    uncited_decline = (
-        payload.allow_web_search
-        and not _cites_a_snippet(answer, len(matches))
-        and _DECLINE.search(answer.replace("’", "'")) is not None  # "don’t" as well as "don't"
+    # A reply that cites snippets but only to say they don't hold the answer goes too (_only_declines).
+    uncited_decline = payload.allow_web_search and (
+        (
+            not _cites_a_snippet(answer, len(matches))
+            and _DECLINE.search(answer.replace("’", "'")) is not None  # "don’t" as well as "don't"
+        )
+        or _only_declines(answer)
     )
     if _is_not_in_specs(answer) or uncited_decline:
         # A streamed decline was already shown (the sentinel never is): tell the browser to drop

@@ -314,3 +314,38 @@ def test_a_full_site_cap_leaves_the_users_own_count_alone(monkeypatch, non_admin
     assert ai_quota.consume_web_search(non_admin) is True   # still 2 of their own left
     assert ai_quota.consume_web_search(non_admin) is True
     assert ai_quota.consume_web_search(non_admin) is False
+
+
+# --- Chrome prod test, 24 Nov 2026 ---------------------------------------------------------------
+
+def test_a_decline_that_cites_the_snippets_it_found_nothing_in_goes_to_the_web(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, _ = _ask(
+        client, {"question": "How many years of OS updates?", "gadget_ids": [GADGET], "allow_web_search": True},
+        completion_text="The snippets do not state Android OS update promise for the Galaxy S24. [1]",
+    )
+    assert resp.json()["answer_basis"] == "web"
+    web_call.assert_called_once()
+
+
+def test_a_cited_decline_without_the_web_flag_stays_grounded(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, chat = _ask(
+        client, {"question": "How many years of OS updates?", "gadget_ids": [GADGET], "allow_general_knowledge": True},
+        completion_text="The snippets do not state Android OS update promise for the Galaxy S24. [1]",
+    )
+    assert resp.json()["answer_basis"] == "specs"
+    web_call.assert_not_called()
+    assert chat.call_count == 1
+
+
+def test_only_declines_needs_every_sentence_to_decline():
+    from routers.query import _only_declines
+
+    assert _only_declines("The saved specs do not state it [1][2].")
+    assert _only_declines("- Not stated for the S24 [1].\n- No information for the iPhone 15 [2].")
+    assert _only_declines("The specs don’t mention OS updates (1).")
+    assert not _only_declines("OS updates are not stated, but it ships with One UI 6.1 [1].")
+    assert not _only_declines("Update years are not stated [1]. It ships with One UI 6.1 [1].")
+    assert not _only_declines("It uses the Exynos 2400 [1].")
+    assert not _only_declines("[1]")
