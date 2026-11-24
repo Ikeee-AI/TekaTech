@@ -95,3 +95,38 @@ def consume(user) -> dict[str, str]:
             headers={**headers, "Retry-After": str(retry_after)},
         )
     return headers
+
+
+# --- Web-search answers (24 Nov 2026) -------------------------------------------------------
+# Same store and UTC-day keys as the question limit. Counted only when a web search is actually
+# about to run (the saved specs didn't cover the question and the user allowed it), so a normal
+# answer or a cached web answer costs nothing here.
+WEB_NAMESPACE = "ai-daily-web-searches"
+WEB_SITE_NAMESPACE = "ai-daily-web-searches-site"
+
+
+def consume_web_search(user) -> bool:
+    """Count one web search; False when the user's or the site's cap for today is used up.
+
+    Admins skip the per-user cap but count toward the site cap, which protects the prepaid
+    OpenAI balance. A cap of 0 turns web answers off. Hits are only recorded when both allow it.
+    """
+    now = _now()
+    day = now.date().isoformat()
+    site_limit = settings.web_search_site_daily_limit
+    if site_limit <= 0:
+        return False
+    site_item, site_ids = RateLimitItemPerDay(site_limit), (WEB_SITE_NAMESPACE, "all", day)
+    if not is_admin(user):
+        user_limit = settings.ai_daily_web_search_limit
+        if user_limit <= 0:
+            return False
+        user_item, user_ids = RateLimitItemPerDay(user_limit), (WEB_NAMESPACE, str(user.id), day)
+        if not limiter.limiter.test(user_item, *user_ids):
+            return False
+        if not limiter.limiter.test(site_item, *site_ids):
+            return False
+        limiter.limiter.hit(user_item, *user_ids)
+    elif not limiter.limiter.test(site_item, *site_ids):
+        return False
+    return limiter.limiter.hit(site_item, *site_ids)

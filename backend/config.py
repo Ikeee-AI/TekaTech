@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     # 08:00 Manila). Stored with the rate limits above. Env: AI_DAILY_QUESTION_LIMIT. See ai_quota.py.
     ai_daily_question_limit: int = Field(default=20, ge=1, le=10000)
 
+    # Optional "search the web" answers (web_search.py, 24 Nov 2026) cost about 15x a grounded
+    # answer, so they have their own caps on top of the question limit: per signed-in non-admin
+    # user per UTC day, and for the whole site per UTC day (admins count toward the site cap).
+    # Env: AI_DAILY_WEB_SEARCH_LIMIT, WEB_SEARCH_SITE_DAILY_LIMIT. 0 turns web answers off.
+    ai_daily_web_search_limit: int = Field(default=5, ge=0, le=1000)
+    web_search_site_daily_limit: int = Field(default=40, ge=0, le=100000)
+
     # Failure drill for POST /query (see README "Failure drill"). Off unless set to true, and even
     # then only a logged-in admin sending the X-Simulate-Failure header can trigger it. Never set
     # this on the production service: .railway/railway.ts (the API since 13 Nov 2026) and

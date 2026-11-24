@@ -24,7 +24,10 @@ from auth import get_current_user
 from citations import normalize_paren_citations, strip_invalid_citations
 from config import settings
 from keyword_search import build_keyword_query
+import web_search
 from prompts import (
+    WEB_PROMPT_VERSION,
+    build_web_prompt,
     GK_FALLBACK_VERSION,
     GK_PROMPT_VERSION,
     NOT_IN_SPECS_SENTINEL,
@@ -172,6 +175,10 @@ class QueryRequest(BaseModel):
     regenerate: bool = False
     # Earlier turns of the gadget chat, oldest first (see HistoryTurn). Empty = a fresh question.
     history: list[HistoryTurn] = Field(default_factory=list, max_length=MAX_HISTORY_TURNS)
+    # Optional web-search answer (24 Nov 2026, web_search.py): used, instead of general knowledge,
+    # where the saved specs don't cover the question. Labelled and cited with the pages found.
+    # Capped per user and per site per day (ai_quota.consume_web_search). Off by default.
+    allow_web_search: bool = False
 
     @field_validator("question")
     @classmethod
@@ -212,11 +219,14 @@ class QueryRequest(BaseModel):
 
 
 class Source(BaseModel):
-    gadget_id: UUID
+    # None for a web page (answer_basis "web"): it belongs to no catalog gadget.
+    gadget_id: Optional[UUID] = None
     gadget_name: str
     content: str
     source_url: Optional[str] = None
     similarity: float
+    # "spec" = a saved spec chunk or benchmark row; "web" = a page the web search cited.
+    kind: Literal["spec", "web"] = "spec"
 
 
 class QueryResponse(BaseModel):
@@ -235,7 +245,8 @@ class QueryResponse(BaseModel):
     retrieval: Literal["vector", "keyword", "benchmarks", "none"] = "none"
     # What the answer rests on: saved specs (cited), the model's general knowledge (unverified,
     # uncited, only when the request allowed it), or nothing (the "no relevant specs" reply).
-    answer_basis: Literal["specs", "general_knowledge", "none"] = "none"
+    # "web": found by the optional web search (unverified, cited with the pages it read).
+    answer_basis: Literal["specs", "general_knowledge", "web", "none"] = "none"
 
 
 def _token_count(response, field: str) -> int | None:
@@ -747,6 +758,85 @@ def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
     )
 
 
+WEB_LIMIT_ANSWER = (
+    "Web search has reached today's limit, and TekaTech's saved specs don't cover this question. "
+    "Try again tomorrow, or ask about a spec this phone's page lists."
+)
+
+
+def _web_answer(payload: "QueryRequest", user) -> "QueryResponse":
+    """The optional web-search answer for a question the saved specs don't cover.
+
+    Falls back to the general-knowledge answer (when that is allowed too) if today's web cap is
+    used up or the search fails; otherwise a cap is a plain reply and a failure is the usual 503.
+    Like the GK answer, nothing is written to query_history.
+    """
+    if not ai_quota.consume_web_search(user):
+        logger.info("Web search cap reached; %s", "general knowledge" if payload.allow_general_knowledge else "no answer")
+        if payload.allow_general_knowledge:
+            return _general_knowledge_answer(payload)
+        return QueryResponse(answer=WEB_LIMIT_ANSWER, sources=[], model_used="none", retrieval="none")
+
+    gadget_note = ""
+    if payload.gadget_ids:
+        try:
+            rows = (
+                supabase.table("gadgets").select("id, name")
+                .in_("id", [str(i) for i in payload.gadget_ids]).execute().data
+            )
+        except Exception as exc:
+            raise _lookup_failure("gadget name lookup", exc) from None
+        names = [r["name"] for r in rows or [] if r.get("name")]
+        if names:
+            gadget_note = "\n\nGadgets being asked about: " + ", ".join(names) + "."
+    try:
+        result = web_search.search(
+            build_web_prompt(payload.plain_language),
+            build_general_knowledge_user_message(payload.question, gadget_note, payload.history),
+        )
+    except web_search.WebSearchError as exc:
+        logger.warning("Web search failed: %s", exc.reason)
+        if payload.allow_general_knowledge:
+            return _general_knowledge_answer(payload)
+        if exc.provider is not None:
+            raise _provider_failure(exc.provider) from None
+        raise _unusable_output(f"web search: {exc.reason}") from None
+    logger.info(
+        "Web answer: searches=%s input_tokens=%s output_tokens=%s",
+        result.searches, result.input_tokens, result.output_tokens,
+    )
+    answer, citations = web_search.citations_to_markers(result.text, result.annotations)
+    answer, _ = _without_sentinel(answer)
+    answer, invalid = strip_invalid_citations(answer, len(citations))
+    if not re.search(r"\w", answer):
+        raise _unusable_output("web answer was empty after cleaning")
+    sources = [
+        Source(
+            gadget_name=web_search.site_name(c.url),
+            content=c.title or web_search.site_name(c.url),
+            source_url=c.url,
+            similarity=0.0,
+            kind="web",
+        )
+        for c in citations
+    ]
+    return QueryResponse(
+        answer=answer,
+        sources=sources,
+        model_used=f"openai:{web_search.WEB_MODEL}+web_search",
+        invalid_citations_removed=invalid,
+        retrieval="none",
+        answer_basis="web",
+    )
+
+
+def _fallback_answer(payload: "QueryRequest", user) -> "QueryResponse":
+    """What a question the saved specs don't cover gets: the web answer, else general knowledge."""
+    if payload.allow_web_search:
+        return _web_answer(payload, user)
+    return _general_knowledge_answer(payload)
+
+
 # /query and /query/stream share one 10/minute budget per caller.
 _QUERY_LIMIT = limiter.shared_limit("10/minute", scope="ai-query")
 
@@ -993,11 +1083,17 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     #    general-knowledge answer is never served to a request without the flag, or the reverse.
     #    With the flag the grounded prompt also carries the fallback rule (GK_FALLBACK_VERSION), so
     #    that label is in the scope too and answers cached before the rule existed are not served.
+    fallback_allowed = payload.allow_general_knowledge or payload.allow_web_search
     prompt_scope = (
         f"{PROMPT_VERSION}+{GK_FALLBACK_VERSION}+{GK_PROMPT_VERSION}"
         if payload.allow_general_knowledge
         else PROMPT_VERSION
     )
+    #    The web flag is its own scope too (the fallback rule is in the prompt with it as well).
+    if payload.allow_web_search:
+        if not payload.allow_general_knowledge:
+            prompt_scope += f"+{GK_FALLBACK_VERSION}"
+        prompt_scope += f"+{WEB_PROMPT_VERSION}"
     #    A follow-up means something different in each conversation ("can it run smoothly?"), so
     #    the earlier turns are part of the scope: only the same question after the same turns hits.
     if payload.history:
@@ -1073,12 +1169,12 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
             retrieval = "benchmarks"
         matches = [*(matches or []), *benchmark_matches]
 
-    if not matches and payload.allow_general_knowledge:
+    if not matches and fallback_allowed:
         # Only reached when retrieval found nothing in this scope. Cached under the flag's own
         # scope; not "grounded", so a similar question re-runs the free retrieval instead of
         # reusing it, and a cache hit is not written to query_history.
         with _timed(request, "generate"):
-            response = _general_knowledge_answer(payload)
+            response = _fallback_answer(payload, user)
         answer_cache.store(
             cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
         )
@@ -1145,7 +1241,7 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     # The prompt text and its version live in prompts.py; its formatting rules are coupled to
     # AnswerText.jsx (see the note there). With the general-knowledge flag the prompt adds the
     # fallback rule: reply NOT_IN_SPECS when the snippets hold none of the answer.
-    system_prompt = build_system_prompt(payload.plain_language, payload.allow_general_knowledge)
+    system_prompt = build_system_prompt(payload.plain_language, fallback_allowed)
 
     sources = [
         Source(
@@ -1179,12 +1275,12 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     if _is_not_in_specs(answer):
         logger.info(
             "Grounded answer was %s (allow_general_knowledge=%s): prompt_tokens=%s completion_tokens=%s",
-            NOT_IN_SPECS_SENTINEL, payload.allow_general_knowledge,
+            NOT_IN_SPECS_SENTINEL, fallback_allowed,
             _token_count(completion, "prompt_tokens"), _token_count(completion, "completion_tokens"),
         )
-        if payload.allow_general_knowledge:
+        if fallback_allowed:
             with _timed(request, "generate"):
-                response = _general_knowledge_answer(payload)
+                response = _fallback_answer(payload, user)
         else:
             response = QueryResponse(answer=NO_MATCHES_ANSWER, sources=[], model_used=MODEL_USED, retrieval="none")
         answer_cache.store(
