@@ -229,8 +229,10 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
       aria-labelledby="gadget-chat-title"
       className="bg-white border border-slate-200 rounded-[28px] flex flex-col overflow-hidden min-w-0 xl:h-full"
     >
-      <header className="flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-3 border-b border-slate-200">
-        <div className="min-w-0">
+      {/* Wraps: the title keeps at least 14rem, so the "Delete this conversation?" prompt moves
+          below it instead of squeezing it into a narrow column. */}
+      <header className="flex flex-wrap items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-3 border-b border-slate-200">
+        <div className="min-w-0 flex-1 basis-56">
           <h2 id="gadget-chat-title" className="flex items-center gap-2 text-lg font-bold text-slate-900">
             <Sparkles size={18} className="text-sage-700" aria-hidden="true" /> Ask About {gadgetName}
           </h2>
@@ -251,7 +253,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
         </div>
         {hasConversation &&
           (confirmClear ? (
-            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end" role="group" aria-label="Confirm new chat">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end ml-auto" role="group" aria-label="Confirm new chat">
               <span className="text-sm text-slate-700">{user ? 'Delete this conversation?' : 'Start over?'}</span>
               <Button variant="dangerSolid" size="sm" onClick={handleClear} loading={thread.clearing}>
                 {user ? 'Delete' : 'Clear'}

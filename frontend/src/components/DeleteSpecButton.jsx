@@ -53,14 +53,15 @@ export default function DeleteSpecButton({ gadgetId, spec, onDeleted }) {
         size="sm"
         icon={Trash2}
         onClick={() => setOpen(true)}
-        aria-label={`Delete spec #${spec.chunk_index}`}
+        aria-label={`Delete part ${spec.chunk_index + 1}`}
         title="Delete this spec"
         aria-haspopup="dialog"
         className="!px-2.5"
       />
       <ConfirmDialog
         open={open}
-        title={`Delete Spec #${spec.chunk_index}?`}
+        // Numbered from 1, like the "Part N" label on its row under Saved parts.
+        title={`Delete Part ${spec.chunk_index + 1}?`}
         description={
           <>
             <span className="block bg-slate-50 border border-slate-200 rounded-md px-3 py-2 my-2 text-slate-800 break-words">

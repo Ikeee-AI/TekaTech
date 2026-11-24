@@ -422,7 +422,7 @@ function PartRow({ spec, gadgetId, indexingId, indexError, onIndex, onDeleted })
   const state = indexed ? 'indexed' : isIndexing ? 'indexing' : indexError ? 'failed' : 'pending'
   const firstLine = spec.content.split('\n').find((l) => l.trim()) ?? ''
   return (
-    <li aria-label={`Spec #${spec.chunk_index}`} className="py-2 border-t border-slate-200 first:border-t-0">
+    <li aria-label={`Part ${spec.chunk_index + 1}`} className="py-2 border-t border-slate-200 first:border-t-0">
       <div className="grid grid-cols-1 sm:grid-cols-[minmax(7rem,28%)_minmax(0,1fr)] gap-x-4 gap-y-1">
         <p className="text-sm font-medium text-slate-500 sm:pt-1">
           Part {spec.chunk_index + 1} · {spec.source_url ? sourceLabel(spec.source_url) : 'no source link'}
