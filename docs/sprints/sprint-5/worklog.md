@@ -1224,3 +1224,37 @@ Short session, ~09:45–10:12 Manila.
 **Next**
 - Read live `Server-Timing` for a few phone-page questions and add them to `docs/devops/app-performance.md` — Ikeee-AI — 23 Nov.
 - This log entry rides on `tekatech/s5-ik-worklog-ai-22nov` (pushed, no PR) until the next batch PR — Ikeee-AI.
+
+## 2026-11-24 11:52 Asia/Manila — Streaming answers, prompt v3 and saved compare chats (#289, incl. #288) merged and live
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S5-IK · **Branch:** `tekatech/s5-ik-streaming` → `main`
+
+**Done**
+- Owner reported Manuel's approvals; checked before merging: #288 approved by Manuel (`s2302827-byte`) on head `0d74416`, #289 approved by Manuel on head `441caf5`, every required check green on both heads (cancelled runs on #289 were superseded by later green runs) — evidence: https://github.com/Ikeee-AI/TekaTech/pull/288, https://github.com/Ikeee-AI/TekaTech/pull/289
+- #289 squash-merged at 11:46 Manila as `ff3e2fd`, pinned to the approved head (`--match-head-commit 441caf5`). It ships: compare-page conversation memory (`0d74416`, from #288), streaming answers via `POST /query/stream` (`d433ab8`), query timings in Railway's log (`8d15bbd`), phone highlight fill-ins (`76dc23a`), prompt v3 (`dbb5b7d`), compare chats saved to the account (`441caf5`) — evidence: https://github.com/Ikeee-AI/TekaTech/pull/289
+- #288 closed as included in #289 (comment on the PR) — evidence: https://github.com/Ikeee-AI/TekaTech/pull/288
+- Main CI all green: backend tests, frontend lint and build, database migrations, browser checks (failure drill), Main guard, deploy (with deployed smoke) — evidence: https://github.com/Ikeee-AI/TekaTech/actions/runs/45321814043
+- Production checked after deploy: API `/version` = `ff3e2fd`, `/health` 200; frontend returned 200 in the post-deploy check (see Errors) — evidence: curl from this session, ~11:50 Manila
+- No database step at merge: `user_comparison_questions.sql` was already applied by the owner on dev and prod on 23 Nov (checks rls_on=true, browser_can_read=false, trigger_count=1)
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Local `curl https://tekatech-web.onrender.com` did not finish within the 120 s tool timeout | Not established (likely a slow first response from Render) | The deploy job's smoke check passed against the frontend; the background request later returned. Not an app error; no action |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| The 23 Nov work (streaming, live timings, prompt v3, highlights, saved compare chats) has no worklog entry of its own; the last entry is 22 Nov 23:52 | Benchmarks/costs from those sessions are only in the commits and `docs/devops/app-performance.md`, not in the log | Not reconstructed here (this session did not do that work); commits listed above as evidence. Open — Ikeee-AI |
+
+**Decisions**
+- Merge #289 alone and close #288 as included, rather than merging both (one deploy, no duplicate changes) — Ikeee-AI, following the plan agreed on 23 Nov.
+
+**Blockers / risks**
+- Four Dependabot PRs open (#290 setup-uv, #291 backend deps, #292 uv-build, #293 frontend deps) — need review before merge, not auto-merged — Ikeee-AI.
+
+**Plan alignment** — No sprint task row (Sprint 5 ended 7 Nov); post-release work. Meets the Definition of Done: reviewed (Manuel), checks passed, merged, deployed, verified on production (`/version` = `ff3e2fd`).
+
+**Next**
+- Try streaming and a saved compare chat in the live app while signed in — Ikeee-AI — next session.
+- Triage Dependabot PRs #290–#293 — Ikeee-AI — this week.
+- This entry rides on `tekatech/s5-ik-worklog-24nov` (no PR) until the next batch PR — Ikeee-AI.
