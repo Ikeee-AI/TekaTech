@@ -43,6 +43,7 @@ EXPECTED = {
     ("POST", "/gadgets/{gadget_id}/benchmarks"): ADMIN,
     ("PUT", "/gadgets/{gadget_id}/benchmarks/{benchmark_id}"): ADMIN,
     ("DELETE", "/gadgets/{gadget_id}/benchmarks/{benchmark_id}"): ADMIN,
+    ("POST", "/gadgets/{gadget_id}/web-drafts"): ADMIN,
     ("POST", "/specs/{spec_id}/corrections"): USER,
     ("GET", "/corrections/mine"): USER,
     ("GET", "/corrections/pending-count"): ADMIN,
@@ -92,10 +93,10 @@ def _allowed(level, caller):
 def _app_routes():
     """Every APIRoute the app serves: its own, plus each included router's (prefixes are baked into the path)."""
     from main import app
-    from routers import admin, ai_usage, benchmarks, comparisons, corrections, gadgets, my_account, my_comparisons, my_gadgets, query, specs, stats, techspecs
+    from routers import admin, ai_usage, benchmarks, web_drafts, comparisons, corrections, gadgets, my_account, my_comparisons, my_gadgets, query, specs, stats, techspecs
 
     routes = [r for r in app.routes if isinstance(r, APIRoute)]
-    for module in (gadgets, specs, benchmarks, corrections, comparisons, query, stats, techspecs, my_gadgets, my_comparisons, ai_usage, admin, my_account):
+    for module in (gadgets, specs, benchmarks, web_drafts, corrections, comparisons, query, stats, techspecs, my_gadgets, my_comparisons, ai_usage, admin, my_account):
         routes += [r for r in module.router.routes if isinstance(r, APIRoute)]
     return routes
 
