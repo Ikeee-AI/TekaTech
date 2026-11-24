@@ -37,6 +37,7 @@ def test_deletes_the_callers_rows_then_the_auth_user(client, fake_supabase):
     assert [w[:2] for w in fake_supabase.writes] == [
         ("user_gadgets", "delete"),
         ("user_questions", "delete"),
+        ("user_comparison_questions", "delete"),
         ("spec_corrections", "delete"),
         ("spec_corrections", "update"),
     ]
@@ -125,3 +126,26 @@ def test_rate_limit_is_five_per_hour(client, fake_supabase):
         restore()
     assert codes[:5] == [204] * 5
     assert codes[5] == 429
+
+
+def test_account_deletion_works_before_the_comparison_table_exists(client, fake_supabase, monkeypatch):
+    # user_comparison_questions.sql may not be applied yet: a missing table means nothing to delete.
+    import routers.my_account as acc
+
+    real_table = fake_supabase.table
+
+    def table(name):
+        if name == "user_comparison_questions":
+            raise RuntimeError("{'code': 'PGRST205', 'message': \"Could not find the table 'public.user_comparison_questions'\"}")
+        return real_table(name)
+
+    monkeypatch.setattr(acc.supabase, "table", table)
+    from main import app
+    from auth import get_current_user
+    from types import SimpleNamespace
+
+    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id="00000000-0000-0000-0000-0000000000b2", app_metadata={})
+    try:
+        assert client.delete("/me/account").status_code == 204
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)

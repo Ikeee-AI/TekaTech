@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { MessageSquarePlus, Sparkles } from 'lucide-react'
+import { MessageSquarePlus, Sparkles, SquarePen } from 'lucide-react'
 import { api } from '../api/client'
 import { useAiAnswer } from '../hooks/useAiAnswer'
 import { validateAnswerResponse } from '../utils/aiAnswerState'
 import { MAX_QUESTION_CHARS } from '../utils/questionLimits'
 import { suggestFollowUps } from '../utils/followUps'
+import { historyForRequest } from '../utils/chatHistory'
+import { friendlyError } from '../utils/requestErrors'
+import { useComparisonThread } from '../hooks/useGadgetThread'
+import ThreadTurn, { AssistantMessage, UserBubble } from './ThreadTurn'
 import AiAnswerResult, { AnswerOptions } from './AiAnswerResult'
 import Button from './ui/Button'
 import Alert from './ui/Alert'
@@ -33,6 +37,14 @@ export default function AIComparisonPanel({
   const [askedQuestion, setAskedQuestion] = useState('')
   const [missingSpecs, setMissingSpecs] = useState([])
   const [checkingSpecs, setCheckingSpecs] = useState(true)
+  // Chat memory (22 Nov 2026): the answered questions of this comparison, oldest first. The last
+  // few go with each new question (POST /query `history`), so "which one is lighter?" after a
+  // battery question keeps the same phones and topic. Since 23 Nov a signed-in user's turns are
+  // saved (user_comparison_questions.sql) and reloaded for the same phones in any order; signed
+  // out they last for this page view. New Chat clears them; other phones are another thread.
+  const thread = useComparisonThread(gadgetIds, user?.id)
+  const turns = thread.turns
+  const [confirmClear, setConfirmClear] = useState(false)
   const questionRef = useRef(null)
   const {
     plainLanguage,
@@ -54,6 +66,9 @@ export default function AIComparisonPanel({
     handleCiteClick,
     handleCopy,
     resetAnswer,
+    startStream,
+    streamText,
+    streamSources,
   } = useAiAnswer()
 
   useEffect(() => {
@@ -80,6 +95,8 @@ export default function AIComparisonPanel({
   // Cheap and deterministic (a short curated list), so it is simply recomputed each render.
   const followUps = suggestFollowUps({ mode, gadgetNames, category, lastQuestion: askedQuestion })
   const specTargets = gadgetIds.map((id, i) => ({ id, name: gadgetNames[i] }))
+  // The answer on screen is the newest turn; the thread above shows the ones before it.
+  const earlierTurns = result && !loading && !error ? turns.slice(0, -1) : turns
 
   async function handleAsk(questionOverride) {
     const q = questionOverride ?? question
@@ -88,10 +105,19 @@ export default function AIComparisonPanel({
     setLoading(true)
     setError(null)
     try {
-      const data = await api.askQuestion({ question: q, gadget_ids: gadgetIds, ...requestOptions })
+      const history = historyForRequest(turns)
+      const data = await api.askQuestion({
+        question: q,
+        gadget_ids: gadgetIds,
+        ...requestOptions,
+        ...(history.length ? { history } : {}),
+        ...startStream(),
+      })
       // A reply without answer text or a valid source list is a failure, never an answer.
-      setResult(validateAnswerResponse(data))
+      const answer = validateAnswerResponse(data)
+      setResult(answer)
       setSourcesOpen(false)
+      thread.appendTurn(q, answer)
     } catch (err) {
       setError(err)
     } finally {
@@ -102,6 +128,15 @@ export default function AIComparisonPanel({
   // Back to the question box, keeping the last question there to edit.
   function handleAskAnother() {
     resetAnswer()
+    requestAnimationFrame(() => questionRef.current?.focus())
+  }
+
+  // Forget the conversation (on the server too, when saved): the next question is asked on its own.
+  async function handleNewChat() {
+    if (!(await thread.clear())) return
+    setConfirmClear(false)
+    resetAnswer()
+    setQuestion(defaultQuestion)
     requestAnimationFrame(() => questionRef.current?.focus())
   }
 
@@ -137,6 +172,20 @@ export default function AIComparisonPanel({
           </>
         )}
       </p>
+
+      {thread.error && (
+        <Alert tone="warning" className="mb-4">
+          {friendlyError(thread.error)}
+        </Alert>
+      )}
+
+      {earlierTurns.length > 0 && (
+        <ol className="space-y-6 mb-4" aria-label="Earlier questions about these phones">
+          {earlierTurns.map((turn, i) => (
+            <ThreadTurn key={turn.id} turn={turn} index={i} specTargets={specTargets} />
+          ))}
+        </ol>
+      )}
 
       {!checkingSpecs && missingSpecs.length > 0 && (
         <Alert tone="warning" className="mb-4">
@@ -197,7 +246,15 @@ export default function AIComparisonPanel({
         </div>
       )}
 
+      {askedQuestion && (loading || result || error) && (
+        <div className="mt-2">
+          <UserBubble question={askedQuestion} />
+        </div>
+      )}
+      <AnswerFrame asTurn={Boolean(askedQuestion && (loading || result || error))}>
       <AiAnswerResult
+        streamText={streamText}
+        streamSources={streamSources}
         variant="compare"
         loading={loading}
         error={error}
@@ -219,14 +276,50 @@ export default function AIComparisonPanel({
         onFollowUp={handleFollowUp}
         specTargets={specTargets}
       />
+      </AnswerFrame>
 
-      {result && !loading && (
-        <div className="mt-4 flex justify-end">
-          <Button variant="outline" size="sm" icon={MessageSquarePlus} onClick={handleAskAnother}>
-            Ask Another Question
-          </Button>
+      {(turns.length > 0 || result) && !loading && (
+        <div className="mt-4 flex items-center justify-end flex-wrap gap-2">
+          {turns.length > 0 && (
+            <>
+              <p className="mr-auto text-xs text-slate-500">
+                {thread.enabled ? 'Saved to your account. ' : ''}Follow-ups remember your last {Math.min(turns.length, 3)}{' '}
+                question{Math.min(turns.length, 3) === 1 ? '' : 's'}.
+              </p>
+              {confirmClear ? (
+                <>
+                  <span className="text-xs font-medium text-slate-700">Clear this conversation?</span>
+                  <Button variant="dangerSolid" size="sm" onClick={handleNewChat} loading={thread.clearing}>
+                    Clear
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setConfirmClear(false)} disabled={thread.clearing}>
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={SquarePen}
+                  onClick={() => (thread.enabled ? setConfirmClear(true) : handleNewChat())}
+                >
+                  New Chat
+                </Button>
+              )}
+            </>
+          )}
+          {result && (
+            <Button variant="outline" size="sm" icon={MessageSquarePlus} onClick={handleAskAnother}>
+              Ask Another Question
+            </Button>
+          )}
         </div>
       )}
     </section>
   )
+}
+
+// The live answer, styled like a saved turn (avatar and indent) once a question is on screen.
+function AnswerFrame({ asTurn, children }) {
+  return asTurn ? <AssistantMessage>{children}</AssistantMessage> : children
 }

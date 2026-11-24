@@ -122,6 +122,10 @@ describe('spec layout helpers', () => {
     ])
     expect(specHighlights([spec('a', 0, 'Display: OLED\nZoom: 5x optical')], 1).map((h) => h.title)).toEqual(['Display'])
     expect(specHighlights([spec('c', 0, 'Weight: 198 g')])).toEqual([])
+    // 23 Nov 2026 fill-ins: display protection counts as Build; ultra-wide, GPU and audio as later fill-ins.
+    expect(
+      specHighlights([spec('d', 0, 'Display protection: Gorilla Glass Victus 2\nUltra-wide camera: 8 MP\nGPU: Adreno 830\nAudio: Dual speakers')]).map((h) => h.title),
+    ).toEqual(['Build', 'Ultra-wide camera', 'Graphics', 'Audio'])
     // 'Rear video' counts as Video; resolution and dimensions are later fill-ins.
     expect(
       specHighlights([spec('r', 0, 'Rear video: 4K at 30fps\nResolution: 2712 x 1220\nDimensions: 161 x 75 x 8 mm')]).map(

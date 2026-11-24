@@ -40,9 +40,23 @@ DETAIL_ADMIN = "Admin accounts can't be deleted here. Ask the project owner to r
 DETAIL_FAILED = "Couldn't delete your account right now. Nothing more was changed; try again in a moment."
 
 
+def _delete_comparison_questions(user_id: str) -> None:
+    """Saved compare-page conversations (user_comparison_questions.sql, 23 Nov 2026). Until that
+    SQL is applied the table doesn't exist and there is nothing to delete, so only that case is
+    tolerated; any other failure stops the account deletion like the rows above."""
+    try:
+        supabase.table("user_comparison_questions").delete().eq("user_id", user_id).execute()
+    except Exception as exc:
+        text = str(exc)
+        if "user_comparison_questions" in text and ("does not exist" in text or "PGRST205" in text or "Could not find" in text):
+            return
+        raise
+
+
 def _delete_rows(user_id: str) -> None:
     supabase.table("user_gadgets").delete().eq("user_id", user_id).execute()
     supabase.table("user_questions").delete().eq("user_id", user_id).execute()
+    _delete_comparison_questions(user_id)
     supabase.table("spec_corrections").delete().eq("submitted_by", user_id).eq("status", "pending").execute()
     supabase.table("spec_corrections").update({"submitted_by": ANONYMOUS_SUBMITTER}).eq("submitted_by", user_id).execute()
 

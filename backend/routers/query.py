@@ -1,13 +1,19 @@
 import hashlib
+import json
 import logging
+import queue
 import re
+import threading
 import time
 from contextlib import contextmanager
+from contextvars import ContextVar, copy_context
+from types import SimpleNamespace
 from typing import Literal, Optional
 from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
 from openai import APITimeoutError, OpenAI, OpenAIError, RateLimitError
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
@@ -30,6 +36,7 @@ from prompts import (
 )
 from rate_limit import limiter
 from routers.comparisons import MAX_COMPARISON_GADGETS
+from routers.my_comparisons import comparison_key
 from supabase_client import supabase
 from tokens import count_chat_tokens
 
@@ -336,7 +343,10 @@ def _history_digest(history) -> str:
 # send them as a Server-Timing header (shown in browser DevTools, read by benchmark scripts) and
 # log one line per question. Milliseconds; a step that runs twice (the second chat call of the
 # general-knowledge fallback) adds up. Never part of the JSON response contract.
-TIMED_STEPS = ("embed", "retrieve", "generate")
+TIMED_STEPS = ("embed", "retrieve", "generate", "save")
+# The timing line goes through the request logger (request_id.py), which has its own INFO handler;
+# this module's logger has none, so Railway only ever showed its warnings (found 23 Nov 2026).
+timing_logger = logging.getLogger("tekatech.request")
 
 
 @contextmanager
@@ -478,7 +488,55 @@ def _cacheable(response: QueryResponse, *, grounded: bool) -> answer_cache.Cache
     )
 
 
-def _generate_answer(system_prompt: str, user_content: str, answer_options: dict | None = None):
+# Streaming (POST /query/stream, 23 Nov 2026). The whole /query pipeline runs unchanged; when this
+# sink is set, the grounded chat call streams and each piece of text is passed to it as it arrives,
+# and the sources are passed just before. The finished, validated answer still comes at the end
+# (the stream endpoint sends it as `done`), so the browser swaps the streamed text for it.
+_stream_sink: ContextVar = ContextVar("query_stream_sink", default=None)
+
+# Text is held back until it can't be the NOT_IN_SPECS sentinel (which is never shown): the start
+# of the answer, stripped of the quotes/asterisks a model may wrap it in, must be longer than the
+# token, or differ from its start.
+_SENTINEL_HOLD = len(NOT_IN_SPECS_SENTINEL) + 2
+
+
+def _could_be_sentinel(text: str) -> bool:
+    head = text.lstrip(" \t\n" + "\"'`*\u201c\u201d\u2018\u2019").upper()
+    if len(head) >= _SENTINEL_HOLD:
+        return head.startswith(NOT_IN_SPECS_SENTINEL)
+    return NOT_IN_SPECS_SENTINEL.startswith(head[: len(NOT_IN_SPECS_SENTINEL)])
+
+
+def _emit(kind: str, data) -> None:
+    sink = _stream_sink.get()
+    if sink is not None:
+        sink(kind, data)
+
+
+def _stream_completion(chat_kwargs: dict, sink):
+    """The chat call with stream=True: forwards text to the sink, returns an object shaped like a
+    normal completion (content, finish_reason, usage) so everything after it is unchanged."""
+    stream = client.chat.completions.create(stream=True, stream_options={"include_usage": True}, **chat_kwargs)
+    parts, finish_reason, usage, released = [], None, None, False
+    for event in stream:
+        if getattr(event, "usage", None):
+            usage = event.usage
+        for choice in event.choices or []:
+            piece = getattr(choice.delta, "content", None) if choice.delta else None
+            if piece:
+                parts.append(piece)
+                if released:
+                    sink("delta", piece)
+                elif not _could_be_sentinel("".join(parts)):
+                    released = True
+                    sink("delta", "".join(parts))
+            if choice.finish_reason:
+                finish_reason = choice.finish_reason
+    message = SimpleNamespace(content="".join(parts))
+    return SimpleNamespace(choices=[SimpleNamespace(message=message, finish_reason=finish_reason)], usage=usage)
+
+
+def _generate_answer(system_prompt: str, user_content: str, answer_options: dict | None = None, *, stream: bool = False):
     """One capped chat call; returns (answer text, completion). Every failure is a safe 503.
 
     Shared by the grounded answer and the general-knowledge answer, so both get the same cap
@@ -486,16 +544,21 @@ def _generate_answer(system_prompt: str, user_content: str, answer_options: dict
     ANSWER_REASONING_EFFORT; the grounded answer passes answer_settings() for its scope.
     """
     chat_settings = answer_options or {"reasoning_effort": ANSWER_REASONING_EFFORT}
+    chat_kwargs = dict(
+        model=ANSWER_MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+        ],
+        max_completion_tokens=ANSWER_MAX_COMPLETION_TOKENS,
+        **chat_settings,
+    )
+    sink = _stream_sink.get() if stream else None
     try:
-        completion = client.chat.completions.create(
-            model=ANSWER_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-            ],
-            max_completion_tokens=ANSWER_MAX_COMPLETION_TOKENS,
-            **chat_settings,
-        )
+        if sink is not None:
+            completion = _stream_completion(chat_kwargs, sink)
+        else:
+            completion = client.chat.completions.create(**chat_kwargs)
     except OpenAIError as exc:
         raise _provider_failure(exc) from None
     except ValueError as exc:
@@ -618,8 +681,12 @@ def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
     )
 
 
+# /query and /query/stream share one 10/minute budget per caller.
+_QUERY_LIMIT = limiter.shared_limit("10/minute", scope="ai-query")
+
+
 @router.post("", response_model=QueryResponse)
-@limiter.limit("10/minute")
+@_QUERY_LIMIT
 def ask_question(request: Request, response: Response, payload: QueryRequest, user=Depends(get_current_user)):
     # Signed-in users only (owner decision, 14 Nov 2026): anonymous visitors may browse the
     # catalog but every AI mode (single gadget, comparison, catalog-wide, general knowledge)
@@ -630,20 +697,84 @@ def ask_question(request: Request, response: Response, payload: QueryRequest, us
     # validation, so a 401/422 costs nothing; a cached answer still counts. Over the limit is a
     # 429 with a plain sentence. The X-AI-Questions-* headers let the UI show what is left.
     response.headers.update(ai_quota.consume(user))
+    answer, timing = _run_query(request, payload, user)
+    if timing:
+        response.headers["Server-Timing"] = timing
+    return answer
+
+
+def _run_query(request: Request, payload: "QueryRequest", user) -> tuple["QueryResponse", str | None]:
+    """Everything after the daily limit, shared by /query and /query/stream."""
     simulated = _requested_simulation(request, user)
     if simulated:
         # Returns or raises before the cache is read or written, so a drill always shows the
         # failure it asked for and never leaves a cached answer behind (or a saved thread turn).
-        return _simulated_failure(simulated)
+        return _simulated_failure(simulated), None
     # Resolved before answering, so the query_history row already knows the question is private.
     thread_user = _thread_user(user, payload)
     started = time.perf_counter()
     answer = _answer_question(request, payload, user, private=thread_user is not None)
+    if thread_user is not None:
+        with _timed(request, "save"):
+            _save_thread_turn(thread_user, payload, answer)
+    elif payload.gadget_ids and len(payload.gadget_ids) >= 2:
+        with _timed(request, "save"):
+            _save_comparison_turn(user, payload, answer)
     timing = _server_timing(request, (time.perf_counter() - started) * 1000)
-    response.headers["Server-Timing"] = timing
-    logger.info("/query timings (ms): %s cached=%s", timing, answer.cached)
-    _save_thread_turn(thread_user, payload, answer)
-    return answer
+    timing_logger.info(
+        "query_timings %s cached=%s gadgets=%d history=%d",
+        timing, answer.cached, len(payload.gadget_ids or []), len(payload.history),
+    )
+    return answer, timing
+
+
+def _sse(kind: str, data) -> str:
+    return f"event: {kind}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+@router.post("/stream")
+@_QUERY_LIMIT
+def ask_question_stream(request: Request, response: Response, payload: QueryRequest, user=Depends(get_current_user)):
+    """POST /query, streamed as server-sent events (23 Nov 2026; benchmark in docs/devops/app-performance.md).
+
+    Same body, sign-in, limits, cache, history, general-knowledge fallback and validation as
+    /query. A 401/422/429 is a normal JSON error before any streaming starts. Then events:
+      sources  the numbered sources (only when a grounded answer is being written)
+      delta    a piece of answer text (never the NOT_IN_SPECS sentinel)
+      done     the finished QueryResponse; it replaces the streamed text (citations cleaned)
+      error    {"status", "detail"}: what /query would have answered as an error (a cut-off
+               answer is still a 503, never shown partial)
+    """
+    headers = ai_quota.consume(user)
+    events: queue.Queue = queue.Queue()
+
+    def put(kind, data):
+        events.put((kind, data))
+
+    def work():
+        _stream_sink.set(put)
+        try:
+            answer, timing = _run_query(request, payload, user)
+            put("done", {**answer.model_dump(mode="json"), "server_timing": timing})
+        except HTTPException as exc:
+            put("error", {"status": exc.status_code, "detail": exc.detail})
+        except Exception:
+            logger.exception("/query/stream failed")
+            put("error", {"status": 503, "detail": "The AI service is unavailable right now. Please try again."})
+        finally:
+            events.put(None)
+
+    threading.Thread(target=copy_context().run, args=(work,), daemon=True).start()
+
+    def body():
+        while (item := events.get()) is not None:
+            yield _sse(*item)
+
+    return StreamingResponse(
+        body(),
+        media_type="text/event-stream",
+        headers={**headers, "Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 def _thread_user(user, payload: "QueryRequest"):
@@ -683,6 +814,49 @@ def _save_thread_turn(user, payload: "QueryRequest", response: QueryResponse) ->
         logger.exception("user_questions insert failed; the answer is returned without saving the turn")
         return
     _trim_thread(user_id, gadget_id)
+
+
+def _save_comparison_turn(user, payload: "QueryRequest", response: QueryResponse) -> None:
+    """Per-comparison conversation (user_comparison_questions.sql, 23 Nov 2026): a signed-in
+    user's question about two or more gadgets is saved with its full answer, keyed by the sorted
+    gadget ids, so the compare page can show the thread later. Best-effort like
+    _save_thread_turn: never fails the request (until the SQL is applied, the insert fails and is
+    logged). The question still also feeds query_history/trending, as before."""
+    user_id, key = str(user.id), comparison_key(payload.gadget_ids)
+    try:
+        supabase.table("user_comparison_questions").insert(
+            {
+                "user_id": user_id,
+                "comparison_key": key,
+                "gadget_ids": key.split(","),
+                "question": payload.question,
+                "response": response.model_dump(mode="json"),
+            }
+        ).execute()
+    except Exception:
+        logger.warning("user_comparison_questions insert failed; the answer is returned without saving", exc_info=True)
+        return
+    try:
+        stale = (
+            supabase.table("user_comparison_questions")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("comparison_key", key)
+            .order("created_at", desc=True)
+            .range(MAX_THREAD_TURNS, MAX_THREAD_TURNS + THREAD_TRIM_BATCH - 1)
+            .execute()
+            .data
+        )
+        if stale:
+            (
+                supabase.table("user_comparison_questions")
+                .delete()
+                .in_("id", [row["id"] for row in stale])
+                .eq("user_id", user_id)
+                .execute()
+            )
+    except Exception:
+        logger.warning("user_comparison_questions trim failed; retried on the next saved turn", exc_info=True)
 
 
 # Each saved turn holds a full answer and its sources, and a /query loop with a valid
@@ -899,12 +1073,26 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     # fallback rule: reply NOT_IN_SPECS when the snippets hold none of the answer.
     system_prompt = build_system_prompt(payload.plain_language, payload.allow_general_knowledge)
 
+    sources = [
+        Source(
+            gadget_id=m["gadget_id"],
+            gadget_name=gadget_lookup.get(m["gadget_id"], {}).get("name", "Unknown"),
+            content=m["content"],
+            source_url=m.get("source_url"),
+            similarity=round(m["similarity"], 3),
+        )
+        for m in matches
+    ]
+    # Streaming only: the numbered sources go first, so streamed [n] markers can already point at them.
+    _emit("sources", [s.model_dump(mode="json") for s in sources])
+
     # 5. Generate the answer, grounded in only what was retrieved
     with _timed(request, "generate"):
         answer, completion = _generate_answer(
             system_prompt,
             build_user_message(context, scope_note, payload.question, payload.history),
             answer_settings(len(payload.gadget_ids or [])),
+            stream=True,
         )
 
     # 5a. The sentinel is never shown. A scoped question (gadget/compare page) always retrieves
@@ -948,26 +1136,16 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     # 6. Log it — powers query_history / trending questions, plus token telemetry so the
     #    cost of a query is answerable after the fact rather than only via the OpenAI bill.
     cited_gadget_ids = list({m["gadget_id"] for m in matches})
-    _record_query(
-        question=payload.question,
-        answer=answer,
-        cited_gadget_ids=cited_gadget_ids,
-        embedding_tokens=_token_count(embedding_response, "total_tokens"),
-        prompt_tokens=_token_count(completion, "prompt_tokens"),
-        completion_tokens=_token_count(completion, "completion_tokens"),
-        private=private,
-    )
-
-    sources = [
-        Source(
-            gadget_id=m["gadget_id"],
-            gadget_name=gadget_lookup.get(m["gadget_id"], {}).get("name", "Unknown"),
-            content=m["content"],
-            source_url=m.get("source_url"),
-            similarity=round(m["similarity"], 3),
+    with _timed(request, "save"):
+        _record_query(
+            question=payload.question,
+            answer=answer,
+            cited_gadget_ids=cited_gadget_ids,
+            embedding_tokens=_token_count(embedding_response, "total_tokens"),
+            prompt_tokens=_token_count(completion, "prompt_tokens"),
+            completion_tokens=_token_count(completion, "completion_tokens"),
+            private=private,
         )
-        for m in matches
-    ]
 
     response = QueryResponse(
         answer=answer,

@@ -92,3 +92,33 @@ Owner report: the gadget chat "cannot remember" — asked whether a phone runs G
 
 Read side by side: "before" answered "Can it run Genshin Impact smoothly?" with "I can't answer that definitively"; "after" said Genshin is not in the specs, then gave a hedged judgement from the cited chip, RAM, 120 Hz display and battery. "Is that enough for a full day of gaming?" after a battery question and "How far can it zoom?" after a telephoto question kept their subject. `low` reasoning was twice as slow and no better, so the fast one-phone settings stay. **Decision (owner asked for both fixes, 22 Nov):** prompt v2 is live in code (`PROMPT_VERSION = "v2"`), history on. Raw results: `.local/prompt-v2-eval-2026-11-22.*`, `.local/conversation-bench-2026-11-22.*`.
 
+**3. Compare page follow-ups (23 Nov 2026, `--set compare`)**: the compare panel now remembers its answered questions too (page view only; New Chat or a different set of phones forgets them). 3 two-turn comparisons (V50 / Reno14 / 13 Pro+, iPhone 16 / Galaxy S25, V50 / Reno14), `low` reasoning, 2 runs, 24 calls, about US$0.04.
+
+| Variant | Median | Slowest | Unsupported values | Cost / answer |
+| --- | --- | --- | --- | --- |
+| before (v1, follow-up alone) | 6.64 s | 12.78 s | 0 | $0.00163 |
+| after (v2 + earlier turn) | 6.39 s | 12.28 s | 0 | $0.00157 |
+
+"Is the difference worth the price?" after "Compare battery life": before drifted to chip and build; after compared the battery difference and said no price is in the specs. "Which one charges the fastest?" kept the right winner (V50, 90W) and the battery follow-up was right in both runs (V50 and Reno14 tie at 6000 mAh). Raw results: `.local/conversation-compare-2026-11-23.*`.
+
+### Streaming benchmark (23 Nov 2026)
+
+Measured before building it (`scripts/benchmark_streaming.py`): the same 12 real-catalog questions (9 one-phone, 3 comparisons), app settings, each asked whole and streamed in alternating order, 2 runs, 48 calls, about US$0.04 (plus one earlier run lost to a script error, about US$0.04).
+
+| Way | Questions | First words (median) | First words (p90) | Finished (median) | Cut off | Needed citation clean-up |
+| --- | --- | --- | --- | --- | --- | --- |
+| whole (until now) | one phone | 1.26 s | 1.65 s | 1.26 s | 0 | 0 |
+| streamed | one phone | **0.83 s** | 0.90 s | 1.19 s | 0 | 0 |
+| whole (until now) | comparison | 10.84 s | 17.44 s | 10.84 s | 1 | 0 |
+| streamed | comparison | **3.54 s** | 6.88 s | 9.31 s | 0 | 0 |
+
+Same cost per answer. No answer needed the citation clean-up, so a bad `[n]` flashing during streaming is rare (it is replaced by the cleaned `done` answer). One comparison hit the 1500-token cap: with streaming its text is replaced by the 503. **Decision (owner, 23 Nov):** build it. `POST /query/stream` + `api.askQuestion` handlers; `/query` unchanged. Raw results: `.local/streaming-bench-2026-11-23.*`.
+
+### Live timings (23 Nov 2026)
+
+Railway's request log (`railway logs -s tekatech-api`) on deployment `a549e3e` had only the two owner-run test answers (V50 5G chat, one phone, with history): **6.7 s and 4.6 s** end to end, while the chat step alone benchmarks at about 1.3 s. So most of a one-phone answer is outside the model call (embedding, Supabase search and lookups, saving, sign-in check). The per-step line meant to show this never reached Railway: `routers.query`'s logger has no INFO handler there. Fixed: the line (`query_timings embed;dur=… retrieve;dur=… generate;dur=… save;dur=… total;dur=… cached=… gadgets=… history=…`) now goes through the request logger, and the history and chat-thread writes are timed as `save`. Read it after the next deploy with `railway logs -s tekatech-api -n 2000 | grep query_timings`.
+
+### Prompt v3 benchmark (23 Nov 2026)
+
+TC-07 and TC-24 failed on every setting and prompt version: TC-07 gave the iPhone 15's playback hours for "battery" without saying its capacity is not stated; TC-24 declined the Galaxy S24+ and then gave the base S24's 4000 mAh. v3 = v2 + MISSING SPECS + VARIANT NOT IN THE SNIPPETS rules. Same 24 cases, app settings, 2 runs (96 calls, about US$0.05): **v3 passed 24/24 in both runs** and met every target (factual 1.0, citations 1.0, abstention 1.0, override 1.0); v2 passed 23 and 21. Follow-up conversations (5 x 2, 40 calls, about US$0.02): v3 median 1.98 s vs v2 2.15 s, no unsupported values. **Decision:** v3 switched on (owner asked for item 3, fix the failing cases, 23 Nov). Raw results: `.local/prompt-v3-eval-2026-11-23.*`, `.local/conversation-v3-2026-11-23.*`.
+

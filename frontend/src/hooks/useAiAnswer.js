@@ -28,6 +28,23 @@ export function useAiAnswer() {
   const [copied, setCopied] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(null)
   const sourceRefs = useRef([])
+  // Streaming (23 Nov 2026): the answer text so far and its numbered sources, shown while the
+  // answer is still being written; the finished answer (result) replaces them.
+  const [streamText, setStreamText] = useState('')
+  const [streamSources, setStreamSources] = useState([])
+  const streamId = useRef(0)
+
+  /** Handlers for one api.askQuestion call. A newer question makes older handlers do nothing,
+   * so a superseded stream can't write into the new answer. */
+  function startStream() {
+    const id = ++streamId.current
+    setStreamText('')
+    setStreamSources([])
+    return {
+      onSources: (sources) => id === streamId.current && setStreamSources(sources),
+      onDelta: (piece) => id === streamId.current && setStreamText((t) => t + piece),
+    }
+  }
 
   function togglePlainLanguage(checked) {
     setPlainLanguage(checked)
@@ -52,6 +69,9 @@ export function useAiAnswer() {
   // Clears the previous answer (and any error) so the caller can show its
   // question input again for a follow-up question.
   function resetAnswer() {
+    streamId.current += 1
+    setStreamText('')
+    setStreamSources([])
     setResult(null)
     setError(null)
     setSourcesOpen(false)
@@ -91,5 +111,8 @@ export function useAiAnswer() {
     handleCiteClick,
     handleCopy,
     resetAnswer,
+    startStream,
+    streamText,
+    streamSources,
   }
 }

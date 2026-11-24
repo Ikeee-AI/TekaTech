@@ -37,11 +37,18 @@ function renderPanel() {
 }
 
 describe('AIAnswerPanel request body', () => {
+  // The streaming handlers ride along in the same object and are stripped before sending.
+  const sentBody = ({ onDelta, onSources, ...body }) => {
+    expect(typeof onDelta).toBe('function')
+    expect(typeof onSources).toBe('function')
+    return body
+  }
+
   it('asks without allow_general_knowledge by default', async () => {
     renderPanel()
     await screen.findByText('Answer based on 1 cited spec')
     expect(api.askQuestion).toHaveBeenCalledOnce()
-    expect(api.askQuestion.mock.calls[0][0]).toEqual({ question: 'How big is the Pixel 9 battery?', plain_language: false })
+    expect(sentBody(api.askQuestion.mock.calls[0][0])).toEqual({ question: 'How big is the Pixel 9 battery?', plain_language: false })
   })
 
   it('sends allow_general_knowledge: true on the next ask once ticked, without re-asking by itself', async () => {
@@ -53,7 +60,7 @@ describe('AIAnswerPanel request body', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Regenerate' }))
     await screen.findByText('Answer based on 1 cited spec')
     expect(api.askQuestion).toHaveBeenCalledTimes(2)
-    expect(api.askQuestion.mock.calls[1][0]).toEqual({
+    expect(sentBody(api.askQuestion.mock.calls[1][0])).toEqual({
       question: 'How big is the Pixel 9 battery?',
       plain_language: false,
       allow_general_knowledge: true,

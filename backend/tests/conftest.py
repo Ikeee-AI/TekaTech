@@ -171,6 +171,7 @@ def fake_supabase(monkeypatch):
     import routers.query as query_module
     import routers.stats as stats_module
     import routers.my_gadgets as my_gadgets_module
+    import routers.my_comparisons as my_comparisons_module
     import routers.my_account as my_account_module
     import routers.admin as admin_module
 
@@ -181,6 +182,7 @@ def fake_supabase(monkeypatch):
     monkeypatch.setattr(query_module, "supabase", fake)
     monkeypatch.setattr(stats_module, "supabase", fake)
     monkeypatch.setattr(my_gadgets_module, "supabase", fake)
+    monkeypatch.setattr(my_comparisons_module, "supabase", fake)
     monkeypatch.setattr(my_account_module, "supabase", fake)
     monkeypatch.setattr(admin_module, "supabase", fake)
     return fake

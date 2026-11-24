@@ -95,6 +95,21 @@ function LoadingNotice({ skeletonLines, variant }) {
   )
 }
 
+/** The answer while it is still being written. Hidden from screen readers (the panel is a
+ * live region and would re-read every new word); they hear one steady status, then the
+ * finished answer. Citations aren't clickable yet: the source cards come with the answer. */
+function StreamingAnswer({ text, sources }) {
+  return (
+    <div className="mt-3">
+      <span className="sr-only">Writing your answer…</span>
+      <div aria-hidden="true" className="text-[15px] text-slate-800 leading-relaxed">
+        <AnswerText text={text} sources={sources} onCiteClick={() => {}} />
+        <span className="inline-block w-2 h-4 ml-0.5 align-text-bottom bg-sage-600 animate-pulse rounded-sm" />
+      </div>
+    </div>
+  )
+}
+
 /** An answer that cites none of its sources: say plainly that nothing in it is backed by a
  * saved spec. Wording proposed on #124 for Adrian to confirm, since it affects how
  * evaluation abstentions read. */
@@ -269,6 +284,9 @@ export default function AiAnswerResult({
   // The gadget chat keeps the answer options in its message box, so the footer only
   // needs Copy and Regenerate.
   hideOptions = false,
+  // Streaming: the answer so far while it is being written (useAiAnswer). Replaced by result.
+  streamText = '',
+  streamSources = [],
 }) {
   const missingEvidence = result ? isMissingEvidence(result) : false
   // A general-knowledge answer has no sources by design: amber label, no badge, no sources.
@@ -278,7 +296,8 @@ export default function AiAnswerResult({
   const citedCount = result && !missingEvidence && !generalKnowledge ? citedSourceCount(result) : 0
   return (
     <div aria-live="polite" aria-busy={loading || undefined}>
-      {loading && <LoadingNotice skeletonLines={skeletonLines} variant={variant} />}
+      {loading && !streamText && <LoadingNotice skeletonLines={skeletonLines} variant={variant} />}
+      {loading && streamText && <StreamingAnswer text={streamText} sources={streamSources} />}
 
       {error && !loading && <FailureNotice error={error} onRetry={onRetry} />}
 

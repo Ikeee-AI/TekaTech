@@ -56,6 +56,9 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
     handleCiteClick,
     handleCopy,
     resetAnswer,
+    startStream,
+    streamText,
+    streamSources,
   } = useAiAnswer()
   const [draft, setDraft] = useState('')
   // The question behind the live (newest) turn; '' when there is none.
@@ -100,9 +103,23 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
 
   // A question is sent: follow it down. Its answer arrives: bring the question to the top of
   // the box so a long answer is read from its start, not its end.
+  // While an answer streams, follow the new text if the reader is already at the bottom.
+  const streamedRef = useRef(false)
+  useEffect(() => {
+    if (!loading || !streamText) return
+    streamedRef.current = true
+    if (atBottom) scrollToBottom(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamText])
+
   useEffect(() => {
     if (loading) {
       scrollToBottom()
+      return
+    }
+    // A streamed answer was read as it arrived: don't jump back to its start when it is final.
+    if (streamedRef.current) {
+      streamedRef.current = false
       return
     }
     const box = scrollRef.current
@@ -145,6 +162,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
         ...requestOptions,
         ...(history.length ? { history } : {}),
         ...(regenerate ? { regenerate: true } : {}),
+        ...startStream(),
       })
       if (requestId !== latestRequest.current) return
       // A reply without answer text or a valid source list is a failure, never an answer.
@@ -306,6 +324,8 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
                   <UserBubble question={askedQuestion} />
                   <AssistantMessage>
                     <AiAnswerResult
+                      streamText={streamText}
+                      streamSources={streamSources}
                       idPrefix="live"
                       hideOptions
                       loading={loading}

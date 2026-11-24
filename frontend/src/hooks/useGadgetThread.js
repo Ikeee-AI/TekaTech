@@ -20,7 +20,29 @@ export function toThreadTurn(row) {
  * saved: the turns live only in this page view, like an unsaved chat.
  */
 export function useGadgetThread(gadgetId, userId) {
-  const enabled = Boolean(gadgetId && userId)
+  return useSavedThread(
+    gadgetId,
+    userId,
+    () => api.getGadgetQuestions(gadgetId),
+    () => api.clearGadgetQuestions(gadgetId),
+  )
+}
+
+/** The compare page's saved conversation about one set of phones (user_comparison_questions.sql,
+ * 23 Nov 2026), keyed by the sorted gadget ids: the same phones in any order are one thread. */
+export function useComparisonThread(gadgetIds, userId) {
+  const key = gadgetIds.length >= 2 ? [...gadgetIds].sort().join(',') : ''
+  return useSavedThread(
+    key,
+    userId,
+    () => api.getComparisonQuestions(key.split(',')),
+    () => api.clearComparisonQuestions(key.split(',')),
+  )
+}
+
+/** Shared by both: `key` names the thread (falsy = nothing to load); load/clear call the API. */
+function useSavedThread(key, userId, load, clearOnServer) {
+  const enabled = Boolean(key && userId)
   const [turns, setTurns] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -34,8 +56,7 @@ export function useGadgetThread(gadgetId, userId) {
     setError(null)
     if (!enabled) return undefined
     setLoading(true)
-    api
-      .getGadgetQuestions(gadgetId)
+    load()
       .then((rows) => {
         if (!cancelled) setTurns((Array.isArray(rows) ? rows : []).map(toThreadTurn).filter(Boolean))
       })
@@ -48,7 +69,9 @@ export function useGadgetThread(gadgetId, userId) {
     return () => {
       cancelled = true
     }
-  }, [enabled, gadgetId, userId])
+    // load is a new function each render; key and userId say when the thread changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, key, userId])
 
   // The server already saved this answer when it was returned; mirror it locally.
   function appendTurn(question, result) {
@@ -63,7 +86,7 @@ export function useGadgetThread(gadgetId, userId) {
     }
     setClearing(true)
     try {
-      await api.clearGadgetQuestions(gadgetId)
+      await clearOnServer()
       setTurns([])
       setError(null)
       return true
