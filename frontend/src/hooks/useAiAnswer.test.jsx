@@ -21,6 +21,14 @@ describe('answerRequestOptions', () => {
       allow_general_knowledge: true,
     })
   })
+
+  it('sends allow_web_search: true only when it is on', () => {
+    expect(answerRequestOptions({ plainLanguage: false, allowWebSearch: true })).toEqual({
+      plain_language: false,
+      allow_web_search: true,
+    })
+    expect(answerRequestOptions({ plainLanguage: false, allowWebSearch: false })).toEqual({ plain_language: false })
+  })
 })
 
 describe('useAiAnswer general-knowledge toggle', () => {

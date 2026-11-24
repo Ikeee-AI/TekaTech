@@ -200,6 +200,9 @@ def collect(api_base, cases, snippets, http=http_json, sleep=time.sleep, delay=Q
         if gk:
             payload["allow_general_knowledge"] = True
             payload["plain_language"] = bool(case.get("plain_language"))
+            # GK-10/GK-11 (24 Nov 2026): cases that check the "Search the Web" routing.
+            if case.get("allow_web_search"):
+                payload["allow_web_search"] = True
         if scope and scope.get(case["id"]):
             payload["gadget_ids"] = list(scope[case["id"]])
         try:

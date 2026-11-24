@@ -297,8 +297,11 @@ const MORE_PARSERS = {
       if (!/^\s*(?:chip|chipset|soc|processor|platform)\b/i.test(label)) continue
       const name = value
         .split(/[(,]/)[0]
+        // A sentence value (Samsung A-series sheets): "Galaxy A56 5G is powered by the Exynos 1580
+        // chipset", "Galaxy A36 5G features the Snapdragon 6 Gen 3" → the chip after the verb.
+        .replace(/^.*\b(?:powered by|features|uses|runs on|comes with)\s+(?:the\s+|an?\s+)?/i, '')
         .replace(/\s+\d+(?:\.\d+)?\s*GHz.*$/i, '')
-        .replace(/\s+(?:mobile platform|chip|processor)\s*\.?\s*$/i, '')
+        .replace(/\s+(?:mobile platform|chipset|chip|processor)\s*\.?\s*$/i, '')
         .replace(/[.\s]+$/, '')
         .trim()
       if (/[a-z]/i.test(name) && /\d|bionic|elite/i.test(name)) return { value: name, unit: '' }

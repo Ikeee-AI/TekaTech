@@ -59,7 +59,8 @@ Run these in Supabase SQL Editor as the project postgres owner:
 10. `backend/sql/gadget_price_source.sql` (sourced prices, 14 Nov 2026: three nullable columns on `gadgets`)
 11. `backend/sql/gadget_price_launch.sql` (launch prices, 15 Nov 2026: one boolean column on `gadgets`, default false)
 12. `backend/sql/api_access.sql` (restricts RPC/table grants)
-13. `backend/sql/lock_browser_roles.sql` (always last: removes every browser-role right in `public`, including tables no file names, and stops Supabase's defaults from granting new objects to the browser; 14 Nov 2026)
+13. `backend/sql/gadget_benchmarks.sql` (published game and chip benchmarks, 24 Nov 2026: one table, private to the backend, removed with the gadget)
+14. `backend/sql/lock_browser_roles.sql` (always last: removes every browser-role right in `public`, including tables no file names, and stops Supabase's defaults from granting new objects to the browser; 14 Nov 2026)
 
 ### Browser-role lock (14 Nov 2026)
 
@@ -81,6 +82,15 @@ Projects set up before 3 November 2026 need only step 8, and it must run **befor
 ```sql
 select relrowsecurity from pg_class where oid = 'public.user_questions'::regclass;  -- true
 select has_table_privilege('authenticated', 'public.user_questions', 'SELECT');    -- false
+```
+
+### Adding benchmarks to an existing project
+
+Projects set up before 24 November 2026 need only step 13. Run it **before** deploying the backend that reads it, on DEV first and then on the live project; then re-run step 14 (`lock_browser_roles.sql`, replay-safe). Until it is applied, `GET /gadgets/{id}/benchmarks` fails (the phone page hides the section for visitors) and AI answers skip benchmarks (logged, the answer still works). Paste `backend/sql/gadget_benchmarks.sql` into the SQL Editor and run it once. It creates `gadget_benchmarks` (`create table if not exists`, safe to re-run) with checks on kind, text lengths, value range and an http(s) source link, an index on `(gadget_id, kind, test)`, RLS on, no browser access, and reloads the PostgREST schema cache. It changes no existing table or data. Check it with:
+
+```sql
+select relrowsecurity from pg_class where oid = 'public.gadget_benchmarks'::regclass;   -- true
+select has_table_privilege('anon', 'public.gadget_benchmarks', 'SELECT');                -- false
 ```
 
 ### Adding the per-comparison AI conversation to an existing project

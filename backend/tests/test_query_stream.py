@@ -68,6 +68,27 @@ def test_sentinel_is_never_streamed_and_general_knowledge_answers(client, fake_s
     assert events[-1][0] == "done" and events[-1][1]["answer_basis"] == "general_knowledge"
 
 
+def test_uncited_decline_with_web_search_ends_in_the_web_answer(client, fake_supabase):
+    """Pre-review #294: with "Search the Web" on, a decline streamed in words is replaced by the
+    cited web answer in `done` (the streamed text and spec sources are not the final answer)."""
+    from tests.test_query_web import _web_response
+
+    _set_matching_spec(fake_supabase, GADGET)
+    with patch("routers.query.client") as mock_client, patch("web_search.client") as web_client:
+        web_client.responses.create.return_value = _web_response()
+        resp = _stream(
+            client, mock_client, ["The snippets do not state ", "whether it supports DeX."], allow_web_search=True
+        )
+    events = _events(resp)
+    assert events[0][0] == "sources" and events[0][1][0]["gadget_name"] == "Gadget X"
+    kind, done = events[-1]
+    assert kind == "done"
+    assert done["answer_basis"] == "web"
+    assert "[1]" in done["answer"] and "do not state" not in done["answer"]
+    assert [s["kind"] for s in done["sources"]] == ["web"]
+    web_client.responses.create.assert_called_once()
+
+
 def test_cached_answer_arrives_as_done_only(client, fake_supabase):
     _set_matching_spec(fake_supabase, GADGET)
     with patch("routers.query.client") as mock_client:

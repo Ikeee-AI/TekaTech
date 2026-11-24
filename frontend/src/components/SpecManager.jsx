@@ -422,7 +422,7 @@ function PartRow({ spec, gadgetId, indexingId, indexError, onIndex, onDeleted })
   const state = indexed ? 'indexed' : isIndexing ? 'indexing' : indexError ? 'failed' : 'pending'
   const firstLine = spec.content.split('\n').find((l) => l.trim()) ?? ''
   return (
-    <li aria-label={`Spec #${spec.chunk_index}`} className="py-2 border-t border-slate-200 first:border-t-0">
+    <li aria-label={`Part ${spec.chunk_index + 1}`} className="py-2 border-t border-slate-200 first:border-t-0">
       <div className="grid grid-cols-1 sm:grid-cols-[minmax(7rem,28%)_minmax(0,1fr)] gap-x-4 gap-y-1">
         <p className="text-sm font-medium text-slate-500 sm:pt-1">
           Part {spec.chunk_index + 1} · {spec.source_url ? sourceLabel(spec.source_url) : 'no source link'}
@@ -559,7 +559,7 @@ function sourceLabel(url) {
   }
 }
 
-export default function SpecManager({ gadgetId, onSpecsChange }) {
+export default function SpecManager({ gadgetId, onSpecsChange, reloadKey = 0 }) {
   const { user } = useAuth()
   const location = useLocation()
   const isAdmin = Boolean(user?.app_metadata?.is_admin)
@@ -593,6 +593,12 @@ export default function SpecManager({ gadgetId, onSpecsChange }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- app-wide fetch convention (see CLAUDE.md)
     loadSpecs()
   }, [loadSpecs])
+
+  // Specs saved elsewhere on the page (the admin's web drafts) bump reloadKey: refresh quietly.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- app-wide fetch convention (see CLAUDE.md)
+    if (reloadKey > 0) loadSpecs({ background: true })
+  }, [reloadKey, loadSpecs])
 
   // Indexes one chunk. Returns the error (or null), so a bulk run can stop on a rate limit.
   function indexOne(gid, specId) {

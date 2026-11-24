@@ -52,9 +52,10 @@ def test_every_expected_gk_fact_traces_to_a_stored_source():
         if case.get("should_refuse") or case.get("should_decline"):
             assert "expected_facts" not in case
             continue
-        if case.get("should_not_refuse") and "expected_facts" not in case:
+        if (case.get("should_not_refuse") or case["type"] == "reaches_web") and "expected_facts" not in case:
             # A regression case with no stored spec for its product: nothing to trace, and
-            # nothing may be asserted (GK-07, Pixel 9).
+            # nothing may be asserted (GK-07, Pixel 9). A web answer's facts come from pages
+            # found at query time, not sources.json (GK-10).
             assert "trace" not in case
             continue
         assert case["trace"], case["id"]
@@ -167,8 +168,9 @@ def test_markdown_gk_report_states_versions_and_denominators():
     report = gk_with(**{"GK-01": LABEL + " The iPhone 15 uses the A16 [1]."})
     report.update(provider="reference", model="none", prompt_version="gk-v1", origin="reference")
     md = runner.markdown_gk_report(report)
-    assert "| Prompt version | gk-v1 |" in md and "| Cases version | gk-cases-v5 |" in md
-    assert "| Partly answered by specs: stayed grounded and cited | 1.0 | 1 / 1 | 1.0 |" in md
+    assert "| Prompt version | gk-v1 |" in md and "| Cases version | gk-cases-v6 |" in md
+    assert "| Partly answered by specs: stayed grounded and cited | 1.0 | 2 / 2 | 1.0 |" in md
+    assert "| Not in the specs, web search on: cited web answer | 1.0 | 1 / 1 | 1.0 |" in md
     assert "| No citation markers | 0.875 | 7 / 8 | 1.0 |" in md
     assert "| Real product not refused as unknown | 1.0 | 2 / 2 | 1.0 |" in md
     assert "**GK-01** (known)" in md
@@ -233,11 +235,11 @@ def test_recorded_basis_other_than_general_knowledge_fails_the_case():
 
 
 def test_recorded_general_knowledge_basis_passes_and_is_counted():
-    basis = {case["id"]: "specs" if case["type"] == "stays_grounded" else "general_knowledge"
-             for case in GK_CASES["cases"]}
+    expected = {"stays_grounded": "specs", "reaches_web": "web"}
+    basis = {case["id"]: expected.get(case["type"], "general_knowledge") for case in GK_CASES["cases"]}
     report = runner.evaluate_gk(GK_CASES, GK_REFERENCE, basis=basis)
     assert report["targets_met"], report["failures"]
-    total = sum(case["type"] != "stays_grounded" for case in GK_CASES["cases"])
+    total = sum(case["type"] not in expected for case in GK_CASES["cases"])
     assert report["metrics"]["basis_general_knowledge"] == {"passed": total, "total": total, "rate": 1.0}
 
 
@@ -319,7 +321,8 @@ def test_gk_09_battery_comparison_replaced_by_general_knowledge_fails():
     assert any("answer_basis is 'general_knowledge'" in p for p in case["problems"])
     assert "labelled as general knowledge although the specs answer part of it" in case["problems"]
     assert "cites no snippet" in case["problems"]
-    assert report["metrics"]["stayed_grounded"] == {"passed": 0, "total": 1, "rate": 0.0}
+    # GK-11 (the other stays_grounded case) still passes with its reference answer.
+    assert report["metrics"]["stayed_grounded"] == {"passed": 1, "total": 2, "rate": 0.5}
     assert not report["targets_met"]
 
 
@@ -360,3 +363,46 @@ def test_the_backend_label_and_off_topic_reply_satisfy_the_scorer():
     case = result(gk_with(**{"GK-06": f"{GK_DISCLAIMER} {GK_OFF_TOPIC}"}), "GK-06")
     assert case["passed"], case["problems"]
     assert case["checks"]["off_topic_declined"] and case["checks"]["labelled"]
+
+
+# --- GK-10 / GK-11: "Search the Web" routing (web-v1, pre-review of PR #294) -------------------
+
+def test_web_cases_are_scoped_and_ask_with_web_search_on():
+    scope = json.loads((EVAL / "gk_scope.json").read_text(encoding="utf-8"))["cases"]
+    for case_id, kind in (("GK-10", "reaches_web"), ("GK-11", "stays_grounded")):
+        case = result({"results": GK_CASES["cases"]}, case_id)
+        assert case["type"] == kind and case["allow_web_search"] is True
+        assert scope[case_id] == ["galaxy-s24-ph"]
+
+
+def test_the_backend_web_label_satisfies_the_scorer():
+    from prompts import WEB_DISCLAIMER
+
+    case = result(gk_with(**{"GK-10": f"{WEB_DISCLAIMER} It supports Samsung DeX [1]."}), "GK-10")
+    assert case["passed"], case["problems"]
+
+
+def test_reaches_web_fails_a_grounded_decline_or_a_general_knowledge_answer():
+    decline = "The snippets do not state whether the Galaxy S24 supports Samsung DeX."
+    case = result(runner.evaluate_gk(GK_CASES, {**GK_REFERENCE, "GK-10": decline}, basis={"GK-10": "specs"}), "GK-10")
+    assert not case["passed"] and not case["checks"]["reached_web"]
+    assert any("answer_basis is 'specs'" in p for p in case["problems"])
+    assert "does not open with the web label" in case["problems"] and "cites no web page" in case["problems"]
+    gk = result(gk_with(**{"GK-10": f"{LABEL} It probably supports DeX."}), "GK-10")
+    assert not gk["passed"]
+
+
+def test_reaches_web_fails_raw_links_and_a_missing_answer():
+    linked = "From the web, not from TekaTech's saved specs. Yes ([samsung.com](https://www.samsung.com/ph/s24))."
+    case = result(gk_with(**{"GK-10": linked}), "GK-10")
+    assert "contains a raw link instead of [n] citations" in case["problems"]
+    missing = {k: v for k, v in GK_REFERENCE.items() if k != "GK-10"}
+    report = runner.evaluate_gk(GK_CASES, missing)
+    assert result(report, "GK-10")["problems"] == ["no answer"]
+    assert report["metrics"]["reached_web"]["passed"] == 0 and not report["targets_met"]
+
+
+def test_gk11_web_answer_replacing_a_cited_one_fails():
+    web = "From the web, not from TekaTech's saved specs. It uses the Exynos 2400 and ships without a charger [1]."
+    case = result(runner.evaluate_gk(GK_CASES, {**GK_REFERENCE, "GK-11": web}, basis={"GK-11": "web"}), "GK-11")
+    assert not case["passed"] and not case["checks"]["stayed_grounded"]

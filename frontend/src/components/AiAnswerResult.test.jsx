@@ -140,3 +140,45 @@ describe('Allow General Knowledge checkbox', () => {
     expect(handlers.setAllowGeneralKnowledge).toHaveBeenCalledWith(true)
   })
 })
+
+describe('AiAnswerResult with a web-search answer', () => {
+  const WEB = {
+    answer: "From the web, not from TekaTech's saved specs. It uses the **Exynos 2400** [1].",
+    sources: [{ gadget_id: null, gadget_name: 'samsung.com', content: 'Galaxy S24 specs', source_url: 'https://www.samsung.com/ph/s24', similarity: 0, kind: 'web' }],
+    answer_basis: 'web',
+    retrieval: 'none',
+  }
+
+  it('shows the web label and the cited pages, not the saved-spec badge', () => {
+    renderResult(WEB)
+    expect(screen.getByText(/From the web: not from saved specs, unverified/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: /1 Web Page Cited/ })).toBeTruthy()
+    expect(screen.queryByText(/cited spec/)).toBeNull()
+  })
+
+  it('shows a web answer that found no pages, instead of "No Evidence Found"', () => {
+    renderResult({ ...WEB, answer: 'I could not find a published figure for this.', sources: [] })
+    expect(screen.getByText('I could not find a published figure for this.')).toBeTruthy()
+    expect(screen.queryByText(/No Evidence Found/i)).toBeNull()
+  })
+
+  it('shows the web-limit sentence as its own notice', () => {
+    const text = "Web search has reached today's limit, and TekaTech's saved specs don't cover this question."
+    renderResult({ answer: text, sources: [], answer_basis: 'web_limit', retrieval: 'none' })
+    expect(screen.getByText('Web Search Limit Reached')).toBeTruthy()
+    expect(screen.getByText(text)).toBeTruthy()
+  })
+
+  it('shows no relevance bar for a web page', () => {
+    renderResult(WEB)
+    fireEvent.click(screen.getByRole('button', { name: /1 Web Page Cited/ }))
+    expect(screen.queryByText(/Relevance/)).toBeNull()
+  })
+
+  it('offers the Search the Web option where answer options show', () => {
+    const setAllowWebSearch = vi.fn()
+    renderResult(GROUNDED, { setAllowWebSearch })
+    fireEvent.click(screen.getByLabelText('Search the Web'))
+    expect(setAllowWebSearch).toHaveBeenCalledWith(true)
+  })
+})

@@ -12,6 +12,8 @@
     "GK-06": "General knowledge, not from TekaTech's saved specs. I can only help with questions about gadgets and their specs.",
     "GK-07": "General knowledge, not from TekaTech's saved specs. The Google Pixel 9 is a Google smartphone. Its processor is typically listed on Google's official spec page, and details may vary by region, so check that page for your exact model.",
     "GK-08": "General knowledge, not from TekaTech's saved specs. Samsung DeX support on the Galaxy S24 can depend on the model, region and software version, so check Samsung's spec page for your exact model.",
-    "GK-09": "The Galaxy S24's battery is **4000mAh** [1]. The iPhone 15's battery capacity is not stated in the snippets, so which is bigger can't be confirmed from the saved specs."
+    "GK-09": "The Galaxy S24's battery is **4000mAh** [1]. The iPhone 15's battery capacity is not stated in the snippets, so which is bigger can't be confirmed from the saved specs.",
+    "GK-10": "From the web, not from TekaTech's saved specs. Samsung's pages list Samsung DeX support for the Galaxy S24 [1].",
+    "GK-11": "The Galaxy S24 uses the **Exynos 2400** processor [1]. Whether a charger comes in the box is not stated in the snippets."
   }
 }

@@ -211,7 +211,7 @@ describe('SpecManager', () => {
       'Saved parts4',
     ])
     expect(screen.getByText('2 of 4 ready for AI')).toBeTruthy()
-    expect(screen.getAllByRole('listitem', { name: /^Spec #/ })).toHaveLength(4)
+    expect(screen.getAllByRole('listitem', { name: /^Part \d+$/ })).toHaveLength(4)
     expect(screen.getAllByRole('button', { name: 'Index for AI' })).toHaveLength(2)
     expect(screen.getByRole('button', { name: /index all pending \(2\)/i })).toBeTruthy()
     expect(screen.queryByRole('tab')).toBeNull()

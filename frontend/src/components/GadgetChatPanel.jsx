@@ -32,7 +32,17 @@ function prefersReducedMotion() {
  * such as "can it run smoothly?" keeps its subject; facts still come from that question's specs.
  * Comparisons keep AIComparisonPanel.
  */
-export default function GadgetChatPanel({ gadgetId, gadgetName, category, suggestions = [] }) {
+/** True when none of the specs is indexed (only indexed specs reach the AI); false for an unknown list. */
+function lacksIndexedSpecs(specs) {
+  return Array.isArray(specs) && !specs.some((s) => s.indexing_status === 'indexed')
+}
+
+/**
+ * `specs`: the gadget page passes its live spec list (null while loading or unknown), so the
+ * "no indexed specs" warning follows specs added, indexed or deleted on the page without a
+ * reload. Left out, the panel loads the list once itself.
+ */
+export default function GadgetChatPanel({ gadgetId, gadgetName, category, suggestions = [], specs }) {
   const { user } = useAuth() ?? {}
   const location = useLocation()
   const thread = useGadgetThread(gadgetId, user?.id)
@@ -41,6 +51,8 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
     togglePlainLanguage,
     allowGeneralKnowledge,
     setAllowGeneralKnowledge,
+    allowWebSearch,
+    setAllowWebSearch,
     requestOptions,
     loading,
     setLoading,
@@ -63,7 +75,9 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
   const [draft, setDraft] = useState('')
   // The question behind the live (newest) turn; '' when there is none.
   const [askedQuestion, setAskedQuestion] = useState('')
-  const [noIndexedSpecs, setNoIndexedSpecs] = useState(false)
+  const specsFromPage = specs !== undefined
+  const [fetchedSpecs, setFetchedSpecs] = useState(null)
+  const noIndexedSpecs = lacksIndexedSpecs(specsFromPage ? specs : fetchedSpecs)
   const [confirmClear, setConfirmClear] = useState(false)
   const [atBottom, setAtBottom] = useState(true)
   const scrollRef = useRef(null)
@@ -72,16 +86,16 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
   const latestRequest = useRef(0)
 
   useEffect(() => {
+    if (specsFromPage) return undefined
     let cancelled = false
     api
       .getSpecs(gadgetId)
-      // Only indexed specs reach the AI; pending ones have no embedding yet.
-      .then((specs) => !cancelled && setNoIndexedSpecs(!specs.some((s) => s.indexing_status === 'indexed')))
+      .then((list) => !cancelled && setFetchedSpecs(list))
       .catch(() => {})
     return () => {
       cancelled = true
     }
-  }, [gadgetId])
+  }, [gadgetId, specsFromPage])
 
   // --- scrolling ---------------------------------------------------------------------
   function scrollToBottom(smooth = true) {
@@ -215,8 +229,10 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
       aria-labelledby="gadget-chat-title"
       className="bg-white border border-slate-200 rounded-[28px] flex flex-col overflow-hidden min-w-0 xl:h-full"
     >
-      <header className="flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-3 border-b border-slate-200">
-        <div className="min-w-0">
+      {/* Wraps: the title keeps at least 14rem, so the "Delete this conversation?" prompt moves
+          below it instead of squeezing it into a narrow column. */}
+      <header className="flex flex-wrap items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-3 border-b border-slate-200">
+        <div className="min-w-0 flex-1 basis-56">
           <h2 id="gadget-chat-title" className="flex items-center gap-2 text-lg font-bold text-slate-900">
             <Sparkles size={18} className="text-sage-700" aria-hidden="true" /> Ask About {gadgetName}
           </h2>
@@ -237,7 +253,7 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
         </div>
         {hasConversation &&
           (confirmClear ? (
-            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end" role="group" aria-label="Confirm new chat">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end ml-auto" role="group" aria-label="Confirm new chat">
               <span className="text-sm text-slate-700">{user ? 'Delete this conversation?' : 'Start over?'}</span>
               <Button variant="dangerSolid" size="sm" onClick={handleClear} loading={thread.clearing}>
                 {user ? 'Delete' : 'Clear'}
@@ -401,6 +417,8 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
             togglePlainLanguage={togglePlainLanguage}
             allowGeneralKnowledge={allowGeneralKnowledge}
             setAllowGeneralKnowledge={setAllowGeneralKnowledge}
+            allowWebSearch={allowWebSearch}
+            setAllowWebSearch={setAllowWebSearch}
           />
           <p id="gadget-chat-hint" className="text-xs text-slate-500 tabular-nums">
             <span className="hidden sm:inline">Enter to send · Shift+Enter for a new line · </span>

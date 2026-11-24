@@ -5,10 +5,12 @@ import { getPlainLanguagePref, setPlainLanguagePref } from '../utils/preferences
 /** The answer options part of a POST /query body. `allow_general_knowledge` is sent only
  * when the user turned it on, so a request with it off is exactly what it was before #172
  * (the backend defaults it to false). */
-export function answerRequestOptions({ plainLanguage, allowGeneralKnowledge }) {
-  return allowGeneralKnowledge
-    ? { plain_language: plainLanguage, allow_general_knowledge: true }
-    : { plain_language: plainLanguage }
+export function answerRequestOptions({ plainLanguage, allowGeneralKnowledge, allowWebSearch }) {
+  const options = { plain_language: plainLanguage }
+  if (allowGeneralKnowledge) options.allow_general_knowledge = true
+  // Optional web search (24 Nov 2026): sent only when on, like general knowledge.
+  if (allowWebSearch) options.allow_web_search = true
+  return options
 }
 
 /** Shared state + behavior behind AIAnswerPanel and AIComparisonPanel:
@@ -21,6 +23,8 @@ export function useAiAnswer() {
   // plain language is. Like plain language, a change applies to the next question
   // (or Regenerate), not to the answer already on screen.
   const [allowGeneralKnowledge, setAllowGeneralKnowledge] = useState(false)
+  // Opt-in web search (24 Nov 2026): same rules as general knowledge, off on every visit.
+  const [allowWebSearch, setAllowWebSearch] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
@@ -96,7 +100,9 @@ export function useAiAnswer() {
     togglePlainLanguage,
     allowGeneralKnowledge,
     setAllowGeneralKnowledge,
-    requestOptions: answerRequestOptions({ plainLanguage, allowGeneralKnowledge }),
+    allowWebSearch,
+    setAllowWebSearch,
+    requestOptions: answerRequestOptions({ plainLanguage, allowGeneralKnowledge, allowWebSearch }),
     loading,
     setLoading,
     error,

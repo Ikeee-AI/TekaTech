@@ -24,7 +24,10 @@ from auth import get_current_user
 from citations import normalize_paren_citations, strip_invalid_citations
 from config import settings
 from keyword_search import build_keyword_query
+import web_search
 from prompts import (
+    WEB_PROMPT_VERSION,
+    build_web_prompt,
     GK_FALLBACK_VERSION,
     GK_PROMPT_VERSION,
     NOT_IN_SPECS_SENTINEL,
@@ -130,10 +133,10 @@ MAX_QUESTION_TOKENS = 160
 
 # Conversation memory for the gadget chat (22 Nov 2026): the last few turns come with the new
 # question so a follow-up ("can it run smoothly?") keeps its subject. Capped so a client cannot
-# grow the prompt: at most 3 turns, each question within the question limit, each answer cut to
+# grow the prompt: at most 5 turns (3 until 24 Nov 2026), each question within the question limit, each answer cut to
 # MAX_HISTORY_ANSWER_CHARS. Citation markers are removed from earlier answers, because their
 # numbers pointed at that turn's snippets, not this one's.
-MAX_HISTORY_TURNS = 3
+MAX_HISTORY_TURNS = 5
 MAX_HISTORY_ANSWER_CHARS = 1200
 _CITATION_MARKER = re.compile(r"\s*\[\d+\]")
 
@@ -172,6 +175,10 @@ class QueryRequest(BaseModel):
     regenerate: bool = False
     # Earlier turns of the gadget chat, oldest first (see HistoryTurn). Empty = a fresh question.
     history: list[HistoryTurn] = Field(default_factory=list, max_length=MAX_HISTORY_TURNS)
+    # Optional web-search answer (24 Nov 2026, web_search.py): used, instead of general knowledge,
+    # where the saved specs don't cover the question. Labelled and cited with the pages found.
+    # Capped per user and per site per day (ai_quota.consume_web_search). Off by default.
+    allow_web_search: bool = False
 
     @field_validator("question")
     @classmethod
@@ -212,11 +219,14 @@ class QueryRequest(BaseModel):
 
 
 class Source(BaseModel):
-    gadget_id: UUID
+    # None for a web page (answer_basis "web"): it belongs to no catalog gadget.
+    gadget_id: Optional[UUID] = None
     gadget_name: str
     content: str
     source_url: Optional[str] = None
     similarity: float
+    # "spec" = a saved spec chunk or benchmark row; "web" = a page the web search cited.
+    kind: Literal["spec", "web"] = "spec"
 
 
 class QueryResponse(BaseModel):
@@ -230,11 +240,13 @@ class QueryResponse(BaseModel):
     # How it matched: the same normalized question, or a very similar question embedding.
     cache_match: Optional[Literal["exact", "similar"]] = None
     # How the sources were found: vector similarity, the keyword fallback (only tried when the
-    # vector search found nothing), or neither (no sources; the "no relevant specs" answer).
-    retrieval: Literal["vector", "keyword", "none"] = "none"
+    # vector search found nothing), only the gadgets' published benchmarks (a performance question
+    # about phones with benchmarks but no matching spec text), or neither (no sources).
+    retrieval: Literal["vector", "keyword", "benchmarks", "none"] = "none"
     # What the answer rests on: saved specs (cited), the model's general knowledge (unverified,
     # uncited, only when the request allowed it), or nothing (the "no relevant specs" reply).
-    answer_basis: Literal["specs", "general_knowledge", "none"] = "none"
+    # "web": found by the optional web search (unverified, cited with the pages it read).
+    answer_basis: Literal["specs", "general_knowledge", "web", "web_limit", "none"] = "none"
 
 
 def _token_count(response, field: str) -> int | None:
@@ -324,6 +336,71 @@ def _admin_bypasses_cache(request: Request, user) -> bool:
 # Logged once per process: until sql/keyword_match_spec_documents.sql is applied, every
 # no-match question would otherwise repeat the same warning.
 _keyword_rpc_failure_logged = False
+
+
+# Benchmarks (routers/benchmarks.py, 24 Nov 2026): for a question about performance or gaming,
+# the scoped gadgets' published benchmark results join the retrieved spec chunks as extra
+# numbered snippets, so "can it run Genshin?" can cite a measured fps instead of guessing from
+# the chip. Only scoped questions (gadget and compare pages), only when the question (or the
+# previous one, for a follow-up) is about performance, capped so a 5-phone comparison stays small.
+MAX_BENCHMARK_SNIPPETS = 12
+_PERFORMANCE_WORDS = re.compile(
+    r"\b(game|games|gaming|gamer|play|playing|fps|frame|frames|benchmark|benchmarks|score|scores|"
+    r"performance|perform|performs|fast|faster|fastest|speed|smooth|smoothly|lag|laggy|run|runs|running|"
+    r"chip|chipset|processor|cpu|gpu|soc|snapdragon|dimensity|helio|exynos|tensor|bionic|"
+    r"geekbench|antutu|3dmark|throttle|throttling|heat|genshin|pubg|codm|cod|honkai|valorant|mlbb|"
+    r"mobile legends|wuthering|fortnite|minecraft|roblox)\b",
+    re.IGNORECASE,
+)
+
+
+def _wants_benchmarks(question: str, history) -> bool:
+    return bool(_PERFORMANCE_WORDS.search(retrieval_text(question, history)))
+
+
+def _benchmark_snippet(row: dict) -> str:
+    value = row.get("value")
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    label = "Game benchmark" if row.get("kind") == "game" else "Benchmark"
+    settings = f" ({row['settings']})" if row.get("settings") else ""
+    return f"{label}: {row.get('test')}{settings}: {value} {row.get('unit')} (published result)"
+
+
+def _benchmark_matches(payload: "QueryRequest") -> list[dict]:
+    """The scoped gadgets' benchmark rows shaped like retrieval matches. Never fails the request."""
+    if not payload.gadget_ids or not _wants_benchmarks(payload.question, payload.history):
+        return []
+    try:
+        rows = (
+            supabase.table("gadget_benchmarks")
+            .select("gadget_id, kind, test, settings, value, unit, source_url, checked_at")
+            .in_("gadget_id", [str(i) for i in payload.gadget_ids])
+            .order("kind").order("test")
+            .execute().data
+        ) or []
+    except Exception:
+        logger.warning("Benchmark lookup failed; answering from specs only", exc_info=True)
+        return []
+    # Round-robin across gadgets, so a comparison does not fill the cap with one phone's rows.
+    by_gadget: dict[str, list[dict]] = {}
+    for row in rows:
+        by_gadget.setdefault(str(row.get("gadget_id")), []).append(row)
+    picked: list[dict] = []
+    while len(picked) < MAX_BENCHMARK_SNIPPETS and any(by_gadget.values()):
+        for gid in list(by_gadget):
+            if by_gadget[gid] and len(picked) < MAX_BENCHMARK_SNIPPETS:
+                picked.append(by_gadget[gid].pop(0))
+    return [
+        {
+            "gadget_id": str(r["gadget_id"]),
+            "content": _benchmark_snippet(r),
+            "source_url": r.get("source_url"),
+            "similarity": 0.0,
+            "verified_at": r.get("checked_at"),
+        }
+        for r in picked
+    ]
 
 
 def retrieval_text(question: str, history) -> str:
@@ -681,6 +758,118 @@ def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
     )
 
 
+WEB_LIMIT_ANSWER = (
+    "Web search has reached today's limit, and TekaTech's saved specs don't cover this question. "
+    "Try again tomorrow, or ask about a spec this phone's page lists."
+)
+
+
+def _web_answer(payload: "QueryRequest", user) -> "QueryResponse":
+    """The optional web-search answer for a question the saved specs don't cover.
+
+    Falls back to the general-knowledge answer (when that is allowed too) if today's web cap is
+    used up or the search fails; otherwise a cap is a plain reply and a failure is the usual 503.
+    Like the GK answer, nothing is written to query_history.
+    """
+    if not ai_quota.consume_web_search(user):
+        logger.info("Web search cap reached; %s", "general knowledge" if payload.allow_general_knowledge else "no answer")
+        if payload.allow_general_knowledge:
+            return _general_knowledge_answer(payload)
+        return QueryResponse(
+            answer=WEB_LIMIT_ANSWER, sources=[], model_used="none", retrieval="none", answer_basis="web_limit"
+        )
+
+    gadget_note = ""
+    if payload.gadget_ids:
+        try:
+            rows = (
+                supabase.table("gadgets").select("id, name")
+                .in_("id", [str(i) for i in payload.gadget_ids]).execute().data
+            )
+        except Exception as exc:
+            raise _lookup_failure("gadget name lookup", exc) from None
+        names = [r["name"] for r in rows or [] if r.get("name")]
+        if names:
+            gadget_note = "\n\nGadgets being asked about: " + ", ".join(names) + "."
+    try:
+        result = web_search.search(
+            build_web_prompt(payload.plain_language),
+            build_general_knowledge_user_message(payload.question, gadget_note, payload.history),
+        )
+    except web_search.WebSearchError as exc:
+        logger.warning("Web search failed: %s", exc.reason)
+        if payload.allow_general_knowledge:
+            return _general_knowledge_answer(payload)
+        if exc.provider is not None:
+            raise _provider_failure(exc.provider) from None
+        raise _unusable_output(f"web search: {exc.reason}") from None
+    logger.info(
+        "Web answer: searches=%s input_tokens=%s output_tokens=%s",
+        result.searches, result.input_tokens, result.output_tokens,
+    )
+    answer, citations = web_search.citations_to_markers(result.text, result.annotations)
+    answer, _ = _without_sentinel(answer)
+    answer, invalid = strip_invalid_citations(answer, len(citations))
+    if not re.search(r"\w", answer):
+        raise _unusable_output("web answer was empty after cleaning")
+    sources = [
+        Source(
+            gadget_name=web_search.site_name(c.url),
+            content=c.title or web_search.site_name(c.url),
+            source_url=c.url,
+            similarity=0.0,
+            kind="web",
+        )
+        for c in citations
+    ]
+    return QueryResponse(
+        answer=answer,
+        sources=sources,
+        model_used=f"openai:{web_search.WEB_MODEL}+web_search",
+        invalid_citations_removed=invalid,
+        retrieval="none",
+        answer_basis="web",
+    )
+
+
+# A grounded reply saying the snippets lack the answer ("the snippets do not state whether…").
+_CITATION_NUMBER = re.compile(r"\[(\d+)\]|\((\d+)\)")
+
+
+def _cites_a_snippet(answer: str, snippet_count: int) -> bool:
+    """True when the answer cites at least one snippet that was actually sent ([n] or (n), 1..count).
+
+    A marker for a snippet that doesn't exist ("[9]" with three snippets) is removed later by
+    strip_invalid_citations, so it must not make an otherwise uncited decline count as grounded.
+    """
+    return any(
+        1 <= int(a or b) <= snippet_count for a, b in _CITATION_NUMBER.findall(answer)
+    )
+
+
+_DECLINE = re.compile(
+    r"\b(?:not\s+(?:stated|listed|mentioned|included|specified|given|provided|covered|available)"
+    r"|(?:do|does|did)\s+not\s+(?:state|list|mention|include|say|specify|give|provide|cover)"
+    r"|(?:don't|doesn't|didn't|isn't|aren't)\s+(?:state|list|mention|include|say|specify|give|provide|cover|stated|listed|mentioned)"
+    r"|no\s+(?:information|mention|details?|data))\b",
+    re.IGNORECASE,
+)
+
+
+def _cacheable_fallback(payload: "QueryRequest", response: "QueryResponse") -> bool:
+    """With web search on, only a real web answer is shared through the answer cache: the limit
+    reply and a general-knowledge stand-in depend on this user's daily web cap (or a passing
+    search failure), and the cache is shared by every user (pre-review, 24 Nov 2026)."""
+    return not payload.allow_web_search or response.answer_basis == "web"
+
+
+def _fallback_answer(payload: "QueryRequest", user) -> "QueryResponse":
+    """What a question the saved specs don't cover gets: the web answer, else general knowledge."""
+    if payload.allow_web_search:
+        return _web_answer(payload, user)
+    return _general_knowledge_answer(payload)
+
+
 # /query and /query/stream share one 10/minute budget per caller.
 _QUERY_LIMIT = limiter.shared_limit("10/minute", scope="ai-query")
 
@@ -927,11 +1116,17 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     #    general-knowledge answer is never served to a request without the flag, or the reverse.
     #    With the flag the grounded prompt also carries the fallback rule (GK_FALLBACK_VERSION), so
     #    that label is in the scope too and answers cached before the rule existed are not served.
+    fallback_allowed = payload.allow_general_knowledge or payload.allow_web_search
     prompt_scope = (
         f"{PROMPT_VERSION}+{GK_FALLBACK_VERSION}+{GK_PROMPT_VERSION}"
         if payload.allow_general_knowledge
         else PROMPT_VERSION
     )
+    #    The web flag is its own scope too (the fallback rule is in the prompt with it as well).
+    if payload.allow_web_search:
+        if not payload.allow_general_knowledge:
+            prompt_scope += f"+{GK_FALLBACK_VERSION}"
+        prompt_scope += f"+{WEB_PROMPT_VERSION}"
     #    A follow-up means something different in each conversation ("can it run smoothly?"), so
     #    the earlier turns are part of the scope: only the same question after the same turns hits.
     if payload.history:
@@ -999,15 +1194,24 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
             matches = _keyword_matches(payload.question, query_embedding, payload.gadget_ids)
         retrieval = "keyword" if matches else "none"
 
-    if not matches and payload.allow_general_knowledge:
+    # 2c. Performance questions about named phones also get their published benchmarks.
+    with _timed(request, "retrieve"):
+        benchmark_matches = _benchmark_matches(payload)
+    if benchmark_matches:
+        if not matches:
+            retrieval = "benchmarks"
+        matches = [*(matches or []), *benchmark_matches]
+
+    if not matches and fallback_allowed:
         # Only reached when retrieval found nothing in this scope. Cached under the flag's own
         # scope; not "grounded", so a similar question re-runs the free retrieval instead of
         # reusing it, and a cache hit is not written to query_history.
         with _timed(request, "generate"):
-            response = _general_knowledge_answer(payload)
-        answer_cache.store(
-            cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
-        )
+            response = _fallback_answer(payload, user)
+        if _cacheable_fallback(payload, response):
+            answer_cache.store(
+                cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
+            )
         return response
 
     if not matches:
@@ -1071,7 +1275,7 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     # The prompt text and its version live in prompts.py; its formatting rules are coupled to
     # AnswerText.jsx (see the note there). With the general-knowledge flag the prompt adds the
     # fallback rule: reply NOT_IN_SPECS when the snippets hold none of the answer.
-    system_prompt = build_system_prompt(payload.plain_language, payload.allow_general_knowledge)
+    system_prompt = build_system_prompt(payload.plain_language, fallback_allowed)
 
     sources = [
         Source(
@@ -1102,20 +1306,31 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     #     no-evidence reply. Like the no-match branches above, neither reply is written to
     #     query_history (the first call's tokens are logged instead), and both are cached as not
     #     grounded under this request's scope.
-    if _is_not_in_specs(answer):
+    # With "search the web" on, a reply that cites none of the snippets ("the snippets do not
+    # state whether…") has nothing grounded in it either, so it goes to the web too (DEV check,
+    # 24 Nov 2026: the model declined in words instead of sending the sentinel). General
+    # knowledge alone keeps the sentinel-only rule (gkf-v2, evaluated). Only markers for snippets
+    # that were sent count as citations: "[9]" with one snippet is dropped later, not grounding.
+    uncited_decline = (
+        payload.allow_web_search
+        and not _cites_a_snippet(answer, len(matches))
+        and _DECLINE.search(answer) is not None
+    )
+    if _is_not_in_specs(answer) or uncited_decline:
         logger.info(
             "Grounded answer was %s (allow_general_knowledge=%s): prompt_tokens=%s completion_tokens=%s",
-            NOT_IN_SPECS_SENTINEL, payload.allow_general_knowledge,
+            NOT_IN_SPECS_SENTINEL, fallback_allowed,
             _token_count(completion, "prompt_tokens"), _token_count(completion, "completion_tokens"),
         )
-        if payload.allow_general_knowledge:
+        if fallback_allowed:
             with _timed(request, "generate"):
-                response = _general_knowledge_answer(payload)
+                response = _fallback_answer(payload, user)
         else:
             response = QueryResponse(answer=NO_MATCHES_ANSWER, sources=[], model_used=MODEL_USED, retrieval="none")
-        answer_cache.store(
-            cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
-        )
+        if _cacheable_fallback(payload, response):
+            answer_cache.store(
+                cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
+            )
         return response
     # The prompt forbids the token inside a real answer; if it appears there anyway, drop it.
     answer, sentinel_tokens = _without_sentinel(answer)

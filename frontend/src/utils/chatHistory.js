@@ -1,7 +1,7 @@
 import { MAX_QUESTION_CHARS } from './questionLimits'
 
 // The backend's MAX_HISTORY_TURNS (routers/query.py): more is a 422.
-export const HISTORY_TURNS = 3
+export const HISTORY_TURNS = 5
 
 // Earlier chat turns for POST /query `history`: oldest first, answered turns only, the newest
 // HISTORY_TURNS. The backend strips the old [n] markers and cuts long answers itself.

@@ -6,6 +6,7 @@ import {
   hasNoSupportingSource,
   isGeneralKnowledge,
   isMissingEvidence,
+  isWebLimit,
   removedCitationCount,
   validateAnswerResponse,
 } from './aiAnswerState'
@@ -158,5 +159,14 @@ describe('general-knowledge answers (#172)', () => {
 
   it('leaves a no-match answer with the option off as missing evidence', () => {
     expect(isMissingEvidence({ ...gk, answer_basis: 'none' })).toBe(true)
+  })
+})
+
+describe('web answers and the web limit (24 Nov 2026)', () => {
+  it('a web answer or the limit reply is never shown as missing evidence', () => {
+    expect(isMissingEvidence({ answer: 'x', sources: [], answer_basis: 'web' })).toBe(false)
+    expect(isMissingEvidence({ answer: 'x', sources: [], answer_basis: 'web_limit' })).toBe(false)
+    expect(isWebLimit({ answer: 'x', sources: [], answer_basis: 'web_limit' })).toBe(true)
+    expect(hasNoSupportingSource({ answer: 'x', sources: [], answer_basis: 'web_limit' })).toBe(false)
   })
 })

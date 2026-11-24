@@ -51,6 +51,8 @@ export default function AIComparisonPanel({
     togglePlainLanguage,
     allowGeneralKnowledge,
     setAllowGeneralKnowledge,
+    allowWebSearch,
+    setAllowWebSearch,
     requestOptions,
     loading,
     setLoading,
@@ -238,6 +240,8 @@ export default function AIComparisonPanel({
               togglePlainLanguage={togglePlainLanguage}
               allowGeneralKnowledge={allowGeneralKnowledge}
               setAllowGeneralKnowledge={setAllowGeneralKnowledge}
+              allowWebSearch={allowWebSearch}
+              setAllowWebSearch={setAllowWebSearch}
             />
             <Button variant="primary" icon={Sparkles} onClick={() => handleAsk()} disabled={!question.trim()}>
               {buttonLabel}
@@ -269,6 +273,8 @@ export default function AIComparisonPanel({
         togglePlainLanguage={togglePlainLanguage}
         allowGeneralKnowledge={allowGeneralKnowledge}
         setAllowGeneralKnowledge={setAllowGeneralKnowledge}
+        allowWebSearch={allowWebSearch}
+        setAllowWebSearch={setAllowWebSearch}
         handleCopy={handleCopy}
         copied={copied}
         skeletonLines={4}

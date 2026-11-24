@@ -34,12 +34,22 @@ export function isGeneralKnowledge(result) {
   return result?.answer_basis === 'general_knowledge'
 }
 
+/** An opt-in web-search answer (24 Nov 2026): cited with the web pages it found, unverified. */
+export function isWebAnswer(result) {
+  return result?.answer_basis === 'web'
+}
+
+/** The plain reply when today's web searches are used up (answer_basis "web_limit"). */
+export function isWebLimit(result) {
+  return result?.answer_basis === 'web_limit'
+}
+
 /**
  * A 200 reply with no sources means retrieval found nothing to ground an answer in,
- * unless it is a general-knowledge answer, which is shown (labelled) instead.
+ * unless it is a general-knowledge or web answer (shown, labelled) or the web-limit reply.
  */
 export function isMissingEvidence(result) {
-  return result.sources.length === 0 && !isGeneralKnowledge(result)
+  return result.sources.length === 0 && !isGeneralKnowledge(result) && !isWebAnswer(result) && !isWebLimit(result)
 }
 
 /**
@@ -62,7 +72,9 @@ export function citedSourceCount(result) {
  * citations.py removed out-of-range markers): nothing in it is backed by a source (#124).
  */
 export function hasNoSupportingSource(result) {
-  return !isMissingEvidence(result) && !isGeneralKnowledge(result) && citedSourceCount(result) === 0
+  return (
+    !isMissingEvidence(result) && !isGeneralKnowledge(result) && !isWebLimit(result) && citedSourceCount(result) === 0
+  )
 }
 
 /** How many out-of-range [n] markers the backend removed (`invalid_citations_removed`), 0 if absent. */
