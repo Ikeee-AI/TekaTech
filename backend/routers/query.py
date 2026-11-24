@@ -21,7 +21,7 @@ from pydantic_core import PydanticCustomError
 import ai_quota
 import answer_cache
 from auth import get_current_user
-from citations import normalize_paren_citations, strip_invalid_citations
+from citations import drop_stand_in_values, normalize_paren_citations, strip_invalid_citations
 from config import settings
 from keyword_search import build_keyword_query
 import web_search
@@ -1405,6 +1405,13 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     answer, invalid_citations_removed = strip_invalid_citations(answer, len(matches))
     if invalid_citations_removed:
         logger.warning("Removed %d out-of-range citation marker(s) from a /query answer", invalid_citations_removed)
+    # A variant the answer says is not on file ("do not include the Galaxy S24+") must not get the
+    # base model's values anyway (eval TC-24, 24 Nov 2026). Gadgets that are on file never trigger it.
+    answer, stand_ins = drop_stand_in_values(
+        answer, [g.get("name", "") for g in gadget_lookup.values()]
+    )
+    if stand_ins:
+        logger.warning("Removed %d stand-in sentence(s) for a variant not on file from a /query answer", stand_ins)
 
     # 6. Log it — powers query_history / trending questions, plus token telemetry so the
     #    cost of a query is answerable after the fact rather than only via the OpenAI bill.

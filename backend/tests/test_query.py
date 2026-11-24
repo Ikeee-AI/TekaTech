@@ -785,3 +785,19 @@ def test_answer_settings_by_gadget_count():
     assert answer_settings(1) == {"reasoning_effort": "minimal", "verbosity": "low"}
     for count in (0, 2, 4):
         assert answer_settings(count) == {"reasoning_effort": "low"}
+
+
+def test_query_drops_a_base_model_value_after_declining_a_variant(client, fake_supabase):
+    """Eval TC-24, 24 Nov 2026: the S24's 4000mAh must not answer an S24+ question."""
+    from unittest.mock import patch
+
+    _set_matching_spec(fake_supabase)
+    fake_supabase.set_response("gadgets", "select", [{"id": "22222222-2222-2222-2222-222222222222", "name": "Galaxy S24", "brand": "Samsung"}])
+    text = ("The saved specs do not include the Galaxy S24+, so its battery is not stated. "
+            "The Galaxy S24 (a different model) has a **4000mAh** battery [1].")
+    with patch("routers.query.client") as mock_client:
+        mock_client.embeddings.create.return_value = _fake_embedding_response()
+        mock_client.chat.completions.create.return_value = _fake_completion_response(text)
+        resp = client.post("/query", json={"question": "Battery of the Galaxy S24+?", "gadget_ids": ["22222222-2222-2222-2222-222222222222"]})
+    assert resp.status_code == 200
+    assert resp.json()["answer"] == "The saved specs do not include the Galaxy S24+, so its battery is not stated."
