@@ -2,6 +2,7 @@
 from unittest.mock import patch
 
 from prompts import CONVERSATION_HEADER, GK_CONVERSATION_HEADER
+from routers.query import MAX_HISTORY_TURNS
 from tests.test_query import _fake_completion_response, _fake_embedding_response, _set_matching_spec
 
 GADGET = "22222222-2222-2222-2222-222222222222"
@@ -59,8 +60,11 @@ def test_same_follow_up_after_a_different_conversation_is_not_served_from_cache(
 def test_history_is_capped_and_long_answers_are_cut(client, fake_supabase):
     _set_matching_spec(fake_supabase, GADGET)
     with patch("routers.query.client") as mock_client:
-        too_many = _ask(client, mock_client, "And?", HISTORY * 4)
+        at_limit = _ask(client, mock_client, "And?", HISTORY * MAX_HISTORY_TURNS)
+        too_many = _ask(client, mock_client, "And?", HISTORY * (MAX_HISTORY_TURNS + 1))
         long_answer = _ask(client, mock_client, "And?", [{"question": "Battery?", "answer": "x" * 5000}])
+    assert MAX_HISTORY_TURNS == 5
+    assert at_limit.status_code == 200
     assert too_many.status_code == 422
     assert long_answer.status_code == 200
     user = mock_client.chat.completions.create.call_args.kwargs["messages"][1]["content"]

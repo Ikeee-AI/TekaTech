@@ -130,10 +130,10 @@ MAX_QUESTION_TOKENS = 160
 
 # Conversation memory for the gadget chat (22 Nov 2026): the last few turns come with the new
 # question so a follow-up ("can it run smoothly?") keeps its subject. Capped so a client cannot
-# grow the prompt: at most 3 turns, each question within the question limit, each answer cut to
+# grow the prompt: at most 5 turns (3 until 24 Nov 2026), each question within the question limit, each answer cut to
 # MAX_HISTORY_ANSWER_CHARS. Citation markers are removed from earlier answers, because their
 # numbers pointed at that turn's snippets, not this one's.
-MAX_HISTORY_TURNS = 3
+MAX_HISTORY_TURNS = 5
 MAX_HISTORY_ANSWER_CHARS = 1200
 _CITATION_MARKER = re.compile(r"\s*\[\d+\]")
 
