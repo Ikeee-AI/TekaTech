@@ -230,8 +230,9 @@ class QueryResponse(BaseModel):
     # How it matched: the same normalized question, or a very similar question embedding.
     cache_match: Optional[Literal["exact", "similar"]] = None
     # How the sources were found: vector similarity, the keyword fallback (only tried when the
-    # vector search found nothing), or neither (no sources; the "no relevant specs" answer).
-    retrieval: Literal["vector", "keyword", "none"] = "none"
+    # vector search found nothing), only the gadgets' published benchmarks (a performance question
+    # about phones with benchmarks but no matching spec text), or neither (no sources).
+    retrieval: Literal["vector", "keyword", "benchmarks", "none"] = "none"
     # What the answer rests on: saved specs (cited), the model's general knowledge (unverified,
     # uncited, only when the request allowed it), or nothing (the "no relevant specs" reply).
     answer_basis: Literal["specs", "general_knowledge", "none"] = "none"
@@ -324,6 +325,71 @@ def _admin_bypasses_cache(request: Request, user) -> bool:
 # Logged once per process: until sql/keyword_match_spec_documents.sql is applied, every
 # no-match question would otherwise repeat the same warning.
 _keyword_rpc_failure_logged = False
+
+
+# Benchmarks (routers/benchmarks.py, 24 Nov 2026): for a question about performance or gaming,
+# the scoped gadgets' published benchmark results join the retrieved spec chunks as extra
+# numbered snippets, so "can it run Genshin?" can cite a measured fps instead of guessing from
+# the chip. Only scoped questions (gadget and compare pages), only when the question (or the
+# previous one, for a follow-up) is about performance, capped so a 5-phone comparison stays small.
+MAX_BENCHMARK_SNIPPETS = 12
+_PERFORMANCE_WORDS = re.compile(
+    r"\b(game|games|gaming|gamer|play|playing|fps|frame|frames|benchmark|benchmarks|score|scores|"
+    r"performance|perform|performs|fast|faster|fastest|speed|smooth|smoothly|lag|laggy|run|runs|running|"
+    r"chip|chipset|processor|cpu|gpu|soc|snapdragon|dimensity|helio|exynos|tensor|bionic|"
+    r"geekbench|antutu|3dmark|throttle|throttling|heat|genshin|pubg|codm|cod|honkai|valorant|mlbb|"
+    r"mobile legends|wuthering|fortnite|minecraft|roblox)\b",
+    re.IGNORECASE,
+)
+
+
+def _wants_benchmarks(question: str, history) -> bool:
+    return bool(_PERFORMANCE_WORDS.search(retrieval_text(question, history)))
+
+
+def _benchmark_snippet(row: dict) -> str:
+    value = row.get("value")
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    label = "Game benchmark" if row.get("kind") == "game" else "Benchmark"
+    settings = f" ({row['settings']})" if row.get("settings") else ""
+    return f"{label}: {row.get('test')}{settings}: {value} {row.get('unit')} (published result)"
+
+
+def _benchmark_matches(payload: "QueryRequest") -> list[dict]:
+    """The scoped gadgets' benchmark rows shaped like retrieval matches. Never fails the request."""
+    if not payload.gadget_ids or not _wants_benchmarks(payload.question, payload.history):
+        return []
+    try:
+        rows = (
+            supabase.table("gadget_benchmarks")
+            .select("gadget_id, kind, test, settings, value, unit, source_url, checked_at")
+            .in_("gadget_id", [str(i) for i in payload.gadget_ids])
+            .order("kind").order("test")
+            .execute().data
+        ) or []
+    except Exception:
+        logger.warning("Benchmark lookup failed; answering from specs only", exc_info=True)
+        return []
+    # Round-robin across gadgets, so a comparison does not fill the cap with one phone's rows.
+    by_gadget: dict[str, list[dict]] = {}
+    for row in rows:
+        by_gadget.setdefault(str(row.get("gadget_id")), []).append(row)
+    picked: list[dict] = []
+    while len(picked) < MAX_BENCHMARK_SNIPPETS and any(by_gadget.values()):
+        for gid in list(by_gadget):
+            if by_gadget[gid] and len(picked) < MAX_BENCHMARK_SNIPPETS:
+                picked.append(by_gadget[gid].pop(0))
+    return [
+        {
+            "gadget_id": str(r["gadget_id"]),
+            "content": _benchmark_snippet(r),
+            "source_url": r.get("source_url"),
+            "similarity": 0.0,
+            "verified_at": r.get("checked_at"),
+        }
+        for r in picked
+    ]
 
 
 def retrieval_text(question: str, history) -> str:
@@ -998,6 +1064,14 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
         with _timed(request, "retrieve"):
             matches = _keyword_matches(payload.question, query_embedding, payload.gadget_ids)
         retrieval = "keyword" if matches else "none"
+
+    # 2c. Performance questions about named phones also get their published benchmarks.
+    with _timed(request, "retrieve"):
+        benchmark_matches = _benchmark_matches(payload)
+    if benchmark_matches:
+        if not matches:
+            retrieval = "benchmarks"
+        matches = [*(matches or []), *benchmark_matches]
 
     if not matches and payload.allow_general_knowledge:
         # Only reached when retrieval found nothing in this scope. Cached under the flag's own

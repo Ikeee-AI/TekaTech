@@ -18,7 +18,7 @@ from rate_limit import limiter, verify_storage_reachable
 from ai_quota import LIMIT_HEADER as AI_LIMIT_HEADER, REMAINING_HEADER as AI_REMAINING_HEADER
 from request_id import REQUEST_ID_HEADER, RequestIdMiddleware
 from security_headers import SecurityHeadersMiddleware
-from routers import admin, ai_usage, gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets, my_account, my_comparisons
+from routers import admin, ai_usage, benchmarks, gadgets, specs, corrections, comparisons, query, stats, techspecs, my_gadgets, my_account, my_comparisons
 from supabase_client import supabase
 
 logger = logging.getLogger(__name__)
@@ -90,6 +90,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(gadgets.router)
 app.include_router(specs.router)
+app.include_router(benchmarks.router)
 app.include_router(corrections.router)
 app.include_router(comparisons.router)
 app.include_router(query.router)

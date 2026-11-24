@@ -99,6 +99,28 @@ begin
   if not (select relrowsecurity from pg_class where oid = 'public.user_gadgets'::regclass) then
     raise exception 'user_gadgets must enable RLS';
   end if;
+  -- Benchmarks: one sourced result per row, private to the backend, removed with the gadget.
+  insert into gadget_benchmarks(gadget_id, kind, test, settings, value, unit, source_url)
+    values (gadget_a, 'game', 'Genshin Impact', 'High', 52, 'fps', 'https://example.com/review');
+  begin
+    insert into gadget_benchmarks(gadget_id, kind, test, value, unit, source_url)
+      values (gadget_a, 'game', 'Genshin Impact', 52, 'fps', 'not a link');
+    raise exception 'A benchmark needs an http(s) source link';
+  exception when check_violation then null;
+  end;
+  begin
+    insert into gadget_benchmarks(gadget_id, kind, test, value, unit, source_url)
+      values (gadget_a, 'rumour', 'Genshin Impact', 52, 'fps', 'https://example.com');
+    raise exception 'A benchmark kind must be score or game';
+  exception when check_violation then null;
+  end;
+  if has_table_privilege('anon', 'public.gadget_benchmarks', 'SELECT') or
+     has_table_privilege('authenticated', 'public.gadget_benchmarks', 'INSERT') then
+    raise exception 'Browser roles must not access gadget_benchmarks directly';
+  end if;
+  if not (select relrowsecurity from pg_class where oid = 'public.gadget_benchmarks'::regclass) then
+    raise exception 'gadget_benchmarks must enable RLS';
+  end if;
   -- Per-gadget AI threads: private to the backend, removed with the gadget.
   insert into user_questions(user_id, gadget_id, question, response)
     values ('00000000-0000-0000-0000-0000000000a1', gadget_a, 'What chip?', '{"answer": "A [1]", "sources": []}'::jsonb);
@@ -148,6 +170,9 @@ begin
   end if;
   if exists (select 1 from user_comparison_questions where gadget_a = any(gadget_ids)) then
     raise exception 'Deleting a gadget must delete the saved comparison questions that include it';
+  end if;
+  if exists (select 1 from gadget_benchmarks where gadget_id = gadget_a) then
+    raise exception 'Deleting a gadget must delete its benchmarks';
   end if;
   if exists (select 1 from user_gadgets where gadget_id = gadget_a) then
     raise exception 'Deleting a gadget must remove it from every user''s list';
