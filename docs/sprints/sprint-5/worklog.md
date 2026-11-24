@@ -1258,3 +1258,47 @@ Short session, ~09:45–10:12 Manila.
 - Try streaming and a saved compare chat in the live app while signed in — Ikeee-AI — next session.
 - Triage Dependabot PRs #290–#293 — Ikeee-AI — this week.
 - This entry rides on `tekatech/s5-ik-worklog-24nov` (no PR) until the next batch PR — Ikeee-AI.
+
+## 2026-11-24 20:40 Asia/Manila — Production tested in Chrome, four UI fixes, S25 specs, PR #294 opened, benchmarks SQL on PROD
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S5-IK · **Branch:** `tekatech/s5-ik-freeze-features` (PR #294); this entry on `tekatech/s5-ik-worklog-24nov-b`
+
+**Done**
+- Production (`main` = `ff3e2fd`) tested in Chrome, signed out then signed in as admin: catalog, brand filter, search, sign-in gate (Escape closes it, focus returns), theme, 404 pages, public API (200) and every login-only route (401 "Login required") — evidence: this session's Chrome run, no console errors
+- Write actions tested on a throwaway "ZZ Test Phone (delete me)", then deleted: add phone (empty-form validation), edit (invalid "12,000" price rejected), add specs, index for AI, cited answer, suggest correction → Review Queue approve (IP54 → IP68; a new chat answered IP68, so no stale cache), My Gadgets save/remove, compare + share link `/c/47fl2xf`, delete spec, delete phone (old links show "Phone Not Found" / "may have been deleted"). Catalog back to 23 phones. Two real OpenAI calls on existing phones, plus the test phone's index and two answers
+- Fix: the phone page's "no indexed specs yet" warning stayed on after specs were added/indexed until reload; the chat panel now uses the page's live spec list — evidence: `49b8119`
+- Fix: spec delete dialog said "Delete Spec #0?" while the row says "Part 1" → "Part N" everywhere; New Chat confirmation no longer squeezes the chat title — evidence: `77ab5ce`
+- Fix: Chip tile showed whole sentences for Galaxy A56 5G and A36 5G → "Exynos 1580", "Snapdragon 6 Gen 3"; checked against all 23 prod phones, other 21 unchanged — evidence: `e5b9434`
+- Galaxy S25: second spec chunk from https://www.samsung.com/ph/smartphones/galaxy-s25/specs/ added and indexed on PROD via the admin UI (3 of 3 ready for AI, refresh tile now 120 Hz, 9 of 10 key specs). Charging wattage is not on Samsung's page, so it stays "Not stated by source"
+- Local checks: backend 1084 passed, frontend vitest 679 passed, lint and build clean, `check_secrets.py` passed (all local)
+- Branch pushed; PR #294 opened (benchmarks, web search, admin web drafts, 5-turn chat memory, UI fixes, the three fixes above); review requested from Manuel (`s2302827-byte`). All checks green on `e5b9434` — evidence: https://github.com/Ikeee-AI/TekaTech/pull/294, https://github.com/Ikeee-AI/TekaTech/actions/runs/45391387524
+- PROD database: owner applied `gadget_benchmarks.sql`, `lock_browser_roles.sql` and `docs/evidence/benchmarks-2026-11-24/gadget_benchmarks_prod.sql` in the Supabase SQL Editor (`lqswcmkzygqmnblaukco`). Checks: publishable-key probe changed from PGRST205 "Could not find the table" to 42501 "permission denied" (table exists, browser locked out); owner's screenshot shows 135 rows = 135 rows in the file. DEV (`efdgguybkampozuvqjrz`) already had the table
+- Local dev servers stopped; pre-review of #294 started (read-only)
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| Chrome: "Navigation to http://localhost:5173/ ended without loading a page … Frame with ID 0 is showing error page" (also 127.0.0.1:8000) | The connected Chrome ("Browser 1") was on another device: this laptop had no browser running, so its localhost was not this laptop. Binding Vite to 127.0.0.1 and starting the servers outside the sandbox did not help | Local Chrome opened; the Claude extension exists only in profile "Profile 14" ("Tekatech"). That Chrome never connected ("Browser extension is not connected"), even after `/chrome`. Open: the branch's UI was not browser-tested locally; test on prod after deploy |
+| PR #294 "PR policy": `backend/sql changed. Add manual application instructions (order, Supabase SQL Editor, compatibility) to the PR description.` | Description did not mention Supabase/SQL Editor/migration | Description rewritten with Supabase SQL Editor steps, compatibility and a check query; re-run passed — evidence: https://github.com/Ikeee-AI/TekaTech/actions/runs/45391874975 |
+| First `DeleteSpecButton`/`SpecManager` edit via PowerShell `Set-Content -Encoding utf8` rewrote 30 lines (CRLF/BOM churn) | PowerShell 5.1 writes a BOM and changes line endings | Reverted with `git checkout --`, redone with the editor tool; only the intended lines changed |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| Claude first reported that the phone page's key-spec tiles and "0 of 10" bar also stayed stale after adding specs | Wrong: that reading was taken before the save; the header code already refreshes. Only the chat warning was stale | Corrected in the session before fixing; only the warning was changed. Closed |
+| Local `main` was behind `origin/main` (#289 not fetched), so `main..HEAD` listed 17 commits instead of 15 | Could have mis-described the PR | Used `origin/main`; PR lists 15 commits. Closed |
+
+**Decisions**
+- Test write actions only on a throwaway phone and delete it afterwards; no real phone, list or account changed (except the S25 spec addition, asked for) — Ikeee-AI.
+- Checkboxes reported as "on" are correctly labelled (the "on" is the input's value, not its name); no change — Ikeee-AI.
+- Worklog entry on a separate branch so #294's head (and any approval on it) is not moved — Ikeee-AI.
+
+**Blockers / risks**
+- PR #294 needs Manuel's approval on head `e5b9434` before merge/deploy; freeze is Fri 27 Nov. A large diff (~5,500 lines; PR policy warned) may need extra review time — Manuel / Ikeee-AI — by Thu 26 Nov.
+- Branch UI (benchmarks, web search, web drafts) not yet checked in a browser — Ikeee-AI — after deploy.
+
+**Plan alignment** — No sprint task row (Sprint 5 ended 7 Nov); pre-freeze work. Partial against the Definition of Done: checks passed, not yet reviewed, merged, deployed or verified. The S25 spec addition is live data (no deploy needed).
+
+**Next**
+- Act on the pre-review findings (if any) before Manuel approves — Ikeee-AI — 25 Nov.
+- Nudge Manuel if no review by morning — Ikeee-AI — 25 Nov.
+- After merge: verify-deploy, then test benchmarks, web search, web drafts and the three fixes in Chrome on prod — Ikeee-AI — after merge.
