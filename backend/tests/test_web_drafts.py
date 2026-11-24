@@ -78,3 +78,17 @@ def test_unknown_gadget_and_failures(client, fake_supabase, monkeypatch):
 
 def test_bad_kind_is_422(client, fake_supabase):
     assert client.post(f"/gadgets/{GADGET}/web-drafts", json={"kind": "everything"}).status_code == 422
+
+
+def test_benchmark_draft_fields_are_cleaned():
+    from routers.web_drafts import parse_drafts
+
+    _, benches = parse_drafts("benchmarks", json.dumps({"benchmarks": [
+        {"kind": "score", "test": "Geekbench 6 multi-core (Galaxy S24, Exynos 2400)",
+         "settings": "Geekbench 6 (as reported by SamMobile)", "value": 6785, "unit": "points", "source_url": "https://s.com"},
+        {"kind": "game", "test": "Genshin Impact", "settings": "as reported by Tom's Guide", "value": 55, "unit": "fps", "source_url": "https://t.com"},
+        {"kind": "game", "test": "PUBG Mobile", "settings": "Smooth, 90 fps", "value": 88, "unit": "fps", "source_url": "https://t.com"},
+    ]}))
+    assert [(b.test, b.settings) for b in benches] == [
+        ("Geekbench 6 multi-core", None), ("Genshin Impact", None), ("PUBG Mobile", "Smooth, 90 fps"),
+    ]

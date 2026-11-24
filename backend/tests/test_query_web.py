@@ -157,3 +157,24 @@ def test_citations_to_markers_numbers_pages_and_drops_raw_links():
     out, cites = web_search.citations_to_markers(text, anns)
     assert out == "A [1] and B [2] and A again [1]."
     assert [c.url for c in cites] == ["https://a.com/1", "https://b.com/2"]
+
+
+def test_an_uncited_decline_goes_to_the_web(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, _ = _ask(
+        client, {"question": "Does it support DeX?", "gadget_ids": [GADGET], "allow_web_search": True},
+        completion_text="The snippets do not state whether the Galaxy S24 supports Samsung DeX.",
+    )
+    assert resp.json()["answer_basis"] == "web"
+    web_call.assert_called_once()
+
+
+def test_an_uncited_decline_without_the_web_flag_stays_as_it_was(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, chat = _ask(
+        client, {"question": "Does it support DeX?", "gadget_ids": [GADGET], "allow_general_knowledge": True},
+        completion_text="The snippets do not state whether the Galaxy S24 supports Samsung DeX.",
+    )
+    assert resp.json()["answer_basis"] == "specs"
+    web_call.assert_not_called()
+    assert chat.call_count == 1

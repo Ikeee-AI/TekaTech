@@ -11,6 +11,7 @@ daily web-search cap (ai_quota.consume_web_search), which protects the prepaid O
 """
 import json
 import logging
+import re
 from typing import Literal, Optional
 from uuid import UUID
 
@@ -64,7 +65,7 @@ BENCHMARK_SCHEMA = {
                 "properties": {
                     "kind": {"type": "string", "enum": ["game", "score"]},
                     "test": {"type": "string"},
-                    "settings": {"type": "string", "description": "Game settings, or empty."},
+                    "settings": {"type": "string", "description": "Game graphics settings only; empty for chip scores."},
                     "value": {"type": "number"},
                     "unit": {"type": "string"},
                     "source_url": _URL,
@@ -92,7 +93,11 @@ BENCHMARK_INSTRUCTIONS = (
     "You draft benchmark results for a phone catalog. Find published results for this exact phone: "
     "game tests (average fps in a named game at named settings, kind 'game', unit 'fps') and chip "
     "scores (Geekbench 6 single-core and multi-core, 3DMark Wild Life Extreme, AnTuTu; kind 'score', "
-    "unit 'points'). Only results measured on this phone, not on a different phone with the same chip. "
+    "unit 'points'). Only results measured on this exact model, not on a Plus, Pro, Ultra or other "
+    "phone with the same chip; the page must be about this model. "
+    "Field rules: 'test' is only the benchmark or game name (e.g. 'Geekbench 6 multi-core', "
+    "'Genshin Impact'), never the phone, chip or website. 'settings' is only the game's graphics "
+    "settings (e.g. 'High, 60 fps target'), and an empty string for chip scores. "
     + _COMMON
 )
 
@@ -131,6 +136,16 @@ def _http(url) -> Optional[str]:
     return web_search.clean_url(url)
 
 
+_SOURCE_NOTE = re.compile(r"\b(reported|according|source|via|review)\b", re.IGNORECASE)
+_TRAILING_PARENS = re.compile(r"\s*\([^()]*\)\s*$")
+
+
+def _clean_test(test: str) -> str:
+    """'Geekbench 6 multi-core (Galaxy S24, Exynos 2400)' -> 'Geekbench 6 multi-core'."""
+    cleaned = _TRAILING_PARENS.sub("", test).strip(" -—")
+    return cleaned or test
+
+
 def _short(text, limit: int) -> str:
     return " ".join(str(text or "").split())[:limit]
 
@@ -156,8 +171,12 @@ def parse_drafts(kind: str, raw_text: str) -> tuple[list[SpecDraft], list[Benchm
                 continue
             if not isinstance(value, (int, float)) or isinstance(value, bool) or not (0 <= value < 100_000_000):
                 continue
+            settings = _short(item.get("settings"), 80) or None
+            # Chip scores have no settings; a model that names its source there is ignored.
+            if item["kind"] == "score" or (settings and _SOURCE_NOTE.search(settings)):
+                settings = None
             benches.append(BenchmarkDraft(
-                kind=item["kind"], test=test, settings=_short(item.get("settings"), 80) or None,
+                kind=item["kind"], test=_clean_test(test), settings=settings,
                 value=float(value), unit=unit, source_url=url,
             ))
     return specs, benches

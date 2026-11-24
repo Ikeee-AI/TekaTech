@@ -1272,7 +1272,12 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     #     no-evidence reply. Like the no-match branches above, neither reply is written to
     #     query_history (the first call's tokens are logged instead), and both are cached as not
     #     grounded under this request's scope.
-    if _is_not_in_specs(answer):
+    # With "search the web" on, a reply that cites none of the snippets ("the snippets do not
+    # state whether…") has nothing grounded in it either, so it goes to the web too (DEV check,
+    # 24 Nov 2026: the model declined in words instead of sending the sentinel). General
+    # knowledge alone keeps the sentinel-only rule (gkf-v2, evaluated).
+    uncited_decline = payload.allow_web_search and not re.search(r"\[\d+\]|\(\d+\)", answer)
+    if _is_not_in_specs(answer) or uncited_decline:
         logger.info(
             "Grounded answer was %s (allow_general_knowledge=%s): prompt_tokens=%s completion_tokens=%s",
             NOT_IN_SPECS_SENTINEL, fallback_allowed,
