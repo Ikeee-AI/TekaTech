@@ -1302,3 +1302,38 @@ Short session, ~09:45–10:12 Manila.
 - Act on the pre-review findings (if any) before Manuel approves — Ikeee-AI — 25 Nov.
 - Nudge Manuel if no review by morning — Ikeee-AI — 25 Nov.
 - After merge: verify-deploy, then test benchmarks, web search, web drafts and the three fixes in Chrome on prod — Ikeee-AI — after merge.
+
+## 2026-11-24 21:32 Asia/Manila — PR #294 pre-review fixes and benchmark source check
+**Who:** Ikeee-AI (AI-assisted: yes) · **Task:** S5-IK (freeze features; prompts/eval covering Adrian's area) · **Branch:** tekatech/s5-ik-freeze-features
+
+**Done**
+- Pre-review fixes for #294 — evidence: `d86167d`. With Search the Web on, only citations to snippets that were actually sent count, so a decline citing a non-existent `[9]` now reaches the web (`_cites_a_snippet`, `routers/query.py`). New `/query/stream` + web search test. Evaluation GK-10 (new `reaches_web` scorer type) and GK-11 (cited partial answer stays grounded), `gk-cases-v6`; reference answers are hand-written, not model output. Local: backend 1094 passed, offline GK eval 11/11, secret guard passed; CI green on `d86167d`.
+- PR #294 description: ownership note (backend/SQL Manuel, prompts/eval Ikeee-AI, UI Mika, workflows Jopher), pre-review results, benchmark review step — evidence: https://github.com/Ikeee-AI/TekaTech/pull/294
+- Benchmark review: all 135 PROD rows listed with automatic checks (rank across chip tests, Geekbench ratio, fps over target, missing settings, unusual test names); no numeric outliers, 11 rows flagged. The 11 were checked against their sources (Ikeee-AI read the 91mobiles and tinhte.vn pages in the browser; the others were read by the AI). 6 matched; 5 removed — evidence: `909269a`, `docs/evidence/benchmarks-2026-11-24/gadget_benchmarks_review_fixes.sql`, applied on PROD by Ikeee-AI, count 130.
+  - Removed: Find X8 Genshin 59.7 / PUBG 119.6 (OPPO lab marketing figures, no settings); V50 5G Mobile Legends 60 (reviewer's impression, not measured); X200 Peace Elite 89.3 (source article removed); 13 Pro+ 5G BGMI 40 (frame-rate cap at Ultra HDR, not an average).
+  - Kept after checking: iPhone 15 ×5 games (tinhte.vn frame-rate logs), iPhone 16 3DMark Wild Life Extreme 4255 / Unlimited 16523 (Notebookcheck table), iPhone 16 Pro Diablo Immortal 58.2, Reno13 F 5G Wild Life 2579.
+  - The other 124 rows had no flags but have not each been opened against their source.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| 5 GK eval tests failed after adding GK-10/GK-11 | Tests had hard-coded case counts, and the mocked /query GK test included the web case | Counts updated; web case excluded where it can't apply — fixed in `d86167d` |
+| 91mobiles and tinhte.vn returned 403 to the automated reader; reading through the Wayback Machine was refused by the permission check | The sites block automated readers | Not worked around; Ikeee-AI opened both pages and sent screenshots |
+| Wrong claim: "iPhone 16 has no Wild Life Extreme row" | Misread of the flag output | Corrected to the owner; the row (4255) already existed and matches the source |
+| `GET /gadgets/{id}/benchmarks` → 404 on PROD | The route ships in #294, not merged yet | Check the removed rows after merge |
+
+**Conflicts and contradictions**
+| What conflicts | Impact | Resolution / owner / status |
+| --- | --- | --- |
+| `benchmarks_picked.json` (147 picks, raw names) vs applied SQL (135 rows) | The JSON is the pre-normalisation pick list, not a copy of PROD | Both had the 5 rows removed; the SQL file is the record of PROD — Ikeee-AI — noted |
+
+**Decisions** — Delete benchmark rows that are vendor marketing, impressions, caps or unsourced, rather than keep them labelled — reason: Compare bars present them as measured results — Ikeee-AI. Keep non-standard test names (BGMI rename rejected: settings differ) — Ikeee-AI.
+
+**Blockers / risks** — #294 needs Manuel's approval on the head commit (`909269a`) before merge/deploy; freeze Fri 27 Nov — Manuel — 25 Nov.
+
+**Plan alignment** — S5-IK freeze features: Partial (checks green and PROD data ready; not reviewed, merged or deployed).
+
+**Next**
+- Nudge Manuel if no review by morning — Ikeee-AI — 25 Nov.
+- After merge: verify-deploy, check the 4 phones' benchmarks no longer show the removed rows, then test benchmarks, web search, web drafts and the UI fixes in Chrome on PROD — Ikeee-AI — after merge.
+- Full bug sweep before the freeze — Ikeee-AI — by 27 Nov.
