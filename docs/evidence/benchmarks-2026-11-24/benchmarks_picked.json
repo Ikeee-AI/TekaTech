@@ -138,14 +138,6 @@
         "value": 800.0,
         "unit": "points",
         "source_url": "https://benchmarks.ul.com/en/hardware/phone/Realme%2B13%2BPro*2B%2Breview"
-      },
-      {
-        "kind": "game",
-        "test": "BGMI",
-        "settings": "Ultra HDR",
-        "value": 40.0,
-        "unit": "fps",
-        "source_url": "https://www.91mobiles.com/hub/realme-13-pro-plus-review/"
       }
     ],
     "final": [
@@ -477,14 +469,6 @@
       },
       {
         "kind": "game",
-        "test": "Peace Elite",
-        "settings": "HD HDR, 90 fps target",
-        "value": 89.3,
-        "unit": "fps",
-        "source_url": "https://k.sina.cn/article_7857141524_1d452771401902x5k6.html"
-      },
-      {
-        "kind": "game",
         "test": "Genshin Impact",
         "settings": "Highest, 60 fps target",
         "value": 60.3,
@@ -531,22 +515,6 @@
     "name": "OPPO Find X8",
     "drafts": 6,
     "picks": [
-      {
-        "kind": "game",
-        "test": "Genshin Impact",
-        "settings": null,
-        "value": 59.7,
-        "unit": "fps",
-        "source_url": "https://www.oppo.com/en/smartphones/series-find-x/find-x8/"
-      },
-      {
-        "kind": "game",
-        "test": "PUBG",
-        "settings": null,
-        "value": 119.6,
-        "unit": "fps",
-        "source_url": "https://www.oppo.com/en/smartphones/series-find-x/find-x8/"
-      },
       {
         "kind": "score",
         "test": "Geekbench 6 single-core",
@@ -1842,14 +1810,6 @@
         "value": 60.0,
         "unit": "fps",
         "source_url": "https://www.noypigeeks.com/android/vivo-v50-review/"
-      },
-      {
-        "kind": "game",
-        "test": "Mobile Legends",
-        "settings": "Ultra, High Frame Rate mode",
-        "value": 60.0,
-        "unit": "fps",
-        "source_url": "https://www.appsgadget.com/2025/06/vivo-v50-5g-full-review-camera-gaming.html"
       }
     ],
     "final": [
