@@ -1233,13 +1233,13 @@ Short session, ~09:45–10:12 Manila.
 - #289 squash-merged at 11:46 Manila as `ff3e2fd`, pinned to the approved head (`--match-head-commit 441caf5`). It ships: compare-page conversation memory (`0d74416`, from #288), streaming answers via `POST /query/stream` (`d433ab8`), query timings in Railway's log (`8d15bbd`), phone highlight fill-ins (`76dc23a`), prompt v3 (`dbb5b7d`), compare chats saved to the account (`441caf5`) — evidence: https://github.com/Ikeee-AI/TekaTech/pull/289
 - #288 closed as included in #289 (comment on the PR) — evidence: https://github.com/Ikeee-AI/TekaTech/pull/288
 - Main CI all green: backend tests, frontend lint and build, database migrations, browser checks (failure drill), Main guard, deploy (with deployed smoke) — evidence: https://github.com/Ikeee-AI/TekaTech/actions/runs/45321814043
-- Production checked after deploy: API `/version` = `ff3e2fd`, `/health` 200; frontend returned 200 in the post-deploy check (see Errors) — evidence: curl from this session, ~11:50 Manila
+- Production checked after deploy: API `/version` = `ff3e2fd`, `/health` 200; frontend 200 in 0.72 s on a recheck at ~11:55 Manila (first try timed out, see Errors) — evidence: curl from this session
 - No database step at merge: `user_comparison_questions.sql` was already applied by the owner on dev and prod on 23 Nov (checks rls_on=true, browser_can_read=false, trigger_count=1)
 
 **Errors and fixes**
 | Error (exact message, secrets redacted) | Cause | Fix / status |
 | --- | --- | --- |
-| Local `curl https://tekatech-web.onrender.com` did not finish within the 120 s tool timeout | Not established (likely a slow first response from Render) | The deploy job's smoke check passed against the frontend; the background request later returned. Not an app error; no action |
+| Local `curl https://tekatech-web.onrender.com` did not finish within the 120 s tool timeout | Not established (likely a slow first response from Render) | That request never returned; the deploy job's smoke check had passed, and a recheck with a 60 s cap returned 200 in 0.72 s. Cause not found; no action |
 
 **Conflicts and contradictions**
 | What conflicts | Impact | Resolution / owner / status |
