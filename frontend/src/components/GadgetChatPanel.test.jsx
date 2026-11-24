@@ -192,6 +192,31 @@ describe('GadgetChatPanel', () => {
     expect(composer()).toBeTruthy()
   })
 
+  it('the no-indexed-specs warning follows the specs the page passes in, without a reload', async () => {
+    const admin = { id: 'u1', app_metadata: { is_admin: true } }
+    const panel = (specs) => (
+      <MemoryRouter>
+        <AuthContext.Provider value={{ user: admin }}>
+          <GadgetChatPanel gadgetId="g1" gadgetName="Pixel 9" specs={specs} />
+        </AuthContext.Provider>
+      </MemoryRouter>
+    )
+    const warning = () => screen.queryByText(/has no indexed specs yet/)
+    const { rerender } = render(panel([{ indexing_status: 'pending' }]))
+    await screen.findByText('What chip does it use?')
+    expect(warning()).toBeTruthy()
+    // The admin indexes the spec on the page: the warning goes away.
+    rerender(panel([{ indexing_status: 'indexed' }]))
+    expect(warning()).toBeNull()
+    // ...and comes back when the last spec is deleted.
+    rerender(panel([]))
+    expect(warning()).toBeTruthy()
+    // Still loading (null): no warning, and the panel does not fetch the specs itself.
+    rerender(panel(null))
+    expect(warning()).toBeNull()
+    expect(api.getSpecs).not.toHaveBeenCalled()
+  })
+
   it('drops a stored turn whose answer no longer validates', () => {
     expect(toThreadTurn({ id: 'x', question: 'q', asked_at: null, response: { answer: '' } })).toBeNull()
   })

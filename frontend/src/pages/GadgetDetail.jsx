@@ -239,6 +239,8 @@ export default function GadgetDetail() {
           gadgetId={id}
           gadgetName={withoutDoubledBrand(gadget.name)}
           category={gadget.category}
+          // The same list SpecManager keeps up to date (null while loading or if it failed).
+          specs={specs ?? null}
           suggestions={['What chip does it use?', 'Can it run Genshin Impact smoothly?', 'How long does the battery last?']}
         />
       </div>

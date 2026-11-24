@@ -32,7 +32,17 @@ function prefersReducedMotion() {
  * such as "can it run smoothly?" keeps its subject; facts still come from that question's specs.
  * Comparisons keep AIComparisonPanel.
  */
-export default function GadgetChatPanel({ gadgetId, gadgetName, category, suggestions = [] }) {
+/** True when none of the specs is indexed (only indexed specs reach the AI); false for an unknown list. */
+function lacksIndexedSpecs(specs) {
+  return Array.isArray(specs) && !specs.some((s) => s.indexing_status === 'indexed')
+}
+
+/**
+ * `specs`: the gadget page passes its live spec list (null while loading or unknown), so the
+ * "no indexed specs" warning follows specs added, indexed or deleted on the page without a
+ * reload. Left out, the panel loads the list once itself.
+ */
+export default function GadgetChatPanel({ gadgetId, gadgetName, category, suggestions = [], specs }) {
   const { user } = useAuth() ?? {}
   const location = useLocation()
   const thread = useGadgetThread(gadgetId, user?.id)
@@ -65,7 +75,9 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
   const [draft, setDraft] = useState('')
   // The question behind the live (newest) turn; '' when there is none.
   const [askedQuestion, setAskedQuestion] = useState('')
-  const [noIndexedSpecs, setNoIndexedSpecs] = useState(false)
+  const specsFromPage = specs !== undefined
+  const [fetchedSpecs, setFetchedSpecs] = useState(null)
+  const noIndexedSpecs = lacksIndexedSpecs(specsFromPage ? specs : fetchedSpecs)
   const [confirmClear, setConfirmClear] = useState(false)
   const [atBottom, setAtBottom] = useState(true)
   const scrollRef = useRef(null)
@@ -74,16 +86,16 @@ export default function GadgetChatPanel({ gadgetId, gadgetName, category, sugges
   const latestRequest = useRef(0)
 
   useEffect(() => {
+    if (specsFromPage) return undefined
     let cancelled = false
     api
       .getSpecs(gadgetId)
-      // Only indexed specs reach the AI; pending ones have no embedding yet.
-      .then((specs) => !cancelled && setNoIndexedSpecs(!specs.some((s) => s.indexing_status === 'indexed')))
+      .then((list) => !cancelled && setFetchedSpecs(list))
       .catch(() => {})
     return () => {
       cancelled = true
     }
-  }, [gadgetId])
+  }, [gadgetId, specsFromPage])
 
   // --- scrolling ---------------------------------------------------------------------
   function scrollToBottom(smooth = true) {
