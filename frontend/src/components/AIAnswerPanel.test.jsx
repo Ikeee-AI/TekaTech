@@ -38,9 +38,10 @@ function renderPanel() {
 
 describe('AIAnswerPanel request body', () => {
   // The streaming handlers ride along in the same object and are stripped before sending.
-  const sentBody = ({ onDelta, onSources, ...body }) => {
+  const sentBody = ({ onDelta, onSources, onReset, ...body }) => {
     expect(typeof onDelta).toBe('function')
     expect(typeof onSources).toBe('function')
+    expect(typeof onReset).toBe('function')
     return body
   }
 

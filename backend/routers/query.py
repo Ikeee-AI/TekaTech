@@ -344,18 +344,37 @@ _keyword_rpc_failure_logged = False
 # the chip. Only scoped questions (gadget and compare pages), only when the question (or the
 # previous one, for a follow-up) is about performance, capped so a 5-phone comparison stays small.
 MAX_BENCHMARK_SNIPPETS = 12
-_PERFORMANCE_WORDS = re.compile(
-    r"\b(game|games|gaming|gamer|play|playing|fps|frame|frames|benchmark|benchmarks|score|scores|"
-    r"performance|perform|performs|fast|faster|fastest|speed|smooth|smoothly|lag|laggy|run|runs|running|"
-    r"chip|chipset|processor|cpu|gpu|soc|snapdragon|dimensity|helio|exynos|tensor|bionic|"
-    r"geekbench|antutu|3dmark|throttle|throttling|heat|genshin|pubg|codm|cod|honkai|valorant|mlbb|"
+# Benchmarks join the snippets only for performance and game questions (bug sweep, 24 Nov 2026):
+# - a STRONG word always counts;
+# - a WEAK word ("fast", "run", "smooth", "play"…) counts only when the question is not about
+#   something else that shares the word (charging speed, "runs Android 15", a smooth 120 Hz
+#   screen, Google Play);
+# - a chip word alone ("What processor does it use?") does not count: the spec answers it, and
+#   twelve benchmark rows would only add cost and uncited noise. With a weak word it does
+#   ("Which chip is faster?"), through the weak word.
+_STRONG_PERFORMANCE = re.compile(
+    r"\b(games?|gaming|gamer|fps|benchmarks?|performance|perform|performs|lag|laggy|"
+    r"geekbench|antutu|3dmark|throttle|throttling|genshin|pubg|codm|cod|honkai|valorant|mlbb|"
     r"mobile legends|wuthering|fortnite|minecraft|roblox)\b",
+    re.IGNORECASE,
+)
+_WEAK_PERFORMANCE = re.compile(
+    r"\b(play|playing|frames?|scores?|fast|faster|fastest|speed|smooth|smoothly|run|runs|running|heat)\b",
+    re.IGNORECASE,
+)
+_NOT_PERFORMANCE = re.compile(
+    r"\b(charg\w*|watts?|android|ios|one ?ui|update\w*|os|display|screen|refresh|hz|wi-?fi|internet|"
+    r"download\w*|upload\w*|network|5g|lte|signal|usb|transfer|google play|play store|app store|"
+    r"camera|focus|shutter|autofocus|fingerprint|face unlock|unlock)\b",
     re.IGNORECASE,
 )
 
 
 def _wants_benchmarks(question: str, history) -> bool:
-    return bool(_PERFORMANCE_WORDS.search(retrieval_text(question, history)))
+    text = retrieval_text(question, history)
+    if _STRONG_PERFORMANCE.search(text):
+        return True
+    return bool(_WEAK_PERFORMANCE.search(text)) and not _NOT_PERFORMANCE.search(text)
 
 
 def _benchmark_snippet(row: dict) -> str:
@@ -762,6 +781,20 @@ WEB_LIMIT_ANSWER = (
     "Web search has reached today's limit, and TekaTech's saved specs don't cover this question. "
     "Try again tomorrow, or ask about a spec this phone's page lists."
 )
+_WEB_LIMIT_TAIL = {
+    "compare": "Try again tomorrow, or ask about a spec these phones' pages list.",
+    "catalog": "Try again tomorrow, or ask about a spec listed on a phone's page.",
+}
+
+
+def _web_limit_answer(payload: "QueryRequest") -> str:
+    """The limit reply, worded for the page it is asked from (one phone, a comparison or the
+    catalog-wide ask box; bug sweep, 24 Nov 2026)."""
+    count = len(payload.gadget_ids or [])
+    if count == 1:
+        return WEB_LIMIT_ANSWER
+    tail = _WEB_LIMIT_TAIL["compare" if count > 1 else "catalog"]
+    return WEB_LIMIT_ANSWER.replace("Try again tomorrow, or ask about a spec this phone's page lists.", tail)
 
 
 def _web_answer(payload: "QueryRequest", user) -> "QueryResponse":
@@ -769,16 +802,10 @@ def _web_answer(payload: "QueryRequest", user) -> "QueryResponse":
 
     Falls back to the general-knowledge answer (when that is allowed too) if today's web cap is
     used up or the search fails; otherwise a cap is a plain reply and a failure is the usual 503.
-    Like the GK answer, nothing is written to query_history.
+    Like the GK answer, nothing is written to query_history. The daily search is counted only
+    after the gadget-name lookup, so a database failure there costs the user nothing; a failed
+    search still counts, because OpenAI may have billed it (bug sweep, 24 Nov 2026).
     """
-    if not ai_quota.consume_web_search(user):
-        logger.info("Web search cap reached; %s", "general knowledge" if payload.allow_general_knowledge else "no answer")
-        if payload.allow_general_knowledge:
-            return _general_knowledge_answer(payload)
-        return QueryResponse(
-            answer=WEB_LIMIT_ANSWER, sources=[], model_used="none", retrieval="none", answer_basis="web_limit"
-        )
-
     gadget_note = ""
     if payload.gadget_ids:
         try:
@@ -791,6 +818,14 @@ def _web_answer(payload: "QueryRequest", user) -> "QueryResponse":
         names = [r["name"] for r in rows or [] if r.get("name")]
         if names:
             gadget_note = "\n\nGadgets being asked about: " + ", ".join(names) + "."
+    if not ai_quota.consume_web_search(user):
+        logger.info("Web search cap reached; %s", "general knowledge" if payload.allow_general_knowledge else "no answer")
+        if payload.allow_general_knowledge:
+            return _general_knowledge_answer(payload)
+        return QueryResponse(
+            answer=_web_limit_answer(payload), sources=[], model_used="none", retrieval="none",
+            answer_basis="web_limit",
+        )
     try:
         result = web_search.search(
             build_web_prompt(payload.plain_language),
@@ -1314,9 +1349,13 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     uncited_decline = (
         payload.allow_web_search
         and not _cites_a_snippet(answer, len(matches))
-        and _DECLINE.search(answer) is not None
+        and _DECLINE.search(answer.replace("’", "'")) is not None  # "don’t" as well as "don't"
     )
     if _is_not_in_specs(answer) or uncited_decline:
+        # A streamed decline was already shown (the sentinel never is): tell the browser to drop
+        # it and its spec sources while the fallback answer is made (bug sweep, 24 Nov 2026).
+        if uncited_decline:
+            _emit("reset", None)
         logger.info(
             "Grounded answer was %s (allow_general_knowledge=%s): prompt_tokens=%s completion_tokens=%s",
             NOT_IN_SPECS_SENTINEL, fallback_allowed,

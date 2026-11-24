@@ -173,7 +173,11 @@ export default function BenchmarksSection({ gadgetId, isAdmin, reloadKey = 0 }) 
     let live = true
     api
       .getBenchmarks(gadgetId)
-      .then((data) => live && setRows(data))
+      .then((data) => {
+        if (!live) return
+        setRows(data)
+        setError(null) // a reload after a failed load (e.g. saved web drafts) clears the old error
+      })
       .catch((err) => live && setError(friendlyError(err)))
     return () => {
       live = false
@@ -240,7 +244,9 @@ export default function BenchmarksSection({ gadgetId, isAdmin, reloadKey = 0 }) 
         )}
       </div>
 
-      {isAdmin && rows && <AddBenchmarkForm gadgetId={gadgetId} onAdded={(row) => setRows((list) => [...list, row])} />}
+      {isAdmin && (rows || error) && (
+        <AddBenchmarkForm gadgetId={gadgetId} onAdded={(row) => setRows((list) => [...(list ?? []), row])} />
+      )}
 
       <ConfirmDialog
         open={Boolean(deleting)}

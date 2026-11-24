@@ -60,3 +60,16 @@ describe('BenchmarksSection', () => {
     expect(await screen.findByRole('alert')).toBeTruthy()
   })
 })
+
+describe('BenchmarksSection after a failed load (bug sweep, 24 Nov 2026)', () => {
+  it('still lets an admin add, and a successful reload clears the old error', async () => {
+    api.getBenchmarks.mockRejectedValueOnce(Object.assign(new Error('Server down'), { status: 503 }))
+    const { container, rerender } = render(<BenchmarksSection gadgetId="g1" isAdmin reloadKey={0} />)
+    await waitFor(() => expect(container.querySelector('p.text-red-700')).toBeTruthy())
+    expect(screen.getByLabelText('Source link')).toBeTruthy()
+    api.getBenchmarks.mockResolvedValueOnce([ROW])
+    rerender(<BenchmarksSection gadgetId="g1" isAdmin reloadKey={1} />)
+    expect(await screen.findByText('Genshin Impact')).toBeTruthy()
+    expect(container.querySelector('p.text-red-700')).toBeNull()
+  })
+})

@@ -86,3 +86,22 @@ def test_delete(client, fake_supabase):
     assert client.delete(f"/gadgets/{GADGET}/benchmarks/{ROW['id']}").status_code == 204
     fake_supabase.set_response("gadget_benchmarks", "delete", [])
     assert client.delete(f"/gadgets/{GADGET}/benchmarks/{ROW['id']}").status_code == 404
+
+
+def test_checked_date_uses_manila_today_not_the_servers_utc_date(client, fake_supabase):
+    """Bug sweep, 24 Nov 2026: at 07:00 Manila the UTC server is still on the previous day."""
+    from datetime import date, datetime, timedelta, timezone
+
+    import routers.benchmarks as benchmarks
+
+    assert benchmarks._manila_today() == (datetime.now(timezone.utc) + timedelta(hours=8)).date()
+    fake_supabase.set_response("gadgets", "select", [{"id": GADGET}])
+    fake_supabase.set_response("gadget_benchmarks", "select", [])
+    fake_supabase.set_response("gadget_benchmarks", "insert", [ROW])
+    manila_tomorrow_on_utc = date.today() + timedelta(days=1)
+    with patch.object(benchmarks, "_manila_today", return_value=manila_tomorrow_on_utc):
+        ok = client.post(f"/gadgets/{GADGET}/benchmarks", json={**BODY, "checked_at": manila_tomorrow_on_utc.isoformat()})
+        late = client.post(f"/gadgets/{GADGET}/benchmarks",
+                           json={**BODY, "checked_at": (manila_tomorrow_on_utc + timedelta(days=1)).isoformat()})
+    assert ok.status_code == 201, ok.text
+    assert late.status_code == 422

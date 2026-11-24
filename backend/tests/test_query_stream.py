@@ -81,6 +81,9 @@ def test_uncited_decline_with_web_search_ends_in_the_web_answer(client, fake_sup
         )
     events = _events(resp)
     assert events[0][0] == "sources" and events[0][1][0]["gadget_name"] == "Gadget X"
+    kinds = [k for k, _ in events]
+    # The decline streamed first is withdrawn before the web answer (bug sweep, 24 Nov 2026).
+    assert "delta" in kinds and kinds.index("reset") > kinds.index("delta") and kinds[-1] == "done"
     kind, done = events[-1]
     assert kind == "done"
     assert done["answer_basis"] == "web"

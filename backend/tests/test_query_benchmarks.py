@@ -103,3 +103,26 @@ def test_benchmark_lookup_failure_never_fails_the_answer(client, fake_supabase):
         resp, _ = _ask(client, "Is it good for gaming?")
     assert resp.status_code == 200
     assert len(resp.json()["sources"]) == 1
+
+
+# --- Bug sweep, 24 Nov 2026: common words no longer pull in benchmarks ---------------------------
+
+def test_benchmark_trigger_ignores_everyday_uses_of_performance_words():
+    from routers.query import _wants_benchmarks
+
+    for question in ("How fast is its charging?", "What is the charging speed?", "Does it run Android 15?",
+                     "Is the 120 Hz screen smooth?", "Does it have Google Play?", "What processor does it use?",
+                     "How fast is the fingerprint unlock?", "What colours does it come in?"):
+        assert not _wants_benchmarks(question, None), question
+    for question in ("Can it run Genshin Impact?", "Is it good for gaming?", "What is its AnTuTu score?",
+                     "Which chip is faster?", "Can it run smoothly?", "Does it heat up?", "How is the performance?"):
+        assert _wants_benchmarks(question, None), question
+
+
+def test_charging_question_does_not_add_benchmarks(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    fake_supabase.set_response("gadget_benchmarks", "select", [BENCH])
+    resp, user = _ask(client, "How fast is its charging?")
+    assert resp.status_code == 200
+    assert "Genshin" not in user
+    assert len(resp.json()["sources"]) == 1

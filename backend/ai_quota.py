@@ -109,7 +109,12 @@ def consume_web_search(user) -> bool:
     """Count one web search; False when the user's or the site's cap for today is used up.
 
     Admins skip the per-user cap but count toward the site cap, which protects the prepaid
-    OpenAI balance. A cap of 0 turns web answers off. Hits are only recorded when both allow it.
+    OpenAI balance. A cap of 0 turns web answers off.
+
+    `hit` checks and counts in one step, so two requests at once can't both take the last search.
+    The site is counted first: when it is full the user's count is untouched. If the user's own
+    cap then turns out to be full (a race with the user's other tab), the site keeps that one hit,
+    which errs toward fewer searches, never more (bug sweep, 24 Nov 2026).
     """
     now = _now()
     day = now.date().isoformat()
@@ -117,16 +122,14 @@ def consume_web_search(user) -> bool:
     if site_limit <= 0:
         return False
     site_item, site_ids = RateLimitItemPerDay(site_limit), (WEB_SITE_NAMESPACE, "all", day)
-    if not is_admin(user):
-        user_limit = settings.ai_daily_web_search_limit
-        if user_limit <= 0:
-            return False
-        user_item, user_ids = RateLimitItemPerDay(user_limit), (WEB_NAMESPACE, str(user.id), day)
-        if not limiter.limiter.test(user_item, *user_ids):
-            return False
-        if not limiter.limiter.test(site_item, *site_ids):
-            return False
-        limiter.limiter.hit(user_item, *user_ids)
-    elif not limiter.limiter.test(site_item, *site_ids):
+    if is_admin(user):
+        return limiter.limiter.hit(site_item, *site_ids)
+    user_limit = settings.ai_daily_web_search_limit
+    if user_limit <= 0:
         return False
-    return limiter.limiter.hit(site_item, *site_ids)
+    user_item, user_ids = RateLimitItemPerDay(user_limit), (WEB_NAMESPACE, str(user.id), day)
+    if not limiter.limiter.test(user_item, *user_ids):
+        return False
+    if not limiter.limiter.hit(site_item, *site_ids):
+        return False
+    return limiter.limiter.hit(user_item, *user_ids)
