@@ -42,16 +42,21 @@ function renderInline(text, sources, onCiteClick) {
 
 const BULLET = /^[-•]\s/
 
-// Splits the answer into an optional lead-in line plus bullet items, or returns null
-// when it should render as plain paragraphs. The rule the prompt promises: two or more
-// bullets become a list only when at most one non-bullet line precedes them and no
-// non-bullet line follows. Anything else stays paragraphs, so a stray "- " is shown
-// as written rather than guessed at.
+// Splits the answer into an optional lead-in line, bullet items and an optional closing
+// line, or returns null when it should render as plain paragraphs. Two or more bullets
+// become a list when at most one non-bullet line precedes them and at most one follows
+// (the prompt asks for no closing line, but comparison answers often end with a one-line
+// verdict; 24 Nov 2026 prod test). Anything else stays paragraphs, so a stray "- " is
+// shown as written rather than guessed at.
 function splitBulletList(lines) {
-  const intro = lines.length > 0 && !BULLET.test(lines[0].trim()) ? lines[0] : null
-  const items = intro === null ? lines : lines.slice(1)
-  if (items.length < 2 || !items.every((l) => BULLET.test(l.trim()))) return null
-  return { intro, items: items.map((l) => l.trim().replace(/^[-•]\s*/, '')) }
+  const isBullet = (l) => BULLET.test(l.trim())
+  const intro = lines.length > 0 && !isBullet(lines[0]) ? lines[0] : null
+  let items = intro === null ? lines : lines.slice(1)
+  const last = items[items.length - 1]
+  const outro = items.length > 0 && !isBullet(last) ? last : null
+  if (outro !== null) items = items.slice(0, -1)
+  if (items.length < 2 || !items.every(isBullet)) return null
+  return { intro, items: items.map((l) => l.trim().replace(/^[-•]\s*/, '')), outro }
 }
 
 export default function AnswerText({ text, sources, onCiteClick }) {
@@ -71,6 +76,9 @@ export default function AnswerText({ text, sources, onCiteClick }) {
             </li>
           ))}
         </ul>
+        {list.outro !== null && (
+          <p className="text-[15px] text-slate-800 leading-7">{renderInline(list.outro, sources, onCiteClick)}</p>
+        )}
       </div>
     )
   }
