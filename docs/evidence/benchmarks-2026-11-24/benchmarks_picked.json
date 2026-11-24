@@ -1,0 +1,2442 @@
+{
+  "ed185274-ffa3-4958-b74b-d4d3a01671e4": {
+    "name": "ASUS ROG Phone 9 Pro",
+    "drafts": 9,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 3203.0,
+        "unit": "points",
+        "source_url": "https://www.phonearena.com/phones/asus-rog-phone-9-pro_id12479"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 10184.0,
+        "unit": "points",
+        "source_url": "https://www.phonearena.com/phones/asus-rog-phone-9-pro_id12479"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 5642.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.net/Asus-ROG-Phone-9-Pro-review-This-smartphone-is-the-first-choice-for-every-gamer.924300.0.html"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 3290813.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/benchmark-ranking/asus-rog-phone-9-pro"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Lowest, 120 fps target",
+        "value": 59.9,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Asus-ROG-Phone-9-Pro-review-This-smartphone-is-the-first-choice-for-every-gamer.924300.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest, 60 fps target",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://www.yugatech.com/gadget-reviews/asus-rog-phone-9-pro-edition-review/"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 3203.0,
+        "unit": "points",
+        "source_url": "https://www.phonearena.com/phones/asus-rog-phone-9-pro_id12479"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 10184.0,
+        "unit": "points",
+        "source_url": "https://www.phonearena.com/phones/asus-rog-phone-9-pro_id12479"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 5642.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.net/Asus-ROG-Phone-9-Pro-review-This-smartphone-is-the-first-choice-for-every-gamer.924300.0.html"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 3290813.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/benchmark-ranking/asus-rog-phone-9-pro"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Lowest, 120 fps target",
+        "value": 59.9,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Asus-ROG-Phone-9-Pro-review-This-smartphone-is-the-first-choice-for-every-gamer.924300.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest, 60 fps target",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://www.yugatech.com/gadget-reviews/asus-rog-phone-9-pro-edition-review/"
+      }
+    ]
+  },
+  "5916b9a5-7586-40b4-a5ae-ff8fb20f1e37": {
+    "name": "realme 13 Pro+ 5G",
+    "drafts": 5,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 902.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/realme-13-pro-plus-review-6243326"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2764.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/realme-13-pro-plus-review-6243326"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu 10",
+        "settings": null,
+        "value": 686071.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/realme-13-pro-plus-review-6243326"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 800.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/en/hardware/phone/Realme%2B13%2BPro*2B%2Breview"
+      },
+      {
+        "kind": "game",
+        "test": "BGMI",
+        "settings": "Ultra HDR",
+        "value": 40.0,
+        "unit": "fps",
+        "source_url": "https://www.91mobiles.com/hub/realme-13-pro-plus-review/"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 902.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/realme-13-pro-plus-review-6243326"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2764.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/realme-13-pro-plus-review-6243326"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 686071.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/realme-13-pro-plus-review-6243326"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 800.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/en/hardware/phone/Realme%2B13%2BPro*2B%2Breview"
+      },
+      {
+        "kind": "game",
+        "test": "BGMI (PUBG Mobile India)",
+        "settings": "Ultra HDR",
+        "value": 40.0,
+        "unit": "fps",
+        "source_url": "https://www.91mobiles.com/hub/realme-13-pro-plus-review/"
+      }
+    ]
+  },
+  "0d4273f6-2c63-4c6e-991c-7174e55ca374": {
+    "name": "realme 14 Pro 5G",
+    "drafts": 5,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1009.0,
+        "unit": "points",
+        "source_url": "https://innoreviews.com/phones/realme-14-pro-5g"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2924.0,
+        "unit": "points",
+        "source_url": "https://innoreviews.com/phones/realme-14-pro-5g"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 736220.0,
+        "unit": "points",
+        "source_url": "https://techorcoffee.com/products/realme14pro/benchmarks"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 861.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/en/hardware/phone/Realme%2B14%2BPro%2Breview"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 5.0,
+        "unit": "fps",
+        "source_url": "https://benchmarks.ul.com/en/hardware/phone/Realme%2B14%2BPro%2Breview"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1009.0,
+        "unit": "points",
+        "source_url": "https://innoreviews.com/phones/realme-14-pro-5g"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2924.0,
+        "unit": "points",
+        "source_url": "https://innoreviews.com/phones/realme-14-pro-5g"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 736220.0,
+        "unit": "points",
+        "source_url": "https://techorcoffee.com/products/realme14pro/benchmarks"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 861.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/en/hardware/phone/Realme%2B14%2BPro%2Breview"
+      }
+    ]
+  },
+  "c77cb277-dec1-47f5-bee1-e84caf4c761a": {
+    "name": "vivo X200 Pro",
+    "drafts": 5,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2571.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19090291"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 8454.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19090291"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2518928.0,
+        "unit": "points",
+        "source_url": "https://techorcoffee.com/products/vivox200pro/benchmarks"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest quality, 60 FPS target",
+        "value": 59.82,
+        "unit": "fps",
+        "source_url": "https://www.igeekphone.com/vivo-x200-pro-review-a-new-benchmark-for-imaging-and-performance/"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "最高画质，开启60帧（highest quality, 60 FPS target）",
+        "value": 59.82,
+        "unit": "fps",
+        "source_url": "https://www.sohu.com/a/816553185_211762"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2571.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19090291"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 8454.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19090291"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2518928.0,
+        "unit": "points",
+        "source_url": "https://techorcoffee.com/products/vivox200pro/benchmarks"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest quality, 60 FPS target",
+        "value": 59.82,
+        "unit": "fps",
+        "source_url": "https://www.igeekphone.com/vivo-x200-pro-review-a-new-benchmark-for-imaging-and-performance/"
+      }
+    ]
+  },
+  "0fe1e3be-b756-4364-8717-44c447969d5d": {
+    "name": "vivo X200 FE",
+    "drafts": 5,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2087.0,
+        "unit": "points",
+        "source_url": "https://www.ithome.com/0/860/613.htm"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 6808.0,
+        "unit": "points",
+        "source_url": "https://www.ithome.com/0/860/613.htm"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2140421.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/vivo-x200-fe"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 3465.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.net/A-compact-Android-smartphone-with-top-hardware-and-an-XXL-battery-Vivo-X200-FE-review.1114877.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest graphical settings",
+        "value": 35.0,
+        "unit": "fps",
+        "source_url": "https://newswav.com/article/vivo-x200-fe-review-A2507_NXUZt8"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2087.0,
+        "unit": "points",
+        "source_url": "https://www.ithome.com/0/860/613.htm"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 6808.0,
+        "unit": "points",
+        "source_url": "https://www.ithome.com/0/860/613.htm"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2140421.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/vivo-x200-fe"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 3465.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.net/A-compact-Android-smartphone-with-top-hardware-and-an-XXL-battery-Vivo-X200-FE-review.1114877.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest graphical settings",
+        "value": 35.0,
+        "unit": "fps",
+        "source_url": "https://newswav.com/article/vivo-x200-fe-review-A2507_NXUZt8"
+      }
+    ]
+  },
+  "4a26ddb6-023c-41b5-b484-9a1bcf750d96": {
+    "name": "vivo X200",
+    "drafts": 6,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1725.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/android_devices/vivo-x200"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 6616.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/android_devices/vivo-x200"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 5907.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Vivo%2BX200%2Breview"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2537181.0,
+        "unit": "points",
+        "source_url": "https://techorcoffee.com/products/vivox200"
+      },
+      {
+        "kind": "game",
+        "test": "Peace Elite",
+        "settings": "HD HDR, 90 fps target",
+        "value": 89.3,
+        "unit": "fps",
+        "source_url": "https://k.sina.cn/article_7857141524_1d452771401902x5k6.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest, 60 fps target",
+        "value": 60.3,
+        "unit": "fps",
+        "source_url": "https://k.sina.cn/article_7857141524_1d452771401902x5k6.html"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 5907.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Vivo%2BX200%2Breview"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2537181.0,
+        "unit": "points",
+        "source_url": "https://techorcoffee.com/products/vivox200"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile (China: Peace Elite)",
+        "settings": "HD HDR, 90 fps target",
+        "value": 89.3,
+        "unit": "fps",
+        "source_url": "https://k.sina.cn/article_7857141524_1d452771401902x5k6.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest, 60 fps target",
+        "value": 60.3,
+        "unit": "fps",
+        "source_url": "https://k.sina.cn/article_7857141524_1d452771401902x5k6.html"
+      }
+    ]
+  },
+  "a192c0cd-1d7d-415e-b9ee-5de2a90b52c7": {
+    "name": "OPPO Find X8",
+    "drafts": 6,
+    "picks": [
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": null,
+        "value": 59.7,
+        "unit": "fps",
+        "source_url": "https://www.oppo.com/en/smartphones/series-find-x/find-x8/"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG",
+        "settings": null,
+        "value": 119.6,
+        "unit": "fps",
+        "source_url": "https://www.oppo.com/en/smartphones/series-find-x/find-x8/"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2581.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19404498"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 7422.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19404498"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 6125.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Oppo%20Find%20X8%20review"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2884973.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-find-x8"
+      }
+    ],
+    "final": [
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": null,
+        "value": 59.7,
+        "unit": "fps",
+        "source_url": "https://www.oppo.com/en/smartphones/series-find-x/find-x8/"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG",
+        "settings": null,
+        "value": 119.6,
+        "unit": "fps",
+        "source_url": "https://www.oppo.com/en/smartphones/series-find-x/find-x8/"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2581.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19404498"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 7422.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19404498"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 6125.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Oppo%20Find%20X8%20review"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2884973.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-find-x8"
+      }
+    ]
+  },
+  "dd735047-8c55-44da-8b15-6b73ea85e376": {
+    "name": "OPPO Reno14 F 5G",
+    "drafts": 9,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 920.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14-f-5g"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2671.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14-f-5g"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 776077.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14-f-5g"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu 10",
+        "settings": null,
+        "value": 690263.0,
+        "unit": "points",
+        "source_url": "https://cellphones.com.vn/sforum/danh-gia-chi-tiet-oppo-reno14-f-5g"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "High",
+        "value": 30.0,
+        "unit": "fps",
+        "source_url": "https://cellphones.com.vn/sforum/danh-gia-chi-tiet-oppo-reno14-f-5g"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Lowest settings",
+        "value": 40.0,
+        "unit": "fps",
+        "source_url": "https://nasilemaktech.com/oppo-reno14-f-review/"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 920.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14-f-5g"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2671.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14-f-5g"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 776077.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14-f-5g"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "High",
+        "value": 30.0,
+        "unit": "fps",
+        "source_url": "https://cellphones.com.vn/sforum/danh-gia-chi-tiet-oppo-reno14-f-5g"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Lowest settings",
+        "value": 40.0,
+        "unit": "fps",
+        "source_url": "https://nasilemaktech.com/oppo-reno14-f-review/"
+      }
+    ]
+  },
+  "7e9e481a-743b-4844-9af0-ea8424d0012a": {
+    "name": "OPPO Reno14 5G",
+    "drafts": 13,
+    "picks": [
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Graphics maxed",
+        "value": 42.5,
+        "unit": "fps",
+        "source_url": "https://www.frandroid.com/marques/oppo/2787425_test-de-loppo-reno-14-5g-un-smartphone-polyvalent-solide-et-pas-sans-defauts"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1319.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 4067.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 3213.0,
+        "unit": "points",
+        "source_url": "https://cellphones.com.vn/sforum/danh-gia-hieu-nang-oppo-reno14"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 19.24,
+        "unit": "fps",
+        "source_url": "https://cellphones.com.vn/sforum/danh-gia-hieu-nang-oppo-reno14"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1724757.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14"
+      }
+    ],
+    "final": [
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Graphics maxed",
+        "value": 42.5,
+        "unit": "fps",
+        "source_url": "https://www.frandroid.com/marques/oppo/2787425_test-de-loppo-reno-14-5g-un-smartphone-polyvalent-solide-et-pas-sans-defauts"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1319.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 4067.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 3213.0,
+        "unit": "points",
+        "source_url": "https://cellphones.com.vn/sforum/danh-gia-hieu-nang-oppo-reno14"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1724757.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/oppo-reno-14"
+      }
+    ]
+  },
+  "cc45a57c-3ac5-4d47-8e9d-84c3d4f6b4a8": {
+    "name": "Samsung Galaxy A36 5G",
+    "drafts": 10,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1016.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a36-review-this-budget-phone-still-has-room-for-improvement"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2902.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a36-review-this-budget-phone-still-has-room-for-improvement"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 904.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Samsung%20Galaxy%20A36%20review"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 5.0,
+        "unit": "fps",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Samsung%20Galaxy%20A36%20review"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 844447.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/samsung-galaxy-a36-5g"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Medium",
+        "value": 40.0,
+        "unit": "fps",
+        "source_url": "https://fpsforecast.com/phone/galaxy-a36/"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest",
+        "value": 33.0,
+        "unit": "fps",
+        "source_url": "https://fpsforecast.com/phone/galaxy-a36/"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Unlimited",
+        "settings": null,
+        "value": 20.9,
+        "unit": "fps",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a36-review-this-budget-phone-still-has-room-for-improvement"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1016.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a36-review-this-budget-phone-still-has-room-for-improvement"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2902.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a36-review-this-budget-phone-still-has-room-for-improvement"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 904.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Samsung%20Galaxy%20A36%20review"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 844447.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/samsung-galaxy-a36-5g"
+      }
+    ]
+  },
+  "5e49de5a-87e7-4eb3-ad9e-3e4c828716bc": {
+    "name": "Samsung Galaxy S25",
+    "drafts": 10,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 3031.0,
+        "unit": "points",
+        "source_url": "https://www.phonearena.com/reviews/samsung-galaxy-s25-review_id6900"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 9626.0,
+        "unit": "points",
+        "source_url": "https://www.phonearena.com/reviews/samsung-galaxy-s25-review_id6900"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 5959.0,
+        "unit": "points",
+        "source_url": "https://www.phonearena.com/reviews/samsung-galaxy-s25-review_id6900"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2920032.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/samsung-galaxy-s25"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Max graphics",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Samsung-Galaxy-S25-review-The-star-among-compact-smartphones-is-losing-ground.989246.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Smooth",
+        "value": 119.6,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Samsung-Galaxy-S25-review-The-star-among-compact-smartphones-is-losing-ground.989246.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Ultra HD",
+        "value": 40.0,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Samsung-Galaxy-S25-review-The-star-among-compact-smartphones-is-losing-ground.989246.0.html"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 3031.0,
+        "unit": "points",
+        "source_url": "https://www.phonearena.com/reviews/samsung-galaxy-s25-review_id6900"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 9626.0,
+        "unit": "points",
+        "source_url": "https://www.phonearena.com/reviews/samsung-galaxy-s25-review_id6900"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 5959.0,
+        "unit": "points",
+        "source_url": "https://www.phonearena.com/reviews/samsung-galaxy-s25-review_id6900"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2920032.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/samsung-galaxy-s25"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Max graphics",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Samsung-Galaxy-S25-review-The-star-among-compact-smartphones-is-losing-ground.989246.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Smooth",
+        "value": 119.6,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Samsung-Galaxy-S25-review-The-star-among-compact-smartphones-is-losing-ground.989246.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Ultra HD",
+        "value": 40.0,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Samsung-Galaxy-S25-review-The-star-among-compact-smartphones-is-losing-ground.989246.0.html"
+      }
+    ]
+  },
+  "d8b5cdbd-37ef-4239-b11e-3573474f53a0": {
+    "name": "Apple iPhone 16e",
+    "drafts": 8,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 3475.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19505238"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 8640.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19505238"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1612788.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/benchmark-ranking/apple-iphone-16e"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 3330.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.net/Apple-s-new-budget-wonder-weapon-against-the-competition-Apple-iPhone-16e-review.1009234.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "HD",
+        "value": 58.5,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-s-new-budget-wonder-weapon-against-the-competition-Apple-iPhone-16e-review.1009234.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Ultra HD",
+        "value": 38.8,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-s-new-budget-wonder-weapon-against-the-competition-Apple-iPhone-16e-review.1009234.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Very high, 60 fps target",
+        "value": 59.2,
+        "unit": "fps",
+        "source_url": "https://www.gamersky.com/tech/202503/1895120.shtml"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Medium",
+        "value": 51.0,
+        "unit": "fps",
+        "source_url": "https://garumax.com/iphone-16e-review"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 3475.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19505238"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 8640.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19505238"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1612788.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/benchmark-ranking/apple-iphone-16e"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 3330.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.net/Apple-s-new-budget-wonder-weapon-against-the-competition-Apple-iPhone-16e-review.1009234.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "HD",
+        "value": 58.5,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-s-new-budget-wonder-weapon-against-the-competition-Apple-iPhone-16e-review.1009234.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Ultra HD",
+        "value": 38.8,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-s-new-budget-wonder-weapon-against-the-competition-Apple-iPhone-16e-review.1009234.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Very high, 60 fps target",
+        "value": 59.2,
+        "unit": "fps",
+        "source_url": "https://www.gamersky.com/tech/202503/1895120.shtml"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Medium",
+        "value": 51.0,
+        "unit": "fps",
+        "source_url": "https://garumax.com/iphone-16e-review"
+      }
+    ]
+  },
+  "7bef1116-e7c1-484c-be35-242345f33696": {
+    "name": "Apple iPhone 16 Pro",
+    "drafts": 10,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 3595.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19090495"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 9217.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19090495"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 4248.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Apple%2BiPhone%2B16%2BPro%2Breview"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "lowest, 120 fps target",
+        "value": 109.3,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "highest, 120 fps target",
+        "value": 65.2,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Smooth",
+        "value": 116.6,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "HD",
+        "value": 57.0,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Ultra HD",
+        "value": 46.2,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Diablo Immortal",
+        "settings": "Ultra Mobile Very High",
+        "value": 58.2,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1782199.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/apple-iphone-16-pro"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 3595.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19090495"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 9217.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19090495"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 4248.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Apple%2BiPhone%2B16%2BPro%2Breview"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "lowest, 120 fps target",
+        "value": 109.3,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "highest, 120 fps target",
+        "value": 65.2,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Smooth",
+        "value": 116.6,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "HD",
+        "value": 57.0,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Ultra HD",
+        "value": 46.2,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Diablo Immortal",
+        "settings": "Ultra Mobile Very High",
+        "value": 58.2,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Apple-iPhone-16-Pro-smartphone-review-The-small-Pro-phone-with-the-big-display.899301.0.html"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1782199.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/apple-iphone-16-pro"
+      }
+    ]
+  },
+  "3912d3e0-155c-473f-b0e9-1744a6134e82": {
+    "name": "Apple iPhone 16",
+    "drafts": 11,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2798.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/ios_devices/iphone-16"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 7601.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/ios_devices/iphone-16"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 4255.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Unlimited Score",
+        "settings": null,
+        "value": 16523.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "lowest, 120 fps",
+        "value": 59.3,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "medium, 120 fps",
+        "value": 57.9,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "highest, 120 fps",
+        "value": 58.1,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "HD",
+        "value": 58.9,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Ultra HD",
+        "value": 43.6,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1985600.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/benchmark-ranking/apple-iphone-16"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2798.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/ios_devices/iphone-16"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 7601.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/ios_devices/iphone-16"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 4255.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Unlimited",
+        "settings": null,
+        "value": 16523.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "lowest, 120 fps",
+        "value": 59.3,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "medium, 120 fps",
+        "value": 57.9,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "highest, 120 fps",
+        "value": 58.1,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "HD",
+        "value": 58.9,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Ultra HD",
+        "value": 43.6,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.com/Test-Apple-iPhone-16-Smartphone-Mehr-Neuerungen-als-man-glauben-wuerde.898512.0.html"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1985600.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/benchmark-ranking/apple-iphone-16"
+      }
+    ]
+  },
+  "5c9a2c04-ae56-4dd6-a001-e1f50c84f918": {
+    "name": "Samsung Galaxy A56 5G",
+    "drafts": 5,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1358.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a56-review"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 3867.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a56-review"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 1248.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a56-review"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 902412.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/antutu-benchmark/device/samsung-galaxy-a56-5g/"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Lowest, 120 fps target",
+        "value": 58.9,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Loads-of-innovations-in-the-premium-mid-range-Samsung-Galaxy-A56-5G-review.1020512.0.html"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1358.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a56-review"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 3867.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a56-review"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 1248.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/phones/samsung-phones/samsung-galaxy-a56-review"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 902412.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/antutu-benchmark/device/samsung-galaxy-a56-5g/"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Lowest, 120 fps target",
+        "value": 58.9,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Loads-of-innovations-in-the-premium-mid-range-Samsung-Galaxy-A56-5G-review.1020512.0.html"
+      }
+    ]
+  },
+  "762ab885-4dbc-48c0-a5ca-beb185945e7a": {
+    "name": "OPPO Reno13 F 5G",
+    "drafts": 6,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 969.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/gadget-reviews/oppo-reno13-f-5g-review/"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2715.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/gadget-reviews/oppo-reno13-f-5g-review/"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu 10",
+        "settings": null,
+        "value": 625685.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/gadget-reviews/oppo-reno13-f-5g-review/"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life",
+        "settings": null,
+        "value": 2579.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/gadget-reviews/oppo-reno13-f-5g-review/"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 659.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Oppo%20Reno13%20F%205G%20review"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Medium, 60 fps target",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://www.frandroid.com/marques/oppo/2523999_test-du-oppo-reno-13-fs-un-smartphone-polyvalent-equilibre-mais-dont-seule-la-robe-brille-vraiment"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 969.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/gadget-reviews/oppo-reno13-f-5g-review/"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2715.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/gadget-reviews/oppo-reno13-f-5g-review/"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 625685.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/gadget-reviews/oppo-reno13-f-5g-review/"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life",
+        "settings": null,
+        "value": 2579.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/gadget-reviews/oppo-reno13-f-5g-review/"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 659.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Oppo%20Reno13%20F%205G%20review"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Medium, 60 fps target",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://www.frandroid.com/marques/oppo/2523999_test-du-oppo-reno-13-fs-un-smartphone-polyvalent-equilibre-mais-dont-seule-la-robe-brille-vraiment"
+      }
+    ]
+  },
+  "9a053dac-a230-46fa-8e22-2046f76432a3": {
+    "name": "realme 14 Pro+ 5G",
+    "drafts": 6,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1107.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/realme-14-pro-plus"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2986.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/realme-14-pro-plus"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1107631.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/realme-14-pro-plus"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 1024.0,
+        "unit": "points",
+        "source_url": "https://frontum.co.uk/smartphones/realme-14-pro-plus"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest graphics",
+        "value": 45.0,
+        "unit": "fps",
+        "source_url": "https://hi-tech.mail.ru/review/124449-realme-14-pro-plus-review/"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1107.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/realme-14-pro-plus"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 2986.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/realme-14-pro-plus"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1107631.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/realme-14-pro-plus"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 1024.0,
+        "unit": "points",
+        "source_url": "https://frontum.co.uk/smartphones/realme-14-pro-plus"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest graphics",
+        "value": 45.0,
+        "unit": "fps",
+        "source_url": "https://hi-tech.mail.ru/review/124449-realme-14-pro-plus-review/"
+      }
+    ]
+  },
+  "4fbc32c0-8418-4de7-9341-5d41a9eca8d5": {
+    "name": "vivo V50 5G",
+    "drafts": 6,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1121.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/vivo-v50-review-7784035/amp"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 3110.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/vivo-v50-review-7784035/amp"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu 10",
+        "settings": null,
+        "value": 820958.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/vivo-v50-review-7784035/amp"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 1453.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Vivo%2BV50%2Breview"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Medium",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://www.noypigeeks.com/android/vivo-v50-review/"
+      },
+      {
+        "kind": "game",
+        "test": "Mobile Legends",
+        "settings": "Ultra, High Frame Rate mode",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://www.appsgadget.com/2025/06/vivo-v50-5g-full-review-camera-gaming.html"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1121.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/vivo-v50-review-7784035/amp"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 3110.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/vivo-v50-review-7784035/amp"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 820958.0,
+        "unit": "points",
+        "source_url": "https://www.gadgets360.com/mobiles/reviews/vivo-v50-review-7784035/amp"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 1453.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Vivo%2BV50%2Breview"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Medium",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://www.noypigeeks.com/android/vivo-v50-review/"
+      },
+      {
+        "kind": "game",
+        "test": "Mobile Legends",
+        "settings": "Ultra, High Frame Rate mode",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://www.appsgadget.com/2025/06/vivo-v50-5g-full-review-camera-gaming.html"
+      }
+    ]
+  },
+  "496c93f8-aca7-418f-89aa-a5331bd0a095": {
+    "name": "OPPO Reno13 5G",
+    "drafts": 4,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1335.0,
+        "unit": "points",
+        "source_url": "https://www.gizguide.com/2025/03/oppo-reno13-5g-gaming-benchmark-performance.html"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 3946.0,
+        "unit": "points",
+        "source_url": "https://www.gizguide.com/2025/03/oppo-reno13-5g-gaming-benchmark-performance.html"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1378614.0,
+        "unit": "points",
+        "source_url": "https://ds.gtgroup.dev/specs/oppo/reno13"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 2893.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Oppo%2BReno13%2B5G%2Breview"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1335.0,
+        "unit": "points",
+        "source_url": "https://www.gizguide.com/2025/03/oppo-reno13-5g-gaming-benchmark-performance.html"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 3946.0,
+        "unit": "points",
+        "source_url": "https://www.gizguide.com/2025/03/oppo-reno13-5g-gaming-benchmark-performance.html"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 2893.0,
+        "unit": "points",
+        "source_url": "https://benchmarks.ul.com/hardware/phone/Oppo%2BReno13%2B5G%2Breview"
+      }
+    ]
+  },
+  "a8c964ba-658f-4fb2-b0c6-aec95092ecf4": {
+    "name": "Samsung Galaxy S24",
+    "drafts": 5,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2235.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/reviews/samsung-galaxy-s24"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 6922.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/reviews/samsung-galaxy-s24"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 4294.0,
+        "unit": "points",
+        "source_url": "https://www.frandroid.com/marques/samsung/1921311_test-du-samsung-galaxy-s24"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2291956.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/benchmark-ranking/samsung-galaxy-s24"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest + 60 fps target",
+        "value": 55.3,
+        "unit": "fps",
+        "source_url": "https://aishou-note.com/games/genshin"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2235.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/reviews/samsung-galaxy-s24"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 6922.0,
+        "unit": "points",
+        "source_url": "https://www.tomsguide.com/reviews/samsung-galaxy-s24"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 4294.0,
+        "unit": "points",
+        "source_url": "https://www.frandroid.com/marques/samsung/1921311_test-du-samsung-galaxy-s24"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 2291956.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/benchmark-ranking/samsung-galaxy-s24"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Highest + 60 fps target",
+        "value": 55.3,
+        "unit": "fps",
+        "source_url": "https://aishou-note.com/games/genshin"
+      }
+    ]
+  },
+  "073ad803-9ef7-46dc-bf73-fef21f2c074a": {
+    "name": "Apple iPhone 15",
+    "drafts": 9,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2629.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19163832"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 6361.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19163832"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 3070.0,
+        "unit": "points",
+        "source_url": "https://cellphones.com.vn/sforum/danh-gia-chi-tiet-iphone-15"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1436187.0,
+        "unit": "points",
+        "source_url": "https://cellphones.com.vn/sforum/danh-gia-chi-tiet-iphone-15"
+      },
+      {
+        "kind": "game",
+        "test": "Liên Quân Mobile",
+        "settings": "Max graphics, 60 FPS target",
+        "value": 59.7,
+        "unit": "fps",
+        "source_url": "https://tinhte.vn/thread/3781817"
+      },
+      {
+        "kind": "game",
+        "test": "Liên Minh Huyền Thoại: Tốc Chiến",
+        "settings": "Max graphics, 60 FPS target",
+        "value": 59.6,
+        "unit": "fps",
+        "source_url": "https://tinhte.vn/thread/3781817"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Max graphics, 60 FPS target",
+        "value": 58.2,
+        "unit": "fps",
+        "source_url": "https://tinhte.vn/thread/3781817"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Ultra HDR, Extreme frame rate (≈40 FPS)",
+        "value": 39.3,
+        "unit": "fps",
+        "source_url": "https://tinhte.vn/thread/3781817"
+      },
+      {
+        "kind": "game",
+        "test": "Honkai: Star Rail",
+        "settings": "Max graphics, 60 FPS target",
+        "value": 55.4,
+        "unit": "fps",
+        "source_url": "https://tinhte.vn/thread/3781817"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 2629.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19163832"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 6361.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19163832"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 3070.0,
+        "unit": "points",
+        "source_url": "https://cellphones.com.vn/sforum/danh-gia-chi-tiet-iphone-15"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1436187.0,
+        "unit": "points",
+        "source_url": "https://cellphones.com.vn/sforum/danh-gia-chi-tiet-iphone-15"
+      },
+      {
+        "kind": "game",
+        "test": "Arena of Valor",
+        "settings": "Max graphics, 60 FPS target",
+        "value": 59.7,
+        "unit": "fps",
+        "source_url": "https://tinhte.vn/thread/3781817"
+      },
+      {
+        "kind": "game",
+        "test": "League of Legends: Wild Rift",
+        "settings": "Max graphics, 60 FPS target",
+        "value": 59.6,
+        "unit": "fps",
+        "source_url": "https://tinhte.vn/thread/3781817"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "Max graphics, 60 FPS target",
+        "value": 58.2,
+        "unit": "fps",
+        "source_url": "https://tinhte.vn/thread/3781817"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Ultra HDR, Extreme frame rate (≈40 FPS)",
+        "value": 39.3,
+        "unit": "fps",
+        "source_url": "https://tinhte.vn/thread/3781817"
+      },
+      {
+        "kind": "game",
+        "test": "Honkai: Star Rail",
+        "settings": "Max graphics, 60 FPS target",
+        "value": 55.4,
+        "unit": "fps",
+        "source_url": "https://tinhte.vn/thread/3781817"
+      }
+    ]
+  },
+  "b099dab9-4983-4e00-8a1c-4b516e17789c": {
+    "name": "Infinix Note 50 Pro 5G+",
+    "drafts": 9,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1216.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/infinix-note-50-pro-plus-5g"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 3896.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/infinix-note-50-pro-plus-5g"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 2936.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/gadget-reviews/infinix-note-50-pro-5g-review/"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1775645.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/infinix-note-50-pro-plus-5g"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "High, 60 fps target",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://ixbt.com/live/mobile/hochu-v-premium-obzor-smartfona-infinix-note-50-pro-5g-s-igrovym-processorom-i-periskopom.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": null,
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://club.dns-shop.ru/review/t-78-smartfonyi/145519-obzor-smartfona-infinix-note-50-pro-5g-na-vyisokih-skorostyah/"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1216.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/infinix-note-50-pro-plus-5g"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 3896.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/infinix-note-50-pro-plus-5g"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 2936.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/gadget-reviews/infinix-note-50-pro-5g-review/"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1775645.0,
+        "unit": "points",
+        "source_url": "https://nanoreview.net/en/phone/infinix-note-50-pro-plus-5g"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "High, 60 fps target",
+        "value": 60.0,
+        "unit": "fps",
+        "source_url": "https://ixbt.com/live/mobile/hochu-v-premium-obzor-smartfona-infinix-note-50-pro-5g-s-igrovym-processorom-i-periskopom.html"
+      }
+    ]
+  },
+  "a621bb58-4c4b-431f-b776-09189150c727": {
+    "name": "POCO X7 Pro",
+    "drafts": 8,
+    "picks": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1597.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19155874"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 6159.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19155874"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu 10",
+        "settings": null,
+        "value": 1590303.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/antutu-benchmark/device/poco-x7-pro/"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 3691.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.net/Xiaomi-Poco-X7-Pro-Smartphone-Review-Dimensity-8400-Ultra-debut-with-software-updates-until-EUR400.960243.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "lowest 120 fps",
+        "value": 59.9,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Xiaomi-Poco-X7-Pro-Smartphone-Review-Dimensity-8400-Ultra-debut-with-software-updates-until-EUR400.960243.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "highest 120 fps",
+        "value": 59.5,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Xiaomi-Poco-X7-Pro-Smartphone-Review-Dimensity-8400-Ultra-debut-with-software-updates-until-EUR400.960243.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Smooth",
+        "value": 118.4,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Xiaomi-Poco-X7-Pro-Smartphone-Review-Dimensity-8400-Ultra-debut-with-software-updates-until-EUR400.960243.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "HD",
+        "value": 59.7,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Xiaomi-Poco-X7-Pro-Smartphone-Review-Dimensity-8400-Ultra-debut-with-software-updates-until-EUR400.960243.0.html"
+      }
+    ],
+    "final": [
+      {
+        "kind": "score",
+        "test": "Geekbench 6 single-core",
+        "settings": null,
+        "value": 1597.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19155874"
+      },
+      {
+        "kind": "score",
+        "test": "Geekbench 6 multi-core",
+        "settings": null,
+        "value": 6159.0,
+        "unit": "points",
+        "source_url": "https://browser.geekbench.com/v6/cpu/19155874"
+      },
+      {
+        "kind": "score",
+        "test": "AnTuTu",
+        "settings": null,
+        "value": 1590303.0,
+        "unit": "points",
+        "source_url": "https://www.yugatech.com/antutu-benchmark/device/poco-x7-pro/"
+      },
+      {
+        "kind": "score",
+        "test": "3DMark Wild Life Extreme",
+        "settings": null,
+        "value": 3691.0,
+        "unit": "points",
+        "source_url": "https://www.notebookcheck.net/Xiaomi-Poco-X7-Pro-Smartphone-Review-Dimensity-8400-Ultra-debut-with-software-updates-until-EUR400.960243.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "lowest 120 fps",
+        "value": 59.9,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Xiaomi-Poco-X7-Pro-Smartphone-Review-Dimensity-8400-Ultra-debut-with-software-updates-until-EUR400.960243.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "Genshin Impact",
+        "settings": "highest 120 fps",
+        "value": 59.5,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Xiaomi-Poco-X7-Pro-Smartphone-Review-Dimensity-8400-Ultra-debut-with-software-updates-until-EUR400.960243.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "Smooth",
+        "value": 118.4,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Xiaomi-Poco-X7-Pro-Smartphone-Review-Dimensity-8400-Ultra-debut-with-software-updates-until-EUR400.960243.0.html"
+      },
+      {
+        "kind": "game",
+        "test": "PUBG Mobile",
+        "settings": "HD",
+        "value": 59.7,
+        "unit": "fps",
+        "source_url": "https://www.notebookcheck.net/Xiaomi-Poco-X7-Pro-Smartphone-Review-Dimensity-8400-Ultra-debut-with-software-updates-until-EUR400.960243.0.html"
+      }
+    ]
+  }
+}

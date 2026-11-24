@@ -29,7 +29,7 @@ def test_list_is_public_and_returns_rows(client, fake_supabase):
     resp = client.get(f"/gadgets/{GADGET}/benchmarks")
     assert resp.status_code == 200
     assert resp.json()[0]["test"] == "Genshin Impact"
-    assert resp.headers["cache-control"] == "public, max-age=60"
+    assert "cache-control" not in resp.headers  # the admin UI re-reads right after a write
 
 
 def test_add_saves_cleaned_row_and_invalidates_answers(client, fake_supabase):

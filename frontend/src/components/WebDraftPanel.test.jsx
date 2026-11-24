@@ -64,6 +64,24 @@ describe('WebDraftPanel', () => {
     expect(api.addBenchmark).toHaveBeenCalledWith('g1', draft)
   })
 
+  it('drops the drafts already saved when a later save fails, so a retry never repeats them', async () => {
+    const a = { kind: 'score', test: 'Geekbench 6 single-core', settings: null, value: 2235, unit: 'points', source_url: 'https://a.com' }
+    const b = { kind: 'score', test: 'Geekbench 6 multi-core', settings: null, value: 6922, unit: 'points', source_url: 'https://a.com' }
+    api.draftFromWeb.mockResolvedValue({ kind: 'benchmarks', specs: [], benchmarks: [a, b] })
+    api.addBenchmark.mockResolvedValueOnce({ ...a, id: 'b1' }).mockRejectedValueOnce(Object.assign(new Error('Too many'), { status: 429 }))
+    const onBenchmarksSaved = vi.fn()
+    render(<WebDraftPanel gadgetId="g1" onBenchmarksSaved={onBenchmarksSaved} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Find benchmarks' }))
+    fireEvent.click(await screen.findByLabelText(/single-core/))
+    fireEvent.click(screen.getByLabelText(/multi-core/))
+    fireEvent.click(screen.getByRole('button', { name: /Save 2 checked/ }))
+    await vi.waitFor(() => expect(onBenchmarksSaved).toHaveBeenCalled())
+    expect(screen.queryByLabelText(/single-core/)).toBeNull()
+    // The unsaved draft stays ticked, so Save retries only that one.
+    expect(screen.getByLabelText(/multi-core/).checked).toBe(true)
+    expect(screen.getByRole('button', { name: /Save 1 checked/ })).toBeTruthy()
+  })
+
   it('says so when the search found nothing', async () => {
     api.draftFromWeb.mockResolvedValue({ kind: 'specs', specs: [], benchmarks: [] })
     render(<WebDraftPanel gadgetId="g1" />)

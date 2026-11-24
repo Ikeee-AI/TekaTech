@@ -156,6 +156,25 @@ describe('AiAnswerResult with a web-search answer', () => {
     expect(screen.queryByText(/cited spec/)).toBeNull()
   })
 
+  it('shows a web answer that found no pages, instead of "No Evidence Found"', () => {
+    renderResult({ ...WEB, answer: 'I could not find a published figure for this.', sources: [] })
+    expect(screen.getByText('I could not find a published figure for this.')).toBeTruthy()
+    expect(screen.queryByText(/No Evidence Found/i)).toBeNull()
+  })
+
+  it('shows the web-limit sentence as its own notice', () => {
+    const text = "Web search has reached today's limit, and TekaTech's saved specs don't cover this question."
+    renderResult({ answer: text, sources: [], answer_basis: 'web_limit', retrieval: 'none' })
+    expect(screen.getByText('Web Search Limit Reached')).toBeTruthy()
+    expect(screen.getByText(text)).toBeTruthy()
+  })
+
+  it('shows no relevance bar for a web page', () => {
+    renderResult(WEB)
+    fireEvent.click(screen.getByRole('button', { name: /1 Web Page Cited/ }))
+    expect(screen.queryByText(/Relevance/)).toBeNull()
+  })
+
   it('offers the Search the Web option where answer options show', () => {
     const setAllowWebSearch = vi.fn()
     renderResult(GROUNDED, { setAllowWebSearch })

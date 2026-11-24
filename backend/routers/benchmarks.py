@@ -123,8 +123,8 @@ def benchmarks_for(gadget_ids: list[str]) -> list[dict]:
 
 # Deliberately public, like GET /gadgets/{id}/specs: admin-curated catalog data with sources.
 @router.get("", response_model=list[BenchmarkResponse])
-def list_benchmarks(gadget_id: UUID, response: Response):
-    response.headers["Cache-Control"] = "public, max-age=60"
+# No browser Cache-Control: the admin UI re-reads this list right after a save or delete.
+def list_benchmarks(gadget_id: UUID):
     return benchmarks_for([str(gadget_id)])
 
 

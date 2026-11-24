@@ -55,33 +55,43 @@ export default function WebDraftPanel({ gadgetId, onSpecsSaved, onBenchmarksSave
   }
 
   async function save() {
-    const chosen = drafts.filter((_, i) => picked.has(i))
+    const chosen = [...picked].sort((a, b) => a - b)
     if (chosen.length === 0) return
     setSaving(true)
     setError(null)
-    let saved = 0
+    // Indexes already saved: removed from the list even when a later save fails, so pressing
+    // Save again never inserts them twice.
+    const done = new Set()
     try {
       if (kind === 'specs') {
-        for (const group of groupSpecDrafts(chosen)) {
+        const byUrl = new Map()
+        for (const i of chosen) {
+          const url = drafts[i].source_url
+          if (!byUrl.has(url)) byUrl.set(url, [])
+          byUrl.get(url).push(i)
+        }
+        for (const indexes of byUrl.values()) {
+          const [group] = groupSpecDrafts(indexes.map((i) => drafts[i]))
           await api.ingestSpecs(gadgetId, group)
-          saved += group.raw_text.split('\n').length
+          indexes.forEach((i) => done.add(i))
         }
-        toast.success(`Saved ${saved} spec line${saved === 1 ? '' : 's'}. Index them in the Specs panel.`)
-        onSpecsSaved?.()
+        toast.success(`Saved ${done.size} spec line${done.size === 1 ? '' : 's'}. Index them in the Specs panel.`)
       } else {
-        for (const b of chosen) {
-          await api.addBenchmark(gadgetId, b)
-          saved += 1
+        for (const i of chosen) {
+          await api.addBenchmark(gadgetId, drafts[i])
+          done.add(i)
         }
-        toast.success(`Added ${saved} benchmark${saved === 1 ? '' : 's'}`)
-        onBenchmarksSaved?.()
+        toast.success(`Added ${done.size} benchmark${done.size === 1 ? '' : 's'}`)
       }
-      setDrafts((list) => list.filter((_, i) => !picked.has(i)))
-      setPicked(new Set())
     } catch (err) {
-      setError(`${saved > 0 ? `Saved ${saved}, then stopped: ` : ''}${friendlyError(err)}`)
-      if (saved > 0) (kind === 'specs' ? onSpecsSaved : onBenchmarksSaved)?.()
+      setError(`${done.size > 0 ? `Saved ${done.size}, then stopped: ` : ''}${friendlyError(err)}`)
     } finally {
+      if (done.size > 0) {
+        (kind === 'specs' ? onSpecsSaved : onBenchmarksSaved)?.()
+        const shift = (i) => i - [...done].filter((d) => d < i).length
+        setDrafts((list) => list.filter((_, i) => !done.has(i)))
+        setPicked((prev) => new Set([...prev].filter((i) => !done.has(i)).map(shift)))
+      }
       setSaving(false)
     }
   }

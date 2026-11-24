@@ -12,6 +12,7 @@ import {
   hasNoSupportingSource,
   isGeneralKnowledge,
   isWebAnswer,
+  isWebLimit,
   isMissingEvidence,
   removedCitationCount,
 } from '../utils/aiAnswerState'
@@ -132,6 +133,24 @@ function WebAnswerLabel() {
       <Globe size={16} aria-hidden="true" className="shrink-0 mt-0.5 text-amber-700" />
       <span className="min-w-0">From the web: not from saved specs, unverified. Check the linked pages.</span>
     </p>
+  )
+}
+
+/** A web page or a benchmark row carries no similarity score, so no relevance bar for it. */
+function hasRelevance(source) {
+  return source.kind !== 'web' && typeof source.similarity === 'number' && source.similarity > 0
+}
+
+/** Today's web searches are used up: the backend's plain sentence, shown as a notice. */
+function WebLimitNotice({ text }) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+      <Globe size={16} aria-hidden="true" className="shrink-0 mt-0.5 text-amber-700" />
+      <div className="min-w-0">
+        <p className="font-semibold">Web Search Limit Reached</p>
+        <p className="mt-0.5">{text}</p>
+      </div>
+    </div>
   )
 }
 
@@ -330,9 +349,10 @@ export default function AiAnswerResult({
   // A general-knowledge answer has no sources by design: amber label, no badge, no sources.
   const generalKnowledge = result ? isGeneralKnowledge(result) : false
   const webAnswer = result ? isWebAnswer(result) : false
+  const webLimit = result ? isWebLimit(result) : false
   // Only cited sources count as grounding: with none cited there is no green check, and the
   // "no supporting source cited" notice says so instead (#124).
-  const citedCount = result && !missingEvidence && !generalKnowledge && !webAnswer ? citedSourceCount(result) : 0
+  const citedCount = result && !missingEvidence && !generalKnowledge && !webAnswer && !webLimit ? citedSourceCount(result) : 0
   return (
     <div aria-live="polite" aria-busy={loading || undefined}>
       {loading && !streamText && <LoadingNotice skeletonLines={skeletonLines} variant={variant} />}
@@ -344,6 +364,8 @@ export default function AiAnswerResult({
         <div className="space-y-4 mt-3">
           {missingEvidence ? (
             <NoEvidenceNotice specTargets={specTargets} />
+          ) : webLimit ? (
+            <WebLimitNotice text={result.answer} />
           ) : (
             <>
               {generalKnowledge && <GeneralKnowledgeLabel />}
@@ -404,13 +426,13 @@ export default function AiAnswerResult({
                           </span>
                           <span className="break-words pt-0.5">{s.gadget_name}</span>
                         </span>
-                        {typeof s.similarity === 'number' && (
+                        {hasRelevance(s) && (
                           <span className="text-xs font-medium text-slate-600 shrink-0 pt-1">
                             Relevance {Math.round(s.similarity * 100)}%
                           </span>
                         )}
                       </div>
-                      {typeof s.similarity === 'number' && (
+                      {hasRelevance(s) && (
                         <div className="h-1 bg-slate-200 rounded-full overflow-hidden mb-2.5" aria-hidden="true">
                           <div className="h-full bg-sage-600 rounded-full" style={{ width: `${Math.round(s.similarity * 100)}%` }} />
                         </div>

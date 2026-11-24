@@ -243,10 +243,11 @@ export default function GadgetDetail() {
         />
       </div>
 
-      <BenchmarksSection gadgetId={id} isAdmin={Boolean(user?.app_metadata?.is_admin)} reloadKey={benchmarksReload} />
+      <BenchmarksSection key={id} gadgetId={id} isAdmin={Boolean(user?.app_metadata?.is_admin)} reloadKey={benchmarksReload} />
 
       {user?.app_metadata?.is_admin && (
         <WebDraftPanel
+          key={id}
           gadgetId={id}
           onSpecsSaved={() => setSpecsReload((n) => n + 1)}
           onBenchmarksSaved={() => setBenchmarksReload((n) => n + 1)}

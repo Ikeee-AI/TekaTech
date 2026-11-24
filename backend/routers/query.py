@@ -246,7 +246,7 @@ class QueryResponse(BaseModel):
     # What the answer rests on: saved specs (cited), the model's general knowledge (unverified,
     # uncited, only when the request allowed it), or nothing (the "no relevant specs" reply).
     # "web": found by the optional web search (unverified, cited with the pages it read).
-    answer_basis: Literal["specs", "general_knowledge", "web", "none"] = "none"
+    answer_basis: Literal["specs", "general_knowledge", "web", "web_limit", "none"] = "none"
 
 
 def _token_count(response, field: str) -> int | None:
@@ -775,7 +775,9 @@ def _web_answer(payload: "QueryRequest", user) -> "QueryResponse":
         logger.info("Web search cap reached; %s", "general knowledge" if payload.allow_general_knowledge else "no answer")
         if payload.allow_general_knowledge:
             return _general_knowledge_answer(payload)
-        return QueryResponse(answer=WEB_LIMIT_ANSWER, sources=[], model_used="none", retrieval="none")
+        return QueryResponse(
+            answer=WEB_LIMIT_ANSWER, sources=[], model_used="none", retrieval="none", answer_basis="web_limit"
+        )
 
     gadget_note = ""
     if payload.gadget_ids:
@@ -828,6 +830,23 @@ def _web_answer(payload: "QueryRequest", user) -> "QueryResponse":
         retrieval="none",
         answer_basis="web",
     )
+
+
+# A grounded reply saying the snippets lack the answer ("the snippets do not state whether…").
+_DECLINE = re.compile(
+    r"\b(?:not\s+(?:stated|listed|mentioned|included|specified|given|provided|covered|available)"
+    r"|(?:do|does|did)\s+not\s+(?:state|list|mention|include|say|specify|give|provide|cover)"
+    r"|(?:don't|doesn't|didn't|isn't|aren't)\s+(?:state|list|mention|include|say|specify|give|provide|cover|stated|listed|mentioned)"
+    r"|no\s+(?:information|mention|details?|data))\b",
+    re.IGNORECASE,
+)
+
+
+def _cacheable_fallback(payload: "QueryRequest", response: "QueryResponse") -> bool:
+    """With web search on, only a real web answer is shared through the answer cache: the limit
+    reply and a general-knowledge stand-in depend on this user's daily web cap (or a passing
+    search failure), and the cache is shared by every user (pre-review, 24 Nov 2026)."""
+    return not payload.allow_web_search or response.answer_basis == "web"
 
 
 def _fallback_answer(payload: "QueryRequest", user) -> "QueryResponse":
@@ -1175,9 +1194,10 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
         # reusing it, and a cache hit is not written to query_history.
         with _timed(request, "generate"):
             response = _fallback_answer(payload, user)
-        answer_cache.store(
-            cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
-        )
+        if _cacheable_fallback(payload, response):
+            answer_cache.store(
+                cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
+            )
         return response
 
     if not matches:
@@ -1276,7 +1296,11 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     # state whether…") has nothing grounded in it either, so it goes to the web too (DEV check,
     # 24 Nov 2026: the model declined in words instead of sending the sentinel). General
     # knowledge alone keeps the sentinel-only rule (gkf-v2, evaluated).
-    uncited_decline = payload.allow_web_search and not re.search(r"\[\d+\]|\(\d+\)", answer)
+    uncited_decline = (
+        payload.allow_web_search
+        and not re.search(r"\[\d+\]|\(\d+\)", answer)
+        and _DECLINE.search(answer) is not None
+    )
     if _is_not_in_specs(answer) or uncited_decline:
         logger.info(
             "Grounded answer was %s (allow_general_knowledge=%s): prompt_tokens=%s completion_tokens=%s",
@@ -1288,9 +1312,10 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
                 response = _fallback_answer(payload, user)
         else:
             response = QueryResponse(answer=NO_MATCHES_ANSWER, sources=[], model_used=MODEL_USED, retrieval="none")
-        answer_cache.store(
-            cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
-        )
+        if _cacheable_fallback(payload, response):
+            answer_cache.store(
+                cache_scope, payload.question, query_embedding, _cacheable(response, grounded=False), cache_generation
+            )
         return response
     # The prompt forbids the token inside a real answer; if it appears there anyway, drop it.
     answer, sentinel_tokens = _without_sentinel(answer)

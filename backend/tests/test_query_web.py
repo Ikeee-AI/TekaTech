@@ -178,3 +178,45 @@ def test_an_uncited_decline_without_the_web_flag_stays_as_it_was(client, fake_su
     assert resp.json()["answer_basis"] == "specs"
     web_call.assert_not_called()
     assert chat.call_count == 1
+
+
+def test_the_limit_reply_is_marked_and_never_cached(client, fake_supabase, monkeypatch):
+    """The cache is shared by every user; one user's used-up cap must not answer for others."""
+    import answer_cache
+
+    monkeypatch.setattr(settings, "web_search_site_daily_limit", 0)
+    _set_matching_spec(fake_supabase, GADGET)
+    with patch.object(answer_cache, "store") as store:
+        resp, _, _ = _ask(client, {"question": "What chip?", "gadget_ids": [GADGET], "allow_web_search": True})
+    assert resp.json()["answer_basis"] == "web_limit"
+    store.assert_not_called()
+
+
+def test_a_real_web_answer_is_cached(client, fake_supabase):
+    import answer_cache
+
+    _set_matching_spec(fake_supabase, GADGET)
+    with patch.object(answer_cache, "store") as store:
+        resp, _, _ = _ask(client, {"question": "What chip?", "gadget_ids": [GADGET], "allow_web_search": True})
+    assert resp.json()["answer_basis"] == "web"
+    store.assert_called_once()
+
+
+def test_an_uncited_answer_that_is_not_a_decline_stays(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, _ = _ask(
+        client, {"question": "What chip?", "gadget_ids": [GADGET], "allow_web_search": True},
+        completion_text="It uses the Exynos 2400 chip.",
+    )
+    assert resp.json()["answer_basis"] == "specs"
+    web_call.assert_not_called()
+
+
+def test_tracking_code_variants_of_one_page_share_a_number():
+    text = "A ([a](https://e.com/p?utm_source=x)) B ([b](https://e.com/p))."
+    anns = [
+        SimpleNamespace(type="url_citation", url="https://e.com/p?utm_source=x", title="P", start_index=2, end_index=37),
+        SimpleNamespace(type="url_citation", url="https://e.com/p", title="P", start_index=text.index("B ") + 2, end_index=len(text) - 1),
+    ]
+    answer, citations = web_search.citations_to_markers(text, anns)
+    assert len(citations) == 1

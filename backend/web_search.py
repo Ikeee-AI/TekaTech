@@ -96,11 +96,12 @@ def citations_to_markers(text: str, annotations: list) -> tuple[str, list[WebCit
             continue
         if not (0 <= start <= end <= len(text)):
             continue
+        url = clean_url(url)
         if url not in numbered:
             if len(citations) >= MAX_WEB_SOURCES:
                 continue
             numbered[url] = len(citations) + 1
-            citations.append(WebCitation(url=clean_url(url), title=(getattr(a, "title", "") or "").strip()[:200]))
+            citations.append(WebCitation(url=url, title=(getattr(a, "title", "") or "").strip()[:200]))
         spans.append((start, end, numbered[url]))
 
     spans.sort(key=lambda s: s[0], reverse=True)
