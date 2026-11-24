@@ -1337,3 +1337,34 @@ Short session, ~09:45–10:12 Manila.
 - Nudge Manuel if no review by morning — Ikeee-AI — 25 Nov.
 - After merge: verify-deploy, check the 4 phones' benchmarks no longer show the removed rows, then test benchmarks, web search, web drafts and the UI fixes in Chrome on PROD — Ikeee-AI — after merge.
 - Full bug sweep before the freeze — Ikeee-AI — by 27 Nov.
+
+## 2026-11-24 22:24 Asia/Manila — #294 and #295 merged and live; bug sweep
+**Who:** Ikeee-AI (AI-assisted: yes); review and approvals by Manuel (`s2302827-byte`) · **Task:** S5-IK (freeze features, pre-freeze bug sweep) · **Branch:** tekatech/s5-ik-bug-sweep → main
+
+**Done**
+- #294 approved by Manuel on the head commit `909269a` (re-approval after the benchmark-evidence commit, asked in a PR comment), squash-merged as `14a7bf2` — evidence: https://github.com/Ikeee-AI/TekaTech/pull/294, run https://github.com/Ikeee-AI/TekaTech/actions/runs/45410292814 (guard, tests, migrations, browser drill, deploy all success).
+- Deploy verified: `scripts/deployed_smoke.py` passed on `14a7bf2` (23 gadgets, CORS, readiness). `GET /gadgets/{id}/benchmarks` live: 130 rows across 23 phones, matching PROD; the 5 removed rows are gone from Find X8, V50 5G, X200 and 13 Pro+ 5G.
+- Bug sweep: local checks (lint, vitest 679, build, backend 1094), npm audit (0) and pip-audit of 182 locked packages (none), no open bug issues, PROD smoke passed on `ff3e2fd`. Code review of #294 (AI, `/code-review high`) found 10 issues; 9 fixed, the 10th covered by fix 1 — evidence: https://github.com/Ikeee-AI/TekaTech/pull/295
+  - benchmarks only for real performance questions; stream `reset` event so a streamed decline is cleared before the web answer; curly-apostrophe declines reach the web; web caps counted site-first and atomically; a failed gadget lookup no longer uses a web search; limit reply worded per page; BenchmarksSection error/form after a failed load; checked date in Manila time; README Cache-Control row.
+  - Local: backend 1101 passed, vitest 682 passed, lint/build clean, secret guard passed; CLAUDE.md and AGENTS.md updated together.
+- #295 approved by Manuel on `8e9107c`, squash-merged as `a054a8d` — evidence: run https://github.com/Ikeee-AI/TekaTech/actions/runs/45412745771 (all success). Smoke check passed on `a054a8d`; the benchmark list returns 200 without Cache-Control.
+
+**Errors and fixes**
+| Error (exact message, secrets redacted) | Cause | Fix / status |
+| --- | --- | --- |
+| `git rebase origin/main` stopped on `Could not apply 164ef33...` | #294 was squash-merged, so the branch's old commits were replayed | Aborted; the sweep commit was cherry-picked onto `origin/main` (tree identical to the tested `059961b`) and force-pushed with lease |
+| 2 AIAnswerPanel tests failed after adding `onReset` | The test helper didn't strip the new handler from the request body | Helper updated; 682 passed |
+| Manuel's first approval was on `d86167d`, not the head | A commit was pushed after his review | Re-approval requested in a PR comment; approved on `909269a` |
+
+**Conflicts and contradictions**
+None.
+
+**Decisions** — Merge #294 with the 9 known minor bugs and ship their fixes straight after in #295 (none lose data, open a security hole or crash) — Ikeee-AI. Count a failed web search against the user's cap (OpenAI may have billed it), but not a failed gadget lookup — Ikeee-AI.
+
+**Blockers / risks** — The new features (benchmark section, compare bars, Search the Web, admin web drafts, the 24 Nov UI fixes, the reset event) are not yet tested in a browser on PROD — Ikeee-AI — 25 Nov, before the freeze (Fri 27 Nov).
+
+**Plan alignment** — S5-IK freeze features: Partial → reviewed, checks green, merged, deployed and smoke-verified; browser check on PROD still open. Bug sweep: Done for code review and dependencies; browser part pending.
+
+**Next**
+- Test the new features and fixes in Chrome on PROD — Ikeee-AI — 24–25 Nov.
+- Fix anything the browser test finds in a small reviewed PR before the freeze — Ikeee-AI — by 27 Nov.
