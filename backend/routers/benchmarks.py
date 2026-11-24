@@ -6,7 +6,7 @@ Reading is public like spec text (catalog data); writing is admin-only. The AI s
 gadget's benchmarks as extra numbered snippets (routers/query.py), so each write invalidates
 that gadget's saved answers.
 """
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from typing import Literal, Optional
 from uuid import UUID
 
@@ -28,6 +28,15 @@ MAX_UNIT_CHARS = 20
 MAX_VALUE = 100_000_000
 # A phone page lists every row; a gadget with more than this is a data-entry mistake.
 MAX_BENCHMARKS_PER_GADGET = 60
+# Admins work in Manila (UTC+8, no daylight saving); the API runs on UTC. Between 00:00 and
+# 08:00 Manila, date.today() on the server is still yesterday (bug sweep, 24 Nov 2026).
+MANILA = timezone(timedelta(hours=8))
+
+
+def _manila_today() -> date:
+    return datetime.now(MANILA).date()
+
+
 COLUMNS = "id, gadget_id, kind, test, settings, value, unit, source_url, checked_at"
 
 
@@ -85,7 +94,7 @@ class BenchmarkInput(BaseModel):
     @field_validator("checked_at")
     @classmethod
     def _checked(cls, value: Optional[date]) -> Optional[date]:
-        if value is not None and value > date.today():
+        if value is not None and value > _manila_today():
             raise PydanticCustomError("date_future", "The checked date can't be in the future.")
         return value
 

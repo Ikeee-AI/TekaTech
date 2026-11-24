@@ -40,6 +40,19 @@ describe('api.askQuestion streaming', () => {
     expect(init.headers.Authorization).toBe('Bearer tok')
   })
 
+  it('a reset event withdraws the streamed decline before the replacement answer', async () => {
+    const done = { answer: 'From the web [1].', answer_basis: 'web', sources: [] }
+    const order = []
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(sse([
+      ev('sources', [{ gadget_name: 'S24' }]), ev('delta', 'The snippets do not state it.'), ev('reset', null), ev('done', done),
+    ])))
+    const result = await api.askQuestion({
+      question: 'Q?', onSources: () => order.push('sources'), onDelta: () => order.push('delta'), onReset: () => order.push('reset'),
+    })
+    expect(order).toEqual(['sources', 'delta', 'reset'])
+    expect(result).toEqual(done)
+  })
+
   it('an error event throws with its status, like a failed request', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(sse([ev('delta', 'Half'), ev('error', { status: 503, detail: 'Cut off.' })])))
     await expect(api.askQuestion({ question: 'Q?', onDelta: () => {} })).rejects.toMatchObject({ status: 503, message: 'Cut off.' })

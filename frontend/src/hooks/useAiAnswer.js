@@ -47,6 +47,13 @@ export function useAiAnswer() {
     return {
       onSources: (sources) => id === streamId.current && setStreamSources(sources),
       onDelta: (piece) => id === streamId.current && setStreamText((t) => t + piece),
+      // The streamed text was a decline that a web or general-knowledge answer replaces:
+      // clear it so the panel shows its loading state, not the decline, while that answer is made.
+      onReset: () => {
+        if (id !== streamId.current) return
+        setStreamText('')
+        setStreamSources([])
+      },
     }
   }
 

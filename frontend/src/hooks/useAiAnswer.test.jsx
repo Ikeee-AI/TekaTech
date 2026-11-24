@@ -55,3 +55,25 @@ describe('useAiAnswer general-knowledge toggle', () => {
     expect(result.current.allowGeneralKnowledge).toBe(false)
   })
 })
+
+describe('useAiAnswer streaming reset (bug sweep, 24 Nov 2026)', () => {
+  it('onReset clears the streamed decline and its sources; an older stream cannot reset a newer one', () => {
+    const { result } = renderHook(() => useAiAnswer())
+    let first
+    act(() => { first = result.current.startStream() })
+    act(() => {
+      first.onSources([{ gadget_name: 'S24' }])
+      first.onDelta('The snippets do not state it.')
+    })
+    expect(result.current.streamText).toBe('The snippets do not state it.')
+    act(() => first.onReset())
+    expect(result.current.streamText).toBe('')
+    expect(result.current.streamSources).toEqual([])
+
+    let second
+    act(() => { second = result.current.startStream() })
+    act(() => second.onDelta('New answer'))
+    act(() => first.onReset())
+    expect(result.current.streamText).toBe('New answer')
+  })
+})

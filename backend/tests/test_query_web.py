@@ -251,3 +251,66 @@ def test_tracking_code_variants_of_one_page_share_a_number():
     ]
     answer, citations = web_search.citations_to_markers(text, anns)
     assert len(citations) == 1
+
+
+# --- Bug sweep, 24 Nov 2026 ----------------------------------------------------------------------
+
+def test_a_decline_with_a_curly_apostrophe_goes_to_the_web(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, _ = _ask(
+        client, {"question": "Does it support DeX?", "gadget_ids": [GADGET], "allow_web_search": True},
+        completion_text="The snippets don’t mention Samsung DeX.",
+    )
+    assert resp.json()["answer_basis"] == "web"
+    web_call.assert_called_once()
+
+
+def test_the_limit_reply_names_the_page_it_was_asked_from(client, fake_supabase, monkeypatch):
+    from routers.query import WEB_LIMIT_ANSWER
+
+    monkeypatch.setattr(settings, "web_search_site_daily_limit", 0)
+    other = "33333333-3333-3333-3333-333333333333"
+    _set_matching_spec(fake_supabase, GADGET)
+    compare, _, _ = _ask(client, {"question": "Which has DeX?", "gadget_ids": [GADGET, other], "allow_web_search": True})
+    assert compare.json()["answer_basis"] == "web_limit"
+    assert "these phones' pages" in compare.json()["answer"] and "this phone's page" not in compare.json()["answer"]
+    fake_supabase.set_response("_rpc", None, [])
+    catalog, _, _ = _ask(client, {"question": "Best phone for DeX?", "allow_web_search": True})
+    assert "listed on a phone's page" in catalog.json()["answer"]
+    _set_matching_spec(fake_supabase, GADGET)
+    single, _, _ = _ask(client, {"question": "What chip?", "gadget_ids": [GADGET], "allow_web_search": True})
+    assert single.json()["answer"] == WEB_LIMIT_ANSWER
+
+
+def test_a_failed_gadget_lookup_does_not_use_up_a_web_search(client, fake_supabase):
+    """The daily search is counted after the gadget-name lookup, so a database blip costs nothing."""
+    import routers.query as query
+
+    _set_matching_spec(fake_supabase, GADGET)
+    calls = []
+
+    def boom(*_a, **_k):
+        calls.append(1)
+        raise RuntimeError("supabase down")
+
+    with patch.object(query.ai_quota, "consume_web_search") as consume, \
+         patch.object(query, "supabase") as sb:
+        sb.table.return_value.select.return_value.in_.return_value.execute.side_effect = boom
+        payload = query.QueryRequest(question="Does it support DeX?", gadget_ids=[GADGET], allow_web_search=True)
+        with pytest.raises(Exception):
+            query._web_answer(payload, SimpleNamespace(id="u-1", app_metadata={}))
+    assert calls and not consume.called
+
+
+def test_a_full_site_cap_leaves_the_users_own_count_alone(monkeypatch, non_admin):
+    import ai_quota
+
+    monkeypatch.setattr(settings, "ai_daily_web_search_limit", 2)
+    monkeypatch.setattr(settings, "web_search_site_daily_limit", 1)
+    other = SimpleNamespace(id="u-9", app_metadata={})
+    assert ai_quota.consume_web_search(other) is True       # site 1 of 1
+    assert ai_quota.consume_web_search(non_admin) is False  # site full
+    monkeypatch.setattr(settings, "web_search_site_daily_limit", 5)
+    assert ai_quota.consume_web_search(non_admin) is True   # still 2 of their own left
+    assert ai_quota.consume_web_search(non_admin) is True
+    assert ai_quota.consume_web_search(non_admin) is False

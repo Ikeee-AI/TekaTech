@@ -57,10 +57,11 @@ function canStream() {
   return typeof ReadableStream !== "undefined" && typeof TextDecoder !== "undefined"
 }
 
-// POST /query/stream (23 Nov 2026): server-sent events `sources`, `delta`, `done`, `error`.
+// POST /query/stream (23 Nov 2026): server-sent events `sources`, `delta`, `done`, `error`, and
+// `reset` (24 Nov 2026: a streamed decline is being replaced by a web or general-knowledge answer).
 // Resolves with the `done` answer (the same shape as POST /query); an `error` event throws
 // like a failed request, so the panels show the same error screens.
-async function streamQuery(body, { onSources, onDelta }) {
+async function streamQuery(body, { onSources, onDelta, onReset }) {
   const options = { method: "POST", body: JSON.stringify(body) }
   const headers = await authHeaders(options)
   const settle = trackRequest("/query/stream");
@@ -90,6 +91,7 @@ async function streamQuery(body, { onSources, onDelta }) {
       const data = JSON.parse(raw)
       if (kind === "sources") onSources?.(data)
       else if (kind === "delta") onDelta?.(data)
+      else if (kind === "reset") onReset?.()
       else if (kind === "done") return data
       else if (kind === "error") {
         const err = new Error(data.detail || `Request failed (${data.status})`)
@@ -137,9 +139,9 @@ export const api = {
   getComparisonBySlug: (slug) => request(`/comparisons/${slug}`),
   // With onDelta/onSources (useAiAnswer's startStream), the answer streams from /query/stream;
   // the handlers are never sent. Without them, or where streaming is unavailable, plain /query.
-  askQuestion: async ({ onDelta, onSources, ...data }) => {
+  askQuestion: async ({ onDelta, onSources, onReset, ...data }) => {
     try {
-      if (onDelta && canStream()) return await streamQuery(data, { onDelta, onSources })
+      if (onDelta && canStream()) return await streamQuery(data, { onDelta, onSources, onReset })
       return await request(`/query`, { method: "POST", body: JSON.stringify(data) })
     } finally {
       if (typeof window !== "undefined") window.dispatchEvent(new Event(AI_USAGE_EVENT))
