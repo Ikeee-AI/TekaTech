@@ -1,0 +1,11 @@
+# Never send secrets, installed packages or build output into the image build.
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+Dockerfile
+.dockerignore

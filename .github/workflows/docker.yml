@@ -1,0 +1,94 @@
+name: Docker images
+
+# Builds the judge/local Docker setup (docker-compose.yml, backend/Dockerfile,
+# frontend/Dockerfile) and starts it with harmless dummy values: no real keys, no
+# Supabase or OpenAI call. Checks that both containers become healthy, the API answers
+# /health and /version, and the web container serves the app with its security headers
+# and the single-page-app rewrite. Not a deploy step and not a required check.
+
+on:
+  pull_request:
+    paths:
+      - 'docker-compose.yml'
+      - '.env.example'
+      - 'backend/Dockerfile'
+      - 'backend/.dockerignore'
+      - 'backend/pyproject.toml'
+      - 'backend/uv.lock'
+      - 'frontend/Dockerfile'
+      - 'frontend/.dockerignore'
+      - 'frontend/docker/**'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/docker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compose:
+    name: Build and start the Docker setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Dummy values only, the same style as ci.yml. Nothing here reaches a real service.
+      OPENAI_API_KEY: sk-test-dummy
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_SECRET_KEY: test-dummy-key
+      SUPABASE_PUBLISHABLE_KEY: test-dummy-publishable
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Validate the compose file
+        run: docker compose config --quiet
+
+      - name: Build both images
+        run: docker compose build
+
+      - name: Start containers and wait until healthy
+        run: docker compose up --detach --wait --wait-timeout 120
+
+      - name: Check the API container
+        run: |
+          set -euo pipefail
+          curl -fsS http://localhost:8000/health | tee /dev/stderr | grep -q '"status":"ok"'
+          curl -fsS http://localhost:8000/version | grep -q '"commit":"docker-local"'
+          # AI routes still need a session: an anonymous question is refused before any provider call.
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/query \
+            -H 'Content-Type: application/json' -d '{"question":"test"}')
+          test "$code" = "401"
+          # CORS allows the web container's origin.
+          curl -fsS -o /dev/null -D - -X OPTIONS http://localhost:8000/gadgets \
+            -H 'Origin: http://localhost:8080' -H 'Access-Control-Request-Method: GET' \
+            | grep -qi '^access-control-allow-origin: http://localhost:8080'
+          # The container runs as a normal user, not root.
+          test "$(docker compose exec -T api id -u)" != "0"
+
+      - name: Check the web container
+        run: |
+          set -euo pipefail
+          curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+          # A React route (not a file) still serves the app.
+          curl -fsS http://localhost:8080/gadgets/some-id | grep -q '<div id="root">'
+          headers=$(curl -fsS -o /dev/null -D - http://localhost:8080/)
+          echo "$headers"
+          echo "$headers" | grep -qi '^x-frame-options: DENY'
+          echo "$headers" | grep -qi "^content-security-policy: .*connect-src 'self' http://localhost:8000 "
+          # The build baked in the browser-facing API address, and no secret value.
+          docker compose exec -T web sh -c 'grep -rl "http://localhost:8000" /usr/share/nginx/html/assets/*.js' >/dev/null
+          if docker compose exec -T web sh -c 'grep -rl "test-dummy-key\|sk-test-dummy" /usr/share/nginx/html'; then
+            echo "A backend-only value ended up in the frontend build" >&2; exit 1
+          fi
+
+      - name: Container logs
+        if: always()
+        run: docker compose logs --no-color
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down --volumes
