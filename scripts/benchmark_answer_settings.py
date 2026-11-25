@@ -78,7 +78,7 @@ def to_pack_ids(answer, pack_ids):
 
 
 def ask(client, model, max_tokens, system_prompt, content, settings):
-    from citations import normalize_paren_citations, strip_invalid_citations
+    from citations import drop_stand_in_values, normalize_paren_citations, strip_invalid_citations
 
     started = time.perf_counter()
     completion = client.chat.completions.create(
@@ -98,7 +98,16 @@ def ask(client, model, max_tokens, system_prompt, content, settings):
         "prompt_tokens": usage.prompt_tokens,
         "completion_tokens": usage.completion_tokens,
         "reasoning_tokens": getattr(details, "reasoning_tokens", None),
-    }, normalize_paren_citations, strip_invalid_citations
+    }, normalize_paren_citations, lambda text, n: _strip_like_query(text, n, strip_invalid_citations, drop_stand_in_values)
+
+
+def _strip_like_query(text, snippet_count, strip_invalid_citations, drop_stand_in_values):
+    """The same clean-up /query applies after the chat call: out-of-range markers, then stand-in
+    values for a variant not on file (24 Nov 2026). The eval pack has no gadget table, so no
+    scoped names are passed; its variant cases ask about models that are not in the pack."""
+    text, removed = strip_invalid_citations(text, snippet_count)
+    text, _ = drop_stand_in_values(text)
+    return text, removed
 
 
 def percentile(values, q):

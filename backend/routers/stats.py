@@ -73,6 +73,9 @@ def trending_questions(
         "stats", ("trending-questions", limit), STATS_TTL_SECONDS, lambda: _load_trending(limit)
     )
     _mark(response, hit, TRENDING_CACHE_CONTROL)
+    # Chrome prod test, 24 Nov 2026: without Vary the browser reused a signed-in copy for an
+    # unauthenticated request (200 instead of 401) for up to 60 s, e.g. right after logging out.
+    response.headers["Vary"] = "Authorization"
     return data
 
 

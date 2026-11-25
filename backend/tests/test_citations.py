@@ -78,3 +78,53 @@ def test_parens_inside_words_or_values_are_not_touched():
 
 def test_no_snippets_means_no_rewrite():
     assert normalize_paren_citations("General answer (1).", 0) == ("General answer (1).", 0)
+
+
+# --- Stand-in values for a variant not on file (eval TC-24, 24 Nov 2026) -------------------------
+from citations import drop_stand_in_values
+
+S24_PLUS_REAL_ANSWERS = [
+    # Seen in the 23-24 Nov eval runs (v2-v5): each gave the base S24's 4000mAh after declining.
+    "The saved specs do not include the Samsung Galaxy S24+, so its battery capacity is not provided "
+    "in these specs. The Galaxy S24 (a different model) is listed with a **4000mAh** battery [9].",
+    "The provided snippets do not include the Samsung Galaxy S24+ model, so its battery capacity is not "
+    "listed. The Galaxy S24 (a different model) is shown with a **4000mAh** battery [9].",
+    "The saved specs include the Samsung Galaxy S24, which lists a battery capacity of **4000mAh** [9]. "
+    "The Samsung Galaxy S24+ is not present in the saved specs, so its battery capacity is not provided here.",
+    "The provided snippets do not state the battery capacity for the Samsung Galaxy S24+.\n\n"
+    "The Galaxy S24 (not the S24+) is listed with a **4000mAh** battery [9].",
+    "The snippets do not specify the Samsung Galaxy S24+ battery capacity. The Galaxy S24 (not S24+) is "
+    "listed with a **4000mAh** battery [9].",
+]
+
+
+@pytest.mark.parametrize("answer", S24_PLUS_REAL_ANSWERS)
+def test_stand_in_value_for_a_variant_not_on_file_is_removed(answer):
+    cleaned, removed = drop_stand_in_values(answer, ["Galaxy S24"])
+    assert removed == 1
+    assert "4000" not in cleaned
+    assert "S24+" in cleaned
+
+
+def test_lowercase_brand_variant_is_recognised():
+    cleaned, removed = drop_stand_in_values(
+        "The saved specs do not include the iPhone 15 Plus or its display size. "
+        "The provided iPhone 15 display is **6.1 inches** (diagonal) [1].", ["iPhone 15"]
+    )
+    assert (cleaned, removed) == ("The saved specs do not include the iPhone 15 Plus or its display size.", 1)
+
+
+@pytest.mark.parametrize("answer, scoped", [
+    # A missing spec, not a missing model.
+    ("The saved specs do not include the 14 Pro+ 5G charging speed; the 14 Pro 5G has 5000 mAh [1].", None),
+    # The variant is one of the asked gadgets, so it is on file.
+    ("The saved specs do not include the Galaxy S24+. The Galaxy S24 has 4000mAh [1].", ["Galaxy S24+"]),
+    ("- 14 Pro+ 5G: 5000 mAh [1].\n- The saved specs do not list the 14 Pro+ battery here. The 14 Pro 5G has "
+     "4600 mAh [2].", ["14 Pro+ 5G", "14 Pro 5G"]),
+    # No decline at all.
+    ("It has a **4000mAh** battery [1].", ["Galaxy S24"]),
+    # A decline that names no other model's value.
+    ("The saved specs do not include the Galaxy S24+. Its battery is not stated.", ["Galaxy S24"]),
+])
+def test_answers_without_a_stand_in_are_untouched(answer, scoped):
+    assert drop_stand_in_values(answer, scoped) == (answer, 0)
