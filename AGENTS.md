@@ -87,8 +87,19 @@ Tests never make real Supabase or OpenAI calls. Mock OpenAI with `unittest.mock.
 
 `npm run lint` is currently clean and should stay that way. Two deliberate patterns:
 
-- **`react-hooks/set-state-in-effect` is suppressed at specific call sites.** The app-wide data-fetching convention is `setLoading(true)` → `api.x().then(...).finally(() => setLoading(false))` inside a `useEffect`, used in ~12 components. The strict rule flags this categorically. Suppress at the line with a comment explaining why; do **not** restructure the fetch pattern in one component only, and do not disable the rule project-wide.
+- **`react-hooks/set-state-in-effect` is suppressed at specific call sites.** The app-wide data-fetching convention is `setLoading(true)` → `api.x().then(...).finally(() => setLoading(false))` inside a `useEffect`, used across many components. The strict rule flags it where the `setState` runs synchronously in the effect body (currently suppressed in `AIComparisonPanel`, `ComparePage`, `AdminCorrections`). Suppress at the line with a comment explaining why; do **not** restructure the fetch pattern in one component only, and do not disable the rule project-wide.
 - **`AuthContext.jsx` exports only components.** `react-refresh/only-export-components` forced a three-file split: the provider (`context/AuthContext.jsx`), the raw context object (`context/authContextValue.js`), and the hook (`hooks/useAuth.js`). Don't consolidate them.
+
+## CI and deploy
+
+`.github/workflows/ci.yml` runs three parallel jobs on every PR — mirror them locally before pushing:
+- **Backend tests**: `python ../scripts/check_secrets.py` (fails on tracked `.env*`, `account.txt`, or `sk-`/`sb_secret_`/GitHub-token/Render-hook patterns — including in test fixtures), `compileall`, `uv run pytest`, then `from main import app`.
+- **Frontend lint and build**: `npm ci && npm run lint && npm run build`.
+- **Database migrations**: `python backend/scripts/assemble_sql.py` output applied **twice** to scratch pgvector Postgres (so every SQL file must be idempotent/replay-safe), then `backend/tests/sql/schema_acceptance.sql`. A new file in `backend/sql/` must also be registered in `assemble_sql.py` or CI never applies it.
+
+Pushes to `main` additionally deploy the API to Railway (`railway up`; service settings in `.railway/railway.ts`), trigger the Render frontend deploy hook, and run `scripts/deployed_smoke.py`. Deploys never touch the database — SQL is applied by hand first (`docs/deploy-runbook.md`, `PIPELINE.md`). PRs follow `.github/PULL_REQUEST_TEMPLATE.md`, which asks for any manual migration/env step to be listed.
+
+`AGENTS.md` is a copy of this file for Codex; update both together.
 
 ## Gotchas
 

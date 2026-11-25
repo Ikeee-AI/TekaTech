@@ -18,7 +18,14 @@ The project owner, **Ikeee-AI**, is the **one DevOps Engineer**. Every other tea
 
 Repository access on 16 October 2026: Manuel and Jopher have write access; Adrian's and Mika's invitations were sent that day. Sprint 1 product owner: **Ikeee-AI**, confirmed by the project owner on 12 October 2026. The product owner prioritizes the board and reports progress at consultation. Every member reviews another teammate's PRs. Record any approved mid-project role change in the sprint log and notify the instructor.
 
-## Sprint 1 status
+## Current status (code freeze, 27 Nov 2026)
+
+- **Live:** [frontend](https://tekatech-web.onrender.com) on Render, [API](https://tekatech-api-production-549b48c9.up.railway.app/health) on Railway, database in Supabase. Production runs `527aa6a` (25 Nov 2026). The deployed smoke check passed, and so did a signed-in Chrome check of a streamed answer, a web-search answer and an admin photo upload.
+- **Features:** a 23-phone catalog curated by admins, with sourced specs and prices; cited AI answers on phone pages and for 2–5-phone comparisons, streamed, with 5-turn chat memory; published game and chip benchmarks (130 rows, each with a source link); general knowledge and web search, both opt-in and labelled, with daily caps; My Gadgets, saved questions, corrections, admin overview and admin web drafts. Signed-out visitors can browse the catalog only.
+- **Tests (26 Nov 2026):** 1,119 backend tests and 684 frontend unit tests pass, plus the Playwright failure-drill checks and the database replay checks in CI. The full-history Gitleaks scan, pip-audit, `npm audit` and Dependabot all show nothing open.
+- **Releases:** [`CHANGELOG.md`](CHANGELOG.md) and [`docs/releases/`](docs/releases/). `v1.0.0` (31 Oct) is the frozen course submission; `v1.1.0` (6 Nov) and the freeze release `v1.2.0` follow it.
+
+## Sprint 1 status (historical, October 2026)
 
 The private [GitHub repository](https://github.com/Ikeee-AI/TekaTech), merged [Sprint 1 PR #15](https://github.com/Ikeee-AI/TekaTech/pull/15), and [13 backlog issues](https://github.com/Ikeee-AI/TekaTech/issues) are live. The source branch is `tekatech/sprint-1`; GitHub closed the original PR #1 when its branch was renamed. Commit history is preserved. The private [TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) contains all 13 issues. Sprint 1 still needs actual teammate review and genuine team process entries under the course Definition of Done. See the [team review guide](docs/team-review.md).
 
