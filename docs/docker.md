@@ -46,7 +46,7 @@ Each regular account has **20 AI questions per day** (5 of them can use web sear
 
 1. **Create a separate OpenAI key** for judges, in its own project, with a low monthly budget. Never reuse the production key. Revoke it after judging.
 2. **Use the DEV Supabase project, never production.** The `api` container holds the service-role key, which bypasses Row Level Security. Its values (URL, secret key, publishable key) come from the DEV project's API settings.
-3. **Check the DEV catalog** matches what you want judges to see: phones, specs indexed for AI, and benchmarks. The 23-phone catalog and the 130 benchmark rows live in production. Copy them to DEV first if judges should see them (seed scripts: `backend/scripts/seed_dev.py`, `backend/scripts/fill_benchmarks.py`; SQL order in [database.md](database.md)).
+3. **Check the DEV catalog** matches what you want judges to see: phones, specs indexed for AI, and benchmarks. The 23-phone catalog and the 130 benchmark rows live in production. Copy them with `cd backend; uv run python scripts/mirror_catalog_to_dev.py --apply --index`: it reads only production's public catalog routes, writes only to DEV (it refuses any other project), skips phones DEV already has, and embeds the copied spec chunks (well under $0.01). Done on 26 Nov 2026: 20 phones, 44 chunks, 106 benchmarks.
 4. **Create the judge test accounts** in the DEV project (Authentication → Users → Add user, with "Auto confirm" on). For an admin test account, set `app_metadata.is_admin` with the call in `CLAUDE.md`.
 5. **Send the `.env` privately** (not in the repository, an issue, a PR or a public chat). Fill it from [`.env.example`](../.env.example).
 
