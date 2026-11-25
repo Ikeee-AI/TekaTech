@@ -18,7 +18,8 @@ function preview(text, max = 140) {
  * like gadget delete. The request runs from the confirmation dialog, which stays
  * open with the reason if it fails.
  */
-export default function DeleteSpecButton({ gadgetId, spec, onDeleted }) {
+export default function DeleteSpecButton({ gadgetId, spec, partNumber, onDeleted }) {
+  const number = partNumber ?? spec.chunk_index + 1
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -53,7 +54,7 @@ export default function DeleteSpecButton({ gadgetId, spec, onDeleted }) {
         size="sm"
         icon={Trash2}
         onClick={() => setOpen(true)}
-        aria-label={`Delete part ${spec.chunk_index + 1}`}
+        aria-label={`Delete part ${number}`}
         title="Delete this spec"
         aria-haspopup="dialog"
         className="!px-2.5"
@@ -61,7 +62,7 @@ export default function DeleteSpecButton({ gadgetId, spec, onDeleted }) {
       <ConfirmDialog
         open={open}
         // Numbered from 1, like the "Part N" label on its row under Saved parts.
-        title={`Delete Part ${spec.chunk_index + 1}?`}
+        title={`Delete Part ${number}?`}
         description={
           <>
             <span className="block bg-slate-50 border border-slate-200 rounded-md px-3 py-2 my-2 text-slate-800 break-words">
