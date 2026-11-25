@@ -2,6 +2,35 @@
 
 Stable releases of TekaTech, newest first. The frozen course submission is `v1.0.0`; later entries are post-release (Sprint 5) work, kept separate from it. Each line links its reviewed PR. Full per-release records are in [`docs/releases/`](docs/releases/).
 
+## v1.2.0 — code-freeze release (`527aa6a`, to be tagged before the 27 Nov 2026 freeze)
+
+**Candidate `527aa6a` (#291, 25 Nov 2026).** All changes below are merged to `main` and deployed, and they passed the deployed smoke check on `527aa6a` (25 Nov, 15:36 UTC). A signed-in Chrome check on production also passed. The record, security checks and the full list of 54 PRs are in [`docs/releases/v1.2.0.md`](docs/releases/v1.2.0.md).
+
+### Added
+- **Streaming answers** over `POST /query/stream`, with live `Server-Timing` (#289).
+- **Game and chip benchmarks:** a `gadget_benchmarks` table with 130 published rows, each with a source link. They show on phone pages and are cited in performance and gaming answers (#294).
+- **Web search** (opt-in, labelled "From the web"). It runs when the saved specs don't answer a question and is capped at 5 per user and 40 site-wide per day (#294, #297). **Admin web drafts:** draft spec lines and benchmarks with links, saved only after admin review (#294).
+- **Chat memory:** the last 5 turns on phone pages and the compare page (#287, #294). Saved compare chats get a new table, `user_comparison_questions` (#289).
+- **General knowledge on phone and compare pages** through the `NOT_IN_SPECS` fallback (gkf-v1 #276, gkf-v2 #277).
+- **Admin overview page:** catalog readiness, 14-day usage and AI spend, user counts (#256). **Admin photo upload** to Supabase Storage (#272).
+- **Delete My Account:** backend `DELETE /me/account` (#254), Account page button (#271, #274, #275).
+- **Catalog of 23 smartphones** from official pages (#248), with sourced prices and launch-price labels (#266, #270).
+- **Sign-in for AI and compare,** 20 AI questions per user per day, password rules and logout confirmation (#266).
+
+### Changed
+- **Rebrand:** dark "Night Market" default, "Bento Lab" light mode, phones by brand, VS Compare (#258), new logo (#280), UI polish (#285, #286).
+- **Prompt v2 → v3 → v4** (#287, #289, #296). Faster phone-page answers through `minimal` reasoning (#287).
+- **API host moved to Railway** with CI deploys (#250); Railway settings kept as code and the Render API retired (#253).
+
+### Fixed
+- Key-spec tile misreads (#259), password reset links (#265), sign-up return page (#249), spam-folder notice (#267).
+- 9 fixes from the freeze-feature code review (#295). Comparison lists and follow-up count fixed (#296). Web search for cited declines, and `Vary` on trending questions (#297). Saved spec parts numbered by position (#298).
+
+### Security and operations
+- Backend hardening (#260), frontend security headers and PKCE (#261), CSP enforced (#269), browser roles locked out of the database (#263).
+- CI supply chain: deploy secrets scoped to their steps, checksum-verified Railway CLI, SHA-pinned actions (#262). CI now compiles every backend module (#273).
+- Railway rollback rehearsal (#252). Dependency updates: #244–#247, #264, #281–#284, #290–#293.
+
 ## v1.1.0 — Sprint 5 stable release (`db49bc2`, tagged 2026-11-06)
 
 **Tagged `v1.1.0` on `db49bc2`, 6 Nov 2026 15:36 Manila — [GitHub Release](https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.1.0).** All changes below are merged to `main`, deployed, and passed the deployed smoke check on `db49bc2` (6 Nov, 07:23 UTC). The record, its verification, security checks and the full list of 58 PRs are in [`docs/releases/v1.1.0.md`](docs/releases/v1.1.0.md).

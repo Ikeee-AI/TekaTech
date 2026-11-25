@@ -4,6 +4,7 @@ The 21 final checklist items from the [course guide](https://csp221a.vercel.app/
 
 - **Repository:** https://github.com/Ikeee-AI/TekaTech (private; the instructor needs access)
 - **Production:** https://tekatech-web.onrender.com · API https://tekatech-api.onrender.com/health at the `v1.0.0` release (free Render tier; the first request after idle could take about a minute). Since 12 Nov 2026 the API is https://tekatech-api-production-549b48c9.up.railway.app/health (Railway); the Render API was retired on 13 Nov 2026
+- **Later releases (after the submission, 26 Nov 2026 note):** `v1.1.0` (6 Nov, [record](releases/v1.1.0.md)) and the code-freeze release `v1.2.0` (target `527aa6a`, [record](releases/v1.2.0.md)). They don't change the submitted `v1.0.0` artifacts listed below. For the freeze state, use the v1.2.0 record: its verification, security checks, database notes and its 54 PRs.
 
 | # | Artifact | Owner | Where | Status |
 | --- | --- | --- | --- | --- |
