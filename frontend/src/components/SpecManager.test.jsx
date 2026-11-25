@@ -211,7 +211,20 @@ describe('SpecManager', () => {
       'Saved parts4',
     ])
     expect(screen.getByText('2 of 4 ready for AI')).toBeTruthy()
-    expect(screen.getAllByRole('listitem', { name: /^Part \d+$/ })).toHaveLength(4)
+    // Numbered by position: parts a and d were saved separately (both chunk_index 0)
+    // and must not both read "Part 1" (25 Nov 2026 prod test).
+    expect(screen.getAllByRole('listitem', { name: /^Part \d+$/ }).map((li) => li.getAttribute('aria-label'))).toEqual([
+      'Part 1',
+      'Part 2',
+      'Part 3',
+      'Part 4',
+    ])
+    expect(screen.getAllByRole('button', { name: /^Delete part \d+$/ }).map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Delete part 1',
+      'Delete part 2',
+      'Delete part 3',
+      'Delete part 4',
+    ])
     expect(screen.getAllByRole('button', { name: 'Index for AI' })).toHaveLength(2)
     expect(screen.getByRole('button', { name: /index all pending \(2\)/i })).toBeTruthy()
     expect(screen.queryByRole('tab')).toBeNull()

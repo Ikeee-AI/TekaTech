@@ -392,9 +392,10 @@ function SpecSheet({ specs, user, isAdmin, gadgetId, indexingId, indexErrors, on
                   {PARTS_TITLE}
                 </h3>
                 <ul>
-                  {specs.map((spec) => (
+                  {specs.map((spec, i) => (
                     <PartRow
                       key={spec.id}
+                      number={i + 1}
                       spec={spec}
                       gadgetId={gadgetId}
                       indexingId={indexingId}
@@ -416,16 +417,18 @@ function SpecSheet({ specs, user, isAdmin, gadgetId, indexingId, indexErrors, on
 }
 
 /** Admin row for one saved part: where it came from, its first line, AI status, index and delete. */
-function PartRow({ spec, gadgetId, indexingId, indexError, onIndex, onDeleted }) {
+function PartRow({ number, spec, gadgetId, indexingId, indexError, onIndex, onDeleted }) {
   const indexed = spec.indexing_status === 'indexed'
   const isIndexing = indexingId === spec.id
   const state = indexed ? 'indexed' : isIndexing ? 'indexing' : indexError ? 'failed' : 'pending'
   const firstLine = spec.content.split('\n').find((l) => l.trim()) ?? ''
   return (
-    <li aria-label={`Part ${spec.chunk_index + 1}`} className="py-2 border-t border-slate-200 first:border-t-0">
+    // Numbered by position, not chunk_index: every save starts its chunks at 0, so two
+    // separately saved parts would both read "Part 1" (25 Nov 2026 prod test).
+    <li aria-label={`Part ${number}`} className="py-2 border-t border-slate-200 first:border-t-0">
       <div className="grid grid-cols-1 sm:grid-cols-[minmax(7rem,28%)_minmax(0,1fr)] gap-x-4 gap-y-1">
         <p className="text-sm font-medium text-slate-500 sm:pt-1">
-          Part {spec.chunk_index + 1} · {spec.source_url ? sourceLabel(spec.source_url) : 'no source link'}
+          Part {number} · {spec.source_url ? sourceLabel(spec.source_url) : 'no source link'}
         </p>
         <div className="min-w-0 flex flex-wrap items-center gap-2">
           <span className="flex-1 min-w-[8rem] text-sm text-slate-700 truncate" title={firstLine}>
@@ -444,7 +447,7 @@ function PartRow({ spec, gadgetId, indexingId, indexError, onIndex, onDeleted })
               {isIndexing ? 'Indexing…' : indexError ? 'Retry Indexing' : 'Index for AI'}
             </Button>
           )}
-          <DeleteSpecButton gadgetId={gadgetId} spec={spec} onDeleted={onDeleted} />
+          <DeleteSpecButton gadgetId={gadgetId} spec={spec} partNumber={number} onDeleted={onDeleted} />
         </div>
       </div>
       {state === 'failed' && (
