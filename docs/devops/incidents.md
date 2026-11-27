@@ -143,3 +143,24 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
   - Follow-up issue: none.
 - **Lesson:** a secret can be wrong in ways nobody can see. When a credential that works by hand fails in CI, suspect how it was stored before suspecting the credential.
 
+
+## 2026-11-27: main deploy of #300 failed (Railway built the new `backend/Dockerfile`)
+
+**Status: fix in review (#304); recovery not yet recorded.** Failed production deploy; no user impact. Owner: Ikeee-AI.
+
+- **Affected:** #300's merge commit `cecea63` (judge Docker setup), [main run 45970637526](https://github.com/Ikeee-AI/TekaTech/actions/runs/45970637526). Backend, frontend, database and browser checks and the main guard passed; `Deploy backend to Railway` failed (`1/1 replicas never became healthy! Healthcheck failed!`), so `Verify live commit…` was skipped. The Render frontend hook had already run; #300 changed no frontend code the static site builds (its `frontend/Dockerfile` is ignored by Render).
+- **Impact:** none for users. Railway kept serving the previous deploy, `02e1bfa` (#302), and `/version` returned it throughout. `main` has been ahead of the API since then; #300 only adds the local Docker files and docs, so no feature is missing from production.
+- **Timeline (UTC, 27 Nov):**
+  - 09:04:18: main run for `cecea63` started.
+  - 09:05:17: `Deploy backend to Railway` started; Railway built from `backend/Dockerfile` (`uv sync`, CPython 3.12 image) instead of Railpack.
+  - 09:06:21–09:07:46: six `/health` attempts, all "service unavailable".
+  - 09:07:58: step failed. **Detected** at once: the owner's Claude Code session was watching the run, and the deployed smoke check reported the API still on `02e1bfa`.
+  - About 09:15: cause found (Dockerfile picked up by `railway up backend --path-as-root`; the image starts uvicorn on port 8000, not `$PORT`). Fix PR #304 opened.
+  - Recovery (merge of #304 deploying and passing smoke): to be filled in.
+- **Root cause:** CI uploads `backend/` to Railway with `--path-as-root`. Railway builds a `Dockerfile` found at the root of the upload in preference to the `RAILPACK` builder set in `.railway/railway.ts`. `backend/Dockerfile` was written for local Docker (fixed port 8000) and never meant for Railway. The Docker PR's own CI could not catch it: PR runs don't deploy, and the `Docker images` workflow only runs the image locally.
+- **Fix:** #304 renames it to `backend/api.Dockerfile` (compose `dockerfile:`, `docker.yml`, `.dockerignore`, `docs/docker.md`), so Railway builds with Railpack exactly as before.
+- **Prevention (Ikeee-AI):**
+  1. `backend/tests/test_railway_build.py` fails if a file named `Dockerfile` appears in `backend/` again.
+  2. When a PR adds build files (Dockerfile, Procfile, `nixpacks.toml`, `railpack.json`) under `backend/`, check what Railway would do with them before merging, because a PR run never deploys.
+  - Follow-up issue: none.
+- **Lesson:** a file added for one platform can change how another platform builds the same folder. Build-detection files are deploy configuration even when the PR says production is unchanged.
