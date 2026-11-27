@@ -1,39 +1,42 @@
-# Submission manifest: v1.0.0
+# Submission manifest: Demo Day (code freeze, 27 Nov 2026)
 
-The 21 final checklist items from the [course guide](https://csp221a.vercel.app/#deliverables), as assigned in [sprints-2-to-5.md](sprints-2-to-5.md#final-submission-manifest-all-21-website-checklist-items). Prepared by Ikeee-AI on 31 October 2026 for the frozen release [`v1.0.0`](https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.0.0) (`5aa4635`). Status is what the repository shows on that date; anything not verified is marked open, not complete. Submitting to the course portal is a separate team action.
+Every required final deliverable, its owner and where it is. Updated by Ikeee-AI on 27 Nov 2026 for the code freeze and Demo Day, from the 31 Oct version made for the Sprint 4 submission `v1.0.0` (`5aa4635`). The original 21 items keep their numbers; 22–23 are new.
 
-- **Repository:** https://github.com/Ikeee-AI/TekaTech (private; the instructor needs access)
-- **Production:** https://tekatech-web.onrender.com · API https://tekatech-api.onrender.com/health at the `v1.0.0` release (free Render tier; the first request after idle could take about a minute). Since 12 Nov 2026 the API is https://tekatech-api-production-549b48c9.up.railway.app/health (Railway); the Render API was retired on 13 Nov 2026
-- **Later releases (after the submission, 26 Nov 2026 note):** `v1.1.0` (6 Nov, [record](releases/v1.1.0.md)) and the code-freeze release `v1.2.0` (target `527aa6a`, [record](releases/v1.2.0.md)). They don't change the submitted `v1.0.0` artifacts listed below. For the freeze state, use the v1.2.0 record: its verification, security checks, database notes and its 54 PRs.
+- **Repository:** https://github.com/Ikeee-AI/TekaTech (private; the panel needs access)
+- **Production:** https://tekatech-web.onrender.com (Render) · API https://tekatech-api-production-549b48c9.up.railway.app/health (Railway since 12 Nov 2026) · Supabase database and auth
+- **Final release:** [latest release](https://github.com/Ikeee-AI/TekaTech/releases/latest). `v1.2.0` (`f4ffb7f`, [record](releases/v1.2.0.md)) was tagged at the freeze; the Deployment Challenge merge is tagged as the final release the same day, so production runs the final tag.
+- **Deployment Challenge recording:** <<VIDEO_FOLDER_URL>>
 
 | # | Artifact | Owner | Where | Status |
 | --- | --- | --- | --- | --- |
-| 1 | Tagged production release on a free public host | Ikeee-AI | [Release v1.0.0](https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.0.0); [main run 41176164488](https://github.com/Ikeee-AI/TekaTech/actions/runs/41176164488); deployed smoke passed on `5aa4635` at 14:24 Manila | Ready |
+| 1 | Tagged production release on a free public host | Ikeee-AI | [Latest release](https://github.com/Ikeee-AI/TekaTech/releases/latest); [v1.2.0](https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.2.0) on `f4ffb7f` (main run 45974615237, deployed smoke passed 27 Nov 09:34 UTC); earlier [v1.1.0](releases/v1.1.0.md), [v1.0.0](https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.0.0) | Ready; final tag goes on the Deployment Challenge merge (27 Nov) |
 | 2 | Frontend, backend and migration source | Jopher | `frontend/`, `backend/`, `backend/sql/`; clean-checkout build in [fresh-checkout-2026-10-29.md](evidence/fresh-checkout-2026-10-29.md); per-PR authorship in the release notes | Ready |
-| 3 | Complete `.env.example` with no secret values | Ikeee-AI | [backend/.env.example](../backend/.env.example), [frontend/.env.example](../frontend/.env.example); secret guard and full-history Gitleaks clean (31 Oct) | Ready; each technical owner to confirm their keys are listed |
-| 4 | Local seed data or setup script | Jopher | [backend/scripts/seed_dev.py](../backend/scripts/seed_dev.py); README "Sample data for TekaTech-dev" | Ready |
-| 5 | README: product, roles, stack, setup | Ikeee-AI | [README.md](../README.md) (five-person roster, stack, setup rewritten in #155). Its "Sprint 1 status" section is historical | Ready, with stale Sprint 1 status section to trim later |
+| 3 | Complete `.env.example` with no secret values | Ikeee-AI | [.env.example](../.env.example) (Docker), [backend/.env.example](../backend/.env.example), [frontend/.env.example](../frontend/.env.example); secret guard and full-history Gitleaks clean (318 commits, 27 Nov) | Ready |
+| 4 | Local seed data or setup script | Jopher | [backend/scripts/seed_dev.py](../backend/scripts/seed_dev.py) (README "Sample data for TekaTech-dev"); [backend/scripts/mirror_catalog_to_dev.py](../backend/scripts/mirror_catalog_to_dev.py) copies the 23-phone catalog and benchmarks to DEV (#300) | Ready |
+| 5 | README: product, roles, stack, setup | Ikeee-AI | [README.md](../README.md): "Demo Day submission" links, roster, stack, setup, Docker; its "Sprint 1 status" section is historical | Ready |
 | 6 | Architecture diagram | Manuel | [docs/architecture.md](architecture.md) (Mermaid diagram, trade-offs, #161) | Ready |
 | 7 | Schema diagram or outline | Manuel | [docs/database.md](database.md) (Mermaid ER diagram: gadgets → spec_documents → spec_corrections, the relationships the app uses) | Ready |
 | 8 | API reference | Manuel | [backend/README.md](../backend/README.md) (updated in #159: routes, limits, headers, error bodies) | Ready |
-| 9 | AI feature write-up and evaluation | Adrian | [docs/ai-feature-writeup.md](ai-feature-writeup.md); [prompts/](../prompts/); [eval-s4-2026-10-31.md](evidence/eval-s4-2026-10-31.md) (#166) | Ready; targets not met, stated in the write-up and release notes |
-| 10 | Release changelog | Ikeee-AI | [Release v1.0.0 notes](https://github.com/Ikeee-AI/TekaTech/releases/tag/v1.0.0): verification, migration notes, known limitations, every merged PR | Ready |
-| 11 | Board with sprint history | Ikeee-AI | [TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) (private): Sprint 1–4 issues and PRs; 44 Sprint 4 items added on 31 Oct with statuses matching GitHub (43 Done, #167 In review), follow-ups in #168 and #169 | Ready |
-| 12 | Four plans, standups and four retrospectives | Ikeee-AI | Plans: [sprint-1.md](sprint-1.md), [sprints-2-to-5.md](sprints-2-to-5.md). Logs: [sprint-2](sprints/sprint-2/worklog.md), [sprint-3](sprints/sprint-3/worklog.md), [sprint-4](sprints/sprint-4/worklog.md). Standups: #60 (S2), #72 (S3). Retros: Sprint 1 in sprint-1.md, #61 (S2), #116 (S3) | **Open:** no Sprint 4 standup thread; Sprint 4 retro opened as #168 (comments pending); Sprint 3 retro is missing Adrian's and Manuel's comments |
+| 9 | AI feature write-up and evaluation | Adrian, then Ikeee-AI (takeover since 5 Nov) | [docs/ai-feature-writeup.md](ai-feature-writeup.md); [prompts/](../prompts/) (prompt v4, `web-v2`, GK `gk-v2`/`gkf-v2`); [eval-s4-2026-10-31.md](evidence/eval-s4-2026-10-31.md) (#166); v4 eval 24 and 23 of 24 (#296); offline prompt evaluation runs in CI | Ready; v1.0.0 targets not met, stated in the write-up |
+| 10 | Release changelog | Ikeee-AI | [CHANGELOG.md](../CHANGELOG.md) (v1.0.0 → v1.2.0); [docs/releases/](releases/) | Ready |
+| 11 | Board with sprint history | Ikeee-AI | [TekaTech Sprint Board](https://github.com/users/Ikeee-AI/projects/1) (private): Sprint 1–5 issues and PRs; release issues #13 and #14 closed 27 Nov | Ready |
+| 12 | Plans, standups and retrospectives | Ikeee-AI | Plans: [sprint-1.md](sprint-1.md), [sprints-2-to-5.md](sprints-2-to-5.md). Logs: [sprint-2](sprints/sprint-2/worklog.md), [sprint-3](sprints/sprint-3/worklog.md), [sprint-4](sprints/sprint-4/worklog.md), [sprint-5](sprints/sprint-5/worklog.md). Standups: #60 (S2), #72 (S3). Retros: Sprint 1 in sprint-1.md, #61 (S2), #116 (S3), #168 (S4), #238 (S5) | Ready; no Sprint 4 standup thread, and the Sprint 3 retro lacks Adrian's and Manuel's comments (stated, not filled in afterwards) |
 | 13 | Scope-change log | Ikeee-AI | [docs/scope-changes.md](scope-changes.md) | Ready; instructor notification not recorded for any row |
-| 14 | Slide deck | Mika | Not in the repository yet. Mika (31 Oct): the final deck will follow as a PowerPoint converted to Canva; its view-only link goes here and in #169 | **Open:** in progress (Mika) |
+| 14 | Slide deck | Mika | <<DECK_URL>> | Ready |
 | 15 | Repeatable AI failure simulation | Manuel | `FAILURE_SIMULATION_ENABLED` drill in [backend/README.md](../backend/README.md); [dev drill](evidence/failure-drill-dev-2026-10-28.md), [production drill](evidence/failure-drill-prod-2026-10-28.md); Playwright "Browser checks (failure drill)" job; malformed-request demo [docs/demo/malformed-request-demo.md](demo/malformed-request-demo.md) | Ready |
 | 16 | Pipeline configuration files | Ikeee-AI | [.github/workflows/](../.github/workflows/) (`ci.yml`, `rollback.yml`, `release.yml`, ops jobs), all changed through reviewed PRs | Ready |
 | 17 | PIPELINE.md and pipeline diagram | Ikeee-AI | [PIPELINE.md](../PIPELINE.md) (Mermaid diagram); [engineering-workflow.html](devops/engineering-workflow.html) | Ready |
-| 18 | Completed metrics log | Ikeee-AI | [docs/devops/metrics.md](devops/metrics.md): Sprint 1–4 rows with source runs; [sprint4-metrics-final.json](evidence/sprint4-metrics-final.json) | Ready |
+| 18 | Completed metrics log | Ikeee-AI | [docs/devops/metrics.md](devops/metrics.md): Sprint 1–4 rows and the freeze row (14–25 Nov) with source runs; [sprint4-metrics-final.json](evidence/sprint4-metrics-final.json), [freeze-metrics-2026-11-26.json](evidence/freeze-metrics-2026-11-26.json) | Ready |
 | 19 | Optimization log | Ikeee-AI | [docs/devops/optimizations.md](devops/optimizations.md); [app-performance.md](devops/app-performance.md) | Ready |
-| 20 | Deployment and rollback runbook | Ikeee-AI | [docs/deploy-runbook.md](deploy-runbook.md); [rollback rehearsal](evidence/rollback-rehearsal-2026-10-31.md) (1 min 35 s); [database restore rehearsal](evidence/db-restore-2026-10-31.md) (14.0 s) | Ready |
-| 21 | Incident log and postmortems | Ikeee-AI | [docs/devops/incidents.md](devops/incidents.md): process exceptions PE-1–PE-4 and findings; no production incident recorded in Sprints 2–4 | Ready |
+| 20 | Deployment and rollback runbook | Ikeee-AI | [docs/deploy-runbook.md](deploy-runbook.md); rollback rehearsals [31 Oct](evidence/rollback-rehearsal-2026-10-31.md) (1 min 35 s) and [12 Nov on Railway](evidence/rollback-rehearsal-2026-11-12-railway.md) (1 min 17 s); [database restore rehearsal](evidence/db-restore-2026-10-31.md) (14.0 s) | Ready |
+| 21 | Incident log and postmortems | Ikeee-AI | [docs/devops/incidents.md](devops/incidents.md): process exceptions PE-1–PE-4 and production incidents with timelines and recovery times, latest 27 Nov (failed Railway deploy, recovered in 24.6 min, #304) | Ready |
+| 22 | Pre-recorded Deployment Challenge (continuous, unedited, narrated) | Ikeee-AI | <<VIDEO_FOLDER_URL>>; also linked in [README.md](../README.md). Footer text change → PR → checks → teammate approval → merge → automatic deploy → verified on production | Ready |
+| 23 | Docker setup for running the app locally (judges) | Ikeee-AI | [docs/docker.md](docker.md), [docker-compose.yml](../docker-compose.yml) (#300, #304); hands-on check 27 Nov | Ready |
 
 ## Disclosed gaps (not marked complete)
 
 - **Enforced branch protection:** unavailable on this private GitHub Free repository; the merge gate is a manual check plus the CI "Main guard" job.
-- **Staging environment:** not built for v1.0.0 ([environments.md](devops/environments.md) E2, #34).
-- **Acceptance rows 19–20:** production password-reset email and data surviving a redeploy are not yet verified ([acceptance report](evidence/acceptance-s4-jo/README.md)).
-- **AI quality targets:** not met in the 31 Oct evaluation (#166).
-- **Open items above:** Sprint 4 standups/retro (12), final slide deck (14); tracked in #169.
+- **Staging environment:** none; #34 closed as not planned (25 Nov). Mitigations in [environments.md](devops/environments.md) (E2): DEV project, PR CI, deployed smoke, rollback.
+- **Acceptance rows 19–20** ([acceptance report](evidence/acceptance-s4-jo/README.md)): data surviving a redeploy is shown by the 27 Nov checks (six production deploys that day; the 23-phone catalog and a member account created 26 Oct were intact afterwards). Password-reset email was fixed on 14 Nov (#265, Brevo SMTP) but was not re-tested at the freeze.
+- **AI quality targets:** not met in the 31 Oct evaluation (#166); later prompt versions improved the eval set (v4: 24 and 23 of 24).
+- **Open items above:** Sprint 4 standup thread and missing Sprint 3 retro comments (12).
