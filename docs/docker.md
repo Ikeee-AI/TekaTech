@@ -47,7 +47,7 @@ Each regular account has **20 AI questions per day** (5 of them can use web sear
 1. **Create a separate OpenAI key** for judges, in its own project, with a low monthly budget. Never reuse the production key. Revoke it after judging.
 2. **Use the DEV Supabase project, never production.** The `api` container holds the service-role key, which bypasses Row Level Security. Its values (URL, secret key, publishable key) come from the DEV project's API settings.
 3. **Check the DEV catalog** matches what you want judges to see: phones, specs indexed for AI, and benchmarks. The 23-phone catalog and the 130 benchmark rows live in production. Copy them with `cd backend; uv run python scripts/mirror_catalog_to_dev.py --apply --index`: it reads only production's public catalog routes, writes only to DEV (it refuses any other project), skips phones DEV already has, and embeds the copied spec chunks (well under $0.01). Done on 26 Nov 2026: 20 phones, 44 chunks, 106 benchmarks.
-4. **Create the judge test accounts** in the DEV project (Authentication → Users → Add user, with "Auto confirm" on). For an admin test account, set `app_metadata.is_admin` with the call in `CLAUDE.md`.
+4. **Create the judge test accounts** in the DEV project (Authentication → Users → Add user, with "Auto confirm" on). For an admin test account, set `app_metadata.is_admin` with the call in `CLAUDE.md`. Done on 27 Nov 2026: one admin and one member account exist on DEV (passwords kept by the owner, never in the repository).
 5. **Send the `.env` privately** (not in the repository, an issue, a PR or a public chat). Fill it from [`.env.example`](../.env.example).
 
 ## How it is built
@@ -59,3 +59,12 @@ Each regular account has **20 AI questions per day** (5 of them can use web sear
 - CI: [`.github/workflows/docker.yml`](../.github/workflows/docker.yml) builds both images and starts them with dummy values on PRs that touch the Docker files. It checks health, `/version`, the 401 on anonymous AI requests, CORS, the non-root user, the security headers, the SPA rewrite, and that no backend-only value ends up in the frontend build.
 
 Production is unchanged: the API still deploys to Railway and the frontend to Render through `ci.yml`. These images are for running TekaTech elsewhere.
+
+## Hands-on check (27 Nov 2026)
+
+Run on the owner's Windows laptop with Docker Desktop 29.9.3, from this branch rebased on `main` (448aa01), against the DEV project, plus the API change from PR #302 applied locally to check the General Knowledge fix:
+
+- `docker compose up --build`: both containers healthy. `/health` ok, `/version` `docker-local`, 23 DEV phones, anonymous `POST /query` 401, SPA rewrite, CORS for `http://localhost:8080`, API runs as the non-root user.
+- Signed out: catalog loads; a phone page sends the visitor to log in.
+- Member account: grounded answer with citation; General Knowledge answer (labelled, no citations); web answer (labelled, cites a page); compare AI answer citing both phones; share link; My Gadgets add and remove; daily counter 20 → 17; `/admin` sends a member back to the catalog; no console errors.
+- Admin account: overview; add a test phone → add spec (saved pending) → index → AI answer cites it → add benchmark → edit price → suggest a correction → approve it (applied and re-indexed) → web benchmark drafts on a real phone (nothing saved) → delete the test phone (API 404 afterwards, DEV back to 23 phones).
