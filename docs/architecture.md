@@ -13,7 +13,7 @@ This page explains **where the boundaries are, what was chosen, what each choice
 ```mermaid
 flowchart LR
   B["Browser<br/>React + Vite"] -->|"Auth only: sign up, log in<br/>(publishable key)"| A["Supabase Auth"]
-  B -->|"All data: HTTPS + Bearer token"| F["FastAPI backend<br/>(Render, 1 worker)"]
+  B -->|"All data: HTTPS + Bearer token"| F["FastAPI backend<br/>(Railway, 1 worker)"]
   F -->|"Verify token"| A
   F -->|"Service-role key<br/>(bypasses RLS)"| D[("Supabase Postgres<br/>+ pgvector")]
   F -->|"embed question,<br/>generate answer"| O["OpenAI<br/>text-embedding-3-small<br/>gpt-5-mini"]

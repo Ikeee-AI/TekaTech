@@ -1,0 +1,375 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "AI Answer: RAG, Chat, General Knowledge and Web Search",
+    "output": ".archify/sequence-ai-answer-20261127-2322/ai-answer.html",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "repository": {
+      "url": "https://github.com/Ikeee-AI/TekaTech",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "1e14562918148d510dc41ccfe668c7c26fb16b5f"
+    }
+  },
+  "participants": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Signed-in user",
+      "sublabel": "phone or compare page"
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Browser",
+      "sublabel": "React, askQuestion()",
+      "sources": [
+        {
+          "path": "frontend/src/api/client.js",
+          "line": 60,
+          "end_line": 70,
+          "label": "POST /query/stream"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI /query",
+      "sublabel": "Railway, routers/query.py",
+      "sources": [
+        {
+          "path": "backend/routers/query.py",
+          "line": 977,
+          "end_line": 990,
+          "label": "stream route + quota"
+        },
+        {
+          "path": "backend/routers/query.py",
+          "line": 1355,
+          "end_line": 1382,
+          "label": "decline -> fallback"
+        },
+        {
+          "path": "backend/routers/query.py",
+          "line": 1410,
+          "end_line": 1420,
+          "label": "citation checks"
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Supabase Postgres",
+      "sublabel": "pgvector specs, benchmarks",
+      "sources": [
+        {
+          "path": "backend/routers/query.py",
+          "line": 1238,
+          "end_line": 1240,
+          "label": "match_spec_documents"
+        },
+        {
+          "path": "backend/routers/query.py",
+          "line": 373,
+          "end_line": 391,
+          "label": "benchmark rows"
+        }
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "external",
+      "label": "OpenAI",
+      "sublabel": "embeddings + gpt-5-mini",
+      "sources": [
+        {
+          "path": "backend/routers/query.py",
+          "line": 1200,
+          "label": "embed question"
+        },
+        {
+          "path": "backend/routers/query.py",
+          "line": 754,
+          "end_line": 780,
+          "label": "general knowledge"
+        }
+      ]
+    },
+    {
+      "id": "search",
+      "type": "cloud",
+      "label": "OpenAI web_search",
+      "sublabel": "Responses API tool",
+      "sources": [
+        {
+          "path": "backend/web_search.py",
+          "line": 120,
+          "end_line": 127,
+          "label": "web_search tool"
+        },
+        {
+          "path": "backend/routers/query.py",
+          "line": 813,
+          "end_line": 842,
+          "label": "web answer + caps"
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 272,
+      "label": "Ask + limits"
+    },
+    {
+      "from": 278,
+      "to": 420,
+      "label": "RAG retrieval"
+    },
+    {
+      "from": 426,
+      "to": 560,
+      "label": "Grounded chat answer"
+    },
+    {
+      "from": 566,
+      "to": 730,
+      "label": "Opt-in fallback"
+    },
+    {
+      "from": 736,
+      "to": 836,
+      "label": "Finish"
+    }
+  ],
+  "messages": [
+    {
+      "id": "ask",
+      "from": "user",
+      "to": "web",
+      "y": 165,
+      "label": "type a question"
+    },
+    {
+      "id": "post",
+      "from": "web",
+      "to": "api",
+      "y": 193,
+      "label": "POST /query/stream",
+      "variant": "emphasis",
+      "note": "Bearer token, gadget ids, last 5 turns, GK / web toggles"
+    },
+    {
+      "id": "reject",
+      "from": "api",
+      "to": "web",
+      "y": 259,
+      "label": "401 / 422 / 429 JSON",
+      "variant": "security",
+      "note": "sign-in, 10/min, 20/day, caps"
+    },
+    {
+      "id": "embed",
+      "from": "api",
+      "to": "llm",
+      "y": 290,
+      "label": "embed question"
+    },
+    {
+      "id": "vector",
+      "from": "llm",
+      "to": "api",
+      "y": 318,
+      "label": "vector",
+      "variant": "return"
+    },
+    {
+      "id": "match",
+      "from": "api",
+      "to": "db",
+      "y": 346,
+      "label": "match_spec_documents",
+      "variant": "emphasis"
+    },
+    {
+      "id": "chunks",
+      "from": "db",
+      "to": "api",
+      "y": 374,
+      "label": "spec snippets",
+      "variant": "return",
+      "note": "+ up to 12 benchmark rows for game / fps questions"
+    },
+    {
+      "id": "sources",
+      "from": "api",
+      "to": "web",
+      "y": 440,
+      "label": "SSE sources [1..n]",
+      "variant": "return"
+    },
+    {
+      "id": "chat",
+      "from": "api",
+      "to": "llm",
+      "y": 468,
+      "label": "prompt v4 + snippets",
+      "variant": "emphasis",
+      "note": "snippets framed as untrusted data"
+    },
+    {
+      "id": "tokens",
+      "from": "llm",
+      "to": "api",
+      "y": 523,
+      "label": "streamed answer",
+      "variant": "return"
+    },
+    {
+      "id": "delta",
+      "from": "api",
+      "to": "web",
+      "y": 552,
+      "label": "SSE delta text",
+      "variant": "return"
+    },
+    {
+      "id": "reset",
+      "from": "api",
+      "to": "web",
+      "y": 584,
+      "label": "SSE reset",
+      "variant": "dashed",
+      "note": "specs hold none of it: NOT_IN_SPECS or only declines"
+    },
+    {
+      "id": "websearch",
+      "from": "api",
+      "to": "search",
+      "y": 636,
+      "label": "web search (if on)",
+      "variant": "dashed",
+      "note": "5/user/day, 40/day site-wide"
+    },
+    {
+      "id": "webcites",
+      "from": "search",
+      "to": "api",
+      "y": 676,
+      "label": "answer + page links",
+      "variant": "return"
+    },
+    {
+      "id": "gk",
+      "from": "api",
+      "to": "llm",
+      "y": 704,
+      "label": "general knowledge (if on)",
+      "variant": "dashed",
+      "note": "also when the web cap is used up"
+    },
+    {
+      "id": "validate",
+      "from": "api",
+      "to": "db",
+      "y": 759,
+      "label": "save thread + tokens",
+      "variant": "dashed",
+      "note": "after citation checks: invalid [n] removed"
+    },
+    {
+      "id": "done",
+      "from": "api",
+      "to": "web",
+      "y": 802,
+      "label": "SSE done (final answer)",
+      "variant": "return"
+    },
+    {
+      "id": "render",
+      "from": "web",
+      "to": "user",
+      "y": 826,
+      "label": "answer + [n] citations",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "web",
+      "from": 188,
+      "to": 832,
+      "type": "frontend"
+    },
+    {
+      "participant": "api",
+      "from": 193,
+      "to": 808,
+      "type": "backend"
+    },
+    {
+      "participant": "llm",
+      "from": 286,
+      "to": 324,
+      "type": "external"
+    },
+    {
+      "participant": "db",
+      "from": 342,
+      "to": 380,
+      "type": "database"
+    },
+    {
+      "participant": "llm",
+      "from": 464,
+      "to": 529,
+      "type": "external"
+    },
+    {
+      "participant": "search",
+      "from": 632,
+      "to": 682,
+      "type": "cloud"
+    },
+    {
+      "participant": "db",
+      "from": 755,
+      "to": 773,
+      "type": "database"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Grounded first (RAG)",
+      "items": [
+        "Every question is answered from saved specs first: embed, pgvector match, numbered snippets",
+        "Scoped questions take the nearest chunks for the asked phones; game or fps questions add sourced benchmark rows",
+        "The backend strips citations to snippets that were not sent and drops a base model's values after a declined variant"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "General Knowledge and web search",
+      "items": [
+        "Both are off by default; the user turns them on per question",
+        "Only a reply with none of the answer falls back; a partial answer stays grounded and cited",
+        "Web answers cite the pages found; when the web cap is used up or search fails, General Knowledge answers if it is on",
+        "Fallback answers are labelled as not from the saved specs"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Failures",
+      "items": [
+        "Not signed in, invalid body or over a limit: plain JSON error before streaming",
+        "Provider error, timeout or a cut-off answer: SSE error with a readable 503, never a partial answer"
+      ]
+    }
+  ]
+}
