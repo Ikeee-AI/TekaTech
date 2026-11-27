@@ -24,8 +24,8 @@ Repository access on 16 October 2026: Manuel and Jopher have write access; Adria
 | --- | --- |
 | Production app | https://tekatech-web.onrender.com (frontend, Render) · API https://tekatech-api-production-549b48c9.up.railway.app/health (Railway) · database and auth in Supabase |
 | Final tagged release | [Latest release](https://github.com/Ikeee-AI/TekaTech/releases/latest) (the tag production runs) · all releases: [`CHANGELOG.md`](CHANGELOG.md), [`docs/releases/`](docs/releases/) |
-| **Deployment Challenge recording** (continuous, unedited, narrated by the DevOps Engineer) | <<VIDEO_FOLDER_URL>> |
-| Final slide deck | <<DECK_URL>> |
+| **Deployment Challenge recording** (continuous, unedited, narrated by the DevOps Engineer) | [Deployment Challenge recording (Google Drive)](https://drive.google.com/drive/folders/1dYqhSuY-oSmRmcbd46ipTKLAM_A2rm2B?usp=sharing): PR [#307](https://github.com/Ikeee-AI/TekaTech/pull/307), 27 Nov 2026, 5 min 36 s continuous take |
+| Final slide deck | Final deck by Mika (Canva, view-only link to be added here); not yet linked at the freeze |
 | Submission manifest (every required deliverable, owner and location) | [`docs/submission-manifest.md`](docs/submission-manifest.md) |
 | Architecture · database ERD · API reference | [`docs/architecture.md`](docs/architecture.md) · [`docs/database.md`](docs/database.md) · [`backend/README.md`](backend/README.md) |
 | AI implementation and evaluation | [`docs/ai-feature-writeup.md`](docs/ai-feature-writeup.md) · [`prompts/`](prompts/) |
