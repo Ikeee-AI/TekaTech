@@ -146,7 +146,7 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
 
 ## 2026-11-27: main deploy of #300 failed (Railway built the new `backend/Dockerfile`)
 
-**Status: fix in review (#304); recovery not yet recorded.** Failed production deploy; no user impact. Owner: Ikeee-AI.
+**Status: resolved 27 Nov 2026 (#304), recovery 24.6 min.** Failed production deploy; no user impact. Owner: Ikeee-AI.
 
 - **Affected:** #300's merge commit `cecea63` (judge Docker setup), [main run 45970637526](https://github.com/Ikeee-AI/TekaTech/actions/runs/45970637526). Backend, frontend, database and browser checks and the main guard passed; `Deploy backend to Railway` failed (`1/1 replicas never became healthy! Healthcheck failed!`), so `Verify live commit…` was skipped. The Render frontend hook had already run; #300 changed no frontend code the static site builds (its `frontend/Dockerfile` is ignored by Render).
 - **Impact:** none for users. Railway kept serving the previous deploy, `02e1bfa` (#302), and `/version` returned it throughout. `main` has been ahead of the API since then; #300 only adds the local Docker files and docs, so no feature is missing from production.
@@ -156,7 +156,8 @@ Prevention: wait for ACTIVE_HEALTHY before schema inspection; abort unknown sign
   - 09:06:21–09:07:46: six `/health` attempts, all "service unavailable".
   - 09:07:58: step failed. **Detected** at once: the owner's Claude Code session was watching the run, and the deployed smoke check reported the API still on `02e1bfa`.
   - About 09:15: cause found (Dockerfile picked up by `railway up backend --path-as-root`; the image starts uvicorn on port 8000, not `$PORT`). Fix PR #304 opened.
-  - Recovery (merge of #304 deploying and passing smoke): to be filled in.
+  - 09:30:17: #304 (approved by Manuel on `9ad2ab6`) merged as `5a86eb2`; [main run 45974250128](https://github.com/Ikeee-AI/TekaTech/actions/runs/45974250128) deployed with Railpack.
+  - 09:32:35: deployed smoke passed on `5a86eb2` (both hosts on the commit, 23 gadgets). **Recovered: 24.6 min** from the failed step (09:07:58 → 09:32:35). The next deploy (`f4ffb7f`, #303) also passed.
 - **Root cause:** CI uploads `backend/` to Railway with `--path-as-root`. Railway builds a `Dockerfile` found at the root of the upload in preference to the `RAILPACK` builder set in `.railway/railway.ts`. `backend/Dockerfile` was written for local Docker (fixed port 8000) and never meant for Railway. The Docker PR's own CI could not catch it: PR runs don't deploy, and the `Docker images` workflow only runs the image locally.
 - **Fix:** #304 renames it to `backend/api.Dockerfile` (compose `dockerfile:`, `docker.yml`, `.dockerignore`, `docs/docker.md`), so Railway builds with Railpack exactly as before.
 - **Prevention (Ikeee-AI):**
