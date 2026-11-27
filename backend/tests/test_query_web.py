@@ -51,7 +51,7 @@ def test_specs_without_the_answer_get_a_cited_web_answer(client, fake_supabase):
     }]
     kwargs = web_call.call_args.kwargs
     assert kwargs["tools"][0]["type"] == "web_search"
-    assert "Gadgets being asked about: Gadget X." in kwargs["input"]
+    assert "Gadgets being asked about: Brand Gadget X." in kwargs["input"]
 
 
 def test_a_grounded_answer_never_searches(client, fake_supabase):
@@ -382,3 +382,21 @@ def test_only_declines_needs_every_sentence_to_decline():
     assert not _only_declines("Update years are not stated [1]. It ships with One UI 6.1 [1].")
     assert not _only_declines("It uses the Exynos 2400 [1].")
     assert not _only_declines("[1]")
+
+
+def test_fallback_gadget_names_carry_the_brand(client, fake_supabase):
+    # Prod 27 Nov 2026: GK replied "I don't know this product" for a bare "X200 Pro".
+    _set_matching_spec(fake_supabase, GADGET)
+    fake_supabase.set_response("gadgets", "select", [{"id": GADGET, "name": "X200 Pro", "brand": "vivo"}])
+    resp, web_call, _ = _ask(client, {"question": "What chip?", "gadget_ids": [GADGET], "allow_web_search": True})
+    assert "Gadgets being asked about: vivo X200 Pro." in web_call.call_args.kwargs["input"]
+
+
+def test_display_name_does_not_repeat_a_brand_already_in_the_name():
+    from routers.query import _display_name
+
+    assert _display_name({"name": "X200 Pro", "brand": "vivo"}) == "vivo X200 Pro"
+    assert _display_name({"name": "Galaxy S24", "brand": "Samsung"}) == "Samsung Galaxy S24"
+    assert _display_name({"name": "ROG Phone 9 Pro", "brand": "ASUS"}) == "ASUS ROG Phone 9 Pro"
+    assert _display_name({"name": "POCO X7 Pro", "brand": "POCO"}) == "POCO X7 Pro"
+    assert _display_name({"name": "Gadget X"}) == "Gadget X"

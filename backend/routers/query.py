@@ -727,6 +727,30 @@ def _without_sentinel(answer: str) -> tuple[str, int]:
     return cleaned.strip(), count
 
 
+def _display_name(row: dict) -> str:
+    """'vivo X200 Pro', not 'X200 Pro': without the brand the fallback model can't tell which
+    phone it is (prod, 27 Nov 2026: "I don't know this product ... X200 Pro"). A name that
+    already starts with its brand is left as it is."""
+    name = (row.get("name") or "").strip()
+    brand = (row.get("brand") or "").strip()
+    if brand and not name.lower().startswith(brand.lower()):
+        return f"{brand} {name}"
+    return name
+
+
+def _fallback_gadget_note(gadget_ids) -> str:
+    """The 'Gadgets being asked about' line for the general-knowledge and web answers."""
+    try:
+        rows = (
+            supabase.table("gadgets").select("id, name, brand")
+            .in_("id", [str(i) for i in gadget_ids]).execute().data
+        )
+    except Exception as exc:
+        raise _lookup_failure("gadget name lookup", exc) from None
+    names = [_display_name(r) for r in rows or [] if r.get("name")]
+    return "\n\nGadgets being asked about: " + ", ".join(names) + "." if names else ""
+
+
 def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
     """The optional answer from the model's own knowledge, for a question the saved specs don't cover (#172):
     retrieval found nothing, or the grounded call replied NOT_IN_SPECS.
@@ -737,18 +761,7 @@ def _general_knowledge_answer(payload: "QueryRequest") -> "QueryResponse":
     Nothing is written to query_history: that table feeds the shared trending list, and an
     unverified or off-topic question must not show up there.
     """
-    gadget_note = ""
-    if payload.gadget_ids:
-        try:
-            rows = (
-                supabase.table("gadgets").select("id, name")
-                .in_("id", [str(i) for i in payload.gadget_ids]).execute().data
-            )
-        except Exception as exc:
-            raise _lookup_failure("gadget name lookup", exc) from None
-        names = [r["name"] for r in rows or [] if r.get("name")]
-        if names:
-            gadget_note = "\n\nGadgets being asked about: " + ", ".join(names) + "."
+    gadget_note = _fallback_gadget_note(payload.gadget_ids) if payload.gadget_ids else ""
     answer, completion = _generate_answer(
         build_general_knowledge_prompt(payload.plain_language),
         build_general_knowledge_user_message(payload.question, gadget_note, payload.history),
@@ -806,18 +819,7 @@ def _web_answer(payload: "QueryRequest", user) -> "QueryResponse":
     after the gadget-name lookup, so a database failure there costs the user nothing; a failed
     search still counts, because OpenAI may have billed it (bug sweep, 24 Nov 2026).
     """
-    gadget_note = ""
-    if payload.gadget_ids:
-        try:
-            rows = (
-                supabase.table("gadgets").select("id, name")
-                .in_("id", [str(i) for i in payload.gadget_ids]).execute().data
-            )
-        except Exception as exc:
-            raise _lookup_failure("gadget name lookup", exc) from None
-        names = [r["name"] for r in rows or [] if r.get("name")]
-        if names:
-            gadget_note = "\n\nGadgets being asked about: " + ", ".join(names) + "."
+    gadget_note = _fallback_gadget_note(payload.gadget_ids) if payload.gadget_ids else ""
     if not ai_quota.consume_web_search(user):
         logger.info("Web search cap reached; %s", "general knowledge" if payload.allow_general_knowledge else "no answer")
         if payload.allow_general_knowledge:
