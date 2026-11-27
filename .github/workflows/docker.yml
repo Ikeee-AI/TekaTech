@@ -1,6 +1,6 @@
 name: Docker images
 
-# Builds the judge/local Docker setup (docker-compose.yml, backend/Dockerfile,
+# Builds the judge/local Docker setup (docker-compose.yml, backend/api.Dockerfile,
 # frontend/Dockerfile) and starts it with harmless dummy values: no real keys, no
 # Supabase or OpenAI call. Checks that both containers become healthy, the API answers
 # /health and /version, and the web container serves the app with its security headers
@@ -11,7 +11,7 @@ on:
     paths:
       - 'docker-compose.yml'
       - '.env.example'
-      - 'backend/Dockerfile'
+      - 'backend/api.Dockerfile'
       - 'backend/.dockerignore'
       - 'backend/pyproject.toml'
       - 'backend/uv.lock'
