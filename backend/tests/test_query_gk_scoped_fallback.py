@@ -95,7 +95,7 @@ def test_scoped_sentinel_with_gk_on_returns_the_general_knowledge_answer(client,
     assert first["messages"][1]["content"].startswith("Spec snippets:")
     # Second call: the general-knowledge prompt, the question and the gadget name, no snippets.
     assert second["messages"][0]["content"] == build_general_knowledge_prompt(False)
-    assert second["messages"][1]["content"] == f"Question: {QUESTION}\n\nGadgets being asked about: Galaxy S24."
+    assert second["messages"][1]["content"] == f"Question: {QUESTION}\n\nGadgets being asked about: Samsung Galaxy S24."
     for kwargs in (first, second):
         assert kwargs["max_completion_tokens"] == ANSWER_MAX_COMPLETION_TOKENS
     # Unverified answers stay out of query_history (it feeds the shared trending list).
