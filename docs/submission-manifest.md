@@ -5,7 +5,7 @@ Every required final deliverable, its owner and where it is. Updated by Ikeee-AI
 - **Repository:** https://github.com/Ikeee-AI/TekaTech (private; the panel needs access)
 - **Production:** https://tekatech-web.onrender.com (Render) · API https://tekatech-api-production-549b48c9.up.railway.app/health (Railway since 12 Nov 2026) · Supabase database and auth
 - **Final release:** [latest release](https://github.com/Ikeee-AI/TekaTech/releases/latest). `v1.2.0` (`f4ffb7f`, [record](releases/v1.2.0.md)) was tagged at the freeze; the Deployment Challenge retake merge (`0cc5c6a`, #308) is tagged as the final release the same day, so production runs the final tag.
-- **Deployment Challenge recording:** [Deployment Challenge recording (Google Drive)](https://drive.google.com/drive/folders/1dYqhSuY-oSmRmcbd46ipTKLAM_A2rm2B?usp=sharing): PR [#308](https://github.com/Ikeee-AI/TekaTech/pull/308), 27 Nov 2026, about 7 min 50 s continuous take, every step done by hand
+- **Deployment Challenge recording:** [Deployment Challenge recording (Google Drive)](https://drive.google.com/drive/folders/1dYqhSuY-oSmRmcbd46ipTKLAM_A2rm2B?usp=sharing): PR [#308](https://github.com/Ikeee-AI/TekaTech/pull/308), 27 Nov 2026, about 7 min 50 s, one continuous take, every step done by hand
 
 | # | Artifact | Owner | Where | Status |
 | --- | --- | --- | --- | --- |
@@ -30,7 +30,7 @@ Every required final deliverable, its owner and where it is. Updated by Ikeee-AI
 | 19 | Optimization log | Ikeee-AI | [docs/devops/optimizations.md](devops/optimizations.md); [app-performance.md](devops/app-performance.md) | Ready |
 | 20 | Deployment and rollback runbook | Ikeee-AI | [docs/deploy-runbook.md](deploy-runbook.md); rollback rehearsals [31 Oct](evidence/rollback-rehearsal-2026-10-31.md) (1 min 35 s) and [12 Nov on Railway](evidence/rollback-rehearsal-2026-11-12-railway.md) (1 min 17 s); [database restore rehearsal](evidence/db-restore-2026-10-31.md) (14.0 s) | Ready |
 | 21 | Incident log and postmortems | Ikeee-AI | [docs/devops/incidents.md](devops/incidents.md): process exceptions PE-1–PE-4 and production incidents with timelines and recovery times, latest 27 Nov (failed Railway deploy, recovered in 24.6 min, #304) | Ready |
-| 22 | Pre-recorded Deployment Challenge (continuous, unedited, narrated) | Ikeee-AI | [Deployment Challenge recording (Google Drive)](https://drive.google.com/drive/folders/1dYqhSuY-oSmRmcbd46ipTKLAM_A2rm2B?usp=sharing): PR [#308](https://github.com/Ikeee-AI/TekaTech/pull/308), 27 Nov 2026, about 7 min 50 s continuous take, every step done by hand; also linked in [README.md](../README.md). Footer text change → PR → checks → teammate approval → merge → automatic deploy → verified on production | Ready |
+| 22 | Pre-recorded Deployment Challenge (continuous take) | Ikeee-AI | [Deployment Challenge recording (Google Drive)](https://drive.google.com/drive/folders/1dYqhSuY-oSmRmcbd46ipTKLAM_A2rm2B?usp=sharing): PR [#308](https://github.com/Ikeee-AI/TekaTech/pull/308), 27 Nov 2026, about 7 min 50 s, one continuous take, every step done by hand; also linked in [README.md](../README.md). Footer text change → PR → checks → teammate approval → merge → automatic deploy → verified on production | Ready |
 | 23 | Docker setup for running the app locally (judges) | Ikeee-AI | [docs/docker.md](docker.md), [docker-compose.yml](../docker-compose.yml) (#300, #304); hands-on check 27 Nov | Ready |
 
 ## Deployment Challenge timeline (27 Nov 2026, PR #308)

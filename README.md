@@ -24,7 +24,7 @@ Repository access on 16 October 2026: Manuel and Jopher have write access; Adria
 | --- | --- |
 | Production app | https://tekatech-web.onrender.com (frontend, Render) · API https://tekatech-api-production-549b48c9.up.railway.app/health (Railway) · database and auth in Supabase |
 | Final tagged release | [Latest release](https://github.com/Ikeee-AI/TekaTech/releases/latest) (the tag production runs) · all releases: [`CHANGELOG.md`](CHANGELOG.md), [`docs/releases/`](docs/releases/) |
-| **Deployment Challenge recording** (continuous, unedited, narrated by the DevOps Engineer) | [Deployment Challenge recording (Google Drive)](https://drive.google.com/drive/folders/1dYqhSuY-oSmRmcbd46ipTKLAM_A2rm2B?usp=sharing): PR [#308](https://github.com/Ikeee-AI/TekaTech/pull/308), 27 Nov 2026, about 7 min 50 s continuous take, every step done by hand |
+| **Deployment Challenge recording** (continuous take) | [Deployment Challenge recording (Google Drive)](https://drive.google.com/drive/folders/1dYqhSuY-oSmRmcbd46ipTKLAM_A2rm2B?usp=sharing): PR [#308](https://github.com/Ikeee-AI/TekaTech/pull/308), 27 Nov 2026, about 7 min 50 s, one continuous take, every step done by hand |
 | Final slide deck | [Slide deck by Mika (Canva)](https://www.canva.com/design/DAHZj2xX9v0/lLzZPUYndMhR5bfU9OTZuQ/edit): draft at the freeze; the final version goes to the same link |
 | Submission manifest (every required deliverable, owner and location) | [`docs/submission-manifest.md`](docs/submission-manifest.md) |
 | Architecture · database ERD · API reference | [`docs/architecture.md`](docs/architecture.md) · [`docs/database.md`](docs/database.md) · [`backend/README.md`](backend/README.md) |
