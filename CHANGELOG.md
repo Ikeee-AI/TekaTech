@@ -2,9 +2,9 @@
 
 Stable releases of TekaTech, newest first. The frozen course submission is `v1.0.0`; later entries are post-release (Sprint 5) work, kept separate from it. Each line links its reviewed PR. Full per-release records are in [`docs/releases/`](docs/releases/).
 
-## v1.2.0 — code-freeze release (`527aa6a`, to be tagged before the 27 Nov 2026 freeze)
+## v1.2.0 — code-freeze release (`f4ffb7f`, tagged 2026-11-27)
 
-**Candidate `527aa6a` (#291, 25 Nov 2026).** All changes below are merged to `main` and deployed, and they passed the deployed smoke check on `527aa6a` (25 Nov, 15:36 UTC). A signed-in Chrome check on production also passed. The record, security checks and the full list of 54 PRs are in [`docs/releases/v1.2.0.md`](docs/releases/v1.2.0.md).
+**Tagged on `f4ffb7f` (#303, 27 Nov 2026).** All changes below are merged to `main` and deployed, and they passed the deployed smoke check on `f4ffb7f` (27 Nov, 09:34 UTC) and a signed-in Chrome check on production. Record, security checks and evidence: [`docs/releases/v1.2.0.md`](docs/releases/v1.2.0.md).
 
 ### Added
 - **Streaming answers** over `POST /query/stream`, with live `Server-Timing` (#289).
@@ -16,6 +16,7 @@ Stable releases of TekaTech, newest first. The frozen course submission is `v1.0
 - **Delete My Account:** backend `DELETE /me/account` (#254), Account page button (#271, #274, #275).
 - **Catalog of 23 smartphones** from official pages (#248), with sourced prices and launch-price labels (#266, #270).
 - **Sign-in for AI and compare,** 20 AI questions per user per day, password rules and logout confirmation (#266).
+- **Docker setup for judges:** `docker compose up --build` runs the API and web app locally against the DEV project (#300, #304; `docs/docker.md`).
 
 ### Changed
 - **Rebrand:** dark "Night Market" default, "Bento Lab" light mode, phones by brand, VS Compare (#258), new logo (#280), UI polish (#285, #286).
@@ -25,6 +26,7 @@ Stable releases of TekaTech, newest first. The frozen course submission is `v1.0
 ### Fixed
 - Key-spec tile misreads (#259), password reset links (#265), sign-up return page (#249), spam-folder notice (#267).
 - 9 fixes from the freeze-feature code review (#295). Comparison lists and follow-up count fixed (#296). Web search for cited declines, and `Vary` on trending questions (#297). Saved spec parts numbered by position (#298).
+- Freeze-day fixes (27 Nov): compare AI panel only as tall as its content (#301); General Knowledge now answers when the model declines in words, and web answers no longer end with an offer (`web-v2`) (#302); GK and web answers get the phone's brand, e.g. "vivo X200 Pro" (#303); failed Railway deploy after #300 fixed by renaming `backend/Dockerfile` to `api.Dockerfile` (#304).
 
 ### Security and operations
 - Backend hardening (#260), frontend security headers and PKCE (#261), CSP enforced (#269), browser roles locked out of the database (#263).
