@@ -28,7 +28,7 @@ export default function Footer() {
             ))}
           </ul>
         </nav>
-        <p className="text-sm text-slate-600 px-2">© 2026 TekaTech — a student project · Demo Day release</p>
+        <p className="text-sm text-slate-600 px-2">© 2026 TekaTech — a student project · Demo Day 2026</p>
       </div>
     </footer>
   )
