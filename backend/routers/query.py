@@ -1359,11 +1359,14 @@ def _answer_question(request: Request, payload: "QueryRequest", user, *, private
     #     grounded under this request's scope.
     # With "search the web" on, a reply that cites none of the snippets ("the snippets do not
     # state whether…") has nothing grounded in it either, so it goes to the web too (DEV check,
-    # 24 Nov 2026: the model declined in words instead of sending the sentinel). General
-    # knowledge alone keeps the sentinel-only rule (gkf-v2, evaluated). Only markers for snippets
-    # that were sent count as citations: "[9]" with one snippet is dropped later, not grounding.
+    # 24 Nov 2026: the model declined in words instead of sending the sentinel). Since 27 Nov 2026
+    # the same holds with general knowledge alone: on prod a fully declined answer ("The saved
+    # specs do not state what comes in the box [1][3].") never reached the GK answer, so ticking
+    # "Allow General Knowledge" changed nothing. A partial answer still stays grounded (GK-09).
+    # Only markers for snippets that were sent count as citations: "[9]" with one snippet is
+    # dropped later, not grounding.
     # A reply that cites snippets but only to say they don't hold the answer goes too (_only_declines).
-    uncited_decline = payload.allow_web_search and (
+    uncited_decline = fallback_allowed and (
         (
             not _cites_a_snippet(answer, len(matches))
             and _DECLINE.search(answer.replace("’", "'")) is not None  # "don’t" as well as "don't"
