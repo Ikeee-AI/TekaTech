@@ -519,12 +519,13 @@ export default function ComparePage() {
             </p>
           </section>
 
-          {/* Wide screens (owner, 22 Nov 2026): the AI panel is exactly as tall as the specs card
-              and scrolls inside, so a long answer never makes it taller than the table. It is
-              taken out of the row's height (absolute), with a floor for short comparisons. */}
+          {/* Wide screens: the AI panel is taken out of the row's height (absolute) so a long
+              answer never makes it taller than the specs card; it scrolls inside once it reaches
+              that height (owner, 22 Nov 2026). Below that it is only as tall as its content, so an
+              unanswered panel no longer leaves a big empty card (owner, 26 Nov 2026). */}
           <div className="min-w-0 xl:relative xl:min-h-[32rem]">
             <AIComparisonPanel
-              className="xl:absolute xl:inset-0 xl:overflow-y-auto overscroll-contain"
+              className="xl:absolute xl:inset-x-0 xl:top-0 xl:max-h-full xl:overflow-y-auto overscroll-contain"
               gadgetIds={gadgets.map((g) => g.id)}
               gadgetNames={gadgets.map((g) => g.name)}
               category={gadgets.map((g) => g.category)}
