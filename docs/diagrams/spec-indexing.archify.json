@@ -1,0 +1,228 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Spec Save and Indexing (Admin)",
+    "output": ".archify/workflow-spec-indexing-20261127-2320/spec-indexing.html",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "repository": {
+      "url": "https://github.com/Ikeee-AI/TekaTech",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "1e14562918148d510dc41ccfe668c7c26fb16b5f"
+    }
+  },
+  "lanes": [
+    {
+      "id": "people",
+      "label": "Admin and users"
+    },
+    {
+      "id": "api",
+      "label": "FastAPI routes"
+    },
+    {
+      "id": "store",
+      "label": "Supabase Postgres"
+    },
+    {
+      "id": "fail",
+      "label": "Failure path",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "admin",
+    "save",
+    "chunk",
+    "pending",
+    "index",
+    "embed",
+    "indexed"
+  ],
+  "nodes": [
+    {
+      "id": "admin",
+      "lane": "people",
+      "col": 0,
+      "type": "external",
+      "label": "Admin",
+      "sublabel": "pastes spec text"
+    },
+    {
+      "id": "user",
+      "lane": "people",
+      "col": 2,
+      "type": "external",
+      "label": "User correction",
+      "sublabel": "admin approves",
+      "sources": [
+        {
+          "path": "backend/routers/corrections.py",
+          "line": 223,
+          "end_line": 233,
+          "label": "approve / reject"
+        }
+      ]
+    },
+    {
+      "id": "save",
+      "lane": "api",
+      "col": 1,
+      "type": "backend",
+      "label": "POST /specs",
+      "sublabel": "admin, no AI call",
+      "sources": [
+        {
+          "path": "backend/routers/specs.py",
+          "line": 57,
+          "end_line": 93,
+          "label": "save specs"
+        }
+      ]
+    },
+    {
+      "id": "chunk",
+      "lane": "api",
+      "col": 2,
+      "type": "backend",
+      "label": "chunk_text()",
+      "sublabel": "split into chunks",
+      "sources": [
+        {
+          "path": "backend/routers/specs.py",
+          "line": 72,
+          "label": "chunk_text"
+        }
+      ]
+    },
+    {
+      "id": "index",
+      "lane": "api",
+      "col": 3,
+      "type": "backend",
+      "label": "POST .../index",
+      "sublabel": "embed one chunk",
+      "sources": [
+        {
+          "path": "backend/routers/specs.py",
+          "line": 111,
+          "end_line": 125,
+          "label": "index_spec"
+        }
+      ]
+    },
+    {
+      "id": "embed",
+      "lane": "api",
+      "col": 4,
+      "type": "cloud",
+      "label": "OpenAI embedding",
+      "sublabel": "text-embedding-3-small"
+    },
+    {
+      "id": "pending",
+      "lane": "store",
+      "col": 2,
+      "type": "database",
+      "label": "spec_documents",
+      "sublabel": "pending, no vector"
+    },
+    {
+      "id": "indexed",
+      "lane": "store",
+      "col": 5,
+      "type": "database",
+      "label": "Vector saved",
+      "sublabel": "status indexed",
+      "sources": [
+        {
+          "path": "backend/routers/specs.py",
+          "line": 132,
+          "end_line": 139,
+          "label": "store vector"
+        }
+      ]
+    },
+    {
+      "id": "err",
+      "lane": "fail",
+      "col": 4,
+      "type": "security",
+      "label": "503, text kept",
+      "sublabel": "retry later",
+      "sources": [
+        {
+          "path": "backend/routers/specs.py",
+          "line": 129,
+          "label": "provider failure"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "admin",
+      "to": "save",
+      "label": "spec text",
+      "variant": "emphasis"
+    },
+    {
+      "from": "save",
+      "to": "chunk"
+    },
+    {
+      "from": "chunk",
+      "to": "pending",
+      "label": "insert"
+    },
+    {
+      "from": "pending",
+      "to": "index",
+      "label": "index"
+    },
+    {
+      "from": "index",
+      "to": "embed",
+      "variant": "emphasis"
+    },
+    {
+      "from": "embed",
+      "to": "indexed",
+      "label": "vector"
+    },
+    {
+      "from": "embed",
+      "to": "err",
+      "label": "error",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "user",
+      "to": "pending",
+      "label": "approved text",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Saving never needs AI",
+      "items": [
+        "Spec text is stored as pending chunks without an OpenAI call",
+        "An embedding outage returns 503 and keeps the saved text for a later retry"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Corrections",
+      "items": [
+        "A user's correction reaches the AI context only after an admin approves it",
+        "Approved text replaces the chunk, which is indexed again"
+      ]
+    }
+  ]
+}

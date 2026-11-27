@@ -1,0 +1,238 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Rollback and Incident Recovery",
+    "output": ".archify/workflow-rollback-20261127-2320/rollback.html",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "repository": {
+      "url": "https://github.com/Ikeee-AI/TekaTech",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "1e14562918148d510dc41ccfe668c7c26fb16b5f"
+    }
+  },
+  "lanes": [
+    {
+      "id": "ci",
+      "label": "GitHub Actions"
+    },
+    {
+      "id": "ops",
+      "label": "DevOps Engineer"
+    },
+    {
+      "id": "prod",
+      "label": "Production hosts"
+    },
+    {
+      "id": "data",
+      "label": "Data recovery",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "deploy",
+    "smoke",
+    "alert",
+    "dispatch",
+    "verify",
+    "redeploy",
+    "resmoke",
+    "recovered"
+  ],
+  "nodes": [
+    {
+      "id": "deploy",
+      "lane": "ci",
+      "col": 0,
+      "type": "messagebus",
+      "label": "Main CI deploy",
+      "sublabel": "after a merge",
+      "sources": [
+        {
+          "path": ".github/workflows/ci.yml",
+          "label": "deploy job"
+        }
+      ]
+    },
+    {
+      "id": "smoke",
+      "lane": "ci",
+      "col": 1,
+      "type": "messagebus",
+      "label": "Smoke check",
+      "sublabel": "commit, phones, CORS",
+      "sources": [
+        {
+          "path": "scripts/deployed_smoke.py",
+          "label": "deployed smoke"
+        }
+      ]
+    },
+    {
+      "id": "alert",
+      "lane": "ops",
+      "col": 1,
+      "type": "external",
+      "label": "Failure noticed",
+      "sublabel": "failed run or report"
+    },
+    {
+      "id": "dispatch",
+      "lane": "ops",
+      "col": 2,
+      "type": "external",
+      "label": "Run rollback",
+      "sublabel": "last good SHA",
+      "sources": [
+        {
+          "path": ".github/workflows/rollback.yml",
+          "line": 11,
+          "end_line": 13,
+          "label": "workflow_dispatch sha"
+        }
+      ]
+    },
+    {
+      "id": "verify",
+      "lane": "ci",
+      "col": 3,
+      "type": "security",
+      "label": "SHA on main?",
+      "sublabel": "checked commit only",
+      "sources": [
+        {
+          "path": ".github/workflows/rollback.yml",
+          "line": 49,
+          "end_line": 58,
+          "label": "verify target"
+        }
+      ]
+    },
+    {
+      "id": "redeploy",
+      "lane": "prod",
+      "col": 4,
+      "type": "cloud",
+      "label": "Render + Railway",
+      "sublabel": "redeploy that SHA",
+      "sources": [
+        {
+          "path": ".github/workflows/rollback.yml",
+          "line": 78,
+          "end_line": 100,
+          "label": "redeploy"
+        }
+      ]
+    },
+    {
+      "id": "resmoke",
+      "lane": "ci",
+      "col": 5,
+      "type": "messagebus",
+      "label": "Same smoke check",
+      "sublabel": "rolled-back app",
+      "sources": [
+        {
+          "path": ".github/workflows/rollback.yml",
+          "line": 101,
+          "end_line": 103,
+          "label": "verify live"
+        }
+      ]
+    },
+    {
+      "id": "recovered",
+      "lane": "ops",
+      "col": 5,
+      "type": "external",
+      "label": "Recovered",
+      "sublabel": "log in incidents.md",
+      "sources": [
+        {
+          "path": "docs/devops/incidents.md",
+          "label": "incident log"
+        }
+      ]
+    },
+    {
+      "id": "restore",
+      "lane": "data",
+      "col": 2,
+      "type": "database",
+      "label": "Restore DB backup",
+      "sublabel": "rehearsed 14.0 s",
+      "sources": [
+        {
+          "path": "docs/deploy-runbook.md",
+          "label": "runbook"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "deploy",
+      "to": "smoke"
+    },
+    {
+      "from": "smoke",
+      "to": "alert",
+      "label": "fail",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "alert",
+      "to": "dispatch",
+      "label": "rollback",
+      "variant": "emphasis"
+    },
+    {
+      "from": "dispatch",
+      "to": "verify"
+    },
+    {
+      "from": "verify",
+      "to": "redeploy",
+      "label": "yes",
+      "variant": "emphasis"
+    },
+    {
+      "from": "redeploy",
+      "to": "resmoke"
+    },
+    {
+      "from": "resmoke",
+      "to": "recovered",
+      "label": "pass"
+    },
+    {
+      "from": "alert",
+      "to": "restore",
+      "label": "data damaged",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Rehearsed",
+      "items": [
+        "Rollback took 1 min 35 s (31 Oct) and 1 min 17 s on Railway (12 Nov)",
+        "Database restore rehearsed in 14.0 s"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Safety",
+      "items": [
+        "Only a commit already checked on main can be rolled back to",
+        "Deploys never touch the database; SQL is applied by hand first"
+      ]
+    }
+  ]
+}

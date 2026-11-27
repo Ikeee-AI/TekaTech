@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Sign-in and Authorization",
+    "output": ".archify/sequence-sign-in-20261127-2320/sign-in.html",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "repository": {
+      "url": "https://github.com/Ikeee-AI/TekaTech",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "1e14562918148d510dc41ccfe668c7c26fb16b5f"
+    }
+  },
+  "participants": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "User",
+      "sublabel": "email + password"
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Browser",
+      "sublabel": "React app",
+      "sources": [
+        {
+          "path": "frontend/src/api/client.js",
+          "line": 60,
+          "end_line": 70,
+          "label": "Bearer token on requests"
+        }
+      ]
+    },
+    {
+      "id": "sa",
+      "type": "security",
+      "label": "Supabase Auth",
+      "sublabel": "PKCE sessions"
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI",
+      "sublabel": "auth.py dependencies",
+      "sources": [
+        {
+          "path": "backend/auth.py",
+          "line": 29,
+          "end_line": 43,
+          "label": "get_current_user"
+        },
+        {
+          "path": "backend/auth.py",
+          "line": 47,
+          "end_line": 54,
+          "label": "get_current_admin_user"
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Supabase Postgres",
+      "sublabel": "service-role key"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 250,
+      "label": "Sign in (browser to Auth only)"
+    },
+    {
+      "from": 256,
+      "to": 336,
+      "label": "Every data request"
+    },
+    {
+      "from": 342,
+      "to": 548,
+      "label": "Access decision in route code"
+    }
+  ],
+  "messages": [
+    {
+      "id": "creds",
+      "from": "user",
+      "to": "web",
+      "y": 165,
+      "label": "email + password"
+    },
+    {
+      "id": "signin",
+      "from": "web",
+      "to": "sa",
+      "y": 193,
+      "label": "sign in (publishable key)",
+      "variant": "security"
+    },
+    {
+      "id": "session",
+      "from": "sa",
+      "to": "web",
+      "y": 221,
+      "label": "session + access token",
+      "variant": "return"
+    },
+    {
+      "id": "req",
+      "from": "web",
+      "to": "api",
+      "y": 270,
+      "label": "request + Bearer token",
+      "variant": "emphasis"
+    },
+    {
+      "id": "verify",
+      "from": "api",
+      "to": "sa",
+      "y": 298,
+      "label": "get_user(token)",
+      "variant": "security"
+    },
+    {
+      "id": "claims",
+      "from": "sa",
+      "to": "api",
+      "y": 326,
+      "label": "user + app_metadata",
+      "variant": "return"
+    },
+    {
+      "id": "deny401",
+      "from": "api",
+      "to": "web",
+      "y": 360,
+      "label": "401 Login required",
+      "variant": "security",
+      "note": "no or invalid token on a protected route"
+    },
+    {
+      "id": "deny403",
+      "from": "api",
+      "to": "web",
+      "y": 420,
+      "label": "403 Admin access required",
+      "variant": "security",
+      "note": "admin route, is_admin not true"
+    },
+    {
+      "id": "query",
+      "from": "api",
+      "to": "db",
+      "y": 480,
+      "label": "query scoped to session user",
+      "variant": "emphasis",
+      "note": "service-role key bypasses RLS"
+    },
+    {
+      "id": "rows",
+      "from": "db",
+      "to": "api",
+      "y": 540,
+      "label": "rows",
+      "variant": "return"
+    },
+    {
+      "id": "ok",
+      "from": "api",
+      "to": "web",
+      "y": 568,
+      "label": "200 JSON",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "web",
+      "from": 160,
+      "to": 574,
+      "type": "frontend"
+    },
+    {
+      "participant": "sa",
+      "from": 189,
+      "to": 227,
+      "type": "security"
+    },
+    {
+      "participant": "api",
+      "from": 266,
+      "to": 574,
+      "type": "backend"
+    },
+    {
+      "participant": "sa",
+      "from": 294,
+      "to": 332,
+      "type": "security"
+    },
+    {
+      "participant": "db",
+      "from": 476,
+      "to": 546,
+      "type": "database"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Route code is the only access control",
+      "items": [
+        "The backend uses the service-role key, which bypasses Row Level Security",
+        "get_current_user guards signed-in routes; get_current_admin_user also needs app_metadata.is_admin, which only the admin API can set"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Public without sign-in",
+      "items": [
+        "Catalog reads, spec text, benchmarks, /health and /version",
+        "Every AI, comparison and question endpoint needs a session since 14 Nov 2026"
+      ]
+    }
+  ]
+}
