@@ -24,8 +24,8 @@ Repository access on 16 October 2026: Manuel and Jopher have write access; Adria
 | --- | --- |
 | Production app | https://tekatech-web.onrender.com (frontend, Render) · API https://tekatech-api-production-549b48c9.up.railway.app/health (Railway) · database and auth in Supabase |
 | Final tagged release | [Latest release](https://github.com/Ikeee-AI/TekaTech/releases/latest) (the tag production runs) · all releases: [`CHANGELOG.md`](CHANGELOG.md), [`docs/releases/`](docs/releases/) |
-| **Deployment Challenge recording** (continuous, unedited, narrated by the DevOps Engineer) | [Deployment Challenge recording (Google Drive)](https://drive.google.com/drive/folders/1dYqhSuY-oSmRmcbd46ipTKLAM_A2rm2B?usp=sharing): PR [#307](https://github.com/Ikeee-AI/TekaTech/pull/307), 27 Nov 2026, 5 min 36 s continuous take |
-| Final slide deck | Final deck by Mika (Canva, view-only link to be added here); not yet linked at the freeze |
+| **Deployment Challenge recording** (continuous, unedited, narrated by the DevOps Engineer) | [Deployment Challenge recording (Google Drive)](https://drive.google.com/drive/folders/1dYqhSuY-oSmRmcbd46ipTKLAM_A2rm2B?usp=sharing): PR [#308](https://github.com/Ikeee-AI/TekaTech/pull/308), 27 Nov 2026, about 7 min 50 s continuous take, every step done by hand |
+| Final slide deck | [Slide deck by Mika (Canva)](https://www.canva.com/design/DAHZj2xX9v0/lLzZPUYndMhR5bfU9OTZuQ/edit): draft at the freeze; the final version goes to the same link |
 | Submission manifest (every required deliverable, owner and location) | [`docs/submission-manifest.md`](docs/submission-manifest.md) |
 | Architecture · database ERD · API reference | [`docs/architecture.md`](docs/architecture.md) · [`docs/database.md`](docs/database.md) · [`backend/README.md`](backend/README.md) |
 | AI implementation and evaluation | [`docs/ai-feature-writeup.md`](docs/ai-feature-writeup.md) · [`prompts/`](prompts/) |
@@ -35,7 +35,7 @@ Repository access on 16 October 2026: Manuel and Jopher have write access; Adria
 
 ## Current status (code freeze, 27 Nov 2026)
 
-- **Live:** production runs the latest tagged release (`v1.2.0` is `f4ffb7f`; the Deployment Challenge change is tagged as the final release on the same day). Deployed smoke checks and a signed-in Chrome check of member and admin journeys passed on 27 Nov.
+- **Live:** production runs the latest tagged release (`v1.2.0` is `f4ffb7f`; the Deployment Challenge change is tagged as the final release on the same day). Deployed smoke checks passed on 27 Nov; signed-in Chrome checks passed for member journeys on 27 Nov and admin journeys on 25 Nov.
 - **Features:** a 23-phone catalog curated by admins, with sourced specs and prices; cited AI answers on phone pages and for 2–5-phone comparisons, streamed, with 5-turn chat memory; published game and chip benchmarks (130 rows, each with a source link); general knowledge and web search, both opt-in and labelled, with daily caps; My Gadgets, saved questions, corrections, admin overview and admin web drafts; a Docker setup for running it locally. Signed-out visitors can browse the catalog only.
 - **Tests (27 Nov 2026):** 1,124 backend tests and 684 frontend unit tests pass, plus the Playwright failure-drill checks and the database replay checks in CI. The full-history Gitleaks scan (318 commits), pip-audit, `npm audit` and Dependabot show nothing open.
 - **Releases:** `v1.0.0` (31 Oct) was the Sprint 4 course submission; `v1.1.0` (6 Nov), `v1.2.0` (27 Nov, code freeze) and the Deployment Challenge release follow it.
