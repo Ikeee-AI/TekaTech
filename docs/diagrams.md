@@ -1,6 +1,6 @@
 # TekaTech flow diagrams
 
-Four request-level flows that complement the [system architecture](architecture.md), the [database ERD](database.md) and the [CI/CD pipeline](../PIPELINE.md). Each one is drawn from the code as it stands at the Demo Day freeze (27 Nov 2026).
+Four request-level flows, each also as an interactive Archify diagram in [`docs/diagrams/`](diagrams/), that complement the [system architecture](architecture.md), the [database ERD](database.md) and the [CI/CD pipeline](../PIPELINE.md). Each one is drawn from the code as it stands at the Demo Day freeze (27 Nov 2026).
 
 ## 1. Asking the AI a question (`POST /query/stream`)
 
@@ -49,6 +49,8 @@ sequenceDiagram
 
 ## 2. Sign-in and authorization
 
+Interactive version with source links: [Sign-in and authorization](diagrams/sign-in.html) (Archify; source in [sign-in.archify.json](diagrams/sign-in.archify.json)).
+
 The browser talks to Supabase only to sign in. Every data request goes through the backend, which decides access in route code (the service-role key bypasses RLS).
 
 ```mermaid
@@ -80,6 +82,8 @@ sequenceDiagram
 
 ## 3. Saving and indexing a phone's specs (admin)
 
+Interactive version with source links: [Spec save and indexing](diagrams/spec-indexing.html) (Archify; source in [spec-indexing.archify.json](diagrams/spec-indexing.archify.json)).
+
 Saving never needs the AI provider, so an OpenAI outage cannot lose spec text.
 
 ```mermaid
@@ -101,6 +105,8 @@ flowchart TD
 ```
 
 ## 4. Rollback and incident recovery
+
+Interactive version with source links: [Rollback and incident recovery](diagrams/rollback.html) (Archify; source in [rollback.archify.json](diagrams/rollback.archify.json)).
 
 Used when a deploy passes CI but production misbehaves. Rehearsed in 1 min 35 s (31 Oct) and 1 min 17 s on Railway (12 Nov); see the [deploy runbook](deploy-runbook.md) and the [incident log](devops/incidents.md).
 
