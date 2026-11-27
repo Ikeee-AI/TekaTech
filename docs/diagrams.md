@@ -1,8 +1,48 @@
 # TekaTech flow diagrams
 
-Four request-level flows, each also as an interactive Archify diagram in [`docs/diagrams/`](diagrams/), that complement the [system architecture](architecture.md), the [database ERD](database.md) and the [CI/CD pipeline](../PIPELINE.md). Each one is drawn from the code as it stands at the Demo Day freeze (27 Nov 2026).
+An overview of the AI feature and four request-level flows, each also as an interactive Archify diagram in [`docs/diagrams/`](diagrams/), that complement the [system architecture](architecture.md), the [database ERD](database.md) and the [CI/CD pipeline](../PIPELINE.md). Each one is drawn from the code as it stands at the Demo Day freeze (27 Nov 2026).
+
+## 0. How RAG and AI chat fit together
+
+The whole AI feature on one page: specs are saved and embedded ahead of time (left), and each question retrieves from them, asks the model with the conversation so far, and is checked before the user sees it (right). General Knowledge and web search are opt-in fallbacks only when the saved specs hold none of the answer.
+
+```mermaid
+flowchart LR
+  subgraph ING["Ahead of time: ingestion (admin only)"]
+    direction TB
+    S1["Spec text, approved corrections,<br/>130 sourced benchmarks"] --> S2["chunk_text()"]
+    S2 --> S3["text-embedding-3-small"]
+    S3 --> V[("pgvector<br/>spec_documents")]
+    S1 --> BM[("gadget_benchmarks")]
+  end
+  subgraph Q["Per question: POST /query/stream (signed in)"]
+    direction TB
+    Q1["Question + last 5 turns<br/>(chat memory)"] --> L{"Rate limit 10/min,<br/>20/day, token caps"}
+    L --> C{"answer_cache hit?<br/>(scope incl. history digest)"}
+    C -->|yes| OUT
+    C -->|no| E["Embed question<br/>(+ previous question)"]
+    E --> R["match_spec_documents:<br/>top chunks for the asked phones"]
+    R --> N["Numbered snippets [1..n]<br/>+ benchmark rows for game/fps"]
+    N --> P["Prompt v4: snippets are untrusted data,<br/>cite [n], say what is not stated"]
+    P --> G["gpt-5-mini (streamed to browser)"]
+    G --> D{"Specs hold none<br/>of the answer?"}
+    D -->|no| VAL["Checks: drop citations to snippets not sent,<br/>fix (n) markers, drop stand-in variant values"]
+    D -->|"yes + web search on"| W["OpenAI web_search<br/>(web-v2, 5/user/day)"]
+    D -->|"yes + General Knowledge on"| GK["General knowledge<br/>(gk-v2, labelled)"]
+    W -->|"cap used or failed"| GK
+    VAL --> OUT["SSE done: answer + clickable [n] sources;<br/>thread + token usage saved"]
+    W --> OUT
+    GK --> OUT
+  end
+  V -.-> R
+  BM -.-> N
+```
+
+Interactive, source-linked versions: [AI answer sequence](diagrams/ai-answer.html) (section 1) and [spec indexing](diagrams/spec-indexing.html) (section 3). Code: [`backend/routers/query.py`](../backend/routers/query.py), [`backend/prompts.py`](../backend/prompts.py), [`backend/citations.py`](../backend/citations.py), [`backend/web_search.py`](../backend/web_search.py), [`backend/routers/specs.py`](../backend/routers/specs.py).
 
 ## 1. Asking the AI a question (`POST /query/stream`)
+
+![AI answer: RAG, chat, General Knowledge and web search](diagrams/ai-answer.png)
 
 Interactive version with source links for every participant: [AI answer: RAG, chat, General Knowledge and web search](diagrams/ai-answer.html) (Archify; download and open in a browser, source in [ai-answer.archify.json](diagrams/ai-answer.archify.json)).
 
@@ -49,6 +89,8 @@ sequenceDiagram
 
 ## 2. Sign-in and authorization
 
+![Sign-in and authorization](diagrams/sign-in.png)
+
 Interactive version with source links: [Sign-in and authorization](diagrams/sign-in.html) (Archify; source in [sign-in.archify.json](diagrams/sign-in.archify.json)).
 
 The browser talks to Supabase only to sign in. Every data request goes through the backend, which decides access in route code (the service-role key bypasses RLS).
@@ -82,6 +124,8 @@ sequenceDiagram
 
 ## 3. Saving and indexing a phone's specs (admin)
 
+![Spec save and indexing](diagrams/spec-indexing.png)
+
 Interactive version with source links: [Spec save and indexing](diagrams/spec-indexing.html) (Archify; source in [spec-indexing.archify.json](diagrams/spec-indexing.archify.json)).
 
 Saving never needs the AI provider, so an OpenAI outage cannot lose spec text.
@@ -105,6 +149,8 @@ flowchart TD
 ```
 
 ## 4. Rollback and incident recovery
+
+![Rollback and incident recovery](diagrams/rollback.png)
 
 Interactive version with source links: [Rollback and incident recovery](diagrams/rollback.html) (Archify; source in [rollback.archify.json](diagrams/rollback.archify.json)).
 
