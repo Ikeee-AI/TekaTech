@@ -82,7 +82,7 @@ describe('footer', () => {
     for (const [label, href] of Object.entries(expected)) {
       expect(within(nav).getByRole('link', { name: label }).getAttribute('href')).toBe(href)
     }
-    expect(screen.getByText('© 2026 TekaTech — a student project')).toBeTruthy()
+    expect(screen.getByText('© 2026 TekaTech — a student project · Demo Day release')).toBeTruthy()
   })
 })
 
