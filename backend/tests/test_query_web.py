@@ -169,10 +169,33 @@ def test_an_uncited_decline_goes_to_the_web(client, fake_supabase):
     web_call.assert_called_once()
 
 
-def test_an_uncited_decline_without_the_web_flag_stays_as_it_was(client, fake_supabase):
+def test_an_uncited_decline_with_general_knowledge_only_goes_to_general_knowledge(client, fake_supabase):
+    # Prod check 27 Nov 2026: with only "Allow General Knowledge" ticked, a worded decline stayed
+    # as the answer, so the toggle did nothing. It now reaches the GK answer, never the web.
     _set_matching_spec(fake_supabase, GADGET)
     resp, web_call, chat = _ask(
         client, {"question": "Does it support DeX?", "gadget_ids": [GADGET], "allow_general_knowledge": True},
+        completion_text="The snippets do not state whether the Galaxy S24 supports Samsung DeX.",
+    )
+    assert resp.json()["answer_basis"] == "general_knowledge"
+    web_call.assert_not_called()
+    assert chat.call_count == 2
+
+
+def test_a_cited_decline_with_general_knowledge_only_goes_to_general_knowledge(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, chat = _ask(
+        client, {"question": "What is in the box?", "gadget_ids": [GADGET], "allow_general_knowledge": True},
+        completion_text="The saved specs do not state what accessories come in the box [1].",
+    )
+    assert resp.json()["answer_basis"] == "general_knowledge"
+    web_call.assert_not_called()
+
+
+def test_a_decline_with_neither_flag_stays_as_it_was(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, chat = _ask(
+        client, {"question": "Does it support DeX?", "gadget_ids": [GADGET]},
         completion_text="The snippets do not state whether the Galaxy S24 supports Samsung DeX.",
     )
     assert resp.json()["answer_basis"] == "specs"
@@ -328,14 +351,24 @@ def test_a_decline_that_cites_the_snippets_it_found_nothing_in_goes_to_the_web(c
     web_call.assert_called_once()
 
 
-def test_a_cited_decline_without_the_web_flag_stays_grounded(client, fake_supabase):
+def test_a_cited_decline_with_general_knowledge_reaches_general_knowledge(client, fake_supabase):
     _set_matching_spec(fake_supabase, GADGET)
     resp, web_call, chat = _ask(
         client, {"question": "How many years of OS updates?", "gadget_ids": [GADGET], "allow_general_knowledge": True},
         completion_text="The snippets do not state Android OS update promise for the Galaxy S24. [1]",
     )
-    assert resp.json()["answer_basis"] == "specs"
+    assert resp.json()["answer_basis"] == "general_knowledge"
     web_call.assert_not_called()
+    assert chat.call_count == 2
+
+
+def test_a_partial_answer_with_general_knowledge_stays_grounded(client, fake_supabase):
+    _set_matching_spec(fake_supabase, GADGET)
+    resp, web_call, chat = _ask(
+        client, {"question": "How many years of OS updates?", "gadget_ids": [GADGET], "allow_general_knowledge": True},
+        completion_text="Update years are not stated, but it ships with One UI 6.1 [1].",
+    )
+    assert resp.json()["answer_basis"] == "specs"
     assert chat.call_count == 1
 
 

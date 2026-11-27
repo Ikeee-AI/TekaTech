@@ -108,13 +108,15 @@ def test_gk_08_scoped_sentinel_reaches_the_general_knowledge_answer(client, fake
     assert report["metrics"]["basis_general_knowledge"] == {"passed": 1, "total": 1, "rate": 1.0}
 
 
-def test_gk_08_grounded_not_stated_reply_still_fails(client, fake_supabase, openai_mock):
-    # The 15 Nov production reply shape: the model did not use the sentinel.
+def test_gk_08_worded_decline_now_reaches_general_knowledge(client, fake_supabase, openai_mock):
+    # The 15 Nov production reply shape: the model did not use the sentinel. Until 27 Nov 2026
+    # this stayed a grounded decline (GK-08 failed); a fully declined answer now goes to GK too.
     report = _gk08_through_scoped_query(
         client, fake_supabase, openai_mock,
-        "The provided spec snippets do not state whether the Galaxy S24 supports Samsung DeX [1].")
-    assert not report["targets_met"]
-    assert report["metrics"]["basis_general_knowledge"] == {"passed": 0, "total": 1, "rate": 0.0}
+        "The provided spec snippets do not state whether the Galaxy S24 supports Samsung DeX [1].",
+        GK_REFERENCE["GK-08"])
+    assert report["targets_met"], report["failures"]
+    assert report["metrics"]["basis_general_knowledge"] == {"passed": 1, "total": 1, "rate": 1.0}
 
 
 GADGET_B = "22222222-2222-2222-2222-222222222222"

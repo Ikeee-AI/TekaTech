@@ -365,7 +365,7 @@ def test_the_backend_label_and_off_topic_reply_satisfy_the_scorer():
     assert case["checks"]["off_topic_declined"] and case["checks"]["labelled"]
 
 
-# --- GK-10 / GK-11: "Search the Web" routing (web-v1, pre-review of PR #294) -------------------
+# --- GK-10 / GK-11: "Search the Web" routing (web-v1, pre-review of PR #294; web-v2 since 27 Nov) -------------------
 
 def test_web_cases_are_scoped_and_ask_with_web_search_on():
     scope = json.loads((EVAL / "gk_scope.json").read_text(encoding="utf-8"))["cases"]
