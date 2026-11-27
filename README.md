@@ -18,12 +18,27 @@ The project owner, **Ikeee-AI**, is the **one DevOps Engineer**. Every other tea
 
 Repository access on 16 October 2026: Manuel and Jopher have write access; Adrian's and Mika's invitations were sent that day. Sprint 1 product owner: **Ikeee-AI**, confirmed by the project owner on 12 October 2026. The product owner prioritizes the board and reports progress at consultation. Every member reviews another teammate's PRs. Record any approved mid-project role change in the sprint log and notify the instructor.
 
+## Demo Day submission (code freeze, 27 Nov 2026)
+
+| Deliverable | Link |
+| --- | --- |
+| Production app | https://tekatech-web.onrender.com (frontend, Render) · API https://tekatech-api-production-549b48c9.up.railway.app/health (Railway) · database and auth in Supabase |
+| Final tagged release | [Latest release](https://github.com/Ikeee-AI/TekaTech/releases/latest) (the tag production runs) · all releases: [`CHANGELOG.md`](CHANGELOG.md), [`docs/releases/`](docs/releases/) |
+| **Deployment Challenge recording** (continuous take) | [Deployment Challenge recording (Google Drive)](https://drive.google.com/drive/folders/1dYqhSuY-oSmRmcbd46ipTKLAM_A2rm2B?usp=sharing): PR [#308](https://github.com/Ikeee-AI/TekaTech/pull/308), 27 Nov 2026, about 7 min 50 s, one continuous take, every step done by hand |
+| Final slide deck | [Slide deck by Mika (Canva)](https://www.canva.com/design/DAHZj2xX9v0/lLzZPUYndMhR5bfU9OTZuQ/edit): draft at the freeze; the final version goes to the same link |
+| Submission manifest (every required deliverable, owner and location) | [`docs/submission-manifest.md`](docs/submission-manifest.md) |
+| Architecture · database ERD · API reference | [`docs/architecture.md`](docs/architecture.md) · [`docs/database.md`](docs/database.md) · [`backend/README.md`](backend/README.md) |
+| AI implementation and evaluation | [`docs/ai-feature-writeup.md`](docs/ai-feature-writeup.md) · [`prompts/`](prompts/) |
+| Pipeline · metrics · optimizations · runbook · incidents | [`PIPELINE.md`](PIPELINE.md) · [`docs/devops/metrics.md`](docs/devops/metrics.md) · [`docs/devops/optimizations.md`](docs/devops/optimizations.md) · [`docs/deploy-runbook.md`](docs/deploy-runbook.md) · [`docs/devops/incidents.md`](docs/devops/incidents.md) |
+| AI provider failure simulation · malformed requests | [`backend/README.md`](backend/README.md) (`FAILURE_SIMULATION_ENABLED` drill) · [`docs/demo/malformed-request-demo.md`](docs/demo/malformed-request-demo.md) |
+| Demo accounts and test data | Production: a member and an admin demo account, given to the panel privately (never in the repository). Local Docker: DEV admin and member accounts, see [`docs/docker.md`](docs/docker.md). Seed script: [`backend/scripts/seed_dev.py`](backend/scripts/seed_dev.py) |
+
 ## Current status (code freeze, 27 Nov 2026)
 
-- **Live:** [frontend](https://tekatech-web.onrender.com) on Render, [API](https://tekatech-api-production-549b48c9.up.railway.app/health) on Railway, database in Supabase. Production runs `527aa6a` (25 Nov 2026). The deployed smoke check passed, and so did a signed-in Chrome check of a streamed answer, a web-search answer and an admin photo upload.
-- **Features:** a 23-phone catalog curated by admins, with sourced specs and prices; cited AI answers on phone pages and for 2–5-phone comparisons, streamed, with 5-turn chat memory; published game and chip benchmarks (130 rows, each with a source link); general knowledge and web search, both opt-in and labelled, with daily caps; My Gadgets, saved questions, corrections, admin overview and admin web drafts. Signed-out visitors can browse the catalog only.
-- **Tests (26 Nov 2026):** 1,119 backend tests and 684 frontend unit tests pass, plus the Playwright failure-drill checks and the database replay checks in CI. The full-history Gitleaks scan, pip-audit, `npm audit` and Dependabot all show nothing open.
-- **Releases:** [`CHANGELOG.md`](CHANGELOG.md) and [`docs/releases/`](docs/releases/). `v1.0.0` (31 Oct) is the frozen course submission; `v1.1.0` (6 Nov) and the freeze release `v1.2.0` follow it.
+- **Live:** production runs the latest tagged release (`v1.2.0` is `f4ffb7f`; the Deployment Challenge change is tagged as the final release on the same day). Deployed smoke checks passed on 27 Nov; signed-in Chrome checks passed for member journeys on 27 Nov and admin journeys on 25 Nov.
+- **Features:** a 23-phone catalog curated by admins, with sourced specs and prices; cited AI answers on phone pages and for 2–5-phone comparisons, streamed, with 5-turn chat memory; published game and chip benchmarks (130 rows, each with a source link); general knowledge and web search, both opt-in and labelled, with daily caps; My Gadgets, saved questions, corrections, admin overview and admin web drafts; a Docker setup for running it locally. Signed-out visitors can browse the catalog only.
+- **Tests (27 Nov 2026):** 1,124 backend tests and 684 frontend unit tests pass, plus the Playwright failure-drill checks and the database replay checks in CI. The full-history Gitleaks scan (318 commits), pip-audit, `npm audit` and Dependabot show nothing open.
+- **Releases:** `v1.0.0` (31 Oct) was the Sprint 4 course submission; `v1.1.0` (6 Nov), `v1.2.0` (27 Nov, code freeze) and the Deployment Challenge release follow it.
 
 ## Sprint 1 status (historical, October 2026)
 
