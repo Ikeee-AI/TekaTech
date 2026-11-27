@@ -1,0 +1,13 @@
+# Never send secrets or local environments into the image build.
+.env
+.env.*
+!.env.example
+account.txt
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+tests/
+Dockerfile
+.dockerignore

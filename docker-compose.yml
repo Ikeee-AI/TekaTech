@@ -1,0 +1,49 @@
+# Run TekaTech on any computer with Docker: `docker compose up --build`, then open
+# http://localhost:8080 . Guide: docs/docker.md
+#
+# Two containers: the FastAPI backend (api) and the built React frontend (web).
+# The database and sign-in stay in the hosted Supabase project, and AI answers use
+# OpenAI, so this needs internet access plus the values in ./.env (copy .env.example;
+# .env is gitignored and must never be committed).
+
+name: tekatech
+
+services:
+  api:
+    build:
+      context: ./backend
+    image: tekatech-api:local
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env (see docs/docker.md)}
+      SUPABASE_URL: ${SUPABASE_URL:?Set SUPABASE_URL in .env (see docs/docker.md)}
+      SUPABASE_KEY: ${SUPABASE_SECRET_KEY:?Set SUPABASE_SECRET_KEY in .env (see docs/docker.md)}
+      # The browser loads the app from the web container's address.
+      CORS_ORIGINS: http://localhost:${WEB_PORT:-8080}
+      RATE_LIMIT_STORAGE_URI: memory://
+      AI_DAILY_QUESTION_LIMIT: ${AI_DAILY_QUESTION_LIMIT:-20}
+      AI_DAILY_WEB_SEARCH_LIMIT: ${AI_DAILY_WEB_SEARCH_LIMIT:-5}
+      WEB_SEARCH_SITE_DAILY_LIMIT: ${WEB_SEARCH_SITE_DAILY_LIMIT:-40}
+      APP_COMMIT: docker-local
+      # Never on outside a supervised drill (CLAUDE.md, Gotchas).
+      FAILURE_SIMULATION_ENABLED: "false"
+      TECHSPECS_ENABLED: "false"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_SUPABASE_URL: ${SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${SUPABASE_PUBLISHABLE_KEY:?Set SUPABASE_PUBLISHABLE_KEY in .env (see docs/docker.md)}
+        VITE_API_BASE_URL: http://localhost:${API_PORT:-8000}
+    image: tekatech-web:local
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    environment:
+      API_BASE_URL: http://localhost:${API_PORT:-8000}
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

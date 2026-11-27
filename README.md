@@ -2,7 +2,7 @@
 
 An AI subject project that helps shoppers understand and compare gadget specifications. The app stores sourced specs, retrieves relevant chunks with pgvector, and generates answers with clickable citations. Specs can be saved before AI indexing, so provider outages do not prevent catalog work.
 
-**Using the app:** [quick-start guide](docs/quick-start.md) · **Running it locally:** [Run locally](#run-locally)
+**Using the app:** [quick-start guide](docs/quick-start.md) · **Running it locally:** [Run locally](#run-locally) · **With Docker (judges):** [docs/docker.md](docs/docker.md), `docker compose up --build`
 
 ## Team and responsibilities
 
