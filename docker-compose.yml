@@ -12,6 +12,9 @@ services:
   api:
     build:
       context: ./backend
+      # Not named "Dockerfile": CI uploads backend/ to Railway, and Railway builds any
+      # backend/Dockerfile instead of the production Railpack setup (failed deploy, 27 Nov 2026).
+      dockerfile: api.Dockerfile
     image: tekatech-api:local
     ports:
       - "${API_PORT:-8000}:8000"

@@ -52,7 +52,7 @@ Each regular account has **20 AI questions per day** (5 of them can use web sear
 
 ## How it is built
 
-- [`backend/Dockerfile`](../backend/Dockerfile): Python 3.12 slim, dependencies installed exactly from `uv.lock` (`uv sync --frozen --no-dev`), tiktoken encodings downloaded at build time, runs as a non-root user, one uvicorn worker (the in-memory rate limiter is per process), and a health check on `/health`.
+- [`backend/api.Dockerfile`](../backend/api.Dockerfile): Python 3.12 slim, dependencies installed exactly from `uv.lock` (`uv sync --frozen --no-dev`), tiktoken encodings downloaded at build time, runs as a non-root user, one uvicorn worker (the in-memory rate limiter is per process), and a health check on `/health`.
 - [`frontend/Dockerfile`](../frontend/Dockerfile): `npm ci` and `vite build` with the three public `VITE_*` values as build arguments (Vite bakes them in at build time), then nginx serves `dist/`. [`frontend/docker/nginx.conf.template`](../frontend/docker/nginx.conf.template) gives the same single-page-app rewrite and security headers as `render.yaml`, with `connect-src` pointing at the local API.
 - [`docker-compose.yml`](../docker-compose.yml) wires them together. CORS on the API allows `http://localhost:<WEB_PORT>`, and the web app calls `http://localhost:<API_PORT>`.
 - The `.dockerignore` files keep `.env` files, virtual environments and `node_modules` out of the build.
